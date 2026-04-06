@@ -7,11 +7,10 @@ import (
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
-// Repository — абстракция доступа к агрегату.
-// Важно: здесь предполагается transactional boundary на уровне реализации.
 type Repository interface {
 	GetByID(ctx context.Context, id string) (*entity.Session, error)
 	Save(ctx context.Context, s *entity.Session) error
+	Create(ctx context.Context, s *entity.Session) error
 }
 
 // SessionUseCase — application layer.
@@ -55,6 +54,11 @@ type GetResultQuery struct {
 	PlayerID  string
 }
 
+type CreateSessionCommand struct {
+	SessionID string
+	Rate      int64
+}
+
 //
 // UseCases
 //
@@ -64,7 +68,7 @@ type GetResultQuery struct {
 func (uc *SessionUseCase) BuyIn(ctx context.Context, cmd BuyInCommand) error {
 	session, err := uc.repo.GetByID(ctx, cmd.SessionID)
 	if err != nil {
-		return err
+		return ErrSessionNotFound
 	}
 
 	if err := session.PlayerBuyIn(cmd.OperationID, cmd.PlayerID, cmd.Chips); err != nil {
@@ -117,7 +121,6 @@ func (uc *SessionUseCase) CloseSession(ctx context.Context, cmd CloseSessionComm
 }
 
 // GetResult — query (не меняет состояние).
-// Важно: здесь нет Save.
 func (uc *SessionUseCase) GetResult(ctx context.Context, q GetResultQuery) (valueobject.Money, error) {
 	session, err := uc.repo.GetByID(ctx, q.SessionID)
 	if err != nil {
@@ -125,4 +128,10 @@ func (uc *SessionUseCase) GetResult(ctx context.Context, q GetResultQuery) (valu
 	}
 
 	return session.PlayerResult(q.PlayerID)
+}
+
+func (uc *SessionUseCase) CreateSession(ctx context.Context, cmd CreateSessionCommand) error {
+	session := entity.NewSession(cmd.SessionID, cmd.Rate)
+
+	return uc.repo.Create(ctx, session)
 }

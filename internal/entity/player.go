@@ -48,3 +48,19 @@ func (p *SessionPlayer) ApplyCashOut(chips int64, money valueobject.Money) error
 
 	return nil
 }
+
+func (p *SessionPlayer) PlayerID() string                       { return p.playerID }
+func (p *SessionPlayer) TotalChipsBought() int64                { return p.totalChipsBought }
+func (p *SessionPlayer) TotalChipsCashedOut() int64             { return p.totalChipsCashedOut }
+func (p *SessionPlayer) TotalMoneySpent() valueobject.Money     { return p.totalMoneySpent }
+func (p *SessionPlayer) TotalMoneyCashedOut() valueobject.Money { return p.totalMoneyCashedOut }
+
+func (p *SessionPlayer) copy() *SessionPlayer {
+	return &SessionPlayer{
+		playerID:            p.playerID,
+		totalChipsBought:    p.totalChipsBought,
+		totalChipsCashedOut: p.totalChipsCashedOut,
+		totalMoneySpent:     p.totalMoneySpent,
+		totalMoneyCashedOut: p.totalMoneyCashedOut,
+	}
+}

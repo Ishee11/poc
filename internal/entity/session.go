@@ -94,6 +94,10 @@ func (s *Session) PlayerCashOut(opID, playerID string, chips int64) error {
 	return nil
 }
 
+func (s *Session) ID() string {
+	return s.id
+}
+
 func (s *Session) StartSession() error {
 	if s.status != StatusCreated {
 		return ErrSessionNotCreated
@@ -153,4 +157,41 @@ func (s *Session) totalCashedOut() valueobject.Money {
 	}
 
 	return total
+}
+
+func (s *Session) Rate() valueobject.ChipRate {
+	return s.rate
+}
+
+func (s *Session) Status() Status {
+	return s.status
+}
+
+func (s *Session) Players() map[string]*SessionPlayer {
+	return s.players
+}
+
+func (s *Session) OperationIDs() map[string]struct{} {
+	return s.operationIDs
+}
+
+func (s *Session) Copy() *Session {
+	clone := &Session{
+		id:     s.id,
+		rate:   s.rate,
+		status: s.status,
+
+		players:      make(map[string]*SessionPlayer),
+		operationIDs: make(map[string]struct{}),
+	}
+
+	for id, p := range s.players {
+		clone.players[id] = p.copy()
+	}
+
+	for op := range s.operationIDs {
+		clone.operationIDs[op] = struct{}{}
+	}
+
+	return clone
 }
