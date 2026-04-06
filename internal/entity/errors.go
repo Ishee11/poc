@@ -17,4 +17,5 @@ var (
 	ErrUnbalancedSession    = errors.New("session money is not balanced")
 	ErrSessionNotFound      = errors.New("session not found")
 	ErrSessionAlreadyExists = errors.New("session already exists")
+	ErrInvalidMoney         = errors.New("invalid money")
 )

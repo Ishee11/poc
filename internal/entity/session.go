@@ -37,7 +37,7 @@ func NewSession(id string, rate int64) *Session {
 	}
 }
 
-func (s *Session) PlayerBuyIn(opID, playerID string, chips int64) error {
+func (s *Session) PlayerBuyIn(opID, playerID string, money valueobject.Money) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
@@ -53,7 +53,7 @@ func (s *Session) PlayerBuyIn(opID, playerID string, chips int64) error {
 		s.players[playerID] = p
 	}
 
-	money, err := s.rate.ToMoney(chips)
+	chips, err := s.rate.ToChips(money)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (s *Session) PlayerCashOut(opID, playerID string, chips int64) error {
 		return ErrPlayerNotFound
 	}
 
-	money, err := s.rate.ToMoney(chips)
+	money, err := s.rate.ChipsToMoney(chips)
 	if err != nil {
 		return err
 	}

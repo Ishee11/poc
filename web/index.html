@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Poker Session</title>
+        <style>
+            body {
+                font-family: Arial;
+                margin: 20px;
+            }
+            input,
+            select,
+            button {
+                margin: 5px;
+                padding: 5px;
+            }
+            table {
+                border-collapse: collapse;
+                margin-top: 10px;
+            }
+            td,
+            th {
+                border: 1px solid #ccc;
+                padding: 6px 10px;
+            }
+            .block {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Session Manager</h1>
+
+        <div class="block">
+            <h3>Session</h3>
+
+            <input id="sessionId" placeholder="session id" value="s1" />
+            <input id="rate" placeholder="rate" value="2" />
+
+            <button onclick="createSession()">Create</button>
+            <button onclick="startSession()">Start</button>
+            <button onclick="closeSession()">Close</button>
+            <button onclick="refresh()">Refresh</button>
+
+            <div id="sessionInfo"></div>
+        </div>
+
+        <div class="block">
+            <h3>Operation</h3>
+
+            <input id="playerId" placeholder="player id" value="p1" />
+            <input id="amount" placeholder="amount" value="100" />
+
+            <select id="opType">
+                <option value="buyin">BuyIn (money)</option>
+                <option value="cashout">CashOut (chips)</option>
+            </select>
+
+            <button onclick="applyOperation()">Apply</button>
+        </div>
+
+        <div class="block">
+            <h3>Players</h3>
+
+            <table id="playersTable">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Chips</th>
+                        <th>Spent</th>
+                        <th>Cashed Out</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="block">
+            <h3>Log</h3>
+            <pre id="log"></pre>
+        </div>
+
+        <script>
+            let opCounter = 1;
+
+            function log(msg) {
+                const el = document.getElementById("log");
+                el.innerText = msg + "\n" + el.innerText;
+            }
+
+            function val(id) {
+                return document.getElementById(id).value;
+            }
+
+            async function safeFetch(url, options = {}) {
+                const res = await fetch(url, options);
+
+                if (!res.ok) {
+                    let text = await res.text();
+                    log("ERROR: " + text);
+                    throw new Error(text);
+                }
+
+                return res;
+            }
+
+            // ---------------- SESSION ----------------
+
+            async function createSession() {
+                try {
+                    await safeFetch("/sessions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            session_id: val("sessionId"),
+                            rate: Number(val("rate")),
+                        }),
+                    });
+
+                    log("session created");
+                    await refresh();
+                } catch {}
+            }
+
+            async function startSession() {
+                try {
+                    await safeFetch(`/sessions/${val("sessionId")}/start`, {
+                        method: "POST",
+                    });
+
+                    log("session started");
+                    await refresh();
+                } catch {}
+            }
+
+            async function closeSession() {
+                try {
+                    await safeFetch(`/sessions/${val("sessionId")}/close`, {
+                        method: "POST",
+                    });
+
+                    log("session closed");
+                    await refresh();
+                } catch {}
+            }
+
+            // ---------------- OPERATION ----------------
+
+            async function applyOperation() {
+                try {
+                    const type = val("opType");
+                    const url = `/sessions/${val("sessionId")}/${type}`;
+                    const opId = "op" + opCounter++;
+
+                    let body;
+
+                    if (type === "buyin") {
+                        body = {
+                            operation_id: opId,
+                            player_id: val("playerId"),
+                            money: Number(val("amount")), // 👈 FIX
+                        };
+                    } else {
+                        body = {
+                            operation_id: opId,
+                            player_id: val("playerId"),
+                            chips: Number(val("amount")),
+                        };
+                    }
+
+                    console.log("REQUEST:", body);
+
+                    await safeFetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                    });
+
+                    log(`${opId}: ${val("playerId")} ${type} ${val("amount")}`);
+
+                    await refresh();
+                } catch {}
+            }
+
+            // ---------------- REFRESH ----------------
+
+            async function refresh() {
+                try {
+                    const res = await fetch(`/sessions/${val("sessionId")}`);
+
+                    if (!res.ok) {
+                        document.getElementById("sessionInfo").innerText =
+                            "session not found";
+                        return;
+                    }
+
+                    const data = await res.json();
+
+                    document.getElementById("sessionInfo").innerText =
+                        `Status: ${data.status} | Rate: ${data.rate}`;
+
+                    const tbody = document.querySelector("#playersTable tbody");
+                    tbody.innerHTML = "";
+
+                    data.players.forEach((p) => {
+                        const row = `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.chips}</td>
+                    <td>${p.spent}</td>
+                    <td>${p.cashed_out}</td>
+                    <td>${p.result}</td>
+                </tr>
+            `;
+                        tbody.innerHTML += row;
+                    });
+                } catch (e) {
+                    log("refresh failed");
+                }
+            }
+        </script>
+    </body>
+</html>

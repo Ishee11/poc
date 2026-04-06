@@ -29,9 +29,9 @@ func NewUseCase(repo Repository) *SessionUseCase {
 
 type BuyInCommand struct {
 	SessionID   string
-	OperationID string // идемпотентность на уровне домена
+	OperationID string
 	PlayerID    string
-	Chips       int64
+	Money       int64
 }
 
 type CashOutCommand struct {
@@ -71,7 +71,12 @@ func (uc *SessionUseCase) BuyIn(ctx context.Context, cmd BuyInCommand) error {
 		return err
 	}
 
-	if err := session.PlayerBuyIn(cmd.OperationID, cmd.PlayerID, cmd.Chips); err != nil {
+	money, err := valueobject.NewMoney(cmd.Money)
+	if err != nil {
+		return err
+	}
+
+	if err := session.PlayerBuyIn(cmd.OperationID, cmd.PlayerID, money); err != nil {
 		return err
 	}
 
@@ -134,4 +139,12 @@ func (uc *SessionUseCase) CreateSession(ctx context.Context, cmd CreateSessionCo
 	session := entity.NewSession(cmd.SessionID, cmd.Rate)
 
 	return uc.repo.Create(ctx, session)
+}
+
+type GetSessionQuery struct {
+	SessionID string
+}
+
+func (uc *SessionUseCase) GetSession(ctx context.Context, q GetSessionQuery) (*entity.Session, error) {
+	return uc.repo.GetByID(ctx, q.SessionID)
 }
