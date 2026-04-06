@@ -1,50 +1,60 @@
-// Package app configures and runs application.
 package app
 
 import (
-	"fmt"
+	"context"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/ishee11/poc/config"
-	"github.com/ishee11/poc/pkg/httpserver"
-	"github.com/ishee11/poc/pkg/logger"
-	"github.com/ishee11/poc/pkg/postgres"
+	httpcontroller "github.com/ishee11/poc/internal/controller/http"
+	"github.com/ishee11/poc/internal/repo/memory"
+	sessionuc "github.com/ishee11/poc/internal/usecase/session"
 )
 
-// Run creates objects via constructors.
-func Run(cfg *config.Config) {
-	l := logger.New(cfg.Log.Level)
+func Run() error {
+	// ===== Repository =====
+	repo := memory.NewSessionRepository()
 
-	// Repository
-	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
-	if err != nil {
-		l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
-	}
-	defer pg.Close()
+	// ===== UseCase =====
+	uc := sessionuc.NewUseCase(repo)
 
-	// HTTP Server
-	httpServer := httpserver.New(httpserver.Port(cfg.HTTP.Port), httpserver.Prefork(cfg.HTTP.UsePreforkMode))
-	http.NewRouter(httpServer.App, cfg, translationUseCase, l)
+	// ===== Handler =====
+	handler := httpcontroller.NewSessionHandler(uc)
 
-	// Start servers
-	httpServer.Start()
+	// ===== Router =====
+	router := httpcontroller.NewRouter(handler)
 
-	// Waiting signal
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	select {
-	case s := <-interrupt:
-		l.Info("app - Run - signal: %s", s.String())
-	case err = <-httpServer.Notify():
-		l.Error(fmt.Errorf("app - Run - httpServer.Notify: %w", err))
+	// ===== HTTP Server =====
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
 	}
 
-	// Shutdown
-	err = httpServer.Shutdown()
-	if err != nil {
-		l.Error(fmt.Errorf("app - Run - httpServer.Shutdown: %w", err))
+	// ===== Start server =====
+	go func() {
+		log.Println("server started on :8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen error: %v", err)
+		}
+	}()
+
+	// ===== Graceful shutdown =====
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+	log.Println("shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		return err
 	}
+
+	log.Println("server stopped")
+	return nil
 }
