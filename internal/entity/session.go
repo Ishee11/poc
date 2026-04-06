@@ -37,7 +37,7 @@ func NewSession(id string, rate int64) *Session {
 	}
 }
 
-func (s *Session) BuyChips(opID, playerID string, chips int64) error {
+func (s *Session) PlayerBuyIn(opID, playerID string, chips int64) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
@@ -67,7 +67,7 @@ func (s *Session) BuyChips(opID, playerID string, chips int64) error {
 	return nil
 }
 
-func (s *Session) CashOut(opID, playerID string, chips int64) error {
+func (s *Session) PlayerCashOut(opID, playerID string, chips int64) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
@@ -94,7 +94,7 @@ func (s *Session) CashOut(opID, playerID string, chips int64) error {
 	return nil
 }
 
-func (s *Session) Start() error {
+func (s *Session) StartSession() error {
 	if s.status != StatusCreated {
 		return ErrSessionNotCreated
 	}
@@ -103,7 +103,7 @@ func (s *Session) Start() error {
 	return nil
 }
 
-func (s *Session) Finish() error {
+func (s *Session) FinishSession() error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
@@ -122,7 +122,7 @@ func (s *Session) Finish() error {
 	return nil
 }
 
-func (s *Session) Result(playerID string) (valueobject.Money, error) {
+func (s *Session) PlayerSessionResult(playerID string) (valueobject.Money, error) {
 	if s.status != StatusFinished {
 		return valueobject.Money{}, ErrSessionNotFinished
 	}
