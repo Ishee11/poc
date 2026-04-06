@@ -17,9 +17,7 @@ type Session struct {
 	rate   valueobject.ChipRate
 	status Status
 
-	players  map[string]*SessionPlayer
-	buyIns   []BuyIn
-	cashOuts []CashOut
+	players map[string]*SessionPlayer
 
 	operationIDs map[string]struct{}
 }
@@ -35,8 +33,6 @@ func NewSession(id string, rate int64) *Session {
 		status: StatusCreated,
 
 		players:      make(map[string]*SessionPlayer),
-		buyIns:       make([]BuyIn, 0),
-		cashOuts:     make([]CashOut, 0),
 		operationIDs: make(map[string]struct{}),
 	}
 }
