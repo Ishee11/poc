@@ -1,197 +1,82 @@
 package entity
 
-import (
-	"github.com/ishee11/poc/internal/entity/valueobject"
-)
+import "github.com/ishee11/poc/internal/entity/valueobject"
+
+type Status string
+type SessionID string
 
 const (
-	StatusCreated  Status = "created"
 	StatusActive   Status = "active"
 	StatusFinished Status = "finished"
 )
 
-type Status string
-
 type Session struct {
-	id     string
-	rate   valueobject.ChipRate
-	status Status
-
-	players map[string]*SessionPlayer
-
-	operationIDs map[string]struct{}
+	id           SessionID
+	chipRate     valueobject.ChipRate
+	status       Status
+	totalBuyIn   int64
+	totalCashOut int64
 }
 
-func NewSession(id string, rate int64) *Session {
-	if id == "" {
-		panic("empty session id")
-	}
-
+func NewSession(id SessionID, chipRate valueobject.ChipRate) *Session {
 	return &Session{
-		id:     id,
-		rate:   valueobject.NewChipRate(rate),
-		status: StatusCreated,
-
-		players:      make(map[string]*SessionPlayer),
-		operationIDs: make(map[string]struct{}),
+		id:           id,
+		chipRate:     chipRate,
+		status:       StatusActive,
+		totalBuyIn:   0,
+		totalCashOut: 0,
 	}
 }
 
-func (s *Session) PlayerBuyIn(opID, playerID string, money valueobject.Money) error {
+func (s *Session) ID() SessionID                  { return s.id }
+func (s *Session) ChipRate() valueobject.ChipRate { return s.chipRate }
+func (s *Session) Status() Status                 { return s.status }
+func (s *Session) TotalBuyIn() int64              { return s.totalBuyIn }
+func (s *Session) TotalCashOut() int64            { return s.totalCashOut }
+func (s *Session) TotalChips() int64              { return s.totalBuyIn - s.totalCashOut }
+
+func (s *Session) BuyIn(chips int64) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
 
-	// 👇 идемпотентность O(1)
-	if _, exists := s.operationIDs[opID]; exists {
-		return nil
+	if chips <= 0 {
+		return ErrInvalidChips
 	}
 
-	p, exists := s.players[playerID]
-	if !exists {
-		p = NewSessionPlayer(playerID)
-		s.players[playerID] = p
-	}
-
-	chips, err := s.rate.ToChips(money)
-	if err != nil {
-		return err
-	}
-
-	if err := p.ApplyBuyIn(chips, money); err != nil {
-		return err
-	}
-
-	s.operationIDs[opID] = struct{}{}
+	s.totalBuyIn += chips
 
 	return nil
 }
 
-func (s *Session) PlayerCashOut(opID, playerID string, chips int64) error {
+func (s *Session) CashOut(chips int64) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
 
-	if _, exists := s.operationIDs[opID]; exists {
-		return nil
+	if chips <= 0 {
+		return ErrInvalidChips
 	}
 
-	p, ok := s.players[playerID]
-	if !ok {
-		return ErrPlayerNotFound
+	if chips > s.TotalChips() {
+		return ErrInsufficientTableChips
 	}
 
-	money, err := s.rate.ChipsToMoney(chips)
-	if err != nil {
-		return err
-	}
+	s.totalCashOut += chips
 
-	if err := p.ApplyCashOut(chips, money); err != nil {
-		return err
-	}
-
-	s.operationIDs[opID] = struct{}{}
 	return nil
 }
 
-func (s *Session) ID() string {
-	return s.id
-}
-
-func (s *Session) StartSession() error {
-	if s.status != StatusCreated {
-		return ErrSessionNotCreated
-	}
-
-	s.status = StatusActive
-	return nil
-}
-
-func (s *Session) FinishSession() error {
+func (s *Session) Finish() error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
 
-	for _, p := range s.players {
-		if p.CurrentChips() != 0 {
-			return ErrPlayersStillInGame
-		}
-	}
-
-	if !s.totalBought().Equal(s.totalCashedOut()) {
-		return ErrUnbalancedSession
+	if s.TotalChips() != 0 {
+		return ErrTableNotSettled
 	}
 
 	s.status = StatusFinished
+
 	return nil
-}
-
-func (s *Session) PlayerResult(playerID string) (valueobject.Money, error) {
-	if s.status != StatusFinished {
-		return valueobject.Money{}, ErrSessionNotFinished
-	}
-
-	p, ok := s.players[playerID]
-	if !ok {
-		return valueobject.Money{}, ErrPlayerNotFound
-	}
-
-	return p.totalMoneyCashedOut.Sub(p.totalMoneySpent)
-}
-
-func (s *Session) totalBought() valueobject.Money {
-	total := valueobject.Money{}
-
-	for _, p := range s.players {
-		total = total.Add(p.totalMoneySpent)
-	}
-
-	return total
-}
-
-func (s *Session) totalCashedOut() valueobject.Money {
-	total := valueobject.Money{}
-
-	for _, p := range s.players {
-		total = total.Add(p.totalMoneyCashedOut)
-	}
-
-	return total
-}
-
-func (s *Session) Rate() valueobject.ChipRate {
-	return s.rate
-}
-
-func (s *Session) Status() Status {
-	return s.status
-}
-
-func (s *Session) Players() map[string]*SessionPlayer {
-	return s.players
-}
-
-func (s *Session) OperationIDs() map[string]struct{} {
-	return s.operationIDs
-}
-
-func (s *Session) Copy() *Session {
-	clone := &Session{
-		id:     s.id,
-		rate:   s.rate,
-		status: s.status,
-
-		players:      make(map[string]*SessionPlayer),
-		operationIDs: make(map[string]struct{}),
-	}
-
-	for id, p := range s.players {
-		clone.players[id] = p.copy()
-	}
-
-	for op := range s.operationIDs {
-		clone.operationIDs[op] = struct{}{}
-	}
-
-	return clone
 }

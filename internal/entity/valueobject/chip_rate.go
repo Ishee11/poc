@@ -12,7 +12,7 @@ type ChipRate struct {
 
 func NewChipRate(v int64) ChipRate {
 	if v <= 0 {
-		panic("invalid chip rate")
+		panic("chip rate must be greater than 0")
 	}
 	return ChipRate{value: v}
 }

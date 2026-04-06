@@ -7,10 +7,11 @@ var (
 	ErrSessionNotCreated = errors.New("session not created")
 	ErrSessionFinished   = errors.New("session finished")
 
-	ErrInvalidChips      = errors.New("invalid chips")
-	ErrPlayerNotFound    = errors.New("player not found")
-	ErrPlayerStillInGame = errors.New("player still in game")
-	ErrNotEnoughChips    = errors.New("not enough chips")
+	ErrInvalidChips           = errors.New("chips must be greater than 0")
+	ErrPlayerNotFound         = errors.New("player not found")
+	ErrPlayerStillInGame      = errors.New("player still in game")
+	ErrTableNotSettled        = errors.New("table not settled")
+	ErrInsufficientTableChips = errors.New("not enough chips")
 
 	ErrPlayersStillInGame   = errors.New("players still have chips in game")
 	ErrSessionNotFinished   = errors.New("session is not finished")
