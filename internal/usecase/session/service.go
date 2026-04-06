@@ -68,7 +68,7 @@ type CreateSessionCommand struct {
 func (uc *SessionUseCase) BuyIn(ctx context.Context, cmd BuyInCommand) error {
 	session, err := uc.repo.GetByID(ctx, cmd.SessionID)
 	if err != nil {
-		return ErrSessionNotFound
+		return err
 	}
 
 	if err := session.PlayerBuyIn(cmd.OperationID, cmd.PlayerID, cmd.Chips); err != nil {
