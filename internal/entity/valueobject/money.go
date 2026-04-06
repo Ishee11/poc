@@ -27,3 +27,7 @@ func (m Money) Sub(other Money) (Money, error) {
 	}
 	return Money{amount: m.amount - other.amount}, nil
 }
+
+func (m Money) Equal(other Money) bool {
+	return m.amount == other.amount
+}

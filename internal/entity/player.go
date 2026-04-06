@@ -5,11 +5,11 @@ import "github.com/ishee11/poc/internal/entity/valueobject"
 type SessionPlayer struct {
 	playerID string
 
+	totalChipsBought    int64
+	totalChipsCashedOut int64
+
 	totalMoneySpent     valueobject.Money
 	totalMoneyCashedOut valueobject.Money
-
-	totalChipsCashedOut int64
-	totalMoneyCashedOut int64
 }
 
 func NewSessionPlayer(playerID string) *SessionPlayer {

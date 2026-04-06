@@ -53,12 +53,14 @@ func (s *Session) BuyChips(opID, playerID string, chips int64) error {
 		s.players[playerID] = p
 	}
 
-	buyIn, err := NewBuyIn(opID, playerID, chips, s.rate)
+	money, err := s.rate.ToMoney(chips)
 	if err != nil {
 		return err
 	}
 
-	p.ApplyBuyIn(buyIn.chips, buyIn.money)
+	if err := p.ApplyBuyIn(chips, money); err != nil {
+		return err
+	}
 
 	s.operationIDs[opID] = struct{}{}
 
@@ -70,7 +72,6 @@ func (s *Session) CashOut(opID, playerID string, chips int64) error {
 		return ErrSessionNotActive
 	}
 
-	// идемпотентность
 	if _, exists := s.operationIDs[opID]; exists {
 		return nil
 	}
@@ -80,17 +81,16 @@ func (s *Session) CashOut(opID, playerID string, chips int64) error {
 		return ErrPlayerNotFound
 	}
 
-	cashOut, err := NewCashOut(opID, playerID, chips, s.rate)
+	money, err := s.rate.ToMoney(chips)
 	if err != nil {
 		return err
 	}
 
-	if err := p.ApplyCashOut(cashOut.chips, cashOut.money); err != nil {
+	if err := p.ApplyCashOut(chips, money); err != nil {
 		return err
 	}
 
 	s.operationIDs[opID] = struct{}{}
-
 	return nil
 }
 
@@ -114,7 +114,7 @@ func (s *Session) Finish() error {
 		}
 	}
 
-	if s.totalBought() != s.totalCashedOut() {
+	if !s.totalBought().Equal(s.totalCashedOut()) {
 		return ErrUnbalancedSession
 	}
 
@@ -122,31 +122,35 @@ func (s *Session) Finish() error {
 	return nil
 }
 
-func (s *Session) Result(playerID string) (int64, error) {
+func (s *Session) Result(playerID string) (valueobject.Money, error) {
 	if s.status != StatusFinished {
-		return 0, ErrSessionNotFinished
+		return valueobject.Money{}, ErrSessionNotFinished
 	}
 
 	p, ok := s.players[playerID]
 	if !ok {
-		return 0, ErrPlayerNotFound
+		return valueobject.Money{}, ErrPlayerNotFound
 	}
 
-	return p.totalMoneyCashedOut - p.totalMoneySpent, nil
+	return p.totalMoneyCashedOut.Sub(p.totalMoneySpent)
 }
 
-func (s *Session) totalBought() int64 {
-	var total int64
+func (s *Session) totalBought() valueobject.Money {
+	total := valueobject.Money{}
+
 	for _, p := range s.players {
-		total += p.totalMoneySpent
+		total = total.Add(p.totalMoneySpent)
 	}
+
 	return total
 }
 
-func (s *Session) totalCashedOut() int64 {
-	var total int64
+func (s *Session) totalCashedOut() valueobject.Money {
+	total := valueobject.Money{}
+
 	for _, p := range s.players {
-		total += p.totalMoneyCashedOut
+		total = total.Add(p.totalMoneyCashedOut)
 	}
+
 	return total
 }
