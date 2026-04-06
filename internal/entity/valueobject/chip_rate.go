@@ -1,5 +1,7 @@
 package valueobject
 
+import er "github.com/ishee11/poc/internal/entity/errors"
+
 type ChipRate struct {
 	value int64
 }
@@ -11,6 +13,9 @@ func NewChipRate(v int64) ChipRate {
 	return ChipRate{value: v}
 }
 
-func (r ChipRate) ToMoney(chips int64) int64 {
-	return r.value * chips
+func (r ChipRate) ToMoney(chips int64) (Money, error) {
+	if chips <= 0 {
+		return Money{}, er.ErrInvalidChips
+	}
+	return NewMoney(r.value * chips)
 }

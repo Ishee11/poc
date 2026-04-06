@@ -60,7 +60,6 @@ func (s *Session) BuyChips(opID, playerID string, chips int64) error {
 
 	p.ApplyBuyIn(buyIn.chips, buyIn.money)
 
-	s.buyIns = append(s.buyIns, buyIn)
 	s.operationIDs[opID] = struct{}{}
 
 	return nil
@@ -89,7 +88,6 @@ func (s *Session) CashOut(opID, playerID string, chips int64) error {
 	if err := p.ApplyCashOut(cashOut.chips, cashOut.money); err != nil {
 		return err
 	}
-	s.cashOuts = append(s.cashOuts, cashOut)
 
 	s.operationIDs[opID] = struct{}{}
 

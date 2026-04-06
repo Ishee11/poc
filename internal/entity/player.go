@@ -1,10 +1,12 @@
 package entity
 
+import "github.com/ishee11/poc/internal/entity/valueobject"
+
 type SessionPlayer struct {
 	playerID string
 
-	totalChipsBought int64
-	totalMoneySpent  int64
+	totalMoneySpent     valueobject.Money
+	totalMoneyCashedOut valueobject.Money
 
 	totalChipsCashedOut int64
 	totalMoneyCashedOut int64
@@ -21,18 +23,18 @@ func (p *SessionPlayer) CurrentChips() int64 {
 	return p.totalChipsBought - p.totalChipsCashedOut
 }
 
-func (p *SessionPlayer) ApplyBuyIn(chips, money int64) error {
+func (p *SessionPlayer) ApplyBuyIn(chips int64, money valueobject.Money) error {
 	if chips <= 0 {
 		return ErrInvalidChips
 	}
 
 	p.totalChipsBought += chips
-	p.totalMoneySpent += money
+	p.totalMoneySpent = p.totalMoneySpent.Add(money)
 
 	return nil
 }
 
-func (p *SessionPlayer) ApplyCashOut(chips, money int64) error {
+func (p *SessionPlayer) ApplyCashOut(chips int64, money valueobject.Money) error {
 	if chips <= 0 {
 		return ErrInvalidChips
 	}
@@ -42,7 +44,7 @@ func (p *SessionPlayer) ApplyCashOut(chips, money int64) error {
 	}
 
 	p.totalChipsCashedOut += chips
-	p.totalMoneyCashedOut += money
+	p.totalMoneyCashedOut = p.totalMoneyCashedOut.Add(money)
 
 	return nil
 }
