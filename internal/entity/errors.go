@@ -11,4 +11,8 @@ var (
 	ErrPlayerNotFound    = errors.New("player not found")
 	ErrPlayerStillInGame = errors.New("player still in game")
 	ErrNotEnoughChips    = errors.New("not enough chips")
+
+	ErrPlayersStillInGame = errors.New("players still have chips in game")
+	ErrSessionNotFinished = errors.New("session is not finished")
+	ErrUnbalancedSession  = errors.New("session money is not balanced")
 )

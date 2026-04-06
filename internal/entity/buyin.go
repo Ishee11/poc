@@ -1,6 +1,10 @@
 package entity
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ishee11/poc/internal/entity/valueobject"
+)
 
 type BuyIn struct {
 	id       string
@@ -9,7 +13,7 @@ type BuyIn struct {
 	money    int64
 }
 
-func NewBuyIn(id, playerID string, chips int64, rate ChipRate) (BuyIn, error) {
+func NewBuyIn(id, playerID string, chips int64, rate valueobject.ChipRate) (BuyIn, error) {
 	if id == "" {
 		return BuyIn{}, fmt.Errorf("empty id")
 	}

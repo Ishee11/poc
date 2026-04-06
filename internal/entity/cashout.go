@@ -1,6 +1,10 @@
 package entity
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ishee11/poc/internal/entity/valueobject"
+)
 
 type CashOut struct {
 	id       string
@@ -9,7 +13,7 @@ type CashOut struct {
 	money    int64
 }
 
-func NewCashOut(id, playerID string, chips int64, rate ChipRate) (CashOut, error) {
+func NewCashOut(id, playerID string, chips int64, rate valueobject.ChipRate) (CashOut, error) {
 	if id == "" {
 		return CashOut{}, fmt.Errorf("empty id")
 	}

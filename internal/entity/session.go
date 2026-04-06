@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"fmt"
+	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
 const (
@@ -14,7 +14,7 @@ type Status string
 
 type Session struct {
 	id     string
-	rate   ChipRate
+	rate   valueobject.ChipRate
 	status Status
 
 	players  map[string]*SessionPlayer
@@ -31,7 +31,7 @@ func NewSession(id string, rate int64) *Session {
 
 	return &Session{
 		id:     id,
-		rate:   NewChipRate(rate),
+		rate:   valueobject.NewChipRate(rate),
 		status: StatusCreated,
 
 		players:      make(map[string]*SessionPlayer),
@@ -39,20 +39,6 @@ func NewSession(id string, rate int64) *Session {
 		cashOuts:     make([]CashOut, 0),
 		operationIDs: make(map[string]struct{}),
 	}
-}
-
-func (p *SessionPlayer) CurrentChips() int64 {
-	return p.totalChipsBought - p.totalChipsCashedOut
-}
-
-func (p *SessionPlayer) ApplyBuyIn(chips, money int64) {
-	p.totalChipsBought += chips
-	p.totalMoneySpent += money
-}
-
-func (p *SessionPlayer) ApplyCashOut(chips, money int64) {
-	p.totalChipsCashedOut += chips
-	p.totalMoneyCashedOut += money
 }
 
 func (s *Session) BuyChips(opID, playerID string, chips int64) error {
@@ -67,7 +53,7 @@ func (s *Session) BuyChips(opID, playerID string, chips int64) error {
 
 	p, exists := s.players[playerID]
 	if !exists {
-		p = &SessionPlayer{playerID: playerID}
+		p = NewSessionPlayer(playerID)
 		s.players[playerID] = p
 	}
 
@@ -99,18 +85,14 @@ func (s *Session) CashOut(opID, playerID string, chips int64) error {
 		return ErrPlayerNotFound
 	}
 
-	current := p.CurrentChips()
-
-	if chips > current {
-		return fmt.Errorf("%w: have %d, want %d", ErrNotEnoughChips, current, chips)
-	}
-
 	cashOut, err := NewCashOut(opID, playerID, chips, s.rate)
 	if err != nil {
 		return err
 	}
 
-	p.ApplyCashOut(cashOut.chips, cashOut.money)
+	if err := p.ApplyCashOut(cashOut.chips, cashOut.money); err != nil {
+		return err
+	}
 	s.cashOuts = append(s.cashOuts, cashOut)
 
 	s.operationIDs[opID] = struct{}{}
@@ -132,19 +114,45 @@ func (s *Session) Finish() error {
 		return ErrSessionNotActive
 	}
 
+	for _, p := range s.players {
+		if p.CurrentChips() != 0 {
+			return ErrPlayersStillInGame
+		}
+	}
+
+	if s.totalBought() != s.totalCashedOut() {
+		return ErrUnbalancedSession
+	}
+
 	s.status = StatusFinished
 	return nil
 }
 
 func (s *Session) Result(playerID string) (int64, error) {
+	if s.status != StatusFinished {
+		return 0, ErrSessionNotFinished
+	}
+
 	p, ok := s.players[playerID]
 	if !ok {
 		return 0, ErrPlayerNotFound
 	}
 
-	if p.CurrentChips() > 0 {
-		return 0, ErrPlayerStillInGame
-	}
-
 	return p.totalMoneyCashedOut - p.totalMoneySpent, nil
+}
+
+func (s *Session) totalBought() int64 {
+	var total int64
+	for _, p := range s.players {
+		total += p.totalMoneySpent
+	}
+	return total
+}
+
+func (s *Session) totalCashedOut() int64 {
+	var total int64
+	for _, p := range s.players {
+		total += p.totalMoneyCashedOut
+	}
+	return total
 }

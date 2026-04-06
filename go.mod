@@ -1,4 +1,4 @@
-module github.com/evrone/go-clean-template
+module github.com/ishee11/poc
 
 go 1.24
 
