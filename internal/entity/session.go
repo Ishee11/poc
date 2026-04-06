@@ -122,7 +122,7 @@ func (s *Session) FinishSession() error {
 	return nil
 }
 
-func (s *Session) PlayerSessionResult(playerID string) (valueobject.Money, error) {
+func (s *Session) PlayerResult(playerID string) (valueobject.Money, error) {
 	if s.status != StatusFinished {
 		return valueobject.Money{}, ErrSessionNotFinished
 	}
