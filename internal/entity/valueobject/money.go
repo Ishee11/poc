@@ -1,6 +1,11 @@
 package valueobject
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var ErrNegativeMoney = errors.New("money cannot be negative")
 
 type Money struct {
 	amount int64
@@ -8,7 +13,7 @@ type Money struct {
 
 func NewMoney(amount int64) (Money, error) {
 	if amount < 0 {
-		return Money{}, fmt.Errorf("money cannot be negative")
+		return Money{}, ErrNegativeMoney
 	}
 	return Money{amount: amount}, nil
 }

@@ -3,9 +3,11 @@ package entity
 import "errors"
 
 var (
-	ErrSessionNotActive  = errors.New("session not active")
-	ErrSessionNotCreated = errors.New("session not created")
-	ErrSessionFinished   = errors.New("session finished")
+	ErrSessionNotActive      = errors.New("session not active")
+	ErrSessionNotCreated     = errors.New("session not created")
+	ErrSessionFinished       = errors.New("session finished")
+	ErrNotEnoughChipsOnTable = errors.New("not enough chips on table")
+	ErrInvalidChipAmount     = errors.New("invalid chip amount")
 
 	ErrInvalidChips           = errors.New("chips must be greater than 0")
 	ErrPlayerNotFound         = errors.New("player not found")

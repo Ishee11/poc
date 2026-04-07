@@ -6,6 +6,7 @@ var ErrInvalidChips = errors.New("invalid chips")
 var ErrInvalidMoney = errors.New("invalid money")
 var ErrInvalidConversion = errors.New("chips not divisible by rate")
 
+// сколько фишек можно купить за 1 рубль
 type ChipRate struct {
 	value int64
 }
@@ -26,15 +27,23 @@ func (r ChipRate) ToChips(money Money) (int64, error) {
 }
 
 func (r ChipRate) ChipsToMoney(chips int64) (Money, error) {
-	if chips <= 0 {
-		return Money{}, ErrInvalidChips
-	}
-
-	if chips%r.value != 0 {
-		return Money{}, ErrInvalidConversion
+	if err := r.ValidateCashOut(chips); err != nil {
+		return Money{}, err
 	}
 
 	return NewMoney(chips / r.value)
+}
+
+func (r ChipRate) ValidateCashOut(chips int64) error {
+	if chips <= 0 {
+		return ErrInvalidChips
+	}
+
+	if chips%r.value != 0 {
+		return ErrInvalidConversion
+	}
+
+	return nil
 }
 
 func (r ChipRate) Value() int64 {
