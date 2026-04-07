@@ -1,0 +1,40 @@
+package entity
+
+import (
+	"time"
+)
+
+type OperationType string
+type OperationID string
+type PlayerID string
+
+const (
+	OperationBuyIn   OperationType = "buy_in"
+	OperationCashOut OperationType = "cash_out"
+)
+
+type Operation struct {
+	id            OperationID
+	sessionID     SessionID
+	operationType OperationType
+	playerID      PlayerID
+	chips         int64
+	createdAt     time.Time
+}
+
+func NewOperation(id OperationID, sessionID SessionID, operationType OperationType, playerID PlayerID, chips int64, date time.Time) (*Operation, error) {
+	if chips <= 0 {
+		return nil, ErrInvalidChips
+	}
+	if operationType != OperationBuyIn && operationType != OperationCashOut {
+		return nil, ErrInvalidOperationType
+	}
+	return &Operation{
+		id:            id,
+		sessionID:     sessionID,
+		operationType: operationType,
+		playerID:      playerID,
+		chips:         chips,
+		createdAt:     date,
+	}, nil
+}

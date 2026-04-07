@@ -19,4 +19,6 @@ var (
 	ErrSessionNotFound      = errors.New("session not found")
 	ErrSessionAlreadyExists = errors.New("session already exists")
 	ErrInvalidMoney         = errors.New("invalid money")
+
+	ErrInvalidOperationType = errors.New("invalid operation type")
 )
