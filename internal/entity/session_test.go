@@ -1,116 +1,246 @@
 package entity
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
-func newActiveSession() *Session {
-	s := NewSession("s1", 2) // 2 chips за 1 money
-	_ = s.StartSession()
-	return s
+func TestSession_BuyIn(t *testing.T) {
+	chipRate := valueobject.NewChipRate(2)
+
+	tt := []struct {
+		name    string
+		chips   int64
+		wantErr bool
+		status  Status
+	}{
+		{"valid buyin", 1000, false, StatusActive},
+		{"zero chips", 0, true, StatusActive},
+		{"negative chips", -1000, true, StatusActive},
+		{"invalid status", 1000, true, StatusFinished},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSession("s1", chipRate)
+			s.status = tc.status
+
+			before := s.TotalBuyIn()
+
+			err := s.BuyIn(tc.chips)
+
+			// проверка: ожидаемая ошибка / её отсутствие
+			if !tc.wantErr && err != nil {
+				t.Errorf("expected no error, got: %v", err)
+			}
+			if tc.wantErr && err == nil {
+				t.Errorf("expected error, got nil")
+			}
+
+			// ДОБАВЛЕНО: при ошибке состояние не должно меняться
+			if tc.wantErr {
+				if s.TotalBuyIn() != before {
+					t.Fatal("state changed on error")
+				}
+				return
+			}
+
+			// проверка: при успешной операции состояние должно измениться
+			if s.TotalBuyIn() != before+tc.chips {
+				t.Fatalf("expected buyin %d, got %d", tc.chips, s.TotalBuyIn())
+			}
+
+			// ДОБАВЛЕНО: проверка инварианта
+			if s.TotalChips() != s.TotalBuyIn() {
+				t.Fatal("invalid total chips after buyin")
+			}
+		})
+	}
 }
 
-func mustMoney(t *testing.T, amount int64) valueobject.Money {
-	m, err := valueobject.NewMoney(amount)
-	if err != nil {
-		t.Fatalf("invalid money: %v", err)
+func TestSession_CashOut(t *testing.T) {
+	chipRate := valueobject.NewChipRate(2)
+
+	tt := []struct {
+		name         string
+		chipsCashOut int64
+		totalBuyIn   int64
+		wantErr      bool
+		status       Status
+	}{
+		{"valid CashOut", 1000, 1000, false, StatusActive},
+		{"not enough chips", 1000, 500, true, StatusActive},
+		{"negative chips", -1000, 1000, true, StatusActive},
+		{"zero chips", 0, 1000, true, StatusActive}, // ДОБАВЛЕНО
+		{"invalid status", 1000, 1000, true, StatusFinished},
+		{"partial cashout", 300, 1000, false, StatusActive},
 	}
-	return m
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSession("s1", chipRate)
+			s.status = tc.status
+			s.totalBuyIn = tc.totalBuyIn
+
+			before := s.TotalCashOut()
+
+			err := s.CashOut(tc.chipsCashOut)
+
+			// проверка: ожидаемая ошибка и отсутствие изменений состояния
+			// мы ОЖИДАЕМ ошибку
+			if tc.wantErr {
+				// если ошибка отсутствует, то тест не пройден
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				// если ошибка присутствует, то состояние не должно измениться
+				// если состояние изменилось, то тест не пройден
+				if s.TotalCashOut() != before {
+					t.Fatal("state changed on error")
+				}
+				// если ошибка присутствует, то тест пройден
+				// нет смысла выполнять код ниже
+				return
+			}
+
+			// проверка: успешное выполнение без ошибки
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// проверка: состояние изменилось корректно
+			if s.TotalCashOut() != before+tc.chipsCashOut {
+				t.Fatal("cashout not applied")
+			}
+			// проверка инварианта
+			if s.TotalChips() != tc.totalBuyIn-tc.chipsCashOut {
+				t.Fatal("invalid total chips")
+			}
+		})
+	}
 }
 
 func TestSession_Finish(t *testing.T) {
-	t.Run("fails if chips remain", func(t *testing.T) {
-		s := newActiveSession()
+	chipRate := valueobject.NewChipRate(2)
 
-		_ = s.PlayerBuyIn("op1", "p1", mustMoney(t, 100)) // → 200 chips
+	tests := []struct {
+		name         string
+		status       Status
+		totalBuyIn   int64
+		totalCashOut int64
+		wantErr      bool
+	}{
+		{"valid finish", StatusActive, 1000, 1000, false},
+		{"not active", StatusFinished, 1000, 1000, true},
+		{"not settled", StatusActive, 1000, 500, true},
+	}
 
-		err := s.FinishSession()
-		if !errors.Is(err, ErrPlayersStillInGame) {
-			t.Fatalf("expected ErrPlayersStillInGame, got %v", err)
-		}
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSession("s1", chipRate)
+			s.status = tc.status
+			s.totalBuyIn = tc.totalBuyIn
+			s.totalCashOut = tc.totalCashOut
 
-	t.Run("fails if unbalanced", func(t *testing.T) {
-		s := newActiveSession()
+			err := s.Finish()
 
-		// p1: +200 chips
-		_ = s.PlayerBuyIn("op1", "p1", mustMoney(t, 100))
+			// CASE: ожидаем ошибку
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
 
-		// p2: +200 chips
-		_ = s.PlayerBuyIn("op2", "p2", mustMoney(t, 100))
+				// состояние не должно измениться
+				if s.Status() != tc.status {
+					t.Fatal("status changed on error")
+				}
+				return
+			}
 
-		// корректный cashout (всё обнулили)
-		_ = s.PlayerCashOut("op3", "p1", 200)
-		_ = s.PlayerCashOut("op4", "p2", 200)
+			// CASE: ожидаем успех
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		// ломаем баланс вручную (доменный инвариант)
-		extra := mustMoney(t, 50)
-		s.players["p1"].totalMoneyCashedOut =
-			s.players["p1"].totalMoneyCashedOut.Add(extra)
-
-		err := s.FinishSession()
-		if !errors.Is(err, ErrUnbalancedSession) {
-			t.Fatalf("expected ErrUnbalancedSession, got %v", err)
-		}
-	})
-
-	t.Run("success", func(t *testing.T) {
-		s := newActiveSession()
-
-		_ = s.PlayerBuyIn("op1", "p1", mustMoney(t, 100)) // 200 chips
-		_ = s.PlayerCashOut("op2", "p1", 200)             // обратно 100 money
-
-		if err := s.FinishSession(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		if s.Status() != StatusFinished {
-			t.Fatalf("expected finished, got %s", s.Status())
-		}
-	})
+			// состояние должно измениться
+			if s.Status() != StatusFinished {
+				t.Fatalf("expected status finished, got %s", s.Status())
+			}
+		})
+	}
 }
 
-func TestSession_PlayerResult(t *testing.T) {
-	t.Run("fails if not finished", func(t *testing.T) {
-		s := newActiveSession()
+func TestSession_BuyIn_Multiple(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
 
-		_, err := s.PlayerResult("p1")
-		if !errors.Is(err, ErrSessionNotFinished) {
-			t.Fatalf("expected ErrSessionNotFinished, got %v", err)
-		}
-	})
+	_ = s.BuyIn(100)
+	_ = s.BuyIn(200)
 
-	t.Run("player not found", func(t *testing.T) {
-		s := newActiveSession()
-		_ = s.FinishSession()
+	if s.TotalBuyIn() != 300 {
+		t.Fatalf("expected 300, got %d", s.TotalBuyIn())
+	}
+}
 
-		_, err := s.PlayerResult("unknown")
-		if !errors.Is(err, ErrPlayerNotFound) {
-			t.Fatalf("expected ErrPlayerNotFound, got %v", err)
-		}
-	})
+func TestSession_CashOut_Multiple(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
 
-	t.Run("success", func(t *testing.T) {
-		s := newActiveSession()
+	_ = s.BuyIn(1000)
 
-		// p1: внес 100 → получил 200 chips
-		_ = s.PlayerBuyIn("op1", "p1", mustMoney(t, 100))
+	_ = s.CashOut(400)
+	_ = s.CashOut(600)
 
-		// вывел все 200 chips → получил обратно 100
-		_ = s.PlayerCashOut("op2", "p1", 200)
+	if s.TotalCashOut() != 1000 {
+		t.Fatalf("expected 1000, got %d", s.TotalCashOut())
+	}
 
-		_ = s.FinishSession()
+	if s.TotalChips() != 0 {
+		t.Fatal("expected 0 chips")
+	}
+}
 
-		res, err := s.PlayerResult("p1")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+func TestSession_Flow(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
 
-		if res.Amount() != 0 {
-			t.Fatalf("expected 0, got %d", res.Amount())
-		}
-	})
+	_ = s.BuyIn(1000)
+	_ = s.CashOut(1000)
+
+	err := s.Finish()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if s.Status() != StatusFinished {
+		t.Fatal("session not finished")
+	}
+}
+
+// нельзя завершить если остались фишки (через flow)
+func TestSession_Flow_NotSettled(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
+
+	_ = s.BuyIn(1000)
+	_ = s.CashOut(500)
+
+	err := s.Finish()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+// после Finish операции запрещены
+func TestSession_AfterFinish_Operations(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
+
+	_ = s.BuyIn(1000)
+	_ = s.CashOut(1000)
+	_ = s.Finish()
+
+	if err := s.BuyIn(100); err == nil {
+		t.Fatal("expected error on buyin after finish")
+	}
+
+	if err := s.CashOut(100); err == nil {
+		t.Fatal("expected error on cashout after finish")
+	}
 }
