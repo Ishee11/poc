@@ -23,4 +23,6 @@ var (
 	ErrInvalidMoney         = errors.New("invalid money")
 
 	ErrInvalidOperationType = errors.New("invalid operation type")
+
+	ErrDuplicateOperation = errors.New("duplicate operation")
 )

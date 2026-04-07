@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -10,6 +11,13 @@ type BuyInUseCase struct {
 	opRepo      OperationRepository
 	sessionRepo SessionRepository
 	txManager   TxManager
+}
+
+type BuyInCommand struct {
+	OperationID entity.OperationID
+	SessionID   entity.SessionID
+	PlayerID    entity.PlayerID
+	Chips       int64
 }
 
 func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
@@ -29,6 +37,9 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 
 		err = uc.opRepo.Save(tx, op)
 		if err != nil {
+			if errors.Is(err, entity.ErrDuplicateOperation) {
+				return nil
+			}
 			return err
 		}
 
