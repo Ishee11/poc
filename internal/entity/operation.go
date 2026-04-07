@@ -17,12 +17,12 @@ type Operation struct {
 	id            OperationID
 	sessionID     SessionID
 	operationType OperationType
-	playerID      string
+	playerID      PlayerID
 	chips         int64
 	createdAt     time.Time
 }
 
-func NewOperation(id OperationID, sessionID SessionID, operationType OperationType, playerID string, chips int64, date time.Time) (*Operation, error) {
+func NewOperation(id OperationID, sessionID SessionID, operationType OperationType, playerID PlayerID, chips int64, date time.Time) (*Operation, error) {
 	if chips <= 0 {
 		return nil, ErrInvalidChips
 	}
