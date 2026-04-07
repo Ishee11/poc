@@ -70,18 +70,20 @@ func TestSession_CashOut(t *testing.T) {
 		status       Status
 	}{
 		{"valid CashOut", 1000, 1000, false, StatusActive},
-		{"not enough chips", 1000, 500, true, StatusActive},
+		// УБРАНО: проверка "not enough chips" — это теперь ответственность usecase, а не Session
 		{"negative chips", -1000, 1000, true, StatusActive},
 		{"zero chips", 0, 1000, true, StatusActive}, // ДОБАВЛЕНО
 		{"invalid status", 1000, 1000, true, StatusFinished},
 		{"partial cashout", 300, 1000, false, StatusActive},
+		// ДОБАВЛЕНО: теперь допускаем уход в минус (cache не является источником истины)
+		{"cashout exceeds table chips (allowed in entity)", 1000, 500, false, StatusActive},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			s := NewSession("s1", chipRate)
 			s.status = tc.status
-			s.totalBuyIn = tc.totalBuyIn
+			s.totalBuyInCache = tc.totalBuyIn
 
 			before := s.TotalCashOut()
 
@@ -140,8 +142,8 @@ func TestSession_Finish(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			s := NewSession("s1", chipRate)
 			s.status = tc.status
-			s.totalBuyIn = tc.totalBuyIn
-			s.totalCashOut = tc.totalCashOut
+			s.totalBuyInCache = tc.totalBuyIn
+			s.totalCashOutCache = tc.totalCashOut
 
 			err := s.Finish()
 
@@ -242,5 +244,29 @@ func TestSession_AfterFinish_Operations(t *testing.T) {
 
 	if err := s.CashOut(100); err == nil {
 		t.Fatal("expected error on cashout after finish")
+	}
+}
+
+// фиксируем, что cache может уходить в минус
+func TestSession_CashOut_CanGoNegative(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
+
+	_ = s.BuyIn(500)
+	_ = s.CashOut(1000)
+
+	if s.TotalChips() != -500 {
+		t.Fatalf("expected -500, got %d", s.TotalChips())
+	}
+}
+
+// проверка согласованности вычислений
+func TestSession_TotalChips_Consistency(t *testing.T) {
+	s := NewSession("s1", valueobject.NewChipRate(2))
+
+	_ = s.BuyIn(1000)
+	_ = s.CashOut(300)
+
+	if s.TotalChips() != 700 {
+		t.Fatalf("expected 700, got %d", s.TotalChips())
 	}
 }
