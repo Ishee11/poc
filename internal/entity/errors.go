@@ -22,6 +22,7 @@ var (
 	ErrInvalidMoney         = errors.New("invalid money")
 
 	ErrInvalidOperationType = errors.New("invalid operation type")
+	ErrInvalidReference     = errors.New("invalid reference")
 
 	ErrDuplicateOperation = errors.New("duplicate operation")
 	ErrPlayerNotInGame    = errors.New("player not in game")

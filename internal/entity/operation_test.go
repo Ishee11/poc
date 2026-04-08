@@ -80,23 +80,105 @@ func TestNewOperation(t *testing.T) {
 			}
 
 			// проверяем что данные записались
-			if op.id != "op1" {
+			if op.ID() != "op1" {
 				t.Fatalf("wrong id")
 			}
-			if op.sessionID != "s1" {
+			if op.SessionID() != "s1" {
 				t.Fatalf("wrong sessionID")
 			}
-			if op.playerID != "p1" {
+			if op.PlayerID() != "p1" {
 				t.Fatalf("wrong playerID")
 			}
-			if op.chips != tc.chips {
+			if op.Chips() != tc.chips {
 				t.Fatalf("wrong chips")
 			}
-			if op.operationType != tc.opType {
+			if op.Type() != tc.opType {
 				t.Fatalf("wrong operationType")
 			}
 			if !op.createdAt.Equal(now) {
 				t.Fatalf("wrong createdAt")
+			}
+		})
+	}
+}
+
+func TestNewReversalOperation(t *testing.T) {
+	now := time.Now()
+
+	refID := OperationID("ref1")
+
+	tt := []struct {
+		name          string
+		chips         int64
+		referenceID   OperationID
+		wantErr       bool
+		expectedError error
+	}{
+		{
+			name:        "success",
+			chips:       100,
+			referenceID: refID,
+			wantErr:     false,
+		},
+		{
+			name:          "chips zero",
+			chips:         0,
+			referenceID:   refID,
+			wantErr:       true,
+			expectedError: ErrInvalidChips,
+		},
+		{
+			name:          "empty referenceID",
+			chips:         100,
+			referenceID:   "",
+			wantErr:       true,
+			expectedError: ErrInvalidReference,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			op, err := NewReversalOperation(
+				"op1",
+				"s1",
+				"p1",
+				tc.chips,
+				tc.referenceID,
+				now,
+			)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				if err != tc.expectedError {
+					t.Fatalf("expected %v, got %v", tc.expectedError, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if op == nil {
+				t.Fatalf("operation is nil")
+			}
+
+			if op.Type() != OperationReversal {
+				t.Fatalf("wrong operation type")
+			}
+
+			if op.ReferenceID() == nil {
+				t.Fatalf("referenceID is nil")
+			}
+
+			if *op.ReferenceID() != tc.referenceID {
+				t.Fatalf("wrong referenceID")
+			}
+
+			if op.Chips() != tc.chips {
+				t.Fatalf("wrong chips")
 			}
 		})
 	}
