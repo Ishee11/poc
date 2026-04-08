@@ -12,7 +12,6 @@ var (
 	ErrInvalidChips           = errors.New("chips must be greater than 0")
 	ErrPlayerNotFound         = errors.New("player not found")
 	ErrPlayerStillInGame      = errors.New("player still in game")
-	ErrTableNotSettled        = errors.New("table not settled")
 	ErrInsufficientTableChips = errors.New("not enough chips")
 
 	ErrPlayersStillInGame   = errors.New("players still have chips in game")
