@@ -38,3 +38,23 @@ func NewOperation(id OperationID, sessionID SessionID, operationType OperationTy
 		createdAt:     date,
 	}, nil
 }
+
+func (o *Operation) ID() OperationID {
+	return o.id
+}
+
+func (o *Operation) SessionID() SessionID {
+	return o.sessionID
+}
+
+func (o *Operation) PlayerID() PlayerID {
+	return o.playerID
+}
+
+func (o *Operation) Type() OperationType {
+	return o.operationType
+}
+
+func (o *Operation) Chips() int64 {
+	return o.chips
+}
