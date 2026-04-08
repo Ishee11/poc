@@ -2,8 +2,15 @@ package usecase
 
 import "github.com/ishee11/poc/internal/entity"
 
+type SessionAggregates struct {
+	TotalBuyIn   int64
+	TotalCashOut int64
+}
+
 type OperationRepository interface {
 	Save(tx Tx, op *entity.Operation) error
+	GetLastOperationType(tx Tx, sessionID entity.SessionID, playerID entity.PlayerID) (entity.OperationType, bool, error)
+	GetSessionAggregates(tx Tx, sessionID entity.SessionID) (SessionAggregates, error)
 }
 type SessionRepository interface {
 	FindByID(tx Tx, sessionID entity.SessionID) (*entity.Session, error)

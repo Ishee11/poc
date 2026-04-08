@@ -25,4 +25,7 @@ var (
 	ErrInvalidOperationType = errors.New("invalid operation type")
 
 	ErrDuplicateOperation = errors.New("duplicate operation")
+	ErrPlayerNotInGame    = errors.New("player not in game")
+	ErrInvalidOperation   = errors.New("invalid operation")
+	ErrInvalidCashOut     = errors.New("invalid cash out")
 )
