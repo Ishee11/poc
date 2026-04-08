@@ -70,10 +70,6 @@ func (s *Session) Finish() error {
 		return ErrSessionNotActive
 	}
 
-	if s.TotalChips() != 0 {
-		return ErrTableNotSettled
-	}
-
 	s.status = StatusFinished
 
 	return nil

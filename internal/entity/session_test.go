@@ -30,7 +30,6 @@ func TestSession_BuyIn(t *testing.T) {
 
 			err := s.BuyIn(tc.chips)
 
-			// проверка: ожидаемая ошибка / её отсутствие
 			if !tc.wantErr && err != nil {
 				t.Errorf("expected no error, got: %v", err)
 			}
@@ -38,7 +37,6 @@ func TestSession_BuyIn(t *testing.T) {
 				t.Errorf("expected error, got nil")
 			}
 
-			// ДОБАВЛЕНО: при ошибке состояние не должно меняться
 			if tc.wantErr {
 				if s.TotalBuyIn() != before {
 					t.Fatal("state changed on error")
@@ -46,12 +44,10 @@ func TestSession_BuyIn(t *testing.T) {
 				return
 			}
 
-			// проверка: при успешной операции состояние должно измениться
 			if s.TotalBuyIn() != before+tc.chips {
 				t.Fatalf("expected buyin %d, got %d", tc.chips, s.TotalBuyIn())
 			}
 
-			// ДОБАВЛЕНО: проверка инварианта
 			if s.TotalChips() != s.TotalBuyIn() {
 				t.Fatal("invalid total chips after buyin")
 			}
@@ -70,12 +66,12 @@ func TestSession_CashOut(t *testing.T) {
 		status       Status
 	}{
 		{"valid CashOut", 1000, 1000, false, StatusActive},
-		// УБРАНО: проверка "not enough chips" — это теперь ответственность usecase, а не Session
 		{"negative chips", -1000, 1000, true, StatusActive},
-		{"zero chips", 0, 1000, true, StatusActive}, // ДОБАВЛЕНО
+		{"zero chips", 0, 1000, true, StatusActive},
 		{"invalid status", 1000, 1000, true, StatusFinished},
 		{"partial cashout", 300, 1000, false, StatusActive},
-		// ДОБАВЛЕНО: теперь допускаем уход в минус (cache не является источником истины)
+
+		// ДОБАВЛЕНО: допускаем уход в минус (entity не валидирует стол)
 		{"cashout exceeds table chips (allowed in entity)", 1000, 500, false, StatusActive},
 	}
 
@@ -89,33 +85,24 @@ func TestSession_CashOut(t *testing.T) {
 
 			err := s.CashOut(tc.chipsCashOut)
 
-			// проверка: ожидаемая ошибка и отсутствие изменений состояния
-			// мы ОЖИДАЕМ ошибку
 			if tc.wantErr {
-				// если ошибка отсутствует, то тест не пройден
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
-				// если ошибка присутствует, то состояние не должно измениться
-				// если состояние изменилось, то тест не пройден
 				if s.TotalCashOut() != before {
 					t.Fatal("state changed on error")
 				}
-				// если ошибка присутствует, то тест пройден
-				// нет смысла выполнять код ниже
 				return
 			}
 
-			// проверка: успешное выполнение без ошибки
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			// проверка: состояние изменилось корректно
 			if s.TotalCashOut() != before+tc.chipsCashOut {
 				t.Fatal("cashout not applied")
 			}
-			// проверка инварианта
+
 			if s.TotalChips() != tc.totalBuyIn-tc.chipsCashOut {
 				t.Fatal("invalid total chips")
 			}
@@ -127,45 +114,35 @@ func TestSession_Finish(t *testing.T) {
 	chipRate := valueobject.NewChipRate(2)
 
 	tests := []struct {
-		name         string
-		status       Status
-		totalBuyIn   int64
-		totalCashOut int64
-		wantErr      bool
+		name    string
+		status  Status
+		wantErr bool
 	}{
-		{"valid finish", StatusActive, 1000, 1000, false},
-		{"not active", StatusFinished, 1000, 1000, true},
-		{"not settled", StatusActive, 1000, 500, true},
+		{"valid finish", StatusActive, false},
+		{"not active", StatusFinished, true},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			s := NewSession("s1", chipRate)
 			s.status = tc.status
-			s.totalBuyInCache = tc.totalBuyIn
-			s.totalCashOutCache = tc.totalCashOut
 
 			err := s.Finish()
 
-			// CASE: ожидаем ошибку
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
-
-				// состояние не должно измениться
 				if s.Status() != tc.status {
 					t.Fatal("status changed on error")
 				}
 				return
 			}
 
-			// CASE: ожидаем успех
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			// состояние должно измениться
 			if s.Status() != StatusFinished {
 				t.Fatalf("expected status finished, got %s", s.Status())
 			}
@@ -214,19 +191,6 @@ func TestSession_Flow(t *testing.T) {
 
 	if s.Status() != StatusFinished {
 		t.Fatal("session not finished")
-	}
-}
-
-// нельзя завершить если остались фишки (через flow)
-func TestSession_Flow_NotSettled(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
-
-	_ = s.BuyIn(1000)
-	_ = s.CashOut(500)
-
-	err := s.Finish()
-	if err == nil {
-		t.Fatal("expected error, got nil")
 	}
 }
 

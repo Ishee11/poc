@@ -28,4 +28,5 @@ var (
 	ErrPlayerNotInGame    = errors.New("player not in game")
 	ErrInvalidOperation   = errors.New("invalid operation")
 	ErrInvalidCashOut     = errors.New("invalid cash out")
+	ErrTableNotSettled    = errors.New("table not settled")
 )
