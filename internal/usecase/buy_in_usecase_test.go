@@ -8,48 +8,6 @@ import (
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
-type operationRepoMock struct {
-	saveFn func(tx Tx, op *entity.Operation) error
-}
-
-func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
-	return m.saveFn(tx, op)
-}
-
-func (m *operationRepoMock) GetLastOperationType(
-	tx Tx,
-	sessionID entity.SessionID,
-	playerID entity.PlayerID,
-) (entity.OperationType, bool, error) {
-	panic("not implemented")
-}
-
-func (m *operationRepoMock) GetSessionAggregates(
-	tx Tx,
-	sessionID entity.SessionID,
-) (SessionAggregates, error) {
-	panic("not implemented")
-}
-
-type sessionRepoMock struct {
-	findFn func(tx Tx, id entity.SessionID) (*entity.Session, error)
-	saveFn func(tx Tx, s *entity.Session) error
-}
-
-func (m *sessionRepoMock) FindByID(tx Tx, id entity.SessionID) (*entity.Session, error) {
-	return m.findFn(tx, id)
-}
-
-func (m *sessionRepoMock) Save(tx Tx, s *entity.Session) error {
-	return m.saveFn(tx, s)
-}
-
-type txManagerMock struct{}
-
-func (m *txManagerMock) RunInTx(fn func(tx Tx) error) error {
-	return fn(struct{}{})
-}
-
 func TestBuyInUseCase_Execute(t *testing.T) {
 	chipRate := valueobject.NewChipRate(2)
 
@@ -95,11 +53,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("invalid chips", func(t *testing.T) {
-		opRepo := &operationRepoMock{
-			saveFn: func(tx Tx, op *entity.Operation) error {
-				return nil
-			},
-		}
+		opRepo := &operationRepoMock{}
 
 		sessionRepo := &sessionRepoMock{}
 
@@ -124,20 +78,13 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 
 	t.Run("session not active", func(t *testing.T) {
 		session := entity.NewSession("s1", chipRate)
-		_ = session.Finish() // делаем неактивной
+		_ = session.Finish()
 
-		opRepo := &operationRepoMock{
-			saveFn: func(tx Tx, op *entity.Operation) error {
-				return nil
-			},
-		}
+		opRepo := &operationRepoMock{}
 
 		sessionRepo := &sessionRepoMock{
 			findFn: func(tx Tx, id entity.SessionID) (*entity.Session, error) {
 				return session, nil
-			},
-			saveFn: func(tx Tx, s *entity.Session) error {
-				return nil
 			},
 		}
 
