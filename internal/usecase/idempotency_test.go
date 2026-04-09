@@ -10,7 +10,7 @@ import (
 func TestIdempotent(t *testing.T) {
 
 	t.Run("empty requestID", func(t *testing.T) {
-		err := Idempotent(nil, nil, "", func() error {
+		err := Idempotent(nil, "", func() error {
 			return nil
 		})
 
@@ -19,39 +19,10 @@ func TestIdempotent(t *testing.T) {
 		}
 	})
 
-	t.Run("already processed", func(t *testing.T) {
-		repo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return &entity.Operation{}, nil
-			},
-		}
-
+	t.Run("success execution", func(t *testing.T) {
 		called := false
 
-		err := Idempotent(nil, repo, "req-1", func() error {
-			called = true
-			return nil
-		})
-
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		if called {
-			t.Fatal("fn should not be called for idempotent request")
-		}
-	})
-
-	t.Run("first execution", func(t *testing.T) {
-		repo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return nil, nil
-			},
-		}
-
-		called := false
-
-		err := Idempotent(nil, repo, "req-1", func() error {
+		err := Idempotent(nil, "req-1", func() error {
 			called = true
 			return nil
 		})
@@ -65,19 +36,32 @@ func TestIdempotent(t *testing.T) {
 		}
 	})
 
-	t.Run("repo error", func(t *testing.T) {
-		repo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return nil, errors.New("db error")
-			},
-		}
+	t.Run("duplicate request treated as success", func(t *testing.T) {
+		called := false
 
-		err := Idempotent(nil, repo, "req-1", func() error {
-			return nil
+		err := Idempotent(nil, "req-1", func() error {
+			called = true
+			return entity.ErrDuplicateRequest
 		})
 
-		if err == nil {
-			t.Fatal("expected error")
+		if err != nil {
+			t.Fatalf("expected nil, got %v", err)
+		}
+
+		if !called {
+			t.Fatal("fn should be called")
+		}
+	})
+
+	t.Run("propagates error", func(t *testing.T) {
+		expectedErr := errors.New("db error")
+
+		err := Idempotent(nil, "req-1", func() error {
+			return expectedErr
+		})
+
+		if !errors.Is(err, expectedErr) {
+			t.Fatalf("expected %v, got %v", expectedErr, err)
 		}
 	})
 }
