@@ -154,6 +154,47 @@ func (r *inMemoryOperationRepo) ExistsReversal(tx Tx, targetID entity.OperationI
 	return false, nil
 }
 
+func (r *inMemoryOperationRepo) ListBySession(
+	tx Tx,
+	sessionID entity.SessionID,
+	limit int,
+	offset int,
+) ([]*entity.Operation, error) {
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// 1. фильтруем по sessionID
+	filtered := make([]*entity.Operation, 0)
+
+	for _, op := range r.operations {
+		if op.SessionID() == sessionID {
+			filtered = append(filtered, op)
+		}
+	}
+
+	// 2. порядок: DESC (последние сверху)
+	result := make([]*entity.Operation, 0)
+
+	start := len(filtered) - 1 - offset
+	if start < 0 {
+		return result, nil
+	}
+
+	count := 0
+
+	for i := start; i >= 0; i-- {
+		if limit > 0 && count >= limit {
+			break
+		}
+
+		result = append(result, filtered[i])
+		count++
+	}
+
+	return result, nil
+}
+
 // внутренний helper (БЕЗ lock)
 func (r *inMemoryOperationRepo) findByID(id entity.OperationID) *entity.Operation {
 	for _, op := range r.operations {
