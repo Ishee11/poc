@@ -2,13 +2,24 @@ package entity
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
-func TestSession_BuyIn(t *testing.T) {
-	chipRate := valueobject.NewChipRate(2)
+func mustRate(t *testing.T) valueobject.ChipRate {
+	r, err := valueobject.NewChipRate(2)
+	if err != nil {
+		t.Fatalf("failed to create chip rate: %v", err)
+	}
+	return r
+}
 
+func newSession(t *testing.T) *Session {
+	return NewSession("s1", mustRate(t), time.Now())
+}
+
+func TestSession_BuyIn(t *testing.T) {
 	tt := []struct {
 		name    string
 		chips   int64
@@ -23,25 +34,25 @@ func TestSession_BuyIn(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSession("s1", chipRate)
+			s := newSession(t)
 			s.status = tc.status
 
 			before := s.TotalBuyIn()
 
 			err := s.BuyIn(tc.chips)
 
-			if !tc.wantErr && err != nil {
-				t.Errorf("expected no error, got: %v", err)
-			}
-			if tc.wantErr && err == nil {
-				t.Errorf("expected error, got nil")
-			}
-
 			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
 				if s.TotalBuyIn() != before {
 					t.Fatal("state changed on error")
 				}
 				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			if s.TotalBuyIn() != before+tc.chips {
@@ -56,8 +67,6 @@ func TestSession_BuyIn(t *testing.T) {
 }
 
 func TestSession_CashOut(t *testing.T) {
-	chipRate := valueobject.NewChipRate(2)
-
 	tt := []struct {
 		name         string
 		chipsCashOut int64
@@ -70,14 +79,12 @@ func TestSession_CashOut(t *testing.T) {
 		{"zero chips", 0, 1000, true, StatusActive},
 		{"invalid status", 1000, 1000, true, StatusFinished},
 		{"partial cashout", 300, 1000, false, StatusActive},
-
-		// ДОБАВЛЕНО: допускаем уход в минус (entity не валидирует стол)
 		{"cashout exceeds table chips (allowed in entity)", 1000, 500, false, StatusActive},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSession("s1", chipRate)
+			s := newSession(t)
 			s.status = tc.status
 			s.totalBuyInCache = tc.totalBuyIn
 
@@ -111,8 +118,6 @@ func TestSession_CashOut(t *testing.T) {
 }
 
 func TestSession_Finish(t *testing.T) {
-	chipRate := valueobject.NewChipRate(2)
-
 	tests := []struct {
 		name    string
 		status  Status
@@ -124,7 +129,7 @@ func TestSession_Finish(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSession("s1", chipRate)
+			s := newSession(t)
 			s.status = tc.status
 
 			err := s.Finish()
@@ -151,10 +156,14 @@ func TestSession_Finish(t *testing.T) {
 }
 
 func TestSession_BuyIn_Multiple(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
+	s := newSession(t)
 
-	_ = s.BuyIn(100)
-	_ = s.BuyIn(200)
+	if err := s.BuyIn(100); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.BuyIn(200); err != nil {
+		t.Fatal(err)
+	}
 
 	if s.TotalBuyIn() != 300 {
 		t.Fatalf("expected 300, got %d", s.TotalBuyIn())
@@ -162,12 +171,18 @@ func TestSession_BuyIn_Multiple(t *testing.T) {
 }
 
 func TestSession_CashOut_Multiple(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
+	s := newSession(t)
 
-	_ = s.BuyIn(1000)
+	if err := s.BuyIn(1000); err != nil {
+		t.Fatal(err)
+	}
 
-	_ = s.CashOut(400)
-	_ = s.CashOut(600)
+	if err := s.CashOut(400); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CashOut(600); err != nil {
+		t.Fatal(err)
+	}
 
 	if s.TotalCashOut() != 1000 {
 		t.Fatalf("expected 1000, got %d", s.TotalCashOut())
@@ -179,13 +194,16 @@ func TestSession_CashOut_Multiple(t *testing.T) {
 }
 
 func TestSession_Flow(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
+	s := newSession(t)
 
-	_ = s.BuyIn(1000)
-	_ = s.CashOut(1000)
+	if err := s.BuyIn(1000); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CashOut(1000); err != nil {
+		t.Fatal(err)
+	}
 
-	err := s.Finish()
-	if err != nil {
+	if err := s.Finish(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -194,13 +212,18 @@ func TestSession_Flow(t *testing.T) {
 	}
 }
 
-// после Finish операции запрещены
 func TestSession_AfterFinish_Operations(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
+	s := newSession(t)
 
-	_ = s.BuyIn(1000)
-	_ = s.CashOut(1000)
-	_ = s.Finish()
+	if err := s.BuyIn(1000); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CashOut(1000); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Finish(); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.BuyIn(100); err == nil {
 		t.Fatal("expected error on buyin after finish")
@@ -211,24 +234,30 @@ func TestSession_AfterFinish_Operations(t *testing.T) {
 	}
 }
 
-// фиксируем, что cache может уходить в минус
 func TestSession_CashOut_CanGoNegative(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
+	s := newSession(t)
 
-	_ = s.BuyIn(500)
-	_ = s.CashOut(1000)
+	if err := s.BuyIn(500); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CashOut(1000); err != nil {
+		t.Fatal(err)
+	}
 
 	if s.TotalChips() != -500 {
 		t.Fatalf("expected -500, got %d", s.TotalChips())
 	}
 }
 
-// проверка согласованности вычислений
 func TestSession_TotalChips_Consistency(t *testing.T) {
-	s := NewSession("s1", valueobject.NewChipRate(2))
+	s := newSession(t)
 
-	_ = s.BuyIn(1000)
-	_ = s.CashOut(300)
+	if err := s.BuyIn(1000); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CashOut(300); err != nil {
+		t.Fatal(err)
+	}
 
 	if s.TotalChips() != 700 {
 		t.Fatalf("expected 700, got %d", s.TotalChips())
