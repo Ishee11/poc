@@ -9,7 +9,9 @@ import (
 )
 
 func TestIntegration_FullFlow(t *testing.T) {
-	opRepo := &inMemoryOperationRepo{}
+	opRepo := &inMemoryOperationRepo{
+		operations: []*entity.Operation{},
+	}
 	sessionRepo := newSessionRepo()
 	txManager := &txManagerStub{}
 
@@ -20,33 +22,38 @@ func TestIntegration_FullFlow(t *testing.T) {
 		t.Fatalf("failed to save session: %v", err)
 	}
 
-	buyInUC := BuyInUseCase{opRepo, sessionRepo, txManager}
-	cashOutUC := CashOutUseCase{opRepo, sessionRepo, txManager}
+	idGen := &operationIDGeneratorMock{}
+
+	buyInUC := BuyInUseCase{opRepo, sessionRepo, txManager, idGen}
+	cashOutUC := CashOutUseCase{opRepo, sessionRepo, txManager, idGen}
 	reverseUC := ReverseOperationUseCase{opRepo, sessionRepo, txManager}
 	finishUC := FinishSessionUseCase{opRepo, sessionRepo, txManager}
 
 	// --- 1. BuyIn ---
+	idGen.id = "op1"
 	if err := buyInUC.Execute(BuyInCommand{
-		OperationID: "op1",
-		SessionID:   "s1",
-		PlayerID:    "p1",
-		Chips:       100,
+		RequestID: "req-1",
+		SessionID: "s1",
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("buyin failed: %v", err)
 	}
 
 	// --- 2. CashOut ---
+	idGen.id = "op2"
 	if err := cashOutUC.Execute(CashOutCommand{
-		OperationID: "op2",
-		SessionID:   "s1",
-		PlayerID:    "p1",
-		Chips:       100,
+		RequestID: "req-2",
+		SessionID: "s1",
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("cashout failed: %v", err)
 	}
 
 	// --- 3. Reversal (отменяем cashout) ---
 	if err := reverseUC.Execute(ReverseOperationCommand{
+		RequestID:         "req-3",
 		OperationID:       "op3",
 		TargetOperationID: "op2",
 	}); err != nil {
@@ -61,11 +68,12 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 5. Повторный CashOut ---
+	idGen.id = "op4"
 	if err := cashOutUC.Execute(CashOutCommand{
-		OperationID: "op4",
-		SessionID:   "s1",
-		PlayerID:    "p1",
-		Chips:       100,
+		RequestID: "req-4",
+		SessionID: "s1",
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("cashout2 failed: %v", err)
 	}

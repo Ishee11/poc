@@ -16,13 +16,30 @@ func (r *inMemoryOperationRepo) Save(tx Tx, op *entity.Operation) error {
 	defer r.mu.Unlock()
 
 	for _, existing := range r.operations {
+		// защита по requestID (идемпотентность)
+		if existing.RequestID() == op.RequestID() {
+			return nil
+		}
+		// защита по ID (техническая)
 		if existing.ID() == op.ID() {
-			return entity.ErrDuplicateOperation
+			return nil
 		}
 	}
 
 	r.operations = append(r.operations, op)
 	return nil
+}
+
+func (r *inMemoryOperationRepo) GetByRequestID(tx Tx, requestID string) (*entity.Operation, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, op := range r.operations {
+		if op.RequestID() == requestID {
+			return op, nil
+		}
+	}
+	return nil, nil
 }
 
 func (r *inMemoryOperationRepo) GetLastOperationType(
@@ -34,17 +51,14 @@ func (r *inMemoryOperationRepo) GetLastOperationType(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// какие операции отменены
 	reversed := make(map[entity.OperationID]struct{})
 
-	// сначала собираем reversal
 	for _, op := range r.operations {
 		if op.Type() == entity.OperationReversal && op.ReferenceID() != nil {
 			reversed[*op.ReferenceID()] = struct{}{}
 		}
 	}
 
-	// идём с конца
 	for i := len(r.operations) - 1; i >= 0; i-- {
 		op := r.operations[i]
 
@@ -56,7 +70,6 @@ func (r *inMemoryOperationRepo) GetLastOperationType(
 			continue
 		}
 
-		// если операция отменена — пропускаем
 		if _, ok := reversed[op.ID()]; ok {
 			continue
 		}

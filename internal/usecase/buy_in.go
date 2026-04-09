@@ -1,56 +1,97 @@
 package usecase
 
 import (
-	"errors"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 )
 
+type OperationIDGenerator interface {
+	New() entity.OperationID
+}
+
 type BuyInUseCase struct {
 	opRepo      OperationRepository
 	sessionRepo SessionRepository
 	txManager   TxManager
+	idGen       OperationIDGenerator
 }
 
 type BuyInCommand struct {
-	OperationID entity.OperationID
-	SessionID   entity.SessionID
-	PlayerID    entity.PlayerID
-	Chips       int64
+	RequestID string
+
+	SessionID entity.SessionID
+	PlayerID  entity.PlayerID
+	Chips     int64
+}
+
+func NewBuyInUseCase(
+	opRepo OperationRepository,
+	sessionRepo SessionRepository,
+	txManager TxManager,
+	idGen OperationIDGenerator,
+) *BuyInUseCase {
+	return &BuyInUseCase{
+		opRepo:      opRepo,
+		sessionRepo: sessionRepo,
+		txManager:   txManager,
+		idGen:       idGen,
+	}
 }
 
 func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
+	if cmd.Chips <= 0 {
+		return entity.ErrInvalidChips
+	}
+
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		date := time.Now()
-		op, err := entity.NewOperation(
-			cmd.OperationID,
-			cmd.SessionID,
-			entity.OperationBuyIn,
-			cmd.PlayerID,
-			cmd.Chips,
-			date)
+
+		// 1. идемпотентность (ОСНОВНОЙ МЕХАНИЗМ)
+		existing, err := uc.opRepo.GetByRequestID(tx, cmd.RequestID)
 		if err != nil {
 			return err
 		}
-
-		err = uc.opRepo.Save(tx, op)
-		if err != nil {
-			if errors.Is(err, entity.ErrDuplicateOperation) {
-				return nil
-			}
-			return err
+		if existing != nil {
+			return nil
 		}
 
+		// 2. загружаем session
 		session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
 		if err != nil {
 			return err
 		}
 
+		if session.Status() != entity.StatusActive {
+			return entity.ErrSessionNotActive
+		}
+
+		// 3. бизнес-логика
 		if err := session.BuyIn(cmd.Chips); err != nil {
 			return err
 		}
 
+		// 4. создаём operation
+		opID := uc.idGen.New()
+
+		op, err := entity.NewOperation(
+			opID,
+			cmd.RequestID,
+			cmd.SessionID,
+			entity.OperationBuyIn,
+			cmd.PlayerID,
+			cmd.Chips,
+			time.Now(),
+		)
+		if err != nil {
+			return err
+		}
+
+		// 5. сохраняем operation
+		if err := uc.opRepo.Save(tx, op); err != nil {
+			return err
+		}
+
+		// 6. сохраняем session
 		if err := uc.sessionRepo.Save(tx, session); err != nil {
 			return err
 		}

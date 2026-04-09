@@ -1,30 +1,45 @@
 package usecase
 
 import (
-	"errors"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 )
 
-type CashOutCommand struct {
-	OperationID entity.OperationID
-	SessionID   entity.SessionID
-	PlayerID    entity.PlayerID
-	Chips       int64
+type IDGenerator interface {
+	New() entity.OperationID
 }
 
 type CashOutUseCase struct {
 	opRepo      OperationRepository
 	sessionRepo SessionRepository
 	txManager   TxManager
+	idGen       IDGenerator
+}
+
+type CashOutCommand struct {
+	RequestID string
+	SessionID entity.SessionID
+	PlayerID  entity.PlayerID
+	Chips     int64
 }
 
 func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 	if cmd.Chips <= 0 {
 		return entity.ErrInvalidChips
 	}
+
 	return uc.txManager.RunInTx(func(tx Tx) error {
+		// 1. идемпотентность (ранний выход)
+		existingOp, err := uc.opRepo.GetByRequestID(tx, cmd.RequestID)
+		if err != nil {
+			return err
+		}
+		if existingOp != nil {
+			return nil
+		}
+
+		// 2. получаем сессию
 		session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
 		if err != nil {
 			return err
@@ -34,7 +49,8 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 			return entity.ErrSessionNotActive
 		}
 
-		opType, found, err := uc.opRepo.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
+		// 3. проверяем состояние игрока
+		lastOpType, found, err := uc.opRepo.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
 		if err != nil {
 			return err
 		}
@@ -43,48 +59,47 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 			return entity.ErrPlayerNotInGame
 		}
 
-		if opType != entity.OperationBuyIn {
+		if lastOpType != entity.OperationBuyIn {
 			return entity.ErrInvalidOperation
 		}
 
-		sessionAggregates, err := uc.opRepo.GetSessionAggregates(tx, cmd.SessionID)
+		// 4. агрегаты по сессии
+		aggr, err := uc.opRepo.GetSessionAggregates(tx, cmd.SessionID)
 		if err != nil {
 			return err
 		}
 
-		tableChips := sessionAggregates.TotalBuyIn - sessionAggregates.TotalCashOut
+		tableChips := aggr.TotalBuyIn - aggr.TotalCashOut
 		if cmd.Chips > tableChips {
 			return entity.ErrInvalidCashOut
 		}
 
-		date := time.Now()
+		// 5. создаём операцию
+		opID := uc.idGen.New()
+
 		op, err := entity.NewOperation(
-			cmd.OperationID,
+			opID,
+			cmd.RequestID,
 			cmd.SessionID,
 			entity.OperationCashOut,
 			cmd.PlayerID,
 			cmd.Chips,
-			date)
+			time.Now(),
+		)
 		if err != nil {
 			return err
 		}
 
-		err = uc.opRepo.Save(tx, op)
-		if err != nil {
-			if errors.Is(err, entity.ErrDuplicateOperation) {
-				return nil
-			}
+		// 6. сохраняем
+		if err := uc.opRepo.Save(tx, op); err != nil {
 			return err
 		}
 
+		// 7. обновляем сессию
 		if err := session.CashOut(cmd.Chips); err != nil {
 			return err
 		}
 
-		if err := uc.sessionRepo.Save(tx, session); err != nil {
-			return err
-		}
-
-		return nil
+		return uc.sessionRepo.Save(tx, session)
 	})
 }

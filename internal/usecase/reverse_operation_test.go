@@ -17,6 +17,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 
 	targetOp, _ := entity.NewOperation(
 		"target",
+		"req-target",
 		"s1",
 		entity.OperationCashOut,
 		"p1",
@@ -34,6 +35,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
 				session := entity.NewSession("s1", rate, time.Now())
 
+				opRepo.getByRequestIDFn = func(tx Tx, requestID string) (*entity.Operation, error) {
+					return nil, nil
+				}
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return targetOp, nil
 				}
@@ -41,6 +45,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 					return false, nil
 				}
 				opRepo.saveFn = func(tx Tx, op *entity.Operation) error {
+					if op.RequestID() != "req-1" {
+						t.Fatalf("unexpected requestID: %s", op.RequestID())
+					}
 					return nil
 				}
 
@@ -55,6 +62,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "target not found",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
+				opRepo.getByRequestIDFn = func(tx Tx, requestID string) (*entity.Operation, error) {
+					return nil, nil
+				}
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return nil, nil
 				}
@@ -66,6 +76,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
 				reversalOp, _ := entity.NewReversalOperation(
 					"rev",
+					"req-rev",
 					"s1",
 					"p1",
 					100,
@@ -73,6 +84,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 					time.Now(),
 				)
 
+				opRepo.getByRequestIDFn = func(tx Tx, requestID string) (*entity.Operation, error) {
+					return nil, nil
+				}
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return reversalOp, nil
 				}
@@ -82,6 +96,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "already reversed",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
+				opRepo.getByRequestIDFn = func(tx Tx, requestID string) (*entity.Operation, error) {
+					return nil, nil
+				}
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return targetOp, nil
 				}
@@ -94,10 +111,12 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "session not active",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
-				rate, _ := valueobject.NewChipRate(2)
 				finished := entity.NewSession("s1", rate, time.Now())
 				_ = finished.Finish()
 
+				opRepo.getByRequestIDFn = func(tx Tx, requestID string) (*entity.Operation, error) {
+					return nil, nil
+				}
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return targetOp, nil
 				}
@@ -112,22 +131,29 @@ func TestReverseOperationUseCase(t *testing.T) {
 			wantErr: entity.ErrSessionNotActive,
 		},
 		{
-			name: "idempotent duplicate operation",
+			name: "idempotent by requestID",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
-				session := entity.NewSession("s1", rate, time.Now())
+				existingOp, _ := entity.NewReversalOperation(
+					"existing",
+					"req-1",
+					"s1",
+					"p1",
+					100,
+					"target",
+					time.Now(),
+				)
 
-				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
-					return targetOp, nil
-				}
-				opRepo.existsReversalFn = func(tx Tx, id entity.OperationID) (bool, error) {
-					return false, nil
+				opRepo.getByRequestIDFn = func(tx Tx, requestID string) (*entity.Operation, error) {
+					return existingOp, nil
 				}
 				opRepo.saveFn = func(tx Tx, op *entity.Operation) error {
-					return entity.ErrDuplicateOperation
+					t.Fatal("save should not be called on idempotent request")
+					return nil
 				}
 
 				sessionRepo.findFn = func(tx Tx, id entity.SessionID) (*entity.Session, error) {
-					return session, nil
+					t.Fatal("session should not be loaded on idempotent request")
+					return nil, nil
 				}
 			},
 		},
@@ -150,6 +176,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 			}
 
 			err := uc.Execute(ReverseOperationCommand{
+				RequestID:         "req-1",
 				OperationID:       "op1",
 				TargetOperationID: "target",
 			})

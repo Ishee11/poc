@@ -10,19 +10,32 @@ import (
 	"time"
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
+	infra "github.com/ishee11/poc/internal/infra"
 	"github.com/ishee11/poc/internal/repo/memory"
-	sessionuc "github.com/ishee11/poc/internal/usecase/session"
+	usecase "github.com/ishee11/poc/internal/usecase"
 )
 
 func Run() error {
 	// ===== Repository =====
-	repo := memory.NewSessionRepository()
+	sessionRepo := memory.NewSessionRepository()
+	opRepo := memory.NewOperationRepository() // <-- нужно добавить
 
-	// ===== UseCase =====
-	uc := sessionuc.NewUseCase(repo)
+	// ===== TxManager =====
+	txManager := memory.NewTxManager() // <-- если есть, иначе заглушка
+
+	// ===== ID Generator =====
+	idGen := &infra.UUIDOperationIDGenerator{}
+
+	// ===== UseCases =====
+	buyInUC := usecase.NewBuyInUseCase(
+		opRepo,
+		sessionRepo,
+		txManager,
+		idGen,
+	)
 
 	// ===== Handler =====
-	handler := httpcontroller.NewSessionHandler(uc)
+	handler := httpcontroller.NewHandler(buyInUC) // адаптируешь под себя
 
 	// ===== Router =====
 	router := httpcontroller.NewRouter(handler)

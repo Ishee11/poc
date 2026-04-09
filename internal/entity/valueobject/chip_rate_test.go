@@ -1,34 +1,49 @@
 package valueobject
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
-func TestChipRate(t *testing.T) {
+func TestNewChipRate(t *testing.T) {
 	tt := []struct {
-		name      string
-		value     int64
-		withPanic bool
+		name    string
+		value   int64
+		wantErr error
 	}{
-		{name: "valid chip rate", value: 2, withPanic: false},
-		{name: "invalid chip rate", value: 0, withPanic: true},
+		{
+			name:  "valid chip rate",
+			value: 2,
+		},
+		{
+			name:    "zero chip rate",
+			value:   0,
+			wantErr: ErrInvalidChips,
+		},
+		{
+			name:    "negative chip rate",
+			value:   -1,
+			wantErr: ErrInvalidChips,
+		},
 	}
-	for _, tc := range tt {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			defer func() {
-				if r := recover(); r != nil {
-					if !tc.withPanic {
-						t.Fatal("expected no panic, got panic")
-					}
-				} else {
-					if tc.withPanic {
-						t.Fatal("expected panic, got nothing")
-					}
-				}
-			}()
 
-			chipRate := NewChipRate(tc.value)
-			if chipRate.value != tc.value {
-				t.Errorf("expected chip rate %d, got %d", tc.value, chipRate.value)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			rate, err := NewChipRate(tc.value)
+
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if rate.Value() != tc.value {
+				t.Fatalf("expected %d, got %d", tc.value, rate.Value())
 			}
 		})
 	}

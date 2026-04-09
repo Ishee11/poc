@@ -12,6 +12,8 @@ type operationRepoMock struct {
 
 	getByIDFn        func(tx Tx, id entity.OperationID) (*entity.Operation, error)
 	existsReversalFn func(tx Tx, targetID entity.OperationID) (bool, error)
+
+	getByRequestIDFn func(tx Tx, requestID string) (*entity.Operation, error)
 }
 
 func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
@@ -56,6 +58,13 @@ func (m *operationRepoMock) ExistsReversal(tx Tx, targetID entity.OperationID) (
 	return false, nil
 }
 
+func (m *operationRepoMock) GetByRequestID(tx Tx, requestID string) (*entity.Operation, error) {
+	if m.getByRequestIDFn != nil {
+		return m.getByRequestIDFn(tx, requestID)
+	}
+	return nil, nil
+}
+
 // --- SessionRepository mock ---
 
 type sessionRepoMock struct {
@@ -83,4 +92,14 @@ type txManagerMock struct{}
 
 func (m *txManagerMock) RunInTx(fn func(tx Tx) error) error {
 	return fn(struct{}{})
+}
+
+// --- OperationIDGenerator mock ---
+
+type operationIDGeneratorMock struct {
+	id entity.OperationID
+}
+
+func (m *operationIDGeneratorMock) New() entity.OperationID {
+	return m.id
 }

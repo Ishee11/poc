@@ -5,8 +5,7 @@ import (
 )
 
 type FinishSessionCommand struct {
-	OperationID entity.OperationID
-	SessionID   entity.SessionID
+	SessionID entity.SessionID
 }
 
 type FinishSessionUseCase struct {
@@ -22,6 +21,7 @@ func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 			return err
 		}
 
+		// идемпотентность через state
 		if session.Status() == entity.StatusFinished {
 			return nil
 		}
@@ -41,10 +41,6 @@ func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 		}
 
 		if err := session.Finish(); err != nil {
-			return err
-		}
-
-		if err := uc.sessionRepo.Save(tx, session); err != nil {
 			return err
 		}
 

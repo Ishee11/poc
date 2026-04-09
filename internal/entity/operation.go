@@ -22,10 +22,12 @@ type Operation struct {
 	chips         int64
 	createdAt     time.Time
 	referenceID   *OperationID
+	requestID     string
 }
 
 func NewOperation(
 	id OperationID,
+	requestID string,
 	sessionID SessionID,
 	operationType OperationType,
 	playerID PlayerID,
@@ -41,8 +43,13 @@ func NewOperation(
 		return nil, ErrInvalidOperationType
 	}
 
+	if requestID == "" {
+		return nil, ErrInvalidRequestID
+	}
+
 	return &Operation{
 		id:            id,
+		requestID:     requestID,
 		sessionID:     sessionID,
 		operationType: operationType,
 		playerID:      playerID,
@@ -53,6 +60,7 @@ func NewOperation(
 
 func NewReversalOperation(
 	id OperationID,
+	requestID string,
 	sessionID SessionID,
 	playerID PlayerID,
 	chips int64,
@@ -68,8 +76,13 @@ func NewReversalOperation(
 		return nil, ErrInvalidReference
 	}
 
+	if requestID == "" {
+		return nil, ErrInvalidRequestID
+	}
+
 	return &Operation{
 		id:            id,
+		requestID:     requestID,
 		sessionID:     sessionID,
 		operationType: OperationReversal,
 		playerID:      playerID,
@@ -105,4 +118,8 @@ func (o *Operation) ReferenceID() *OperationID {
 
 func (o *Operation) CreatedAt() time.Time {
 	return o.createdAt
+}
+
+func (o *Operation) RequestID() string {
+	return o.requestID
 }
