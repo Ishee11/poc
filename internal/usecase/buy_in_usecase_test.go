@@ -29,9 +29,6 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return nil, nil
-			},
 			saveFn: func(tx Tx, op *entity.Operation) error {
 				if op.RequestID() != "req-1" {
 					t.Fatalf("unexpected requestID: %s", op.RequestID())
@@ -52,10 +49,11 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		idGen := &idGeneratorMock{id: "op-internal-1"}
 
 		uc := BuyInUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
-			idGen:       idGen,
+			opWriter:      opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
+			idGen:         idGen,
 		}
 
 		cmd := BuyInCommand{
@@ -77,10 +75,11 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 
 	t.Run("invalid chips", func(t *testing.T) {
 		uc := BuyInUseCase{
-			opRepo:      &operationRepoMock{},
-			sessionRepo: &sessionRepoMock{},
-			txManager:   &txManagerMock{},
-			idGen:       &idGeneratorMock{id: "op"},
+			opWriter:      &operationRepoMock{},
+			sessionReader: &sessionRepoMock{},
+			sessionWriter: &sessionRepoMock{},
+			txManager:     &txManagerMock{},
+			idGen:         &idGeneratorMock{id: "op"},
 		}
 
 		cmd := BuyInCommand{
@@ -103,11 +102,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			t.Fatalf("failed to finish session: %v", err)
 		}
 
-		opRepo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return nil, nil
-			},
-		}
+		opRepo := &operationRepoMock{}
 
 		sessionRepo := &sessionRepoMock{
 			findFn: func(tx Tx, id entity.SessionID) (*entity.Session, error) {
@@ -116,10 +111,11 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		}
 
 		uc := BuyInUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
-			idGen:       &idGeneratorMock{id: "op"},
+			opWriter:      opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
+			idGen:         &idGeneratorMock{id: "op"},
 		}
 
 		cmd := BuyInCommand{
@@ -139,9 +135,6 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return nil, nil
-			},
 			saveFn: func(tx Tx, op *entity.Operation) error {
 				return errors.New("db error")
 			},
@@ -154,10 +147,11 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		}
 
 		uc := BuyInUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
-			idGen:       &idGeneratorMock{id: "op"},
+			opWriter:      opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
+			idGen:         &idGeneratorMock{id: "op"},
 		}
 
 		cmd := BuyInCommand{
@@ -173,40 +167,27 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("idempotent by requestID", func(t *testing.T) {
-
-		existingOp, _ := entity.NewOperation(
-			"existing",
-			"req-1",
-			"s1",
-			entity.OperationBuyIn,
-			"p1",
-			100,
-			time.Now(),
-		)
+	t.Run("idempotent via duplicate request error", func(t *testing.T) {
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
-			getByRequestIDFn: func(tx Tx, requestID string) (*entity.Operation, error) {
-				return existingOp, nil
-			},
 			saveFn: func(tx Tx, op *entity.Operation) error {
-				t.Fatal("save should not be called on idempotent request")
-				return nil
+				return entity.ErrDuplicateRequest
 			},
 		}
 
 		sessionRepo := &sessionRepoMock{
 			findFn: func(tx Tx, id entity.SessionID) (*entity.Session, error) {
-				t.Fatal("session should not be loaded on idempotent request")
-				return nil, nil
+				return session, nil
 			},
 		}
 
 		uc := BuyInUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
-			idGen:       &idGeneratorMock{id: "op"},
+			opWriter:      opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
+			idGen:         &idGeneratorMock{id: "op"},
 		}
 
 		cmd := BuyInCommand{
