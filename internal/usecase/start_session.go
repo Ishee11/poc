@@ -14,17 +14,20 @@ type StartSessionCommand struct {
 }
 
 type StartSessionUseCase struct {
-	sessionRepo SessionRepository
-	txManager   TxManager
+	sessionReader SessionReader
+	sessionWriter SessionWriter
+	txManager     TxManager
 }
 
 func NewStartSessionUseCase(
-	sessionRepo SessionRepository,
+	sessionReader SessionReader,
+	sessionWriter SessionWriter,
 	txManager TxManager,
 ) *StartSessionUseCase {
 	return &StartSessionUseCase{
-		sessionRepo: sessionRepo,
-		txManager:   txManager,
+		sessionReader: sessionReader,
+		sessionWriter: sessionWriter,
+		txManager:     txManager,
 	}
 }
 
@@ -32,7 +35,7 @@ func (uc *StartSessionUseCase) Execute(cmd StartSessionCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
 
 		// 1. идемпотентность
-		existing, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
+		existing, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
 		if err != nil && !errors.Is(err, entity.ErrSessionNotFound) {
 			return err
 		}
@@ -51,7 +54,7 @@ func (uc *StartSessionUseCase) Execute(cmd StartSessionCommand) error {
 		session := entity.NewSession(cmd.SessionID, rate, now)
 
 		// 4. сохраняем
-		if err := uc.sessionRepo.Save(tx, session); err != nil {
+		if err := uc.sessionWriter.Save(tx, session); err != nil {
 			if errors.Is(err, entity.ErrSessionAlreadyExists) {
 				return nil
 			}
