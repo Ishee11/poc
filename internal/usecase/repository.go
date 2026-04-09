@@ -7,6 +7,18 @@ type SessionAggregates struct {
 	TotalCashOut int64
 }
 
+type PlayerAggregates struct {
+	BuyIn   int64
+	CashOut int64
+}
+
+type OperationPlayerAggregatesReader interface {
+	GetPlayerAggregates(
+		tx Tx,
+		sessionID entity.SessionID,
+	) (map[entity.PlayerID]PlayerAggregates, error)
+}
+
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }
