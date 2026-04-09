@@ -10,6 +10,9 @@ import (
 )
 
 func TestStartSessionUseCase_Execute(t *testing.T) {
+
+	dbErr := errors.New("db error")
+
 	tt := []struct {
 		name    string
 		setup   func(repo *sessionRepoMock)
@@ -50,14 +53,14 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 			name: "find error",
 			setup: func(repo *sessionRepoMock) {
 				repo.findFn = func(tx Tx, id entity.SessionID) (*entity.Session, error) {
-					return nil, errors.New("db error")
+					return nil, dbErr
 				}
 			},
 			cmd: StartSessionCommand{
 				SessionID: "s1",
 				ChipRate:  2,
 			},
-			wantErr: errors.New("db error"),
+			wantErr: dbErr,
 		},
 		{
 			name: "invalid chip rate",
@@ -70,7 +73,7 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 				SessionID: "s1",
 				ChipRate:  0,
 			},
-			wantErr: entity.ErrInvalidChips,
+			wantErr: valueobject.ErrInvalidChips,
 		},
 		{
 			name: "save error",
@@ -79,14 +82,14 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return nil, entity.ErrSessionNotFound
 				}
 				repo.saveFn = func(tx Tx, s *entity.Session) error {
-					return errors.New("db error")
+					return dbErr
 				}
 			},
 			cmd: StartSessionCommand{
 				SessionID: "s1",
 				ChipRate:  2,
 			},
-			wantErr: errors.New("db error"),
+			wantErr: dbErr,
 		},
 		{
 			name: "idempotent - save duplicate",
