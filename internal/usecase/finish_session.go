@@ -9,14 +9,17 @@ type FinishSessionCommand struct {
 }
 
 type FinishSessionUseCase struct {
-	opRepo      OperationRepository
-	sessionRepo SessionRepository
-	txManager   TxManager
+	aggregateReader OperationAggregateReader
+
+	sessionReader SessionReader
+	sessionWriter SessionWriter
+
+	txManager TxManager
 }
 
 func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
+		session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
 		if err != nil {
 			return err
 		}
@@ -30,7 +33,7 @@ func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 			return entity.ErrSessionNotActive
 		}
 
-		sessionAggregates, err := uc.opRepo.GetSessionAggregates(tx, cmd.SessionID)
+		sessionAggregates, err := uc.aggregateReader.GetSessionAggregates(tx, cmd.SessionID)
 		if err != nil {
 			return err
 		}
@@ -44,6 +47,6 @@ func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 			return err
 		}
 
-		return uc.sessionRepo.Save(tx, session)
+		return uc.sessionWriter.Save(tx, session)
 	})
 }
