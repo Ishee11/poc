@@ -115,8 +115,9 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 			}
 
 			uc := StartSessionUseCase{
-				sessionRepo: sessionRepo,
-				txManager:   txManager,
+				sessionReader: sessionRepo,
+				sessionWriter: sessionRepo,
+				txManager:     txManager,
 			}
 
 			err := uc.Execute(tc.cmd)
