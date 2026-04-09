@@ -11,25 +11,29 @@ func TestNewOperation(t *testing.T) {
 
 	tt := []struct {
 		name          string
+		requestID     string
 		opType        OperationType
 		chips         int64
 		wantErr       bool
 		expectedError error
 	}{
 		{
-			name:    "buy in success",
-			opType:  OperationBuyIn,
-			chips:   100,
-			wantErr: false,
+			name:      "buy in success",
+			requestID: "req1",
+			opType:    OperationBuyIn,
+			chips:     100,
+			wantErr:   false,
 		},
 		{
-			name:    "cash out success",
-			opType:  OperationCashOut,
-			chips:   50,
-			wantErr: false,
+			name:      "cash out success",
+			requestID: "req1",
+			opType:    OperationCashOut,
+			chips:     50,
+			wantErr:   false,
 		},
 		{
 			name:          "chips zero",
+			requestID:     "req1",
 			opType:        OperationBuyIn,
 			chips:         0,
 			wantErr:       true,
@@ -37,6 +41,7 @@ func TestNewOperation(t *testing.T) {
 		},
 		{
 			name:          "chips negative",
+			requestID:     "req1",
 			opType:        OperationBuyIn,
 			chips:         -10,
 			wantErr:       true,
@@ -44,6 +49,7 @@ func TestNewOperation(t *testing.T) {
 		},
 		{
 			name:          "invalid operation type",
+			requestID:     "req1",
 			opType:        OperationType("invalid"),
 			chips:         100,
 			wantErr:       true,
@@ -51,10 +57,19 @@ func TestNewOperation(t *testing.T) {
 		},
 		{
 			name:          "reversal cannot be created via NewOperation",
+			requestID:     "req1",
 			opType:        OperationReversal,
 			chips:         100,
 			wantErr:       true,
 			expectedError: ErrInvalidOperationType,
+		},
+		{
+			name:          "empty requestID",
+			requestID:     "",
+			opType:        OperationBuyIn,
+			chips:         100,
+			wantErr:       true,
+			expectedError: ErrInvalidRequestID,
 		},
 	}
 
@@ -62,6 +77,7 @@ func TestNewOperation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			op, err := NewOperation(
 				"op1",
+				tc.requestID,
 				"s1",
 				tc.opType,
 				"p1",
@@ -87,7 +103,6 @@ func TestNewOperation(t *testing.T) {
 				t.Fatalf("operation is nil")
 			}
 
-			// проверяем что данные записались
 			if op.ID() != "op1" {
 				t.Fatalf("wrong id")
 			}
@@ -109,6 +124,9 @@ func TestNewOperation(t *testing.T) {
 			if op.ReferenceID() != nil {
 				t.Fatalf("referenceID should be nil")
 			}
+			if op.RequestID() != tc.requestID {
+				t.Fatalf("wrong requestID")
+			}
 		})
 	}
 }
@@ -120,6 +138,7 @@ func TestNewReversalOperation(t *testing.T) {
 
 	tt := []struct {
 		name          string
+		requestID     string
 		chips         int64
 		referenceID   OperationID
 		wantErr       bool
@@ -127,12 +146,14 @@ func TestNewReversalOperation(t *testing.T) {
 	}{
 		{
 			name:        "success",
+			requestID:   "req1",
 			chips:       100,
 			referenceID: refID,
 			wantErr:     false,
 		},
 		{
 			name:          "chips zero",
+			requestID:     "req1",
 			chips:         0,
 			referenceID:   refID,
 			wantErr:       true,
@@ -140,10 +161,19 @@ func TestNewReversalOperation(t *testing.T) {
 		},
 		{
 			name:          "empty referenceID",
+			requestID:     "req1",
 			chips:         100,
 			referenceID:   "",
 			wantErr:       true,
 			expectedError: ErrInvalidReference,
+		},
+		{
+			name:          "empty requestID",
+			requestID:     "",
+			chips:         100,
+			referenceID:   refID,
+			wantErr:       true,
+			expectedError: ErrInvalidRequestID,
 		},
 	}
 
@@ -151,6 +181,7 @@ func TestNewReversalOperation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			op, err := NewReversalOperation(
 				"op1",
+				tc.requestID,
 				"s1",
 				"p1",
 				tc.chips,
@@ -191,15 +222,16 @@ func TestNewReversalOperation(t *testing.T) {
 			if op.Type() != OperationReversal {
 				t.Fatalf("wrong operation type")
 			}
+			if op.RequestID() != tc.requestID {
+				t.Fatalf("wrong requestID")
+			}
 
 			if op.ReferenceID() == nil {
 				t.Fatalf("referenceID is nil")
 			}
-
 			if *op.ReferenceID() != tc.referenceID {
 				t.Fatalf("wrong referenceID")
 			}
-
 			if op.Chips() != tc.chips {
 				t.Fatalf("wrong chips")
 			}
