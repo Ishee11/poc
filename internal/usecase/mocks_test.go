@@ -9,6 +9,9 @@ type operationRepoMock struct {
 
 	getLastOpFn func(tx Tx, sessionID entity.SessionID, playerID entity.PlayerID) (entity.OperationType, bool, error)
 	getAggFn    func(tx Tx, sessionID entity.SessionID) (SessionAggregates, error)
+
+	getByIDFn        func(tx Tx, id entity.OperationID) (*entity.Operation, error)
+	existsReversalFn func(tx Tx, targetID entity.OperationID) (bool, error)
 }
 
 func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
@@ -37,6 +40,20 @@ func (m *operationRepoMock) GetSessionAggregates(
 		return m.getAggFn(tx, sessionID)
 	}
 	return SessionAggregates{}, nil
+}
+
+func (m *operationRepoMock) GetByID(tx Tx, id entity.OperationID) (*entity.Operation, error) {
+	if m.getByIDFn != nil {
+		return m.getByIDFn(tx, id)
+	}
+	return nil, nil
+}
+
+func (m *operationRepoMock) ExistsReversal(tx Tx, targetID entity.OperationID) (bool, error) {
+	if m.existsReversalFn != nil {
+		return m.existsReversalFn(tx, targetID)
+	}
+	return false, nil
 }
 
 // --- SessionRepository mock ---

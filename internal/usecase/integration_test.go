@@ -17,9 +17,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	buyInUC := BuyInUseCase{opRepo, sessionRepo, txManager}
 	cashOutUC := CashOutUseCase{opRepo, sessionRepo, txManager}
+	reverseUC := ReverseOperationUseCase{opRepo, sessionRepo, txManager}
 	finishUC := FinishSessionUseCase{opRepo, sessionRepo, txManager}
 
-	// buyin
+	// --- 1. BuyIn ---
 	if err := buyInUC.Execute(BuyInCommand{
 		OperationID: "op1",
 		SessionID:   "s1",
@@ -29,7 +30,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 		t.Fatalf("buyin failed: %v", err)
 	}
 
-	// cashout
+	// --- 2. CashOut ---
 	if err := cashOutUC.Execute(CashOutCommand{
 		OperationID: "op2",
 		SessionID:   "s1",
@@ -39,13 +40,39 @@ func TestIntegration_FullFlow(t *testing.T) {
 		t.Fatalf("cashout failed: %v", err)
 	}
 
-	// finish
+	// --- 3. Reversal (отменяем cashout) ---
+	if err := reverseUC.Execute(ReverseOperationCommand{
+		OperationID:       "op3",
+		TargetOperationID: "op2",
+	}); err != nil {
+		t.Fatalf("reversal failed: %v", err)
+	}
+
+	// --- 4. Finish ДОЛЖЕН упасть (tableChips = 100) ---
+	if err := finishUC.Execute(FinishSessionCommand{
+		SessionID: "s1",
+	}); err == nil {
+		t.Fatalf("expected finish to fail, but got nil")
+	}
+
+	// --- 5. Повторный CashOut ---
+	if err := cashOutUC.Execute(CashOutCommand{
+		OperationID: "op4",
+		SessionID:   "s1",
+		PlayerID:    "p1",
+		Chips:       100,
+	}); err != nil {
+		t.Fatalf("cashout2 failed: %v", err)
+	}
+
+	// --- 6. Теперь Finish ДОЛЖЕН пройти ---
 	if err := finishUC.Execute(FinishSessionCommand{
 		SessionID: "s1",
 	}); err != nil {
 		t.Fatalf("finish failed: %v", err)
 	}
 
+	// --- 7. Проверка финального состояния ---
 	s, _ := sessionRepo.FindByID(nil, "s1")
 
 	if s.Status() != entity.StatusFinished {

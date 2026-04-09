@@ -30,14 +30,38 @@ func (r *inMemoryOperationRepo) GetLastOperationType(
 	sessionID entity.SessionID,
 	playerID entity.PlayerID,
 ) (entity.OperationType, bool, error) {
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// какие операции отменены
+	reversed := make(map[entity.OperationID]struct{})
+
+	// сначала собираем reversal
+	for _, op := range r.operations {
+		if op.Type() == entity.OperationReversal && op.ReferenceID() != nil {
+			reversed[*op.ReferenceID()] = struct{}{}
+		}
+	}
+
+	// идём с конца
 	for i := len(r.operations) - 1; i >= 0; i-- {
 		op := r.operations[i]
-		if op.SessionID() == sessionID && op.PlayerID() == playerID {
-			return op.Type(), true, nil
+
+		if op.SessionID() != sessionID || op.PlayerID() != playerID {
+			continue
 		}
+
+		if op.Type() == entity.OperationReversal {
+			continue
+		}
+
+		// если операция отменена — пропускаем
+		if _, ok := reversed[op.ID()]; ok {
+			continue
+		}
+
+		return op.Type(), true, nil
 	}
 
 	return "", false, nil
@@ -58,10 +82,30 @@ func (r *inMemoryOperationRepo) GetSessionAggregates(
 		}
 
 		switch op.Type() {
+
 		case entity.OperationBuyIn:
 			buyIn += op.Chips()
+
 		case entity.OperationCashOut:
 			cashOut += op.Chips()
+
+		case entity.OperationReversal:
+			refID := op.ReferenceID()
+			if refID == nil {
+				continue
+			}
+
+			target := r.findByID(*refID)
+			if target == nil {
+				continue
+			}
+
+			switch target.Type() {
+			case entity.OperationBuyIn:
+				buyIn -= target.Chips()
+			case entity.OperationCashOut:
+				cashOut -= target.Chips()
+			}
 		}
 	}
 
@@ -70,6 +114,44 @@ func (r *inMemoryOperationRepo) GetSessionAggregates(
 		TotalCashOut: cashOut,
 	}, nil
 }
+
+func (r *inMemoryOperationRepo) GetByID(tx Tx, id entity.OperationID) (*entity.Operation, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, op := range r.operations {
+		if op.ID() == id {
+			return op, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *inMemoryOperationRepo) ExistsReversal(tx Tx, targetID entity.OperationID) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, op := range r.operations {
+		if op.Type() == entity.OperationReversal &&
+			op.ReferenceID() != nil &&
+			*op.ReferenceID() == targetID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// внутренний helper (БЕЗ lock)
+func (r *inMemoryOperationRepo) findByID(id entity.OperationID) *entity.Operation {
+	for _, op := range r.operations {
+		if op.ID() == id {
+			return op
+		}
+	}
+	return nil
+}
+
+// --- Session repo ---
 
 type inMemorySessionRepo struct {
 	mu       sync.Mutex
@@ -96,6 +178,8 @@ func (r *inMemorySessionRepo) Save(tx Tx, s *entity.Session) error {
 	r.sessions[s.ID()] = s
 	return nil
 }
+
+// --- Tx stub ---
 
 type txManagerStub struct{}
 

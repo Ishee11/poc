@@ -23,7 +23,6 @@ type BuyInCommand struct {
 func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		date := time.Now()
-
 		op, err := entity.NewOperation(
 			cmd.OperationID,
 			cmd.SessionID,

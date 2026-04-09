@@ -21,8 +21,10 @@ var (
 	ErrSessionAlreadyExists = errors.New("session already exists")
 	ErrInvalidMoney         = errors.New("invalid money")
 
-	ErrInvalidOperationType = errors.New("invalid operation type")
-	ErrInvalidReference     = errors.New("invalid reference")
+	ErrInvalidOperationType     = errors.New("invalid operation type")
+	ErrInvalidReference         = errors.New("invalid reference")
+	ErrOperationNotFound        = errors.New("operation not found")
+	ErrOperationAlreadyReversed = errors.New("operation already reversed")
 
 	ErrDuplicateOperation = errors.New("duplicate operation")
 	ErrPlayerNotInGame    = errors.New("player not in game")

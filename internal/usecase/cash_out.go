@@ -58,7 +58,6 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 		}
 
 		date := time.Now()
-
 		op, err := entity.NewOperation(
 			cmd.OperationID,
 			cmd.SessionID,

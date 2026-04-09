@@ -5,7 +5,8 @@ import (
 )
 
 type FinishSessionCommand struct {
-	SessionID entity.SessionID
+	OperationID entity.OperationID
+	SessionID   entity.SessionID
 }
 
 type FinishSessionUseCase struct {
