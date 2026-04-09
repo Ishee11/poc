@@ -26,6 +26,7 @@ var (
 	ErrOperationNotFound        = errors.New("operation not found")
 	ErrOperationAlreadyReversed = errors.New("operation already reversed")
 	ErrInvalidRequestID         = errors.New("invalid request id")
+	ErrDuplicateRequest         = errors.New("duplicate request")
 
 	ErrPlayerNotInGame  = errors.New("player not in game")
 	ErrInvalidOperation = errors.New("invalid operation")

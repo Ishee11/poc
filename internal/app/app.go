@@ -11,7 +11,7 @@ import (
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
 	infra "github.com/ishee11/poc/internal/infra"
-	"github.com/ishee11/poc/internal/repo/memory"
+	"github.com/ishee11/poc/internal/infra/memory"
 	usecase "github.com/ishee11/poc/internal/usecase"
 )
 

@@ -1,6 +1,10 @@
 package usecase
 
-import "github.com/ishee11/poc/internal/entity"
+import (
+	"errors"
+
+	"github.com/ishee11/poc/internal/entity"
+)
 
 func Idempotent(
 	tx Tx,
@@ -12,14 +16,13 @@ func Idempotent(
 		return entity.ErrInvalidRequestID
 	}
 
-	existing, err := repo.GetByRequestID(tx, requestID)
+	err := fn()
 	if err != nil {
+		if errors.Is(err, entity.ErrDuplicateRequest) {
+			return nil
+		}
 		return err
 	}
 
-	if existing != nil {
-		return nil
-	}
-
-	return fn()
+	return nil
 }
