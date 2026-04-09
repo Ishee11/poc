@@ -30,76 +30,70 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		// 1. идемпотентность (ранний выход)
-		existingOp, err := uc.opRepo.GetByRequestID(tx, cmd.RequestID)
-		if err != nil {
-			return err
-		}
-		if existingOp != nil {
-			return nil
-		}
+		return Idempotent(tx, uc.opRepo, cmd.RequestID, func() error {
 
-		// 2. получаем сессию
-		session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
-		if err != nil {
-			return err
-		}
+			// 2. получаем сессию
+			session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
+			if err != nil {
+				return err
+			}
 
-		if session.Status() != entity.StatusActive {
-			return entity.ErrSessionNotActive
-		}
+			if session.Status() != entity.StatusActive {
+				return entity.ErrSessionNotActive
+			}
 
-		// 3. проверяем состояние игрока
-		lastOpType, found, err := uc.opRepo.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
-		if err != nil {
-			return err
-		}
+			// 3. проверяем состояние игрока
+			lastOpType, found, err := uc.opRepo.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
+			if err != nil {
+				return err
+			}
 
-		if !found {
-			return entity.ErrPlayerNotInGame
-		}
+			if !found {
+				return entity.ErrPlayerNotInGame
+			}
 
-		if lastOpType != entity.OperationBuyIn {
-			return entity.ErrInvalidOperation
-		}
+			if lastOpType != entity.OperationBuyIn {
+				return entity.ErrInvalidOperation
+			}
 
-		// 4. агрегаты по сессии
-		aggr, err := uc.opRepo.GetSessionAggregates(tx, cmd.SessionID)
-		if err != nil {
-			return err
-		}
+			// 4. агрегаты по сессии
+			aggr, err := uc.opRepo.GetSessionAggregates(tx, cmd.SessionID)
+			if err != nil {
+				return err
+			}
 
-		tableChips := aggr.TotalBuyIn - aggr.TotalCashOut
-		if cmd.Chips > tableChips {
-			return entity.ErrInvalidCashOut
-		}
+			tableChips := aggr.TotalBuyIn - aggr.TotalCashOut
+			if cmd.Chips > tableChips {
+				return entity.ErrInvalidCashOut
+			}
 
-		// 5. создаём операцию
-		opID := uc.idGen.New()
+			// 5. создаём операцию
+			opID := uc.idGen.New()
 
-		op, err := entity.NewOperation(
-			opID,
-			cmd.RequestID,
-			cmd.SessionID,
-			entity.OperationCashOut,
-			cmd.PlayerID,
-			cmd.Chips,
-			time.Now(),
-		)
-		if err != nil {
-			return err
-		}
+			op, err := entity.NewOperation(
+				opID,
+				cmd.RequestID,
+				cmd.SessionID,
+				entity.OperationCashOut,
+				cmd.PlayerID,
+				cmd.Chips,
+				time.Now(),
+			)
+			if err != nil {
+				return err
+			}
 
-		// 6. сохраняем
-		if err := uc.opRepo.Save(tx, op); err != nil {
-			return err
-		}
+			// 6. сохраняем
+			if err := uc.opRepo.Save(tx, op); err != nil {
+				return err
+			}
 
-		// 7. обновляем сессию
-		if err := session.CashOut(cmd.Chips); err != nil {
-			return err
-		}
+			// 7. обновляем сессию
+			if err := session.CashOut(cmd.Chips); err != nil {
+				return err
+			}
 
-		return uc.sessionRepo.Save(tx, session)
+			return uc.sessionRepo.Save(tx, session)
+		})
 	})
 }

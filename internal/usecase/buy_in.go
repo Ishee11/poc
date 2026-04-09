@@ -45,57 +45,50 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
+		return Idempotent(tx, uc.opRepo, cmd.RequestID, func() error {
 
-		// 1. идемпотентность (ОСНОВНОЙ МЕХАНИЗМ)
-		existing, err := uc.opRepo.GetByRequestID(tx, cmd.RequestID)
-		if err != nil {
-			return err
-		}
-		if existing != nil {
+			// 2. загружаем session
+			session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
+			if err != nil {
+				return err
+			}
+
+			if session.Status() != entity.StatusActive {
+				return entity.ErrSessionNotActive
+			}
+
+			// 3. бизнес-логика
+			if err := session.BuyIn(cmd.Chips); err != nil {
+				return err
+			}
+
+			// 4. создаём operation
+			opID := uc.idGen.New()
+
+			op, err := entity.NewOperation(
+				opID,
+				cmd.RequestID,
+				cmd.SessionID,
+				entity.OperationBuyIn,
+				cmd.PlayerID,
+				cmd.Chips,
+				time.Now(),
+			)
+			if err != nil {
+				return err
+			}
+
+			// 5. сохраняем operation
+			if err := uc.opRepo.Save(tx, op); err != nil {
+				return err
+			}
+
+			// 6. сохраняем session
+			if err := uc.sessionRepo.Save(tx, session); err != nil {
+				return err
+			}
+
 			return nil
-		}
-
-		// 2. загружаем session
-		session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
-		if err != nil {
-			return err
-		}
-
-		if session.Status() != entity.StatusActive {
-			return entity.ErrSessionNotActive
-		}
-
-		// 3. бизнес-логика
-		if err := session.BuyIn(cmd.Chips); err != nil {
-			return err
-		}
-
-		// 4. создаём operation
-		opID := uc.idGen.New()
-
-		op, err := entity.NewOperation(
-			opID,
-			cmd.RequestID,
-			cmd.SessionID,
-			entity.OperationBuyIn,
-			cmd.PlayerID,
-			cmd.Chips,
-			time.Now(),
-		)
-		if err != nil {
-			return err
-		}
-
-		// 5. сохраняем operation
-		if err := uc.opRepo.Save(tx, op); err != nil {
-			return err
-		}
-
-		// 6. сохраняем session
-		if err := uc.sessionRepo.Save(tx, session); err != nil {
-			return err
-		}
-
-		return nil
+		})
 	})
 }
