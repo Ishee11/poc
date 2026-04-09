@@ -14,6 +14,9 @@ type operationRepoMock struct {
 	existsReversalFn func(tx Tx, targetID entity.OperationID) (bool, error)
 
 	getByRequestIDFn func(tx Tx, requestID string) (*entity.Operation, error)
+
+	// 👇 ВОТ ЭТО ДОБАВИТЬ
+	getPlayerAggFn func(tx Tx, sessionID entity.SessionID) (map[entity.PlayerID]PlayerAggregates, error)
 }
 
 func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
@@ -63,6 +66,16 @@ func (m *operationRepoMock) GetByRequestID(tx Tx, requestID string) (*entity.Ope
 		return m.getByRequestIDFn(tx, requestID)
 	}
 	return nil, nil
+}
+
+func (m *operationRepoMock) GetPlayerAggregates(
+	tx Tx,
+	sessionID entity.SessionID,
+) (map[entity.PlayerID]PlayerAggregates, error) {
+	if m.getPlayerAggFn != nil {
+		return m.getPlayerAggFn(tx, sessionID)
+	}
+	return map[entity.PlayerID]PlayerAggregates{}, nil
 }
 
 // --- SessionRepository mock ---
