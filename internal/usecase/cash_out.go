@@ -30,6 +30,26 @@ type CashOutCommand struct {
 	Chips     int64
 }
 
+func NewCashOutUseCase(
+	opWriter OperationWriter,
+	playerStateReader OperationPlayerStateReader,
+	aggregateReader OperationAggregateReader,
+	sessionReader SessionReader,
+	sessionWriter SessionWriter,
+	txManager TxManager,
+	idGen IDGenerator,
+) *CashOutUseCase {
+	return &CashOutUseCase{
+		opWriter:          opWriter,
+		playerStateReader: playerStateReader,
+		aggregateReader:   aggregateReader,
+		sessionReader:     sessionReader,
+		sessionWriter:     sessionWriter,
+		txManager:         txManager,
+		idGen:             idGen,
+	}
+}
+
 func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 	if cmd.Chips <= 0 {
 		return entity.ErrInvalidChips
