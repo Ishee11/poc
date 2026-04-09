@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
@@ -12,8 +13,12 @@ func TestIntegration_FullFlow(t *testing.T) {
 	sessionRepo := newSessionRepo()
 	txManager := &txManagerStub{}
 
-	session := entity.NewSession("s1", valueobject.NewChipRate(2))
-	_ = sessionRepo.Save(nil, session)
+	rate, _ := valueobject.NewChipRate(2)
+
+	session := entity.NewSession("s1", rate, time.Now())
+	if err := sessionRepo.Save(nil, session); err != nil {
+		t.Fatalf("failed to save session: %v", err)
+	}
 
 	buyInUC := BuyInUseCase{opRepo, sessionRepo, txManager}
 	cashOutUC := CashOutUseCase{opRepo, sessionRepo, txManager}
@@ -73,7 +78,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 7. Проверка финального состояния ---
-	s, _ := sessionRepo.FindByID(nil, "s1")
+	s, err := sessionRepo.FindByID(nil, "s1")
+	if err != nil {
+		t.Fatalf("failed to find session: %v", err)
+	}
 
 	if s.Status() != entity.StatusFinished {
 		t.Fatalf("expected finished, got %s", s.Status())

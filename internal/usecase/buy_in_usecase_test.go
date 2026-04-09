@@ -3,16 +3,20 @@ package usecase
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
 func TestBuyInUseCase_Execute(t *testing.T) {
-	chipRate := valueobject.NewChipRate(2)
+	rate, err := valueobject.NewChipRate(2)
+	if err != nil {
+		t.Fatalf("failed to create chip rate: %v", err)
+	}
 
 	t.Run("success", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			saveFn: func(tx Tx, op *entity.Operation) error {
@@ -54,7 +58,6 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 
 	t.Run("invalid chips", func(t *testing.T) {
 		opRepo := &operationRepoMock{}
-
 		sessionRepo := &sessionRepoMock{}
 
 		uc := BuyInUseCase{
@@ -77,8 +80,11 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("session not active", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
-		_ = session.Finish()
+		session := entity.NewSession("s1", rate, time.Now())
+
+		if err := session.Finish(); err != nil {
+			t.Fatalf("failed to finish session: %v", err)
+		}
 
 		opRepo := &operationRepoMock{}
 
@@ -108,7 +114,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("operation repo error", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			saveFn: func(tx Tx, op *entity.Operation) error {

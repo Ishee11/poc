@@ -11,11 +11,11 @@ type ChipRate struct {
 	value int64
 }
 
-func NewChipRate(v int64) ChipRate {
+func NewChipRate(v int64) (ChipRate, error) {
 	if v <= 0 {
-		panic("chip rate must be greater than 0")
+		return ChipRate{}, ErrInvalidChips
 	}
-	return ChipRate{value: v}
+	return ChipRate{value: v}, nil
 }
 
 func (r ChipRate) ToChips(money Money) (int64, error) {

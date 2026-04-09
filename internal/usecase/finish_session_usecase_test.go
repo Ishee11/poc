@@ -3,16 +3,20 @@ package usecase
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
 func TestFinishSessionUseCase_Execute(t *testing.T) {
-	chipRate := valueobject.NewChipRate(2)
+	rate, err := valueobject.NewChipRate(2)
+	if err != nil {
+		t.Fatalf("failed to create chip rate: %v", err)
+	}
 
 	t.Run("success", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getAggFn: func(tx Tx, sID entity.SessionID) (SessionAggregates, error) {
@@ -52,7 +56,7 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("table not settled", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getAggFn: func(tx Tx, sID entity.SessionID) (SessionAggregates, error) {
@@ -85,9 +89,11 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("already finished (idempotent)", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
-		// сначала завершаем
-		_ = session.Finish()
+		session := entity.NewSession("s1", rate, time.Now())
+
+		if err := session.Finish(); err != nil {
+			t.Fatalf("failed to finish session: %v", err)
+		}
 
 		opRepo := &operationRepoMock{}
 
@@ -112,11 +118,9 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("session not active", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+	t.Run("session not active (via finish path)", func(t *testing.T) {
+		session := entity.NewSession("s1", rate, time.Now())
 
-		// эмулируем невалидный статус (например вручную)
-		// проще: сначала finish с корректным состоянием
 		opRepoFinish := &operationRepoMock{
 			getAggFn: func(tx Tx, sID entity.SessionID) (SessionAggregates, error) {
 				return SessionAggregates{
@@ -141,9 +145,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 			txManager:   &txManagerMock{},
 		}
 
-		_ = ucFinish.Execute(FinishSessionCommand{SessionID: "s1"})
+		if err := ucFinish.Execute(FinishSessionCommand{SessionID: "s1"}); err != nil {
+			t.Fatalf("setup finish failed: %v", err)
+		}
 
-		// теперь повторно вызываем → уже finished
 		uc := FinishSessionUseCase{
 			opRepo:      &operationRepoMock{},
 			sessionRepo: sessionRepoFinish,

@@ -3,16 +3,17 @@ package usecase
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
 func TestCashOutUseCase_Execute(t *testing.T) {
-	chipRate := valueobject.NewChipRate(2)
+	rate, _ := valueobject.NewChipRate(2)
 
 	t.Run("success", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getLastOpFn: func(tx Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {
@@ -62,7 +63,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("player not in game", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getLastOpFn: func(tx Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {
@@ -94,7 +95,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("last operation not buyin", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getLastOpFn: func(tx Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {
@@ -126,7 +127,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("exceeds table chips", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getLastOpFn: func(tx Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {
@@ -164,7 +165,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("idempotent duplicate operation", func(t *testing.T) {
-		session := entity.NewSession("s1", chipRate)
+		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
 			getLastOpFn: func(tx Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {

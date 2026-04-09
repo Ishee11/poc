@@ -1,6 +1,10 @@
 package entity
 
-import "github.com/ishee11/poc/internal/entity/valueobject"
+import (
+	"time"
+
+	"github.com/ishee11/poc/internal/entity/valueobject"
+)
 
 type Status string
 type SessionID string
@@ -11,20 +15,22 @@ const (
 )
 
 type Session struct {
-	id       SessionID
-	chipRate valueobject.ChipRate
-	status   Status
+	id        SessionID
+	chipRate  valueobject.ChipRate
+	status    Status
+	createdAt time.Time
 
 	// cached aggregates, derived from operations (source of truth)
 	totalBuyInCache   int64
 	totalCashOutCache int64
 }
 
-func NewSession(id SessionID, chipRate valueobject.ChipRate) *Session {
+func NewSession(id SessionID, chipRate valueobject.ChipRate, createdAt time.Time) *Session {
 	return &Session{
 		id:                id,
 		chipRate:          chipRate,
 		status:            StatusActive,
+		createdAt:         createdAt,
 		totalBuyInCache:   0,
 		totalCashOutCache: 0,
 	}
@@ -73,4 +79,8 @@ func (s *Session) Finish() error {
 	s.status = StatusFinished
 
 	return nil
+}
+
+func (s *Session) CreatedAt() time.Time {
+	return s.createdAt
 }

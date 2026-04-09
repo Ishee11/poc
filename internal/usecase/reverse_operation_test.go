@@ -10,7 +10,10 @@ import (
 )
 
 func TestReverseOperationUseCase(t *testing.T) {
-	session := entity.NewSession("s1", valueobject.NewChipRate(2))
+
+	now := time.Now()
+
+	rate, _ := valueobject.NewChipRate(2)
 
 	targetOp, _ := entity.NewOperation(
 		"target",
@@ -18,7 +21,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 		entity.OperationCashOut,
 		"p1",
 		100,
-		now(),
+		now,
 	)
 
 	tt := []struct {
@@ -29,6 +32,8 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "success",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
+				session := entity.NewSession("s1", rate, time.Now())
+
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return targetOp, nil
 				}
@@ -65,7 +70,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 					"p1",
 					100,
 					"ref",
-					now(),
+					time.Now(),
 				)
 
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
@@ -89,7 +94,8 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "session not active",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
-				finished := entity.NewSession("s1", valueobject.NewChipRate(2))
+				rate, _ := valueobject.NewChipRate(2)
+				finished := entity.NewSession("s1", rate, time.Now())
 				_ = finished.Finish()
 
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
@@ -108,6 +114,8 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "idempotent duplicate operation",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
+				session := entity.NewSession("s1", rate, time.Now())
+
 				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
 					return targetOp, nil
 				}
@@ -158,9 +166,4 @@ func TestReverseOperationUseCase(t *testing.T) {
 			}
 		})
 	}
-}
-
-// helper
-func now() time.Time {
-	return time.Now()
 }
