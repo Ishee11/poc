@@ -18,20 +18,20 @@ type GetSessionResponse struct {
 }
 
 type GetSessionUseCase struct {
-	sessionRepo SessionRepository
-	opRepo      OperationRepository
-	txManager   TxManager
+	sessionReader   SessionReader
+	aggregateReader OperationAggregateReader
+	txManager       TxManager
 }
 
 func NewGetSessionUseCase(
-	sessionRepo SessionRepository,
-	opRepo OperationRepository,
+	sessionReader SessionReader,
+	aggregateReader OperationAggregateReader,
 	txManager TxManager,
 ) *GetSessionUseCase {
 	return &GetSessionUseCase{
-		sessionRepo: sessionRepo,
-		opRepo:      opRepo,
-		txManager:   txManager,
+		sessionReader:   sessionReader,
+		aggregateReader: aggregateReader,
+		txManager:       txManager,
 	}
 }
 
@@ -40,13 +40,13 @@ func (uc *GetSessionUseCase) Execute(q GetSessionQuery) (*GetSessionResponse, er
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
 		// 1. загрузка session
-		session, err := uc.sessionRepo.FindByID(tx, q.SessionID)
+		session, err := uc.sessionReader.FindByID(tx, q.SessionID)
 		if err != nil {
 			return err
 		}
 
 		// 2. агрегаты (источник истины)
-		aggr, err := uc.opRepo.GetSessionAggregates(tx, q.SessionID)
+		aggr, err := uc.aggregateReader.GetSessionAggregates(tx, q.SessionID)
 		if err != nil {
 			return err
 		}
