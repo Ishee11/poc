@@ -28,6 +28,15 @@ type OperationReversalChecker interface {
 	ExistsReversal(tx Tx, targetID entity.OperationID) (bool, error)
 }
 
+type OperationListReader interface {
+	ListBySession(
+		tx Tx,
+		sessionID entity.SessionID,
+		limit int,
+		offset int,
+	) ([]*entity.Operation, error)
+}
+
 type SessionReader interface {
 	FindByID(tx Tx, sessionID entity.SessionID) (*entity.Session, error)
 }
