@@ -18,7 +18,7 @@ func (r *inMemoryOperationRepo) Save(tx Tx, op *entity.Operation) error {
 	for _, existing := range r.operations {
 		// защита по requestID (идемпотентность)
 		if existing.RequestID() == op.RequestID() {
-			return nil
+			return entity.ErrDuplicateRequest
 		}
 		// защита по ID (техническая)
 		if existing.ID() == op.ID() {

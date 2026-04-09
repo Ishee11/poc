@@ -9,25 +9,50 @@ import (
 )
 
 func TestIntegration_FullFlow(t *testing.T) {
-	opRepo := &inMemoryOperationRepo{
-		operations: []*entity.Operation{},
-	}
+	opRepo := &inMemoryOperationRepo{}
 	sessionRepo := newSessionRepo()
 	txManager := &txManagerStub{}
 
 	rate, _ := valueobject.NewChipRate(2)
 
 	session := entity.NewSession("s1", rate, time.Now())
-	if err := sessionRepo.Save(nil, session); err != nil {
-		t.Fatalf("failed to save session: %v", err)
-	}
+	_ = sessionRepo.Save(nil, session)
 
 	idGen := &operationIDGeneratorMock{}
 
-	buyInUC := BuyInUseCase{opRepo, sessionRepo, txManager, idGen}
-	cashOutUC := CashOutUseCase{opRepo, sessionRepo, txManager, idGen}
-	reverseUC := ReverseOperationUseCase{opRepo, sessionRepo, txManager}
-	finishUC := FinishSessionUseCase{opRepo, sessionRepo, txManager}
+	buyInUC := BuyInUseCase{
+		opWriter:      opRepo,
+		sessionReader: sessionRepo,
+		sessionWriter: sessionRepo,
+		txManager:     txManager,
+		idGen:         idGen,
+	}
+
+	cashOutUC := CashOutUseCase{
+		opWriter:          opRepo,
+		playerStateReader: opRepo,
+		aggregateReader:   opRepo,
+		sessionReader:     sessionRepo,
+		sessionWriter:     sessionRepo,
+		txManager:         txManager,
+		idGen:             idGen,
+	}
+
+	reverseUC := ReverseOperationUseCase{
+		opWriter:        opRepo,
+		opReader:        opRepo,
+		reversalChecker: opRepo,
+		sessionReader:   sessionRepo,
+		sessionWriter:   sessionRepo,
+		txManager:       txManager,
+	}
+
+	finishUC := FinishSessionUseCase{
+		aggregateReader: opRepo,
+		sessionReader:   sessionRepo,
+		sessionWriter:   sessionRepo,
+		txManager:       txManager,
+	}
 
 	// --- 1. BuyIn ---
 	idGen.id = "op1"
@@ -60,14 +85,14 @@ func TestIntegration_FullFlow(t *testing.T) {
 		t.Fatalf("reversal failed: %v", err)
 	}
 
-	// --- 4. Finish ДОЛЖЕН упасть (tableChips = 100) ---
+	// --- 4. Finish должен упасть ---
 	if err := finishUC.Execute(FinishSessionCommand{
 		SessionID: "s1",
 	}); err == nil {
-		t.Fatalf("expected finish to fail, but got nil")
+		t.Fatalf("expected finish to fail")
 	}
 
-	// --- 5. Повторный CashOut ---
+	// --- 5. CashOut again ---
 	idGen.id = "op4"
 	if err := cashOutUC.Execute(CashOutCommand{
 		RequestID: "req-4",
@@ -78,18 +103,15 @@ func TestIntegration_FullFlow(t *testing.T) {
 		t.Fatalf("cashout2 failed: %v", err)
 	}
 
-	// --- 6. Теперь Finish ДОЛЖЕН пройти ---
+	// --- 6. Finish success ---
 	if err := finishUC.Execute(FinishSessionCommand{
 		SessionID: "s1",
 	}); err != nil {
 		t.Fatalf("finish failed: %v", err)
 	}
 
-	// --- 7. Проверка финального состояния ---
-	s, err := sessionRepo.FindByID(nil, "s1")
-	if err != nil {
-		t.Fatalf("failed to find session: %v", err)
-	}
+	// --- 7. Проверка состояния ---
+	s, _ := sessionRepo.FindByID(nil, "s1")
 
 	if s.Status() != entity.StatusFinished {
 		t.Fatalf("expected finished, got %s", s.Status())
