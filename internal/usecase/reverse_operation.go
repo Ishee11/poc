@@ -13,9 +13,33 @@ type ReverseOperationCommand struct {
 }
 
 type ReverseOperationUseCase struct {
-	opRepo      OperationRepository
-	sessionRepo SessionRepository
-	txManager   TxManager
+	opWriter OperationWriter
+
+	opReader        OperationReader
+	reversalChecker OperationReversalChecker
+
+	sessionReader SessionReader
+	sessionWriter SessionWriter
+
+	txManager TxManager
+}
+
+func NewReverseOperationUseCase(
+	opWriter OperationWriter,
+	opReader OperationReader,
+	reversalChecker OperationReversalChecker,
+	sessionReader SessionReader,
+	sessionWriter SessionWriter,
+	txManager TxManager,
+) *ReverseOperationUseCase {
+	return &ReverseOperationUseCase{
+		opWriter:        opWriter,
+		opReader:        opReader,
+		reversalChecker: reversalChecker,
+		sessionReader:   sessionReader,
+		sessionWriter:   sessionWriter,
+		txManager:       txManager,
+	}
 }
 
 func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
@@ -23,7 +47,7 @@ func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 		return Idempotent(tx, cmd.RequestID, func() error {
 
 			// 2. найти target operation
-			target, err := uc.opRepo.GetByID(tx, cmd.TargetOperationID)
+			target, err := uc.opReader.GetByID(tx, cmd.TargetOperationID)
 			if err != nil {
 				return err
 			}
@@ -37,7 +61,7 @@ func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 			}
 
 			// 4. защита от двойного reversal (доменная)
-			exists, err := uc.opRepo.ExistsReversal(tx, target.ID())
+			exists, err := uc.reversalChecker.ExistsReversal(tx, target.ID())
 			if err != nil {
 				return err
 			}
@@ -46,7 +70,7 @@ func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 			}
 
 			// 5. загрузить session
-			session, err := uc.sessionRepo.FindByID(tx, target.SessionID())
+			session, err := uc.sessionReader.FindByID(tx, target.SessionID())
 			if err != nil {
 				return err
 			}
@@ -70,7 +94,7 @@ func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 			}
 
 			// 7. сохранить операцию
-			if err := uc.opRepo.Save(tx, op); err != nil {
+			if err := uc.opWriter.Save(tx, op); err != nil {
 				return err
 			}
 
@@ -87,7 +111,7 @@ func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 			}
 
 			// 9. сохранить session
-			if err := uc.sessionRepo.Save(tx, session); err != nil {
+			if err := uc.sessionWriter.Save(tx, session); err != nil {
 				return err
 			}
 
