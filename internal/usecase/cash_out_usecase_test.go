@@ -248,6 +248,15 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		session := entity.NewSession("s1", rate, time.Now())
 
 		opRepo := &operationRepoMock{
+			getLastOpFn: func(tx Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {
+				return entity.OperationBuyIn, true, nil
+			},
+			getAggFn: func(tx Tx, sID entity.SessionID) (SessionAggregates, error) {
+				return SessionAggregates{
+					TotalBuyIn:   100,
+					TotalCashOut: 0,
+				}, nil
+			},
 			saveFn: func(tx Tx, op *entity.Operation) error {
 				return entity.ErrDuplicateRequest
 			},
