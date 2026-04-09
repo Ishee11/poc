@@ -11,10 +11,16 @@ type IDGenerator interface {
 }
 
 type CashOutUseCase struct {
-	opRepo      OperationRepository
-	sessionRepo SessionRepository
-	txManager   TxManager
-	idGen       IDGenerator
+	opWriter OperationWriter
+
+	playerStateReader OperationPlayerStateReader
+	aggregateReader   OperationAggregateReader
+
+	sessionReader SessionReader
+	sessionWriter SessionWriter
+
+	txManager TxManager
+	idGen     IDGenerator
 }
 
 type CashOutCommand struct {
@@ -33,7 +39,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 		return Idempotent(tx, cmd.RequestID, func() error {
 
 			// 2. получаем сессию
-			session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
+			session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
 			if err != nil {
 				return err
 			}
@@ -43,7 +49,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 			}
 
 			// 3. проверяем состояние игрока
-			lastOpType, found, err := uc.opRepo.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
+			lastOpType, found, err := uc.playerStateReader.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
 			if err != nil {
 				return err
 			}
@@ -57,7 +63,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 			}
 
 			// 4. агрегаты по сессии
-			aggr, err := uc.opRepo.GetSessionAggregates(tx, cmd.SessionID)
+			aggr, err := uc.aggregateReader.GetSessionAggregates(tx, cmd.SessionID)
 			if err != nil {
 				return err
 			}
@@ -84,7 +90,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 			}
 
 			// 6. сохраняем
-			if err := uc.opRepo.Save(tx, op); err != nil {
+			if err := uc.opWriter.Save(tx, op); err != nil {
 				return err
 			}
 
@@ -93,7 +99,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 				return err
 			}
 
-			return uc.sessionRepo.Save(tx, session)
+			return uc.sessionWriter.Save(tx, session)
 		})
 	})
 }
