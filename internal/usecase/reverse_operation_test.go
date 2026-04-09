@@ -118,8 +118,20 @@ func TestReverseOperationUseCase(t *testing.T) {
 		{
 			name: "idempotent via duplicate request error",
 			setup: func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock) {
+				session := entity.NewSession("s1", rate, time.Now())
+
+				opRepo.getByIDFn = func(tx Tx, id entity.OperationID) (*entity.Operation, error) {
+					return targetOp, nil
+				}
+				opRepo.existsReversalFn = func(tx Tx, id entity.OperationID) (bool, error) {
+					return false, nil
+				}
 				opRepo.saveFn = func(tx Tx, op *entity.Operation) error {
 					return entity.ErrDuplicateRequest
+				}
+
+				sessionRepo.findFn = func(tx Tx, id entity.SessionID) (*entity.Session, error) {
+					return session, nil
 				}
 			},
 		},
