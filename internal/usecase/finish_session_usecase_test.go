@@ -37,9 +37,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
+			aggregateReader: opRepo,
+			sessionReader:   sessionRepo,
+			sessionWriter:   sessionRepo,
+			txManager:       &txManagerMock{},
 		}
 
 		err := uc.Execute(FinishSessionCommand{
@@ -74,9 +75,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
+			aggregateReader: opRepo,
+			sessionReader:   sessionRepo,
+			sessionWriter:   sessionRepo,
+			txManager:       &txManagerMock{},
 		}
 
 		err := uc.Execute(FinishSessionCommand{
@@ -95,8 +97,6 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 			t.Fatalf("failed to finish session: %v", err)
 		}
 
-		opRepo := &operationRepoMock{}
-
 		sessionRepo := &sessionRepoMock{
 			findFn: func(tx Tx, id entity.SessionID) (*entity.Session, error) {
 				return session, nil
@@ -104,9 +104,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			opRepo:      opRepo,
-			sessionRepo: sessionRepo,
-			txManager:   &txManagerMock{},
+			aggregateReader: &operationRepoMock{},
+			sessionReader:   sessionRepo,
+			sessionWriter:   sessionRepo,
+			txManager:       &txManagerMock{},
 		}
 
 		err := uc.Execute(FinishSessionCommand{
@@ -118,10 +119,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("session not active (via finish path)", func(t *testing.T) {
+	t.Run("double finish is idempotent", func(t *testing.T) {
 		session := entity.NewSession("s1", rate, time.Now())
 
-		opRepoFinish := &operationRepoMock{
+		opRepo := &operationRepoMock{
 			getAggFn: func(tx Tx, sID entity.SessionID) (SessionAggregates, error) {
 				return SessionAggregates{
 					TotalBuyIn:   100,
@@ -130,7 +131,7 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 			},
 		}
 
-		sessionRepoFinish := &sessionRepoMock{
+		sessionRepo := &sessionRepoMock{
 			findFn: func(tx Tx, id entity.SessionID) (*entity.Session, error) {
 				return session, nil
 			},
@@ -139,26 +140,20 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 			},
 		}
 
-		ucFinish := FinishSessionUseCase{
-			opRepo:      opRepoFinish,
-			sessionRepo: sessionRepoFinish,
-			txManager:   &txManagerMock{},
-		}
-
-		if err := ucFinish.Execute(FinishSessionCommand{SessionID: "s1"}); err != nil {
-			t.Fatalf("setup finish failed: %v", err)
-		}
-
 		uc := FinishSessionUseCase{
-			opRepo:      &operationRepoMock{},
-			sessionRepo: sessionRepoFinish,
-			txManager:   &txManagerMock{},
+			aggregateReader: opRepo,
+			sessionReader:   sessionRepo,
+			sessionWriter:   sessionRepo,
+			txManager:       &txManagerMock{},
 		}
 
-		err := uc.Execute(FinishSessionCommand{
-			SessionID: "s1",
-		})
+		// первый finish
+		if err := uc.Execute(FinishSessionCommand{SessionID: "s1"}); err != nil {
+			t.Fatalf("first finish failed: %v", err)
+		}
 
+		// второй finish
+		err := uc.Execute(FinishSessionCommand{SessionID: "s1"})
 		if err != nil {
 			t.Fatalf("expected nil, got %v", err)
 		}
