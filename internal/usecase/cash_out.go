@@ -30,7 +30,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return Idempotent(tx, uc.opRepo, cmd.RequestID, func() error {
+		return Idempotent(tx, cmd.RequestID, func() error {
 
 			// 2. получаем сессию
 			session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)

@@ -8,7 +8,6 @@ import (
 
 func Idempotent(
 	tx Tx,
-	repo OperationRepository,
 	requestID string,
 	fn func() error,
 ) error {

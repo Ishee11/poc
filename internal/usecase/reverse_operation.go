@@ -20,7 +20,7 @@ type ReverseOperationUseCase struct {
 
 func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return Idempotent(tx, uc.opRepo, cmd.RequestID, func() error {
+		return Idempotent(tx, cmd.RequestID, func() error {
 
 			// 2. найти target operation
 			target, err := uc.opRepo.GetByID(tx, cmd.TargetOperationID)

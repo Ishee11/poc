@@ -11,10 +11,11 @@ type OperationIDGenerator interface {
 }
 
 type BuyInUseCase struct {
-	opRepo      OperationRepository
-	sessionRepo SessionRepository
-	txManager   TxManager
-	idGen       OperationIDGenerator
+	opWriter      OperationWriter
+	sessionReader SessionReader
+	sessionWriter SessionWriter
+	txManager     TxManager
+	idGen         OperationIDGenerator
 }
 
 type BuyInCommand struct {
@@ -26,16 +27,18 @@ type BuyInCommand struct {
 }
 
 func NewBuyInUseCase(
-	opRepo OperationRepository,
-	sessionRepo SessionRepository,
+	opWriter OperationWriter,
+	sessionReader SessionReader,
+	sessionWriter SessionWriter,
 	txManager TxManager,
 	idGen OperationIDGenerator,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
-		opRepo:      opRepo,
-		sessionRepo: sessionRepo,
-		txManager:   txManager,
-		idGen:       idGen,
+		opWriter:      opWriter,
+		sessionReader: sessionReader,
+		sessionWriter: sessionWriter,
+		txManager:     txManager,
+		idGen:         idGen,
 	}
 }
 
@@ -45,10 +48,10 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return Idempotent(tx, uc.opRepo, cmd.RequestID, func() error {
+		return Idempotent(tx, cmd.RequestID, func() error {
 
 			// 2. загружаем session
-			session, err := uc.sessionRepo.FindByID(tx, cmd.SessionID)
+			session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
 			if err != nil {
 				return err
 			}
@@ -79,12 +82,12 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 			}
 
 			// 5. сохраняем operation
-			if err := uc.opRepo.Save(tx, op); err != nil {
+			if err := uc.opWriter.Save(tx, op); err != nil {
 				return err
 			}
 
 			// 6. сохраняем session
-			if err := uc.sessionRepo.Save(tx, session); err != nil {
+			if err := uc.sessionWriter.Save(tx, session); err != nil {
 				return err
 			}
 
