@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -48,6 +49,13 @@ func TestNewOperation(t *testing.T) {
 			wantErr:       true,
 			expectedError: ErrInvalidOperationType,
 		},
+		{
+			name:          "reversal cannot be created via NewOperation",
+			opType:        OperationReversal,
+			chips:         100,
+			wantErr:       true,
+			expectedError: ErrInvalidOperationType,
+		},
 	}
 
 	for _, tc := range tt {
@@ -65,7 +73,7 @@ func TestNewOperation(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
 				}
-				if err != tc.expectedError {
+				if !errors.Is(err, tc.expectedError) {
 					t.Fatalf("expected %v, got %v", tc.expectedError, err)
 				}
 				return
@@ -95,8 +103,11 @@ func TestNewOperation(t *testing.T) {
 			if op.Type() != tc.opType {
 				t.Fatalf("wrong operationType")
 			}
-			if !op.createdAt.Equal(now) {
+			if !op.CreatedAt().Equal(now) {
 				t.Fatalf("wrong createdAt")
+			}
+			if op.ReferenceID() != nil {
+				t.Fatalf("referenceID should be nil")
 			}
 		})
 	}
@@ -151,7 +162,7 @@ func TestNewReversalOperation(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
 				}
-				if err != tc.expectedError {
+				if !errors.Is(err, tc.expectedError) {
 					t.Fatalf("expected %v, got %v", tc.expectedError, err)
 				}
 				return
@@ -165,6 +176,18 @@ func TestNewReversalOperation(t *testing.T) {
 				t.Fatalf("operation is nil")
 			}
 
+			if op.ID() != "op1" {
+				t.Fatalf("wrong id")
+			}
+			if op.SessionID() != "s1" {
+				t.Fatalf("wrong sessionID")
+			}
+			if op.PlayerID() != "p1" {
+				t.Fatalf("wrong playerID")
+			}
+			if !op.CreatedAt().Equal(now) {
+				t.Fatalf("wrong createdAt")
+			}
 			if op.Type() != OperationReversal {
 				t.Fatalf("wrong operation type")
 			}

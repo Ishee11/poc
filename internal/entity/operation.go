@@ -102,3 +102,7 @@ func (o *Operation) Chips() int64 {
 func (o *Operation) ReferenceID() *OperationID {
 	return o.referenceID
 }
+
+func (o *Operation) CreatedAt() time.Time {
+	return o.createdAt
+}
