@@ -3,19 +3,34 @@ package http
 import "github.com/ishee11/poc/internal/usecase"
 
 type Handler struct {
-	startSessionUC *usecase.StartSessionUseCase
-	buyInUC        *usecase.BuyInUseCase
-	getSessionUC   *usecase.GetSessionUseCase
+	startSessionUC      *usecase.StartSessionUseCase
+	buyInUC             *usecase.BuyInUseCase
+	cashOutUC           *usecase.CashOutUseCase
+	finishSessionUC     *usecase.FinishSessionUseCase
+	reverseOperationUC  *usecase.ReverseOperationUseCase
+	getSessionUC        *usecase.GetSessionUseCase
+	getSessionOpsUC     *usecase.GetSessionOperationsUseCase
+	getSessionResultsUC *usecase.GetSessionResultsUseCase
 }
 
 func NewHandler(
-	startSessionUC *usecase.StartSessionUseCase,
-	buyInUC *usecase.BuyInUseCase,
-	getSessionUC *usecase.GetSessionUseCase,
+	start *usecase.StartSessionUseCase,
+	buyIn *usecase.BuyInUseCase,
+	cashOut *usecase.CashOutUseCase,
+	finish *usecase.FinishSessionUseCase,
+	reverse *usecase.ReverseOperationUseCase,
+	getSession *usecase.GetSessionUseCase,
+	getOps *usecase.GetSessionOperationsUseCase,
+	getResults *usecase.GetSessionResultsUseCase,
 ) *Handler {
 	return &Handler{
-		startSessionUC: startSessionUC,
-		buyInUC:        buyInUC,
-		getSessionUC:   getSessionUC,
+		startSessionUC:      start,
+		buyInUC:             buyIn,
+		cashOutUC:           cashOut,
+		finishSessionUC:     finish,
+		reverseOperationUC:  reverse,
+		getSessionUC:        getSession,
+		getSessionOpsUC:     getOps,
+		getSessionResultsUC: getResults,
 	}
 }

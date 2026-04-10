@@ -1,0 +1,31 @@
+package http
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase"
+)
+
+func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		SessionID string `json:"session_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	err := h.finishSessionUC.Execute(usecase.FinishSessionCommand{
+		SessionID: entity.SessionID(req.SessionID),
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

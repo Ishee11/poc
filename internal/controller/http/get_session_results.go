@@ -8,10 +8,10 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
-func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetSessionResults(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("session_id")
 
-	res, err := h.getSessionUC.Execute(usecase.GetSessionQuery{
+	res, err := h.getSessionResultsUC.Execute(usecase.GetSessionResultsQuery{
 		SessionID: entity.SessionID(sessionID),
 	})
 	if err != nil {
