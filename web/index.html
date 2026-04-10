@@ -1,223 +1,156 @@
 <!doctype html>
-<html>
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Poker Session</title>
+        <title>Poker API UI</title>
         <style>
             body {
                 font-family: Arial;
-                margin: 20px;
+                max-width: 800px;
+                margin: 20px auto;
+            }
+            h2 {
+                margin-top: 30px;
             }
             input,
-            select,
             button {
                 margin: 5px;
                 padding: 5px;
             }
-            table {
-                border-collapse: collapse;
-                margin-top: 10px;
-            }
-            td,
-            th {
-                border: 1px solid #ccc;
-                padding: 6px 10px;
-            }
-            .block {
-                margin-bottom: 20px;
+            pre {
+                background: #f5f5f5;
+                padding: 10px;
             }
         </style>
     </head>
     <body>
-        <h1>Session Manager</h1>
+        <h1>Poker API Debug UI</h1>
 
-        <div class="block">
-            <h3>Session</h3>
+        <h2>Start Session</h2>
+        <input id="start_session_id" placeholder="session_id" />
+        <input id="start_chip_rate" placeholder="chip_rate" />
+        <button onclick="startSession()">Start</button>
 
-            <input id="sessionId" placeholder="session id" value="s1" />
-            <input id="rate" placeholder="rate" value="2" />
+        <h2>Buy In</h2>
+        <input id="buy_req" placeholder="request_id" />
+        <input id="buy_session" placeholder="session_id" />
+        <input id="buy_player" placeholder="player_id" />
+        <input id="buy_chips" placeholder="chips" />
+        <button onclick="buyIn()">Buy In</button>
 
-            <button onclick="createSession()">Create</button>
-            <button onclick="startSession()">Start</button>
-            <button onclick="closeSession()">Close</button>
-            <button onclick="refresh()">Refresh</button>
+        <h2>Cash Out</h2>
+        <input id="cash_req" placeholder="request_id" />
+        <input id="cash_session" placeholder="session_id" />
+        <input id="cash_player" placeholder="player_id" />
+        <input id="cash_chips" placeholder="chips" />
+        <button onclick="cashOut()">Cash Out</button>
 
-            <div id="sessionInfo"></div>
-        </div>
+        <h2>Finish Session</h2>
+        <input id="finish_session" placeholder="session_id" />
+        <button onclick="finishSession()">Finish</button>
 
-        <div class="block">
-            <h3>Operation</h3>
+        <h2>Reverse Operation</h2>
+        <input id="rev_req" placeholder="request_id" />
+        <input id="rev_op" placeholder="operation_id" />
+        <input id="rev_target" placeholder="target_operation_id" />
+        <button onclick="reverseOp()">Reverse</button>
 
-            <input id="playerId" placeholder="player id" value="p1" />
-            <input id="amount" placeholder="amount" value="100" />
+        <h2>Get Session</h2>
+        <input id="get_session" placeholder="session_id" />
+        <button onclick="getSession()">Get</button>
 
-            <select id="opType">
-                <option value="buyin">BuyIn (money)</option>
-                <option value="cashout">CashOut (chips)</option>
-            </select>
+        <h2>Get Operations</h2>
+        <input id="ops_session" placeholder="session_id" />
+        <input id="ops_limit" placeholder="limit" />
+        <input id="ops_offset" placeholder="offset" />
+        <button onclick="getOps()">Get Ops</button>
 
-            <button onclick="applyOperation()">Apply</button>
-        </div>
+        <h2>Get Results</h2>
+        <input id="res_session" placeholder="session_id" />
+        <button onclick="getResults()">Get Results</button>
 
-        <div class="block">
-            <h3>Players</h3>
-
-            <table id="playersTable">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        <th>Chips</th>
-                        <th>Spent</th>
-                        <th>Cashed Out</th>
-                        <th>Result</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div class="block">
-            <h3>Log</h3>
-            <pre id="log"></pre>
-        </div>
+        <h2>Response</h2>
+        <pre id="output"></pre>
 
         <script>
-            let opCounter = 1;
+            const API = "http://localhost:8080";
 
-            function log(msg) {
-                const el = document.getElementById("log");
-                el.innerText = msg + "\n" + el.innerText;
+            function show(res) {
+                document.getElementById("output").textContent = res;
+            }
+
+            async function post(path, body) {
+                const res = await fetch(API + path, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                });
+
+                const text = await res.text();
+                show(res.status + "\n" + text);
+            }
+
+            async function get(path) {
+                const res = await fetch(API + path);
+                const text = await res.text();
+                show(res.status + "\n" + text);
+            }
+
+            function startSession() {
+                post("/session/start", {
+                    session_id: val("start_session_id"),
+                    chip_rate: Number(val("start_chip_rate")),
+                });
+            }
+
+            function buyIn() {
+                post("/buy-in", {
+                    request_id: val("buy_req"),
+                    session_id: val("buy_session"),
+                    player_id: val("buy_player"),
+                    chips: Number(val("buy_chips")),
+                });
+            }
+
+            function cashOut() {
+                post("/cash-out", {
+                    request_id: val("cash_req"),
+                    session_id: val("cash_session"),
+                    player_id: val("cash_player"),
+                    chips: Number(val("cash_chips")),
+                });
+            }
+
+            function finishSession() {
+                post("/session/finish", {
+                    session_id: val("finish_session"),
+                });
+            }
+
+            function reverseOp() {
+                post("/operation/reverse", {
+                    request_id: val("rev_req"),
+                    operation_id: val("rev_op"),
+                    target_operation_id: val("rev_target"),
+                });
+            }
+
+            function getSession() {
+                get(`/session?session_id=${val("get_session")}`);
+            }
+
+            function getOps() {
+                get(
+                    `/session/operations?session_id=${val("ops_session")}&limit=${val("ops_limit")}&offset=${val("ops_offset")}`,
+                );
+            }
+
+            function getResults() {
+                get(`/session/results?session_id=${val("res_session")}`);
             }
 
             function val(id) {
                 return document.getElementById(id).value;
-            }
-
-            async function safeFetch(url, options = {}) {
-                const res = await fetch(url, options);
-
-                if (!res.ok) {
-                    let text = await res.text();
-                    log("ERROR: " + text);
-                    throw new Error(text);
-                }
-
-                return res;
-            }
-
-            // ---------------- SESSION ----------------
-
-            async function createSession() {
-                try {
-                    await safeFetch("/sessions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            session_id: val("sessionId"),
-                            rate: Number(val("rate")),
-                        }),
-                    });
-
-                    log("session created");
-                    await refresh();
-                } catch {}
-            }
-
-            async function startSession() {
-                try {
-                    await safeFetch(`/sessions/${val("sessionId")}/start`, {
-                        method: "POST",
-                    });
-
-                    log("session started");
-                    await refresh();
-                } catch {}
-            }
-
-            async function closeSession() {
-                try {
-                    await safeFetch(`/sessions/${val("sessionId")}/close`, {
-                        method: "POST",
-                    });
-
-                    log("session closed");
-                    await refresh();
-                } catch {}
-            }
-
-            // ---------------- OPERATION ----------------
-
-            async function applyOperation() {
-                try {
-                    const type = val("opType");
-                    const url = `/sessions/${val("sessionId")}/${type}`;
-                    const opId = "op" + opCounter++;
-
-                    let body;
-
-                    if (type === "buyin") {
-                        body = {
-                            operation_id: opId,
-                            player_id: val("playerId"),
-                            money: Number(val("amount")), // 👈 FIX
-                        };
-                    } else {
-                        body = {
-                            operation_id: opId,
-                            player_id: val("playerId"),
-                            chips: Number(val("amount")),
-                        };
-                    }
-
-                    console.log("REQUEST:", body);
-
-                    await safeFetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(body),
-                    });
-
-                    log(`${opId}: ${val("playerId")} ${type} ${val("amount")}`);
-
-                    await refresh();
-                } catch {}
-            }
-
-            // ---------------- REFRESH ----------------
-
-            async function refresh() {
-                try {
-                    const res = await fetch(`/sessions/${val("sessionId")}`);
-
-                    if (!res.ok) {
-                        document.getElementById("sessionInfo").innerText =
-                            "session not found";
-                        return;
-                    }
-
-                    const data = await res.json();
-
-                    document.getElementById("sessionInfo").innerText =
-                        `Status: ${data.status} | Rate: ${data.rate}`;
-
-                    const tbody = document.querySelector("#playersTable tbody");
-                    tbody.innerHTML = "";
-
-                    data.players.forEach((p) => {
-                        const row = `
-                <tr>
-                    <td>${p.id}</td>
-                    <td>${p.chips}</td>
-                    <td>${p.spent}</td>
-                    <td>${p.cashed_out}</td>
-                    <td>${p.result}</td>
-                </tr>
-            `;
-                        tbody.innerHTML += row;
-                    });
-                } catch (e) {
-                    log("refresh failed");
-                }
             }
         </script>
     </body>

@@ -1,9 +1,27 @@
 package http
 
-import "net/http"
+import (
+	"io/fs"
+	"net/http"
+
+	"github.com/ishee11/poc/web"
+)
 
 func NewRouter(h *Handler) http.Handler {
 	mux := http.NewServeMux()
+
+	sub, _ := fs.Sub(web.FS, ".")
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFileFS(w, r, sub, "index.html")
+	})
+
+	// static (если будут css/js)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web"))))
 
 	mux.HandleFunc("/health", h.Health)
 
@@ -18,8 +36,8 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/session/operations", h.GetSessionOperations)
 	mux.HandleFunc("/session/results", h.GetSessionResults)
 
-	// middleware chain
 	var handler http.Handler = mux
+	handler = CORSMiddleware(handler)
 	handler = RequestIDMiddleware(handler)
 	handler = LoggingMiddleware(handler)
 
