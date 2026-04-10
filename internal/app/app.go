@@ -11,17 +11,17 @@ import (
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
 	infra "github.com/ishee11/poc/internal/infra"
-	"github.com/ishee11/poc/internal/infra/memory"
+	postgres "github.com/ishee11/poc/internal/infra/postgres"
 	usecase "github.com/ishee11/poc/internal/usecase"
 )
 
 func Run() error {
 	// ===== Repository =====
-	sessionRepo := memory.NewSessionRepository()
-	opRepo := memory.NewOperationRepository() // <-- нужно добавить
+	sessionRepo := postgres.NewSessionRepository()
+	opRepo := postgres.NewOperationRepository() // <-- нужно добавить
 
 	// ===== TxManager =====
-	txManager := memory.NewTxManager() // <-- если есть, иначе заглушка
+	txManager := postgres.NewTxManager() // <-- если есть, иначе заглушка
 
 	// ===== ID Generator =====
 	idGen := &infra.UUIDOperationIDGenerator{}
