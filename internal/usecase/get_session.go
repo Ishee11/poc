@@ -18,20 +18,20 @@ type GetSessionResponse struct {
 }
 
 type GetSessionUseCase struct {
-	sessionReader   SessionReader
-	aggregateReader OperationAggregateReader
-	txManager       TxManager
+	sessionReader SessionReader
+	projection    ProjectionRepository
+	txManager     TxManager
 }
 
 func NewGetSessionUseCase(
 	sessionReader SessionReader,
-	aggregateReader OperationAggregateReader,
+	projection ProjectionRepository,
 	txManager TxManager,
 ) *GetSessionUseCase {
 	return &GetSessionUseCase{
-		sessionReader:   sessionReader,
-		aggregateReader: aggregateReader,
-		txManager:       txManager,
+		sessionReader: sessionReader,
+		projection:    projection,
+		txManager:     txManager,
 	}
 }
 
@@ -46,7 +46,7 @@ func (uc *GetSessionUseCase) Execute(q GetSessionQuery) (*GetSessionResponse, er
 		}
 
 		// 2. агрегаты (источник истины)
-		aggr, err := uc.aggregateReader.GetSessionAggregates(tx, q.SessionID)
+		aggr, err := uc.projection.GetSessionAggregates(tx, q.SessionID)
 		if err != nil {
 			return err
 		}

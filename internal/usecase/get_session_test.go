@@ -34,9 +34,9 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := GetSessionUseCase{
-			sessionReader:   sessionRepo,
-			aggregateReader: opRepo,
-			txManager:       &txManagerMock{},
+			sessionReader: sessionRepo,
+			projection:    opRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		res, err := uc.Execute(GetSessionQuery{
@@ -83,9 +83,9 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 		opRepo := &operationRepoMock{}
 
 		uc := GetSessionUseCase{
-			sessionReader:   sessionRepo,
-			aggregateReader: opRepo,
-			txManager:       &txManagerMock{},
+			sessionReader: sessionRepo,
+			projection:    opRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		_, err := uc.Execute(GetSessionQuery{
@@ -115,9 +115,9 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := GetSessionUseCase{
-			sessionReader:   sessionRepo,
-			aggregateReader: opRepo,
-			txManager:       &txManagerMock{},
+			sessionReader: sessionRepo,
+			projection:    opRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		_, err := uc.Execute(GetSessionQuery{

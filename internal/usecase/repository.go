@@ -60,3 +60,18 @@ type SessionLocker interface {
 type SessionWriter interface {
 	Save(tx Tx, session *entity.Session) error
 }
+
+type ProjectionRepository interface {
+	GetSessionAggregates(tx Tx, sessionID entity.SessionID) (SessionAggregates, error)
+
+	GetPlayerAggregates(tx Tx, sessionID entity.SessionID) (map[entity.PlayerID]PlayerAggregates, error)
+
+	GetLastOperationType(tx Tx, sessionID entity.SessionID, playerID entity.PlayerID) (entity.OperationType, bool, error)
+
+	ListBySession(
+		tx Tx,
+		sessionID entity.SessionID,
+		limit int,
+		offset int,
+	) ([]*entity.Operation, error)
+}

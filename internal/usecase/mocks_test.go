@@ -15,8 +15,8 @@ type operationRepoMock struct {
 
 	getByRequestIDFn func(tx Tx, requestID string) (*entity.Operation, error)
 
-	// 👇 ВОТ ЭТО ДОБАВИТЬ
-	getPlayerAggFn func(tx Tx, sessionID entity.SessionID) (map[entity.PlayerID]PlayerAggregates, error)
+	listBySessionFn func(tx Tx, sessionID entity.SessionID, limit int, offset int) ([]*entity.Operation, error)
+	getPlayerAggFn  func(tx Tx, sessionID entity.SessionID) (map[entity.PlayerID]PlayerAggregates, error)
 }
 
 func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
@@ -24,6 +24,20 @@ func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
 		return m.saveFn(tx, op)
 	}
 	return nil
+}
+
+func (m *operationRepoMock) ListBySession(
+	tx Tx,
+	sessionID entity.SessionID,
+	limit int,
+	offset int,
+) ([]*entity.Operation, error) {
+
+	if m.listBySessionFn != nil {
+		return m.listBySessionFn(tx, sessionID, limit, offset)
+	}
+
+	return []*entity.Operation{}, nil
 }
 
 func (m *operationRepoMock) GetLastOperationType(

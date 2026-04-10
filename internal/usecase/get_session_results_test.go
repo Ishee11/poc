@@ -35,7 +35,7 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 
 		uc := GetSessionResultsUseCase{
 			sessionReader: sessionRepo,
-			aggReader:     opRepo,
+			projection:    opRepo,
 			txManager:     &txManagerMock{},
 		}
 
@@ -97,7 +97,7 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 
 		uc := GetSessionResultsUseCase{
 			sessionReader: sessionRepo,
-			aggReader:     opRepo,
+			projection:    opRepo,
 			txManager:     &txManagerMock{},
 		}
 
@@ -130,7 +130,7 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 
 		uc := GetSessionResultsUseCase{
 			sessionReader: sessionRepo,
-			aggReader:     opRepo,
+			projection:    opRepo,
 			txManager:     &txManagerMock{},
 		}
 

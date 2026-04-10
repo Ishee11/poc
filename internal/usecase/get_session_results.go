@@ -22,18 +22,18 @@ type GetSessionResultsResponse struct {
 
 type GetSessionResultsUseCase struct {
 	sessionReader SessionReader
-	aggReader     OperationPlayerAggregatesReader
+	projection    ProjectionRepository
 	txManager     TxManager
 }
 
 func NewGetSessionResultsUseCase(
 	sessionReader SessionReader,
-	aggReader OperationPlayerAggregatesReader,
+	projection ProjectionRepository,
 	txManager TxManager,
 ) *GetSessionResultsUseCase {
 	return &GetSessionResultsUseCase{
 		sessionReader: sessionReader,
-		aggReader:     aggReader,
+		projection:    projection,
 		txManager:     txManager,
 	}
 }
@@ -53,7 +53,7 @@ func (uc *GetSessionResultsUseCase) Execute(
 		}
 
 		// 2. агрегаты по игрокам
-		playerAggs, err := uc.aggReader.GetPlayerAggregates(tx, q.SessionID)
+		playerAggs, err := uc.projection.GetPlayerAggregates(tx, q.SessionID)
 		if err != nil {
 			return err
 		}
