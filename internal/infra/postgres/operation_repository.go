@@ -173,3 +173,35 @@ func scanOperation(row pgx.Row) (*entity.Operation, error) {
 		createdAt,
 	)
 }
+
+// --- ExistsReversal ---
+
+func (r *OperationRepository) ExistsReversal(
+	tx usecase.Tx,
+	targetID entity.OperationID,
+) (bool, error) {
+
+	pgxTx, ok := tx.(pgx.Tx)
+	if !ok {
+		return false, errors.New("invalid tx type")
+	}
+
+	ctx := context.Background()
+
+	var exists bool
+
+	err := pgxTx.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM operations
+			WHERE reference_id = $1
+			  AND type = 'reversal'
+		)
+	`, targetID).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}

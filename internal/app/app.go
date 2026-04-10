@@ -27,9 +27,10 @@ func Run() error {
 	}
 	defer pool.Close()
 
-	// ===== Repository =====
+	// ===== Repositories =====
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
+	projectionRepo := postgres.NewProjectionRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(pool)
@@ -38,6 +39,14 @@ func Run() error {
 	idGen := &infra.UUIDOperationIDGenerator{}
 
 	// ===== UseCases =====
+
+	// write
+	startSessionUC := usecase.NewStartSessionUseCase(
+		sessionRepo,
+		sessionRepo,
+		txManager,
+	)
+
 	buyInUC := usecase.NewBuyInUseCase(
 		opRepo,
 		sessionRepo,
@@ -46,22 +55,62 @@ func Run() error {
 		idGen,
 	)
 
-	startSessionUC := usecase.NewStartSessionUseCase(
+	cashOutUC := usecase.NewCashOutUseCase(
+		opRepo,
+		projectionRepo, // OperationPlayerStateReader
+		projectionRepo, // ProjectionRepository
+		sessionRepo,
+		sessionRepo,
+		txManager,
+		idGen,
+	)
+
+	finishSessionUC := usecase.NewFinishSessionUseCase(
+		projectionRepo,
 		sessionRepo,
 		sessionRepo,
 		txManager,
 	)
 
-	projectionRepo := postgres.NewProjectionRepository()
+	reverseOpUC := usecase.NewReverseOperationUseCase(
+		opRepo,
+		opRepo,
+		opRepo,
+		sessionRepo,
+		sessionRepo,
+		txManager,
+	)
 
+	// read
 	getSessionUC := usecase.NewGetSessionUseCase(
 		sessionRepo,
 		projectionRepo,
 		txManager,
 	)
 
+	getSessionOpsUC := usecase.NewGetSessionOperationsUseCase(
+		sessionRepo,
+		projectionRepo,
+		txManager,
+	)
+
+	getSessionResultsUC := usecase.NewGetSessionResultsUseCase(
+		sessionRepo,
+		projectionRepo,
+		txManager,
+	)
+
 	// ===== Handler =====
-	handler := httpcontroller.NewHandler(startSessionUC, buyInUC, getSessionUC)
+	handler := httpcontroller.NewHandler(
+		startSessionUC,
+		buyInUC,
+		cashOutUC,
+		finishSessionUC,
+		reverseOpUC,
+		getSessionUC,
+		getSessionOpsUC,
+		getSessionResultsUC,
+	)
 
 	// ===== Router =====
 	router := httpcontroller.NewRouter(handler)
@@ -87,10 +136,10 @@ func Run() error {
 	<-quit
 	log.Println("shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctxShutdown); err != nil {
 		return err
 	}
 
