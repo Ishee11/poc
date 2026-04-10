@@ -63,39 +63,19 @@ func (r *SessionRepository) FindByID(
 		return nil, err
 	}
 
-	// восстановление value object
 	rate, err := valueobject.NewChipRate(chipRate)
 	if err != nil {
 		return nil, err
 	}
 
-	// создаём entity
-	session := entity.NewSession(
+	return entity.RestoreSession(
 		entity.SessionID(id),
 		rate,
+		entity.Status(status),
 		createdAt,
-	)
-
-	// восстанавливаем статус
-	switch status {
-	case string(entity.StatusActive):
-		// уже active по умолчанию
-	case string(entity.StatusFinished):
-		_ = session.Finish()
-	default:
-		return nil, errors.New("unknown session status")
-	}
-
-	// восстанавливаем cached aggregates
-	// (да, это доступ к приватным полям через методы невозможен → делаем через apply)
-	if totalBuyIn > 0 {
-		_ = session.BuyIn(totalBuyIn)
-	}
-	if totalCashOut > 0 {
-		_ = session.CashOut(totalCashOut)
-	}
-
-	return session, nil
+		totalBuyIn,
+		totalCashOut,
+	), nil
 }
 
 // --- Writer ---

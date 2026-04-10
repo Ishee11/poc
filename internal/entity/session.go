@@ -36,6 +36,24 @@ func NewSession(id SessionID, chipRate valueobject.ChipRate, createdAt time.Time
 	}
 }
 
+func RestoreSession(
+	id SessionID,
+	chipRate valueobject.ChipRate,
+	status Status,
+	createdAt time.Time,
+	totalBuyIn int64,
+	totalCashOut int64,
+) *Session {
+	return &Session{
+		id:                id,
+		chipRate:          chipRate,
+		status:            status,
+		createdAt:         createdAt,
+		totalBuyInCache:   totalBuyIn,
+		totalCashOutCache: totalCashOut,
+	}
+}
+
 func (s *Session) ID() SessionID                  { return s.id }
 func (s *Session) ChipRate() valueobject.ChipRate { return s.chipRate }
 func (s *Session) Status() Status                 { return s.status }
