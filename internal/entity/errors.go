@@ -32,4 +32,6 @@ var (
 	ErrInvalidOperation = errors.New("invalid operation")
 	ErrInvalidCashOut   = errors.New("invalid cash out")
 	ErrTableNotSettled  = errors.New("table not settled")
+
+	ErrSessionNotBalanced = errors.New("session not balanced")
 )

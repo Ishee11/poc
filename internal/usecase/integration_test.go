@@ -31,7 +31,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	cashOutUC := CashOutUseCase{
 		opWriter:          opRepo,
 		playerStateReader: opRepo,
-		aggregateReader:   opRepo,
+		projection:        opRepo,
 		sessionReader:     sessionRepo,
 		sessionWriter:     sessionRepo,
 		txManager:         txManager,
@@ -48,10 +48,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	finishUC := FinishSessionUseCase{
-		aggregateReader: opRepo,
-		sessionReader:   sessionRepo,
-		sessionWriter:   sessionRepo,
-		txManager:       txManager,
+		projection:    opRepo,
+		sessionReader: sessionRepo,
+		sessionWriter: sessionRepo,
+		txManager:     txManager,
 	}
 
 	// --- 1. BuyIn ---

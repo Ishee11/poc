@@ -37,10 +37,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			aggregateReader: opRepo,
-			sessionReader:   sessionRepo,
-			sessionWriter:   sessionRepo,
-			txManager:       &txManagerMock{},
+			projection:    opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		err := uc.Execute(FinishSessionCommand{
@@ -75,18 +75,18 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			aggregateReader: opRepo,
-			sessionReader:   sessionRepo,
-			sessionWriter:   sessionRepo,
-			txManager:       &txManagerMock{},
+			projection:    opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		err := uc.Execute(FinishSessionCommand{
 			SessionID: "s1",
 		})
 
-		if !errors.Is(err, entity.ErrTableNotSettled) {
-			t.Fatalf("expected ErrTableNotSettled, got %v", err)
+		if !errors.Is(err, entity.ErrSessionNotBalanced) {
+			t.Fatalf("expected ErrSessionNotBalanced, got %v", err)
 		}
 	})
 
@@ -104,10 +104,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			aggregateReader: &operationRepoMock{},
-			sessionReader:   sessionRepo,
-			sessionWriter:   sessionRepo,
-			txManager:       &txManagerMock{},
+			projection:    &operationRepoMock{},
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		err := uc.Execute(FinishSessionCommand{
@@ -141,10 +141,10 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 		}
 
 		uc := FinishSessionUseCase{
-			aggregateReader: opRepo,
-			sessionReader:   sessionRepo,
-			sessionWriter:   sessionRepo,
-			txManager:       &txManagerMock{},
+			projection:    opRepo,
+			sessionReader: sessionRepo,
+			sessionWriter: sessionRepo,
+			txManager:     &txManagerMock{},
 		}
 
 		// первый finish

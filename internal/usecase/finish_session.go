@@ -9,40 +9,54 @@ type FinishSessionCommand struct {
 }
 
 type FinishSessionUseCase struct {
-	aggregateReader OperationAggregateReader
-
+	projection    ProjectionRepository
 	sessionReader SessionReader
 	sessionWriter SessionWriter
+	txManager     TxManager
+}
 
-	txManager TxManager
+func NewFinishSessionUseCase(
+	projection ProjectionRepository,
+	sessionReader SessionReader,
+	sessionWriter SessionWriter,
+	txManager TxManager,
+) *FinishSessionUseCase {
+	return &FinishSessionUseCase{
+		projection:    projection,
+		sessionReader: sessionReader,
+		sessionWriter: sessionWriter,
+		txManager:     txManager,
+	}
 }
 
 func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
+
+		// 1. получаем session
 		session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
 		if err != nil {
 			return err
 		}
 
-		// идемпотентность через state
 		if session.Status() == entity.StatusFinished {
-			return nil
+			return nil // idempotent
 		}
 
 		if session.Status() != entity.StatusActive {
 			return entity.ErrSessionNotActive
 		}
 
-		sessionAggregates, err := uc.aggregateReader.GetSessionAggregates(tx, cmd.SessionID)
+		// 2. проверяем баланс через projection
+		aggr, err := uc.projection.GetSessionAggregates(tx, cmd.SessionID)
 		if err != nil {
 			return err
 		}
 
-		tableChips := sessionAggregates.TotalBuyIn - sessionAggregates.TotalCashOut
-		if tableChips != 0 {
-			return entity.ErrTableNotSettled
+		if aggr.TotalBuyIn != aggr.TotalCashOut {
+			return entity.ErrSessionNotBalanced
 		}
 
+		// 3. завершаем
 		if err := session.Finish(); err != nil {
 			return err
 		}
