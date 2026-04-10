@@ -4,6 +4,14 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
+type SessionNotBalancedError struct {
+	RemainingChips int64
+}
+
+func (e *SessionNotBalancedError) Error() string {
+	return "session not balanced"
+}
+
 type FinishSessionCommand struct {
 	SessionID entity.SessionID
 }
@@ -53,7 +61,9 @@ func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 		}
 
 		if aggr.TotalBuyIn != aggr.TotalCashOut {
-			return entity.ErrSessionNotBalanced
+			return &SessionNotBalancedError{
+				RemainingChips: aggr.TotalBuyIn - aggr.TotalCashOut,
+			}
 		}
 
 		// 3. завершаем
