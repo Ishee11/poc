@@ -3,9 +3,19 @@ package http
 import "github.com/ishee11/poc/internal/usecase"
 
 type Handler struct {
-	buyInUC *usecase.BuyInUseCase
+	startSessionUC *usecase.StartSessionUseCase
+	buyInUC        *usecase.BuyInUseCase
+	getSessionUC   *usecase.GetSessionUseCase
 }
 
-func NewHandler(buyInUC *usecase.BuyInUseCase) *Handler {
-	return &Handler{buyInUC: buyInUC}
+func NewHandler(
+	startSessionUC *usecase.StartSessionUseCase,
+	buyInUC *usecase.BuyInUseCase,
+	getSessionUC *usecase.GetSessionUseCase,
+) *Handler {
+	return &Handler{
+		startSessionUC: startSessionUC,
+		buyInUC:        buyInUC,
+		getSessionUC:   getSessionUC,
+	}
 }

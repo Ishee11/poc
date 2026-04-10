@@ -21,7 +21,7 @@ func Run() error {
 	ctx := context.Background()
 
 	// ===== DB =====
-	pool, err := pgxpool.New(ctx, "postgres://user:password@localhost:5432/db")
+	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/poc_test?sslmode=disable")
 	if err != nil {
 		return err
 	}
@@ -46,21 +46,22 @@ func Run() error {
 		idGen,
 	)
 
-	// ===== Smoke test (вместо HTTP) =====
-	err = buyInUC.Execute(usecase.BuyInCommand{
-		RequestID: "test-1",
-		SessionID: "session-1",
-		PlayerID:  "player-1",
-		Chips:     100,
-	})
-	if err != nil {
-		log.Println("buy-in error:", err)
-	} else {
-		log.Println("buy-in success")
-	}
+	startSessionUC := usecase.NewStartSessionUseCase(
+		sessionRepo,
+		sessionRepo,
+		txManager,
+	)
+
+	projectionRepo := postgres.NewProjectionRepository()
+
+	getSessionUC := usecase.NewGetSessionUseCase(
+		sessionRepo,
+		projectionRepo,
+		txManager,
+	)
 
 	// ===== Handler =====
-	handler := httpcontroller.NewHandler(buyInUC)
+	handler := httpcontroller.NewHandler(startSessionUC, buyInUC, getSessionUC)
 
 	// ===== Router =====
 	router := httpcontroller.NewRouter(handler)
