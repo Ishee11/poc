@@ -1,4 +1,3 @@
--- +up
 CREATE TABLE operations (
     id TEXT PRIMARY KEY,
 
@@ -12,6 +11,3 @@ CREATE TABLE operations (
     reference_id TEXT,
     created_at TIMESTAMP NOT NULL
 );
-
--- +down
-DROP TABLE operations;
