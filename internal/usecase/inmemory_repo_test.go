@@ -195,6 +195,63 @@ func (r *inMemoryOperationRepo) ListBySession(
 	return result, nil
 }
 
+func (r *inMemoryOperationRepo) GetPlayerAggregates(
+	tx Tx,
+	sessionID entity.SessionID,
+) (map[entity.PlayerID]PlayerAggregates, error) {
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	result := make(map[entity.PlayerID]PlayerAggregates)
+
+	for _, op := range r.operations {
+		if op.SessionID() != sessionID {
+			continue
+		}
+
+		playerID := op.PlayerID()
+		aggr := result[playerID]
+
+		switch op.Type() {
+
+		case entity.OperationBuyIn:
+			aggr.BuyIn += op.Chips()
+
+		case entity.OperationCashOut:
+			aggr.CashOut += op.Chips()
+
+		case entity.OperationReversal:
+			refID := op.ReferenceID()
+			if refID == nil {
+				continue
+			}
+
+			target := r.findByID(*refID)
+			if target == nil {
+				continue
+			}
+
+			targetPlayer := target.PlayerID()
+			targetAggr := result[targetPlayer]
+
+			switch target.Type() {
+			case entity.OperationBuyIn:
+				targetAggr.BuyIn -= target.Chips()
+			case entity.OperationCashOut:
+				targetAggr.CashOut -= target.Chips()
+			}
+
+			result[targetPlayer] = targetAggr
+			continue
+		}
+
+		result[playerID] = aggr
+	}
+
+	return result, nil
+}
+
 // внутренний helper (БЕЗ lock)
 func (r *inMemoryOperationRepo) findByID(id entity.OperationID) *entity.Operation {
 	for _, op := range r.operations {
