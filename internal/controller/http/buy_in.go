@@ -29,8 +29,7 @@ func (h *Handler) BuyIn(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		// пока просто 500 (потом сделаем mapper ошибок)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 

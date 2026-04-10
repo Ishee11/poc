@@ -15,7 +15,7 @@ func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
 		SessionID: entity.SessionID(sessionID),
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 

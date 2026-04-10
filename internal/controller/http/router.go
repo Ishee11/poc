@@ -5,6 +5,8 @@ import "net/http"
 func NewRouter(h *Handler) http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/health", h.Health)
+
 	mux.HandleFunc("/session/start", h.StartSession)
 	mux.HandleFunc("/session/finish", h.FinishSession)
 
@@ -16,5 +18,10 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/session/operations", h.GetSessionOperations)
 	mux.HandleFunc("/session/results", h.GetSessionResults)
 
-	return mux
+	// middleware chain
+	var handler http.Handler = mux
+	handler = RequestIDMiddleware(handler)
+	handler = LoggingMiddleware(handler)
+
+	return handler
 }
