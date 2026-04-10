@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -113,12 +112,15 @@ func (r *SessionRepository) Save(
 
 	ctx := context.Background()
 
-	// пробуем INSERT
 	_, err := pgxTx.Exec(ctx, `
 		INSERT INTO sessions (
 			id, chip_rate, status, created_at, total_buy_in, total_cash_out
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (id) DO UPDATE SET
+			status = EXCLUDED.status,
+			total_buy_in = EXCLUDED.total_buy_in,
+			total_cash_out = EXCLUDED.total_cash_out
 	`,
 		session.ID(),
 		session.ChipRate().Value(),
@@ -127,29 +129,6 @@ func (r *SessionRepository) Save(
 		session.TotalBuyIn(),
 		session.TotalCashOut(),
 	)
-
-	if err == nil {
-		return nil
-	}
-
-	// если уже существует → UPDATE
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-		_, err = pgxTx.Exec(ctx, `
-			UPDATE sessions
-			SET
-				status = $2,
-				total_buy_in = $3,
-				total_cash_out = $4
-			WHERE id = $1
-		`,
-			session.ID(),
-			session.Status(),
-			session.TotalBuyIn(),
-			session.TotalCashOut(),
-		)
-		return err
-	}
 
 	return err
 }
