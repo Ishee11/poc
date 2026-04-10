@@ -12,13 +12,6 @@ type PlayerAggregates struct {
 	CashOut int64
 }
 
-type OperationPlayerAggregatesReader interface {
-	GetPlayerAggregates(
-		tx Tx,
-		sessionID entity.SessionID,
-	) (map[entity.PlayerID]PlayerAggregates, error)
-}
-
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }
@@ -38,15 +31,6 @@ type OperationPlayerStateReader interface {
 
 type OperationReversalChecker interface {
 	ExistsReversal(tx Tx, targetID entity.OperationID) (bool, error)
-}
-
-type OperationListReader interface {
-	ListBySession(
-		tx Tx,
-		sessionID entity.SessionID,
-		limit int,
-		offset int,
-	) ([]*entity.Operation, error)
 }
 
 type SessionReader interface {

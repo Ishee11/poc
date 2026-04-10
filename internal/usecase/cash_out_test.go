@@ -48,7 +48,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          opRepo,
 			playerStateReader: opRepo,
-			aggregateReader:   opRepo,
+			projection:        opRepo,
 			sessionReader:     sessionRepo,
 			sessionWriter:     sessionRepo,
 			txManager:         &txManagerMock{},
@@ -74,7 +74,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          &operationRepoMock{},
 			playerStateReader: &operationRepoMock{},
-			aggregateReader:   &operationRepoMock{},
+			projection:        &operationRepoMock{},
 			sessionReader:     &sessionRepoMock{},
 			sessionWriter:     &sessionRepoMock{},
 			txManager:         &txManagerMock{},
@@ -108,7 +108,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          opRepo,
 			playerStateReader: opRepo,
-			aggregateReader:   opRepo,
+			projection:        opRepo,
 			sessionReader:     sessionRepo,
 			sessionWriter:     sessionRepo,
 			txManager:         &txManagerMock{},
@@ -145,7 +145,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          opRepo,
 			playerStateReader: opRepo,
-			aggregateReader:   opRepo,
+			projection:        opRepo,
 			sessionReader:     sessionRepo,
 			sessionWriter:     sessionRepo,
 			txManager:         &txManagerMock{},
@@ -182,7 +182,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          opRepo,
 			playerStateReader: opRepo,
-			aggregateReader:   opRepo,
+			projection:        opRepo,
 			sessionReader:     sessionRepo,
 			sessionWriter:     sessionRepo,
 			txManager:         &txManagerMock{},
@@ -225,7 +225,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          opRepo,
 			playerStateReader: opRepo,
-			aggregateReader:   opRepo,
+			projection:        opRepo,
 			sessionReader:     sessionRepo,
 			sessionWriter:     sessionRepo,
 			txManager:         &txManagerMock{},
@@ -271,7 +271,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		uc := CashOutUseCase{
 			opWriter:          opRepo,
 			playerStateReader: opRepo,
-			aggregateReader:   opRepo,
+			projection:        opRepo,
 			sessionReader:     sessionRepo,
 			sessionWriter:     sessionRepo,
 			txManager:         &txManagerMock{},
