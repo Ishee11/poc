@@ -32,10 +32,23 @@ func (r *ProjectionRepository) GetSessionAggregates(
 
 	row := pgxTx.QueryRow(ctx, `
 		SELECT
-			COALESCE(SUM(CASE WHEN type = 'buy_in' THEN chips END), 0),
-			COALESCE(SUM(CASE WHEN type = 'cash_out' THEN chips END), 0)
-		FROM operations
-		WHERE session_id = $1
+			COALESCE(SUM(
+				CASE
+					WHEN o.type = 'buy_in' THEN o.chips
+					WHEN o.type = 'reversal' AND ref.type = 'buy_in' THEN -o.chips
+					ELSE 0
+				END
+			), 0),
+			COALESCE(SUM(
+				CASE
+					WHEN o.type = 'cash_out' THEN o.chips
+					WHEN o.type = 'reversal' AND ref.type = 'cash_out' THEN -o.chips
+					ELSE 0
+				END
+			), 0)
+		FROM operations o
+		LEFT JOIN operations ref ON o.reference_id = ref.id
+		WHERE o.session_id = $1
 	`, sessionID)
 
 	var totalBuyIn int64
@@ -68,12 +81,25 @@ func (r *ProjectionRepository) GetPlayerAggregates(
 
 	rows, err := pgxTx.Query(ctx, `
 		SELECT
-			player_id,
-			COALESCE(SUM(CASE WHEN type = 'buy_in' THEN chips END), 0),
-			COALESCE(SUM(CASE WHEN type = 'cash_out' THEN chips END), 0)
-		FROM operations
-		WHERE session_id = $1
-		GROUP BY player_id
+			o.player_id,
+			COALESCE(SUM(
+				CASE
+					WHEN o.type = 'buy_in' THEN o.chips
+					WHEN o.type = 'reversal' AND ref.type = 'buy_in' THEN -o.chips
+					ELSE 0
+				END
+			), 0),
+			COALESCE(SUM(
+				CASE
+					WHEN o.type = 'cash_out' THEN o.chips
+					WHEN o.type = 'reversal' AND ref.type = 'cash_out' THEN -o.chips
+					ELSE 0
+				END
+			), 0)
+		FROM operations o
+		LEFT JOIN operations ref ON o.reference_id = ref.id
+		WHERE o.session_id = $1
+		GROUP BY o.player_id
 	`, sessionID)
 	if err != nil {
 		return nil, err

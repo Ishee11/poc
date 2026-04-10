@@ -47,7 +47,7 @@ func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
 		}
 
 		if session.Status() == entity.StatusFinished {
-			return nil // idempotent
+			return entity.ErrSessionFinished
 		}
 
 		if session.Status() != entity.StatusActive {

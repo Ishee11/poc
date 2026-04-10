@@ -39,8 +39,12 @@ func (uc *StartSessionUseCase) Execute(cmd StartSessionCommand) error {
 		if err != nil && !errors.Is(err, entity.ErrSessionNotFound) {
 			return err
 		}
+
 		if existing != nil {
-			return nil
+			if existing.Status() == entity.StatusActive {
+				return nil // идемпотентный повтор
+			}
+			return entity.ErrSessionAlreadyExists
 		}
 
 		// 2. безопасная валидация chipRate
