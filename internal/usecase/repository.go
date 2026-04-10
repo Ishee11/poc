@@ -53,6 +53,10 @@ type SessionReader interface {
 	FindByID(tx Tx, sessionID entity.SessionID) (*entity.Session, error)
 }
 
+type SessionLocker interface {
+	FindByIDForUpdate(tx Tx, sessionID entity.SessionID) (*entity.Session, error)
+}
+
 type SessionWriter interface {
 	Save(tx Tx, session *entity.Session) error
 }
