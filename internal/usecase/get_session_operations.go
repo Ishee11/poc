@@ -30,18 +30,18 @@ type GetSessionOperationsResponse struct {
 
 type GetSessionOperationsUseCase struct {
 	sessionReader SessionReader
-	opReader      OperationListReader
+	projection    ProjectionRepository
 	txManager     TxManager
 }
 
 func NewGetSessionOperationsUseCase(
 	sessionReader SessionReader,
-	opReader OperationListReader,
+	projection ProjectionRepository,
 	txManager TxManager,
 ) *GetSessionOperationsUseCase {
 	return &GetSessionOperationsUseCase{
 		sessionReader: sessionReader,
-		opReader:      opReader,
+		projection:    projection,
 		txManager:     txManager,
 	}
 }
@@ -61,7 +61,7 @@ func (uc *GetSessionOperationsUseCase) Execute(
 		}
 
 		// 2. читаем операции
-		ops, err := uc.opReader.ListBySession(tx, q.SessionID, q.Limit, q.Offset)
+		ops, err := uc.projection.ListBySession(tx, q.SessionID, q.Limit, q.Offset)
 		if err != nil {
 			return err
 		}
