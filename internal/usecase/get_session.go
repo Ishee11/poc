@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"time"
+
 	"github.com/ishee11/poc/internal/entity"
 )
 
@@ -12,6 +14,7 @@ type GetSessionResponse struct {
 	SessionID    entity.SessionID
 	Status       entity.Status
 	ChipRate     int64
+	CreatedAt    string
 	TotalBuyIn   int64
 	TotalCashOut int64
 	TotalChips   int64
@@ -56,6 +59,7 @@ func (uc *GetSessionUseCase) Execute(q GetSessionQuery) (*GetSessionResponse, er
 			SessionID:    session.ID(),
 			Status:       session.Status(),
 			ChipRate:     session.ChipRate().Value(),
+			CreatedAt:    session.CreatedAt().Format(time.RFC3339),
 			TotalBuyIn:   aggr.TotalBuyIn,
 			TotalCashOut: aggr.TotalCashOut,
 			TotalChips:   aggr.TotalBuyIn - aggr.TotalCashOut,

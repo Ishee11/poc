@@ -556,6 +556,14 @@
                 display: none !important;
             }
 
+            .desktop-only {
+                display: block;
+            }
+
+            .mobile-only {
+                display: none;
+            }
+
             @media (max-width: 1180px) {
                 .grid.two,
                 .grid.three,
@@ -629,6 +637,14 @@
                     max-height: 220px;
                     font-size: 0.8rem;
                 }
+
+                .desktop-only {
+                    display: none !important;
+                }
+
+                .mobile-only {
+                    display: block;
+                }
             }
         </style>
     </head>
@@ -680,7 +696,7 @@
                         </div>
                     </div>
 
-                    <div class="panel">
+                    <div class="panel" id="lobby-debug-panel">
                         <div class="toolbar">
                             <h3>Overview</h3>
                             <span class="hint">Sessions are filtered by session creation date. Players are filtered by activity date.</span>
@@ -784,10 +800,9 @@
                     <div class="panel">
                         <div class="workspace-header">
                             <div>
-                                <h2 id="workspace-title">Session Workspace</h2>
+                                <h2 id="workspace-title">Session</h2>
                                 <div class="actions">
                                     <span class="session-status" id="session-status-chip"></span>
-                                    <span class="pill mono" id="workspace-request-chip"></span>
                                 </div>
                             </div>
                             <div class="actions">
@@ -834,10 +849,6 @@
                                         <input id="buy-chips" type="number" min="1" placeholder="100" required />
                                     </label>
                                 </div>
-                                <label>
-                                    Request ID
-                                    <input id="buy-request-id" placeholder="auto-generated if empty" />
-                                </label>
                                 <div class="actions">
                                     <button type="submit">Submit Buy In</button>
                                 </div>
@@ -857,10 +868,6 @@
                                         <input id="cash-chips" type="number" min="1" placeholder="50" required />
                                     </label>
                                 </div>
-                                <label>
-                                    Request ID
-                                    <input id="cash-request-id" placeholder="auto-generated if empty" />
-                                </label>
                                 <div class="actions">
                                     <button class="warn" type="submit">Submit Cash Out</button>
                                 </div>
@@ -870,62 +877,36 @@
 
                     <div class="grid two">
                         <div class="panel">
-                            <h3>Reverse Operation</h3>
-                            <p>
-                                Pick a target operation from the journal below or
-                                paste an ID directly.
-                            </p>
-                            <form id="reverse-form">
-                                <label>
-                                    Target Operation ID
-                                    <input id="reverse-target-id" placeholder="op-2" required />
-                                </label>
-                                <label>
-                                    Request ID
-                                    <input id="reverse-request-id" placeholder="auto-generated if empty" />
-                                </label>
-                                <div class="actions">
-                                    <button class="danger" type="submit">Reverse Operation</button>
-                                </div>
-                            </form>
+                            <div class="toolbar">
+                                <h3>Player Results</h3>
+                                <span class="hint">Calculated from operations</span>
+                            </div>
+                            <div id="results-wrap"></div>
                         </div>
 
-                        <div class="panel">
-                            <h3>Finish Session</h3>
-                            <p>
-                                Finishing works only when <span class="mono">total_buy_in == total_cash_out</span>.
-                            </p>
-                            <form id="finish-form">
-                                <label>
-                                    Request ID
-                                    <input id="finish-request-id" placeholder="auto-generated if empty" />
-                                </label>
-                                <div class="actions">
-                                    <button class="danger" type="submit">Finish Session</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="grid two">
                         <div class="panel">
                             <div class="toolbar">
                                 <h3>Operations</h3>
                                 <span class="hint" id="operations-count">0 loaded</span>
                             </div>
-                            <div class="table-wrap" id="operations-wrap"></div>
-                        </div>
-
-                        <div class="panel">
-                            <div class="toolbar">
-                                <h3>Player Results</h3>
-                                <span class="hint">Calculated from operations</span>
-                            </div>
-                            <div class="table-wrap" id="results-wrap"></div>
+                            <div id="operations-wrap"></div>
                         </div>
                     </div>
 
                     <div class="panel">
+                        <h3>Finish Session</h3>
+                        <p>
+                            Finishing works only when <span class="mono">total_buy_in == total_cash_out</span>.
+                        </p>
+                        <form id="finish-form">
+                            <div class="actions">
+                                <button class="danger" type="submit">Finish Session</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+
+                    <div class="panel" id="session-debug-panel">
                         <div class="toolbar">
                             <h3>Latest Response</h3>
                             <span class="hint" id="workspace-summary"></span>
@@ -1000,6 +981,7 @@
                 overviewPlayers: [],
                 selectedPlayerId: "",
                 selectedPlayerDetail: null,
+                pendingReverseOperationId: "",
             };
 
             const lobbyScreen = document.getElementById("screen-lobby");
@@ -1096,7 +1078,7 @@
             document.getElementById("buy-in-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
                 await submitSessionAction("buy", "/buy-in", {
-                    request_id: requestIdFrom("buy-request-id", "buy"),
+                    request_id: generateRequestId("buy"),
                     session_id: state.activeSessionId,
                     player_id: value("buy-player-id").trim(),
                     chips: Number(value("buy-chips")),
@@ -1106,25 +1088,17 @@
             document.getElementById("cash-out-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
                 await submitSessionAction("cash", "/cash-out", {
-                    request_id: requestIdFrom("cash-request-id", "cash"),
+                    request_id: generateRequestId("cash"),
                     session_id: state.activeSessionId,
                     player_id: value("cash-player-id").trim(),
                     chips: Number(value("cash-chips")),
                 });
             });
 
-            document.getElementById("reverse-form").addEventListener("submit", async (event) => {
-                event.preventDefault();
-                await submitSessionAction("reverse", "/operation/reverse", {
-                    request_id: requestIdFrom("reverse-request-id", "reverse"),
-                    target_operation_id: value("reverse-target-id").trim(),
-                });
-            });
-
             document.getElementById("finish-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
                 await submitSessionAction("finish", "/session/finish", {
-                    request_id: requestIdFrom("finish-request-id", "finish"),
+                    request_id: generateRequestId("finish"),
                     session_id: state.activeSessionId,
                 });
             });
@@ -1143,7 +1117,6 @@
                     return;
                 }
 
-                clearActionRequest(kind);
                 showNotice("session-notice", "success", `${capitalize(kind)} request accepted.`);
                 await refreshWorkspace(state.activeSessionId, "Workspace updated.");
             }
@@ -1183,6 +1156,7 @@
                 state.session = sessionRes.body || {};
                 state.operations = (opsRes.body && opsRes.body.Operations) || [];
                 state.results = (resultsRes.body && resultsRes.body.Results) || [];
+                state.pendingReverseOperationId = "";
 
                 renderWorkspace();
                 showNotice("session-notice", "success", successMessage);
@@ -1194,8 +1168,9 @@
                 const status = session.Status || "-";
                 const active = status === "active";
 
-                document.getElementById("workspace-title").textContent = `Session ${session.SessionID || state.activeSessionId}`;
-                document.getElementById("workspace-request-chip").textContent = `session_id: ${session.SessionID || state.activeSessionId}`;
+                document.getElementById("workspace-title").textContent = session.CreatedAt
+                    ? `Session ${formatShortDate(session.CreatedAt)}`
+                    : "Session";
 
                 const statusChip = document.getElementById("session-status-chip");
                 statusChip.textContent = `status: ${status}`;
@@ -1229,10 +1204,6 @@
                     .map((operation) => {
                         const type = operation.Type || "";
                         const reverseDisabled = !active || type === "reversal";
-                        const reference = operation.ReferenceID || "-";
-                        const action = reverseDisabled
-                            ? '<button class="secondary" type="button" disabled>Reverse</button>'
-                            : `<button class="secondary" type="button" data-target-operation="${escapeHtml(operation.ID)}">Reverse</button>`;
 
                         return `
                             <article class="card-item">
@@ -1243,24 +1214,54 @@
                                             <span class="operation-type ${escapeHtml(type)}">${escapeHtml(type)}</span>
                                         </div>
                                     </div>
-                                    ${action}
                                 </div>
                                 <div class="card-meta">
                                     <div class="card-meta-item"><span>Player</span><strong class="mono">${escapeHtml(operation.PlayerID || "-")}</strong></div>
                                     <div class="card-meta-item"><span>Chips</span><strong>${formatNumber(operation.Chips)}</strong></div>
-                                    <div class="card-meta-item"><span>Reference</span><strong class="mono">${escapeHtml(reference)}</strong></div>
                                     <div class="card-meta-item"><span>Created</span><strong>${escapeHtml(formatDate(operation.CreatedAt))}</strong></div>
                                 </div>
+                                ${
+                                    reverseDisabled
+                                        ? ""
+                                        : `
+                                            <div class="actions">
+                                                ${
+                                                    state.pendingReverseOperationId === operation.ID
+                                                        ? `
+                                                            <button class="danger" type="button" data-confirm-reverse="${escapeHtml(operation.ID)}">Confirm Reverse</button>
+                                                            <button class="secondary" type="button" data-cancel-reverse="1">Cancel</button>
+                                                        `
+                                                        : `<button class="danger" type="button" data-arm-reverse="${escapeHtml(operation.ID)}">Reverse Operation</button>`
+                                                }
+                                            </div>
+                                        `
+                                }
                             </article>
                         `;
                     })
                     .join("");
 
-                wrap.querySelectorAll("[data-target-operation]").forEach((button) => {
+                wrap.querySelectorAll("[data-arm-reverse]").forEach((button) => {
                     button.addEventListener("click", () => {
-                        const target = button.getAttribute("data-target-operation");
-                        setValue("reverse-target-id", target);
-                        document.getElementById("reverse-target-id").focus();
+                        state.pendingReverseOperationId = button.getAttribute("data-arm-reverse");
+                        renderOperations(active);
+                    });
+                });
+
+                wrap.querySelectorAll("[data-cancel-reverse]").forEach((button) => {
+                    button.addEventListener("click", () => {
+                        state.pendingReverseOperationId = "";
+                        renderOperations(active);
+                    });
+                });
+
+                wrap.querySelectorAll("[data-confirm-reverse]").forEach((button) => {
+                    button.addEventListener("click", async () => {
+                        await submitSessionAction("reverse", "/operation/reverse", {
+                            request_id: generateRequestId("reverse"),
+                            target_operation_id: button.getAttribute("data-confirm-reverse"),
+                        });
+                        state.pendingReverseOperationId = "";
                     });
                 });
             }
@@ -1274,15 +1275,26 @@
                     return;
                 }
 
-                wrap.innerHTML = results
+                const tableRows = results
+                    .map(
+                        (result) => `
+                            <tr>
+                                <td class="mono">${escapeHtml(result.PlayerID)}</td>
+                                <td>${formatNumber(result.BuyInChips)}</td>
+                                <td>${formatNumber(result.CashOutChips)}</td>
+                                <td>${formatNumber(result.ProfitChips)}</td>
+                                <td>${formatNumber(result.ProfitMoney)}</td>
+                            </tr>
+                        `,
+                    )
+                    .join("");
+
+                const cards = results
                     .map(
                         (result) => `
                             <article class="card-item">
                                 <div class="card-header">
-                                    <div>
-                                        <div class="card-title mono">${escapeHtml(result.PlayerID)}</div>
-                                        <div class="hint">Calculated from effective operations.</div>
-                                    </div>
+                                    <div class="card-title mono">${escapeHtml(result.PlayerID)}</div>
                                 </div>
                                 <div class="card-meta">
                                     <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(result.BuyInChips)}</strong></div>
@@ -1294,10 +1306,28 @@
                         `,
                     )
                     .join("");
+
+                wrap.innerHTML = `
+                    <div class="table-wrap desktop-only">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Buy In</th>
+                                    <th>Cash Out</th>
+                                    <th>Profit Chips</th>
+                                    <th>Profit Money</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>
+                    <div class="mobile-only cards">${cards}</div>
+                `;
             }
 
             function disableSessionActions(disabled) {
-                document.querySelectorAll("#buy-in-form button, #cash-out-form button, #reverse-form button, #finish-form button").forEach((button) => {
+                document.querySelectorAll("#buy-in-form button, #cash-out-form button, #finish-form button").forEach((button) => {
                     button.disabled = disabled;
                 });
             }
@@ -1727,27 +1757,6 @@
                 document.getElementById(id).textContent = JSON.stringify(response, null, 2);
             }
 
-            function requestIdFrom(inputId, prefix) {
-                const current = value(inputId).trim();
-                const requestId = current || generateRequestId(prefix);
-                setValue(inputId, requestId);
-                return requestId;
-            }
-
-            function clearActionRequest(kind) {
-                const fields = {
-                    buy: "buy-request-id",
-                    cash: "cash-request-id",
-                    reverse: "reverse-request-id",
-                    finish: "finish-request-id",
-                };
-
-                const field = fields[kind];
-                if (field) {
-                    setValue(field, "");
-                }
-            }
-
             function generateRequestId(prefix) {
                 return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
             }
@@ -1770,6 +1779,14 @@
                 }
                 const date = new Date(value);
                 return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+            }
+
+            function formatShortDate(value) {
+                if (!value) {
+                    return "-";
+                }
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString("ru-RU");
             }
 
             function escapeHtml(value) {
@@ -1795,6 +1812,9 @@
             applyPresetRange("players", "all");
             applyPresetRange("player-detail", "all");
             setOverviewTab("sessions");
+            const debug = new URLSearchParams(window.location.search).get("debug") === "1";
+            document.getElementById("lobby-debug-panel").classList.toggle("hidden", !debug);
+            document.getElementById("session-debug-panel").classList.toggle("hidden", !debug);
             refreshSessionCatalog();
             loadSessionsOverview();
             loadPlayersOverview();
