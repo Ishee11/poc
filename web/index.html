@@ -885,8 +885,10 @@
                             <form id="cash-out-form">
                                 <div class="field-group">
                                     <label>
-                                        Player ID
-                                        <input id="cash-player-id" placeholder="p1" required />
+                                        Player
+                                        <select id="cash-player-id" required>
+                                            <option value="">Select player</option>
+                                        </select>
                                     </label>
                                     <label>
                                         Chips
@@ -1234,6 +1236,7 @@
                 disableSessionActions(!active);
                 renderOperations(active);
                 renderResults();
+                renderCashOutPlayers();
             }
 
             function renderOperations(active) {
@@ -1371,6 +1374,24 @@
                     </div>
 
                 `;
+            }
+
+            function renderCashOutPlayers() {
+                const select = document.getElementById("cash-player-id");
+
+                const players = (state.results || [])
+                    .filter(r => Number(r.BuyInChips) > Number(r.CashOutChips));
+
+                const options = [
+                    '<option value="">Select player</option>',
+                    ...players.map(p =>
+                        `<option value="${escapeHtml(p.PlayerID)}">
+                            ${escapeHtml(p.PlayerID)} (${formatNumber(p.BuyInChips - p.CashOutChips)} chips)
+                        </option>`
+                    )
+                ];
+
+                select.innerHTML = options.join("");
             }
 
             function disableSessionActions(disabled) {
