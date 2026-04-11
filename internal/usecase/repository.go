@@ -59,3 +59,68 @@ type ProjectionRepository interface {
 		offset int,
 	) ([]*entity.Operation, error)
 }
+
+type SessionStatsFilter struct {
+	Limit int
+	From  *DateTimeRangeBound
+	To    *DateTimeRangeBound
+}
+
+type PlayerStatsFilter struct {
+	Limit int
+	From  *DateTimeRangeBound
+	To    *DateTimeRangeBound
+}
+
+type DateTimeRangeBound struct {
+	Value string
+}
+
+type SessionStat struct {
+	SessionID    entity.SessionID
+	Status       entity.Status
+	ChipRate     int64
+	CreatedAt    string
+	TotalBuyIn   int64
+	TotalCashOut int64
+	PlayerCount  int64
+}
+
+type PlayerStat struct {
+	PlayerID       entity.PlayerID
+	SessionsCount  int64
+	TotalBuyIn     int64
+	TotalCashOut   int64
+	ProfitChips    int64
+	ProfitMoney    int64
+	LastActivityAt *string
+}
+
+type PlayerSessionStat struct {
+	SessionID        entity.SessionID
+	Status           entity.Status
+	ChipRate         int64
+	SessionCreatedAt string
+	LastActivityAt   *string
+	BuyInChips       int64
+	CashOutChips     int64
+	ProfitChips      int64
+	ProfitMoney      int64
+}
+
+type PlayerOverallStat struct {
+	PlayerID       entity.PlayerID
+	SessionsCount  int64
+	TotalBuyIn     int64
+	TotalCashOut   int64
+	ProfitChips    int64
+	ProfitMoney    int64
+	LastActivityAt *string
+}
+
+type StatsRepository interface {
+	ListSessions(tx Tx, filter SessionStatsFilter) ([]SessionStat, error)
+	ListPlayers(tx Tx, filter PlayerStatsFilter) ([]PlayerStat, error)
+	GetPlayerOverall(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) (*PlayerOverallStat, error)
+	ListPlayerSessions(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) ([]PlayerSessionStat, error)
+}

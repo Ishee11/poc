@@ -32,6 +32,7 @@ func Run() error {
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
 	idempotencyRepo := postgres.NewIdempotencyRepository()
+	statsRepo := postgres.NewStatsRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(pool)
@@ -105,6 +106,18 @@ func Run() error {
 		projectionRepo,
 		txManager,
 	)
+	getStatsSessionsUC := usecase.NewGetStatsSessionsUseCase(
+		statsRepo,
+		txManager,
+	)
+	getStatsPlayersUC := usecase.NewGetStatsPlayersUseCase(
+		statsRepo,
+		txManager,
+	)
+	getPlayerStatsUC := usecase.NewGetPlayerStatsUseCase(
+		statsRepo,
+		txManager,
+	)
 
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
@@ -116,6 +129,9 @@ func Run() error {
 		getSessionUC,
 		getSessionOpsUC,
 		getSessionResultsUC,
+		getStatsSessionsUC,
+		getStatsPlayersUC,
+		getPlayerStatsUC,
 	)
 
 	// ===== Router =====

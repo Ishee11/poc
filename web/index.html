@@ -27,6 +27,7 @@
             body {
                 margin: 0;
                 min-height: 100vh;
+                overflow-x: hidden;
                 color: var(--text);
                 font-family: "Segoe UI", "Helvetica Neue", sans-serif;
                 background:
@@ -48,13 +49,13 @@
             }
 
             .app {
-                width: min(1200px, calc(100vw - 32px));
-                margin: 24px auto 48px;
+                width: min(1120px, calc(100vw - 16px));
+                margin: 8px auto 24px;
                 position: relative;
             }
 
             .hero {
-                padding: 28px;
+                padding: 20px;
                 border: 1px solid var(--line);
                 border-radius: calc(var(--radius) + 8px);
                 background:
@@ -115,7 +116,7 @@
             }
 
             .layout {
-                margin-top: 22px;
+                margin-top: 14px;
                 display: grid;
                 gap: 18px;
             }
@@ -130,12 +131,13 @@
             }
 
             .panel {
-                padding: 22px;
+                padding: 16px;
                 border-radius: var(--radius);
                 border: 1px solid var(--line);
                 background: var(--panel);
                 backdrop-filter: blur(10px);
                 box-shadow: var(--shadow);
+                min-width: 0;
             }
 
             .panel h2,
@@ -301,6 +303,8 @@
 
             .mono {
                 font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
 
             .session-status {
@@ -345,6 +349,7 @@
 
             .table-wrap {
                 overflow-x: auto;
+                min-width: 0;
             }
 
             .operation-type {
@@ -418,20 +423,187 @@
                 align-items: center;
             }
 
+            .tabs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .tab-button.active {
+                color: #04261b;
+                background: linear-gradient(135deg, #7ff0ca, #4bc79d);
+                box-shadow: 0 12px 28px rgba(32, 169, 125, 0.26);
+            }
+
+            .filters {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: end;
+            }
+
+            .filters label {
+                min-width: 150px;
+                flex: 1 1 150px;
+            }
+
+            .filters .compact {
+                max-width: 120px;
+            }
+
+            .split {
+                display: grid;
+                gap: 18px;
+                grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+            }
+
+            .cards {
+                display: grid;
+                gap: 12px;
+            }
+
+            .card-item {
+                padding: 14px;
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                display: grid;
+                gap: 12px;
+                min-width: 0;
+            }
+
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                align-items: flex-start;
+                min-width: 0;
+            }
+
+            .card-title {
+                font-weight: 700;
+                font-size: 1rem;
+                overflow-wrap: anywhere;
+            }
+
+            .card-meta {
+                display: grid;
+                gap: 8px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .card-meta-item {
+                padding: 10px 12px;
+                border-radius: 14px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .card-meta-item span {
+                display: block;
+                color: var(--muted);
+                font-size: 0.76rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+
+            .card-meta-item strong {
+                display: block;
+                margin-top: 6px;
+                font-size: 0.98rem;
+            }
+
+            .summary-grid {
+                display: grid;
+                gap: 12px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .summary-card {
+                padding: 14px;
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .summary-card strong {
+                display: block;
+                margin-top: 6px;
+                font-size: 1.2rem;
+            }
+
             .hidden {
                 display: none !important;
             }
 
-            @media (max-width: 980px) {
+            @media (max-width: 1180px) {
                 .grid.two,
                 .grid.three,
                 .stats,
-                .field-group {
+                .field-group,
+                .split,
+                .summary-grid {
                     grid-template-columns: 1fr;
                 }
 
                 .workspace-header {
                     flex-direction: column;
+                }
+            }
+
+            @media (max-width: 720px) {
+                body {
+                    font-size: 15px;
+                }
+
+                .hero {
+                    padding: 18px 16px;
+                }
+
+                .hero h1 {
+                    font-size: 2rem;
+                    max-width: none;
+                }
+
+                .panel {
+                    padding: 14px;
+                    border-radius: 18px;
+                }
+
+                .stats,
+                .card-meta {
+                    grid-template-columns: 1fr;
+                }
+
+                .filters label,
+                .filters .compact {
+                    min-width: 100%;
+                    max-width: none;
+                }
+
+                .actions {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .actions button,
+                .tabs button {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .card-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .card-header button {
+                    width: 100%;
+                }
+
+                pre {
+                    max-height: 220px;
+                    font-size: 0.8rem;
                 }
             }
         </style>
@@ -514,6 +686,82 @@
                                 </div>
                             </form>
                         </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="toolbar">
+                            <h3>Overview</h3>
+                            <span class="hint">Sessions are filtered by session creation date. Players are filtered by activity date.</span>
+                        </div>
+                        <div class="tabs">
+                            <button class="secondary tab-button active" type="button" data-overview-tab="sessions">
+                                Sessions
+                            </button>
+                            <button class="secondary tab-button" type="button" data-overview-tab="players">
+                                Players
+                            </button>
+                        </div>
+                        <div class="filters" id="sessions-filters">
+                            <label class="compact">
+                                Limit
+                                <input id="sessions-limit" type="number" min="1" value="20" />
+                            </label>
+                            <label>
+                                From
+                                <input id="sessions-from" type="date" />
+                            </label>
+                            <label>
+                                To
+                                <input id="sessions-to" type="date" />
+                            </label>
+                            <div class="actions">
+                                <button class="secondary" type="button" data-range-target="sessions" data-range="all">
+                                    Latest
+                                </button>
+                                <button class="secondary" type="button" data-range-target="sessions" data-range="30d">
+                                    30d
+                                </button>
+                                <button class="secondary" type="button" data-range-target="sessions" data-range="12m">
+                                    12m
+                                </button>
+                                <button type="button" id="load-sessions-overview">Load Sessions</button>
+                            </div>
+                        </div>
+                        <div class="filters hidden" id="players-filters">
+                            <label class="compact">
+                                Limit
+                                <input id="players-limit" type="number" min="1" value="20" />
+                            </label>
+                            <label>
+                                From
+                                <input id="players-from" type="date" />
+                            </label>
+                            <label>
+                                To
+                                <input id="players-to" type="date" />
+                            </label>
+                            <div class="actions">
+                                <button class="secondary" type="button" data-range-target="players" data-range="all">
+                                    All
+                                </button>
+                                <button class="secondary" type="button" data-range-target="players" data-range="30d">
+                                    30d
+                                </button>
+                                <button class="secondary" type="button" data-range-target="players" data-range="12m">
+                                    12m
+                                </button>
+                                <button type="button" id="load-players-overview">Load Players</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="toolbar">
+                            <h3 id="overview-title">Latest Sessions</h3>
+                            <span class="hint" id="overview-count">0 loaded</span>
+                        </div>
+                        <div id="overview-sessions-wrap" class="cards"></div>
+                        <div id="overview-players-wrap" class="cards hidden"></div>
                     </div>
 
                     <div class="panel">
@@ -680,6 +928,55 @@
                         <pre id="session-output">Workspace ready.</pre>
                     </div>
                 </section>
+
+                <section class="screen" id="screen-player">
+                    <div class="panel">
+                        <div class="workspace-header">
+                            <div>
+                                <h2 id="player-screen-title">Player Stats</h2>
+                                <div class="actions">
+                                    <span class="pill mono" id="player-screen-id">player_id: -</span>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button class="secondary" id="back-to-overview" type="button">
+                                    Back To Overview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="filters">
+                            <label>
+                                From
+                                <input id="player-detail-from" type="date" />
+                            </label>
+                            <label>
+                                To
+                                <input id="player-detail-to" type="date" />
+                            </label>
+                            <div class="actions">
+                                <button class="secondary" type="button" data-range-target="player-detail" data-range="all">
+                                    All
+                                </button>
+                                <button class="secondary" type="button" data-range-target="player-detail" data-range="30d">
+                                    30d
+                                </button>
+                                <button class="secondary" type="button" data-range-target="player-detail" data-range="12m">
+                                    12m
+                                </button>
+                                <button type="button" id="reload-player-detail">Reload</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div id="player-detail-wrap" class="empty">
+                            Player summary will appear here.
+                        </div>
+                    </div>
+                </section>
             </main>
         </div>
 
@@ -691,10 +988,16 @@
                 session: null,
                 operations: [],
                 results: [],
+                overviewTab: "sessions",
+                overviewSessions: [],
+                overviewPlayers: [],
+                selectedPlayerId: "",
+                selectedPlayerDetail: null,
             };
 
             const lobbyScreen = document.getElementById("screen-lobby");
             const sessionScreen = document.getElementById("screen-session");
+            const playerScreen = document.getElementById("screen-player");
 
             document.getElementById("start-session-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
@@ -744,6 +1047,41 @@
                     return;
                 }
                 showNotice("lobby-notice", "error", describeResponse(response));
+            });
+
+            document.querySelectorAll("[data-overview-tab]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    setOverviewTab(button.getAttribute("data-overview-tab"));
+                });
+            });
+
+            document.querySelectorAll("[data-range-target]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    applyPresetRange(
+                        button.getAttribute("data-range-target"),
+                        button.getAttribute("data-range"),
+                    );
+                });
+            });
+
+            document.getElementById("load-sessions-overview").addEventListener("click", async () => {
+                await loadSessionsOverview();
+            });
+
+            document.getElementById("load-players-overview").addEventListener("click", async () => {
+                await loadPlayersOverview();
+            });
+
+            document.getElementById("reload-player-detail").addEventListener("click", async () => {
+                if (!state.selectedPlayerId) {
+                    showNotice("lobby-notice", "error", "Pick a player first.");
+                    return;
+                }
+                await loadPlayerDetail(state.selectedPlayerId);
+            });
+
+            document.getElementById("back-to-overview").addEventListener("click", () => {
+                setScreen("lobby");
             });
 
             document.getElementById("refresh-session").addEventListener("click", async () => {
@@ -890,7 +1228,7 @@
                     return;
                 }
 
-                const rows = operations
+                wrap.innerHTML = operations
                     .map((operation) => {
                         const type = operation.Type || "";
                         const reverseDisabled = !active || type === "reversal";
@@ -900,35 +1238,26 @@
                             : `<button class="secondary" type="button" data-target-operation="${escapeHtml(operation.ID)}">Reverse</button>`;
 
                         return `
-                            <tr>
-                                <td class="mono">${escapeHtml(operation.ID)}</td>
-                                <td><span class="operation-type ${escapeHtml(type)}">${escapeHtml(type)}</span></td>
-                                <td class="mono">${escapeHtml(operation.PlayerID || "-")}</td>
-                                <td>${formatNumber(operation.Chips)}</td>
-                                <td class="mono">${escapeHtml(reference)}</td>
-                                <td class="mono">${formatDate(operation.CreatedAt)}</td>
-                                <td>${action}</td>
-                            </tr>
+                            <article class="card-item">
+                                <div class="card-header">
+                                    <div>
+                                        <div class="card-title mono">${escapeHtml(operation.ID)}</div>
+                                        <div class="hint">
+                                            <span class="operation-type ${escapeHtml(type)}">${escapeHtml(type)}</span>
+                                        </div>
+                                    </div>
+                                    ${action}
+                                </div>
+                                <div class="card-meta">
+                                    <div class="card-meta-item"><span>Player</span><strong class="mono">${escapeHtml(operation.PlayerID || "-")}</strong></div>
+                                    <div class="card-meta-item"><span>Chips</span><strong>${formatNumber(operation.Chips)}</strong></div>
+                                    <div class="card-meta-item"><span>Reference</span><strong class="mono">${escapeHtml(reference)}</strong></div>
+                                    <div class="card-meta-item"><span>Created</span><strong>${escapeHtml(formatDate(operation.CreatedAt))}</strong></div>
+                                </div>
+                            </article>
                         `;
                     })
                     .join("");
-
-                wrap.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Type</th>
-                                <th>Player</th>
-                                <th>Chips</th>
-                                <th>Reference</th>
-                                <th>Created</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                `;
 
                 wrap.querySelectorAll("[data-target-operation]").forEach((button) => {
                     button.addEventListener("click", () => {
@@ -948,34 +1277,26 @@
                     return;
                 }
 
-                const rows = results
+                wrap.innerHTML = results
                     .map(
                         (result) => `
-                            <tr>
-                                <td class="mono">${escapeHtml(result.PlayerID)}</td>
-                                <td>${formatNumber(result.BuyInChips)}</td>
-                                <td>${formatNumber(result.CashOutChips)}</td>
-                                <td>${formatNumber(result.ProfitChips)}</td>
-                                <td>${formatNumber(result.ProfitMoney)}</td>
-                            </tr>
+                            <article class="card-item">
+                                <div class="card-header">
+                                    <div>
+                                        <div class="card-title mono">${escapeHtml(result.PlayerID)}</div>
+                                        <div class="hint">Calculated from effective operations.</div>
+                                    </div>
+                                </div>
+                                <div class="card-meta">
+                                    <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(result.BuyInChips)}</strong></div>
+                                    <div class="card-meta-item"><span>Cash Out</span><strong>${formatNumber(result.CashOutChips)}</strong></div>
+                                    <div class="card-meta-item"><span>Profit Chips</span><strong>${formatNumber(result.ProfitChips)}</strong></div>
+                                    <div class="card-meta-item"><span>Profit Money</span><strong>${formatNumber(result.ProfitMoney)}</strong></div>
+                                </div>
+                            </article>
                         `,
                     )
                     .join("");
-
-                wrap.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Buy In</th>
-                                <th>Cash Out</th>
-                                <th>Profit Chips</th>
-                                <th>Profit Money</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                `;
             }
 
             function disableSessionActions(disabled) {
@@ -987,6 +1308,293 @@
             function setScreen(name) {
                 lobbyScreen.classList.toggle("active", name === "lobby");
                 sessionScreen.classList.toggle("active", name === "session");
+                playerScreen.classList.toggle("active", name === "player");
+            }
+
+            function setOverviewTab(tab) {
+                state.overviewTab = tab;
+                document.querySelectorAll("[data-overview-tab]").forEach((button) => {
+                    button.classList.toggle("active", button.getAttribute("data-overview-tab") === tab);
+                });
+                document.getElementById("sessions-filters").classList.toggle("hidden", tab !== "sessions");
+                document.getElementById("players-filters").classList.toggle("hidden", tab !== "players");
+                document.getElementById("overview-sessions-wrap").classList.toggle("hidden", tab !== "sessions");
+                document.getElementById("overview-players-wrap").classList.toggle("hidden", tab !== "players");
+                document.getElementById("overview-title").textContent =
+                    tab === "sessions" ? "Latest Sessions" : "Players";
+                document.getElementById("overview-count").textContent =
+                    tab === "sessions"
+                        ? `${state.overviewSessions.length} loaded`
+                        : `${state.overviewPlayers.length} loaded`;
+            }
+
+            async function loadSessionsOverview() {
+                const query = buildQuery({
+                    limit: value("sessions-limit"),
+                    from: value("sessions-from"),
+                    to: value("sessions-to"),
+                });
+
+                const response = await apiGet(`/stats/sessions${query}`);
+                showOutput("lobby-output", response);
+
+                if (!response.ok) {
+                    showNotice("lobby-notice", "error", describeResponse(response));
+                    return;
+                }
+
+                state.overviewSessions = (response.body && response.body.Sessions) || [];
+                renderSessionsOverview();
+                setOverviewTab("sessions");
+                showNotice("lobby-notice", "success", "Sessions overview updated.");
+            }
+
+            async function loadPlayersOverview() {
+                const query = buildQuery({
+                    limit: value("players-limit"),
+                    from: value("players-from"),
+                    to: value("players-to"),
+                });
+
+                const response = await apiGet(`/stats/players${query}`);
+                showOutput("lobby-output", response);
+
+                if (!response.ok) {
+                    showNotice("lobby-notice", "error", describeResponse(response));
+                    return;
+                }
+
+                state.overviewPlayers = (response.body && response.body.Players) || [];
+                renderPlayersOverview();
+                setOverviewTab("players");
+                showNotice("lobby-notice", "success", "Players overview updated.");
+            }
+
+            async function loadPlayerDetail(playerId) {
+                const query = buildQuery({
+                    player_id: playerId,
+                    from: value("player-detail-from"),
+                    to: value("player-detail-to"),
+                });
+
+                const response = await apiGet(`/stats/player${query}`);
+                showOutput("lobby-output", response);
+
+                if (!response.ok) {
+                    showNotice("lobby-notice", "error", describeResponse(response));
+                    return;
+                }
+
+                state.selectedPlayerId = playerId;
+                state.selectedPlayerDetail = response.body || null;
+                renderPlayerDetail();
+                setScreen("player");
+                showNotice("lobby-notice", "success", `Loaded player ${playerId}.`);
+            }
+
+            function renderSessionsOverview() {
+                const wrap = document.getElementById("overview-sessions-wrap");
+                const sessions = state.overviewSessions || [];
+                document.getElementById("overview-count").textContent = `${sessions.length} loaded`;
+
+                if (!sessions.length) {
+                    wrap.innerHTML = '<div class="empty">No sessions for the selected period.</div>';
+                    return;
+                }
+
+                wrap.innerHTML = sessions
+                    .map(
+                        (session) => `
+                            <article class="card-item">
+                                <div class="card-header">
+                                    <div>
+                                        <div class="card-title mono">${escapeHtml(session.SessionID)}</div>
+                                        <div class="hint">${escapeHtml(session.Status)} • ${formatDate(session.CreatedAt)}</div>
+                                    </div>
+                                    <button class="secondary" type="button" data-open-session="${escapeHtml(session.SessionID)}">Open</button>
+                                </div>
+                                <div class="card-meta">
+                                    <div class="card-meta-item"><span>Chip Rate</span><strong>${formatNumber(session.ChipRate)}</strong></div>
+                                    <div class="card-meta-item"><span>Players</span><strong>${formatNumber(session.PlayerCount)}</strong></div>
+                                    <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(session.TotalBuyIn)}</strong></div>
+                                    <div class="card-meta-item"><span>Cash Out</span><strong>${formatNumber(session.TotalCashOut)}</strong></div>
+                                </div>
+                            </article>
+                        `,
+                    )
+                    .join("");
+
+                wrap.querySelectorAll("[data-open-session]").forEach((button) => {
+                    button.addEventListener("click", async () => {
+                        const sessionId = button.getAttribute("data-open-session");
+                        setValue("connect-session-id", sessionId);
+                        await openWorkspace(sessionId);
+                    });
+                });
+            }
+
+            function renderPlayersOverview() {
+                const wrap = document.getElementById("overview-players-wrap");
+                const players = state.overviewPlayers || [];
+                document.getElementById("overview-count").textContent = `${players.length} loaded`;
+
+                if (!players.length) {
+                    wrap.innerHTML = '<div class="empty">No player activity for the selected period.</div>';
+                    return;
+                }
+
+                wrap.innerHTML = players
+                    .map(
+                        (player) => `
+                            <article class="card-item">
+                                <div class="card-header">
+                                    <div>
+                                        <div class="card-title mono">${escapeHtml(player.PlayerID)}</div>
+                                        <div class="hint">Last activity: ${formatDate(player.LastActivityAt)}</div>
+                                    </div>
+                                    <button class="secondary" type="button" data-open-player="${escapeHtml(player.PlayerID)}">Open Player</button>
+                                </div>
+                                <div class="card-meta">
+                                    <div class="card-meta-item"><span>Sessions</span><strong>${formatNumber(player.SessionsCount)}</strong></div>
+                                    <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(player.TotalBuyIn)}</strong></div>
+                                    <div class="card-meta-item"><span>Cash Out</span><strong>${formatNumber(player.TotalCashOut)}</strong></div>
+                                    <div class="card-meta-item"><span>Profit Money</span><strong>${formatNumber(player.ProfitMoney)}</strong></div>
+                                </div>
+                            </article>
+                        `,
+                    )
+                    .join("");
+
+                wrap.querySelectorAll("[data-open-player]").forEach((button) => {
+                    button.addEventListener("click", async () => {
+                        await loadPlayerDetail(button.getAttribute("data-open-player"));
+                    });
+                });
+            }
+
+            function renderPlayerDetail() {
+                const wrap = document.getElementById("player-detail-wrap");
+                const detail = state.selectedPlayerDetail;
+
+                if (!detail || !detail.Player) {
+                    wrap.className = "empty";
+                    wrap.textContent = "Player summary will appear here.";
+                    return;
+                }
+
+                const player = detail.Player;
+                const sessions = detail.Sessions || [];
+                document.getElementById("player-screen-title").textContent = `Player ${player.PlayerID}`;
+                document.getElementById("player-screen-id").textContent = `player_id: ${player.PlayerID}`;
+
+                const sessionRows = sessions.length
+                    ? `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Session</th>
+                                    <th>Status</th>
+                                    <th>Buy In</th>
+                                    <th>Cash Out</th>
+                                    <th>Profit</th>
+                                    <th>Last Activity</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sessions
+                                    .map(
+                                        (session) => `
+                                            <tr>
+                                                <td class="mono">${escapeHtml(session.SessionID)}</td>
+                                                <td>${escapeHtml(session.Status)}</td>
+                                                <td>${formatNumber(session.BuyInChips)}</td>
+                                                <td>${formatNumber(session.CashOutChips)}</td>
+                                                <td>${formatNumber(session.ProfitMoney)}</td>
+                                                <td class="mono">${formatDate(session.LastActivityAt || session.SessionCreatedAt)}</td>
+                                                <td><button class="secondary" type="button" data-player-session="${escapeHtml(session.SessionID)}">Open</button></td>
+                                            </tr>
+                                        `,
+                                    )
+                                    .join("")}
+                            </tbody>
+                        </table>
+                    `
+                    : '<div class="empty">No sessions for this player in the selected period.</div>';
+
+                wrap.className = "";
+                wrap.innerHTML = `
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            Sessions
+                            <strong>${formatNumber(player.SessionsCount)}</strong>
+                        </div>
+                        <div class="summary-card">
+                            Last Activity
+                            <strong>${escapeHtml(formatDate(player.LastActivityAt))}</strong>
+                        </div>
+                        <div class="summary-card">
+                            Buy In / Cash Out
+                            <strong>${formatNumber(player.TotalBuyIn)} / ${formatNumber(player.TotalCashOut)}</strong>
+                        </div>
+                        <div class="summary-card">
+                            Profit
+                            <strong>${formatNumber(player.ProfitMoney)} money</strong>
+                        </div>
+                    </div>
+                    <div style="height: 16px;"></div>
+                    <div class="table-wrap">${sessionRows}</div>
+                `;
+
+                wrap.querySelectorAll("[data-player-session]").forEach((button) => {
+                    button.addEventListener("click", async () => {
+                        const sessionId = button.getAttribute("data-player-session");
+                        setValue("connect-session-id", sessionId);
+                        await openWorkspace(sessionId);
+                    });
+                });
+            }
+
+            function applyPresetRange(target, preset) {
+                const map = {
+                    sessions: ["sessions-from", "sessions-to"],
+                    players: ["players-from", "players-to"],
+                    "player-detail": ["player-detail-from", "player-detail-to"],
+                };
+
+                const ids = map[target];
+                if (!ids) {
+                    return;
+                }
+
+                const [fromId, toId] = ids;
+                if (preset === "all") {
+                    setValue(fromId, "");
+                    setValue(toId, "");
+                    return;
+                }
+
+                const today = new Date();
+                const from = new Date(today);
+                if (preset === "30d") {
+                    from.setDate(from.getDate() - 30);
+                } else if (preset === "12m") {
+                    from.setMonth(from.getMonth() - 12);
+                }
+
+                setValue(fromId, toDateInputValue(from));
+                setValue(toId, toDateInputValue(today));
+            }
+
+            function buildQuery(params) {
+                const search = new URLSearchParams();
+                Object.entries(params).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && String(value).trim() !== "") {
+                        search.set(key, String(value).trim());
+                    }
+                });
+                const query = search.toString();
+                return query ? `?${query}` : "";
             }
 
             async function apiPost(path, body) {
@@ -1126,6 +1734,19 @@
             function capitalize(value) {
                 return value.charAt(0).toUpperCase() + value.slice(1);
             }
+
+            function toDateInputValue(date) {
+                return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 10);
+            }
+
+            applyPresetRange("sessions", "all");
+            applyPresetRange("players", "all");
+            applyPresetRange("player-detail", "all");
+            setOverviewTab("sessions");
+            loadSessionsOverview();
+            loadPlayersOverview();
         </script>
     </body>
 </html>
