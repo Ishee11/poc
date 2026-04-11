@@ -929,7 +929,7 @@
                                     </label>
                                     <label>
                                         Chips
-                                        <input id="buy-chips" type="number" min="1" placeholder="100" required />
+                                        <input id="buy-chips" type="number" min="1" placeholder="0" required />
                                     </label>
                                 </div>
                                 <div class="actions">
@@ -950,7 +950,7 @@
                                     </label>
                                     <label>
                                         Chips
-                                        <input id="cash-chips" type="number" min="1" placeholder="50" required />
+                                        <input id="cash-chips" type="number" min="1" placeholder="0" required />
                                     </label>
                                 </div>
                                 <div class="actions">
@@ -1216,11 +1216,16 @@
                     return;
                 }
 
+                let chips = Number(value("buy-chips"));
+                if (!chips) {
+                    chips = 1000;
+                }
+
                 state.pendingBuyIn = {
                     request_id: generateRequestId("buy"),
                     session_id: state.activeSessionId,
                     player_id: value("buy-player-id").trim(),
-                    chips: Number(value("buy-chips")),
+                    chips,
                 };
 
                 renderBuyInConfirm();
@@ -1248,11 +1253,43 @@
                     return;
                 }
 
+                const playerId = value("cash-player-id").trim();
+
+                if (!playerId) {
+                    showNotice("session-notice", "error", "Select player first.");
+                    return;
+                }
+
+                let chips = Number(value("cash-chips"));
+                if (!chips) {
+                    chips = 1000;
+                }
+
+                const player = (state.results || []).find(r => r.PlayerID === playerId);
+
+                if (player) {
+                    const available = Number(player.BuyInChips) - Number(player.CashOutChips);
+
+                    if (chips > available) {
+                        showNotice(
+                            "session-notice",
+                            "error",
+                            `Not enough chips. Available: ${formatNumber(available)}`
+                        );
+
+                        document.getElementById("cash-chips").style.borderColor = "red";
+                        return;
+                    }
+                }
+
+                document.getElementById("cash-chips").style.borderColor = "";
+                showNotice("session-notice", "", "");
+
                 state.pendingCashOut = {
                     request_id: generateRequestId("cash"),
                     session_id: state.activeSessionId,
-                    player_id: value("cash-player-id").trim(),
-                    chips: Number(value("cash-chips")),
+                    player_id: playerId,
+                    chips,
                 };
 
                 renderCashOutConfirm();
@@ -1402,7 +1439,7 @@
                             <article class="card-item">
                                 <div class="card-header">
                                     <div>
-                                        <div class="card-title mono">${escapeHtml(operation.ID)}</div>
+
                                         <div class="hint">
                                             <span class="operation-type ${escapeHtml(type)}">${escapeHtml(type)}</span>
                                         </div>
