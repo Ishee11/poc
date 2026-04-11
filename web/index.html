@@ -638,6 +638,16 @@
                     font-size: 0.8rem;
                 }
 
+                th,
+                td {
+                    font-size: 0.7rem;
+                    padding: 8px 6px;
+                }
+
+                table {
+                    min-width: 500px;
+                }
+
                 .desktop-only {
                     display: none !important;
                 }
@@ -684,6 +694,7 @@
                                         id="start-chip-rate"
                                         type="number"
                                         min="1"
+                                        value="2"
                                         placeholder="10"
                                         required
                                     />
@@ -935,15 +946,20 @@
 
                     <div class="panel">
                         <div class="filters">
-                            <label>
-                                From
-                                <input id="player-detail-from" type="date" />
-                            </label>
-                            <label>
-                                To
-                                <input id="player-detail-to" type="date" />
-                            </label>
-                            <div class="actions">
+                            <!-- даты -->
+                            <div class="filters-date-row">
+                                <label>
+                                    From
+                                    <input id="player-detail-from" type="date" />
+                                </label>
+                                <label>
+                                    To
+                                    <input id="player-detail-to" type="date" />
+                                </label>
+                            </div>
+
+                            <!-- кнопки -->
+                            <div class="actions actions-grid">
                                 <button class="secondary" type="button" data-range-target="player-detail" data-range="all">
                                     All
                                 </button>
@@ -971,6 +987,7 @@
             const API = window.location.origin;
 
             const state = {
+                pendingStartSession: null,
                 activeSessionId: "",
                 session: null,
                 operations: [],
@@ -991,7 +1008,10 @@
             document.getElementById("start-session-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
-                const chipRate = Number(value("start-chip-rate"));
+                let chipRate = Number(value("start-chip-rate"));
+                if (!chipRate) {
+                    chipRate = 1;
+                }
                 const sessionId = String(getNextSessionId());
 
                 if (!chipRate) {
