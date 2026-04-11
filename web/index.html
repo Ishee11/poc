@@ -724,6 +724,10 @@
                     content: "▼";
                     transform: rotate(270deg);
                 }
+
+                #results-spoiler > #results-wrap {
+                    margin-top: 12px;
+                }
             }
         </style>
     </head>
@@ -958,11 +962,14 @@
 
                     <div class="grid two">
                         <div class="panel">
-                            <div class="toolbar">
-                                <h3>Player Results</h3>
-                                <span class="hint">Calculated from operations</span>
-                            </div>
-                            <div id="results-wrap"></div>
+                            <details id="results-spoiler">
+                                <summary class="toolbar">
+                                    <h3>Player Results</h3>
+                                    <span class="hint">Calculated from operations</span>
+                                </summary>
+
+                                <div id="results-wrap"></div>
+                            </details>
                         </div>
 
                         <div class="panel">
@@ -980,7 +987,7 @@
                     <div class="panel">
                         <h3>Finish Session</h3>
                         <p>
-                            Finishing works only when <span class="mono">total_buy_in == total_cash_out</span>.
+                            You can finish the session only when no chips remain on the table.
                         </p>
                         <form id="finish-form">
                             <div class="actions">
@@ -1072,6 +1079,9 @@
                 selectedPlayerId: "",
                 selectedPlayerDetail: null,
                 pendingReverseOperationId: "",
+                pendingBuyIn: null,
+                pendingCashOut: null,
+                pendingFinish: false,
             };
 
             const lobbyScreen = document.getElementById("screen-lobby");
@@ -1175,38 +1185,102 @@
                 }
             });
 
+            // document.getElementById("back-to-lobby").addEventListener("click", () => {
+            //     state.activeSessionId = "";
+            //     setScreen("lobby");
+            //     showNotice("session-notice", "", "");
+            // });
             document.getElementById("back-to-lobby").addEventListener("click", () => {
-                state.activeSessionId = "";
-                setScreen("lobby");
-                showNotice("session-notice", "", "");
+                location.reload();
             });
 
+            // document.getElementById("buy-in-form").addEventListener("submit", async (event) => {
+            //     event.preventDefault();
+            //     await submitSessionAction("buy", "/buy-in", {
+            //         request_id: generateRequestId("buy"),
+            //         session_id: state.activeSessionId,
+            //         player_id: value("buy-player-id").trim(),
+            //         chips: Number(value("buy-chips")),
+            //     });
+            // });
             document.getElementById("buy-in-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
-                await submitSessionAction("buy", "/buy-in", {
+
+                if (state.pendingBuyIn) {
+                    const body = state.pendingBuyIn;
+
+                    state.pendingBuyIn = null;
+                    renderBuyInConfirm();
+
+                    await submitSessionAction("buy", "/buy-in", body);
+                    return;
+                }
+
+                state.pendingBuyIn = {
                     request_id: generateRequestId("buy"),
                     session_id: state.activeSessionId,
                     player_id: value("buy-player-id").trim(),
                     chips: Number(value("buy-chips")),
-                });
+                };
+
+                renderBuyInConfirm();
             });
 
+            // document.getElementById("cash-out-form").addEventListener("submit", async (event) => {
+            //     event.preventDefault();
+            //     await submitSessionAction("cash", "/cash-out", {
+            //         request_id: generateRequestId("cash"),
+            //         session_id: state.activeSessionId,
+            //         player_id: value("cash-player-id").trim(),
+            //         chips: Number(value("cash-chips")),
+            //     });
+            // });
             document.getElementById("cash-out-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
-                await submitSessionAction("cash", "/cash-out", {
+
+                if (state.pendingCashOut) {
+                    const body = state.pendingCashOut;
+
+                    state.pendingCashOut = null;
+                    renderCashOutConfirm();
+
+                    await submitSessionAction("cash", "/cash-out", body);
+                    return;
+                }
+
+                state.pendingCashOut = {
                     request_id: generateRequestId("cash"),
                     session_id: state.activeSessionId,
                     player_id: value("cash-player-id").trim(),
                     chips: Number(value("cash-chips")),
-                });
+                };
+
+                renderCashOutConfirm();
             });
 
+            // document.getElementById("finish-form").addEventListener("submit", async (event) => {
+            //     event.preventDefault();
+            //     await submitSessionAction("finish", "/session/finish", {
+            //         request_id: generateRequestId("finish"),
+            //         session_id: state.activeSessionId,
+            //     });
+            // });
             document.getElementById("finish-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
-                await submitSessionAction("finish", "/session/finish", {
-                    request_id: generateRequestId("finish"),
-                    session_id: state.activeSessionId,
-                });
+
+                if (state.pendingFinish) {
+                    state.pendingFinish = false;
+                    renderFinishConfirm();
+
+                    await submitSessionAction("finish", "/session/finish", {
+                        request_id: generateRequestId("finish"),
+                        session_id: state.activeSessionId,
+                    });
+                    return;
+                }
+
+                state.pendingFinish = true;
+                renderFinishConfirm();
             });
 
             async function submitSessionAction(kind, path, body) {
@@ -1225,6 +1299,16 @@
 
                 showNotice("session-notice", "success", `${capitalize(kind)} request accepted.`);
                 await refreshWorkspace(state.activeSessionId, "Workspace updated.");
+
+                if (kind === "finish") {
+                    // скролл наверх
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+
+                    // небольшой delay, чтобы пользователь увидел сообщение
+                    //setTimeout(() => {
+                    //    location.reload();
+                    //}, 500);
+                }
             }
 
             async function openWorkspace(sessionId) {
@@ -1294,6 +1378,8 @@
                 renderOperations(active);
                 renderResults();
                 renderCashOutPlayers();
+                renderFinishConfirm();
+                state.pendingFinish = false;
             }
 
             function renderOperations(active) {
@@ -1433,6 +1519,34 @@
                 `;
             }
 
+            function renderBuyInConfirm() {
+                const form = document.getElementById("buy-in-form");
+
+                if (!state.pendingBuyIn) {
+                    form.querySelector(".actions").innerHTML = `
+                        <button type="submit">Submit Buy In</button>
+                    `;
+                    return;
+                }
+
+                const { player_id, chips } = state.pendingBuyIn;
+
+                form.querySelector(".actions").innerHTML = `
+                    <div class="notice">
+                        Confirm Buy In:<br/>
+                        <strong>${escapeHtml(player_id)}</strong> — ${formatNumber(chips)} chips
+                    </div>
+                    <button type="submit">Confirm Buy In</button>
+                    <button class="secondary" type="button" id="cancel-buy">Cancel</button>
+                `;
+
+                document.getElementById("cancel-buy").addEventListener("click", () => {
+                    state.pendingBuyIn = null;
+                    renderBuyInConfirm();
+                });
+            }
+
+
             function renderCashOutPlayers() {
                 const select = document.getElementById("cash-player-id");
 
@@ -1449,6 +1563,58 @@
                 ];
 
                 select.innerHTML = options.join("");
+            }
+
+            function renderCashOutConfirm() {
+                const form = document.getElementById("cash-out-form");
+
+                if (!state.pendingCashOut) {
+                    form.querySelector(".actions").innerHTML = `
+                        <button class="warn" type="submit">Submit Cash Out</button>
+                    `;
+                    return;
+                }
+
+                const { player_id, chips } = state.pendingCashOut;
+
+                form.querySelector(".actions").innerHTML = `
+                    <div class="notice">
+                        Confirm Cash Out:<br/>
+                        <strong>${escapeHtml(player_id)}</strong> — ${formatNumber(chips)} chips
+                    </div>
+                    <button class="warn" type="submit">Confirm Cash Out</button>
+                    <button class="secondary" type="button" id="cancel-cash">Cancel</button>
+                `;
+
+                document.getElementById("cancel-cash").addEventListener("click", () => {
+                    state.pendingCashOut = null;
+                    renderCashOutConfirm();
+                });
+            }
+
+            function renderFinishConfirm() {
+                const form = document.getElementById("finish-form");
+
+                if (!state.pendingFinish) {
+                    form.querySelector(".actions").innerHTML = `
+                        <button class="danger" type="submit">Finish Session</button>
+                    `;
+                    return;
+                }
+
+                form.querySelector(".actions").innerHTML = `
+                    <div class="notice">
+                        Are you sure you want to finish the session?<br/>
+                        All players must have cashed out.
+                    </div>
+                    <button class="danger" type="submit">Confirm Finish</button>
+                    <button class="secondary" type="button" id="cancel-finish">Cancel</button>
+                `;
+
+                document.getElementById("cancel-finish").addEventListener("click", () => {
+                    state.pendingFinish = false;
+                    renderFinishConfirm();
+                });
             }
 
             function disableSessionActions(disabled) {
