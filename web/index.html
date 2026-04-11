@@ -698,6 +698,32 @@
                         align-items: flex-start;
                     }
                 }
+
+                /* --- operations spoiler --- */
+                details summary {
+                    cursor: pointer;
+                    list-style: none;
+                }
+
+                details summary::-webkit-details-marker {
+                    display: none;
+                }
+
+                details[open] summary {
+                    margin-bottom: 12px;
+                }
+
+                /* стрелочка */
+                details summary::after {
+                    content: "▼";
+                    margin-left: 8px;
+                    font-size: 0.8rem;
+                }
+
+                details:not([open]) summary::after {
+                    content: "▼";
+                    transform: rotate(270deg);
+                }
             }
         </style>
     </head>
@@ -940,11 +966,14 @@
                         </div>
 
                         <div class="panel">
-                            <div class="toolbar">
-                                <h3>Operations</h3>
-                                <span class="hint" id="operations-count">0 loaded</span>
-                            </div>
-                            <div id="operations-wrap"></div>
+                            <details id="operations-spoiler">
+                                <summary class="toolbar">
+                                    <h3>Operations</h3>
+                                    <span class="hint" id="operations-count">0 loaded</span>
+                                </summary>
+
+                                <div id="operations-wrap"></div>
+                            </details>
                         </div>
                     </div>
 
