@@ -655,6 +655,8 @@
                 .mobile-only {
                     display: block;
                 }
+
+
             }
         </style>
     </head>
@@ -670,10 +672,10 @@
                     <div class="grid two">
                         <div class="panel">
                             <h2>Connect to Active Session</h2>
-                            <p>Resume an active table. If nothing is selected, the latest active session opens.</p>
+
                             <form id="connect-session-form">
                                 <label>
-                                    Active Sessions
+
                                     <select id="active-session-select">
                                         <option value="">Latest active session</option>
                                     </select>
@@ -686,7 +688,7 @@
 
                         <div class="panel">
                             <h2>Start a New Session</h2>
-                            <p>Create a fresh table and immediately enter the workspace.</p>
+
                             <form id="start-session-form">
                                 <label>
                                     Chip Rate
@@ -710,7 +712,7 @@
                     <div class="panel" id="lobby-debug-panel">
                         <div class="toolbar">
                             <h3>Overview</h3>
-                            <span class="hint">Sessions are filtered by session creation date. Players are filtered by activity date.</span>
+
                         </div>
                         <div class="tabs">
                             <button class="secondary tab-button active" type="button" data-overview-tab="sessions">
@@ -1008,32 +1010,45 @@
             document.getElementById("start-session-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
+                // ✅ confirm (второй клик)
+                if (state.pendingStartSession) {
+                    const { sessionId, chipRate } = state.pendingStartSession;
+
+                    const response = await apiPost("/session/start", {
+                        session_id: sessionId,
+                        chip_rate: chipRate,
+                    });
+
+                    showOutput("lobby-output", response);
+
+                    if (!response.ok) {
+                        showNotice("lobby-notice", "error", describeResponse(response));
+                        return;
+                    }
+
+                    state.pendingStartSession = null;
+
+                    showNotice("lobby-notice", "success", `Session ${sessionId} started.`);
+                    await refreshSessionCatalog();
+                    await openWorkspace(sessionId);
+                    renderStartSessionConfirm();
+                    return;
+                }
+
+                // ✅ первый клик (arm)
                 let chipRate = Number(value("start-chip-rate"));
                 if (!chipRate) {
-                    chipRate = 1;
+                    chipRate = 2;
                 }
+
                 const sessionId = String(getNextSessionId());
 
-                if (!chipRate) {
-                    showNotice("lobby-notice", "error", "Chip rate is required.");
-                    return;
-                }
+                state.pendingStartSession = {
+                    sessionId,
+                    chipRate,
+                };
 
-                const response = await apiPost("/session/start", {
-                    session_id: sessionId,
-                    chip_rate: chipRate,
-                });
-
-                showOutput("lobby-output", response);
-
-                if (!response.ok) {
-                    showNotice("lobby-notice", "error", describeResponse(response));
-                    return;
-                }
-
-                showNotice("lobby-notice", "success", `Session ${sessionId} started.`);
-                await refreshSessionCatalog();
-                await openWorkspace(sessionId);
+                renderStartSessionConfirm();
             });
 
             document.getElementById("connect-session-form").addEventListener("submit", async (event) => {
@@ -1826,6 +1841,33 @@
                 return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
                     .toISOString()
                     .slice(0, 10);
+            }
+
+            function renderStartSessionConfirm() {
+                const form = document.getElementById("start-session-form");
+
+                if (!state.pendingStartSession) {
+                    form.querySelector(".actions").innerHTML = `
+                        <button type="submit">Start Session</button>
+                    `;
+                    return;
+                }
+
+                const { sessionId, chipRate } = state.pendingStartSession;
+
+                form.querySelector(".actions").innerHTML = `
+                    <div class="notice">
+                        You are about to start a session:<br/>
+                        <strong>Chip rate:</strong> ${chipRate} chips per 1 RUB
+                    </div>
+                    <button type="submit">Confirm Start</button>
+                    <button class="secondary" type="button" id="cancel-start-session">Cancel</button>
+                `;
+
+                document.getElementById("cancel-start-session").addEventListener("click", () => {
+                    state.pendingStartSession = null;
+                    renderStartSessionConfirm();
+                });
             }
 
             applyPresetRange("sessions", "all");
