@@ -786,7 +786,7 @@
                         <div id="overview-players-wrap" class="cards hidden"></div>
                     </div>
 
-                    <div class="panel">
+                    <div class="panel" id="lobby-response-panel">
                         <div class="toolbar">
                             <h3>Latest Response</h3>
                             <span class="hint">Raw API output for quick debugging</span>
@@ -1813,8 +1813,9 @@
             applyPresetRange("player-detail", "all");
             setOverviewTab("sessions");
             const debug = new URLSearchParams(window.location.search).get("debug") === "1";
-            document.getElementById("lobby-debug-panel").classList.toggle("hidden", !debug);
+            // document.getElementById("lobby-debug-panel").classList.toggle("hidden", !debug);
             document.getElementById("session-debug-panel").classList.toggle("hidden", !debug);
+            document.getElementById("lobby-response-panel").classList.toggle("hidden", !debug);
             refreshSessionCatalog();
             loadSessionsOverview();
             loadPlayersOverview();
