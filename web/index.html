@@ -483,12 +483,12 @@
             }
 
             .card-item {
-                padding: 14px;
+                padding: 12px;
                 border-radius: 18px;
                 background: rgba(255, 255, 255, 0.03);
                 border: 1px solid rgba(255, 255, 255, 0.08);
                 display: grid;
-                gap: 12px;
+                gap: 10px;
                 min-width: 0;
             }
 
@@ -508,29 +508,32 @@
 
             .card-meta {
                 display: grid;
-                gap: 8px;
+                gap: 6px;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
             .card-meta-item {
-                padding: 10px 12px;
-                border-radius: 14px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                padding: 8px 10px;
+                border-radius: 12px;
+
                 background: rgba(255, 255, 255, 0.03);
                 border: 1px solid rgba(255, 255, 255, 0.05);
             }
 
             .card-meta-item span {
-                display: block;
                 color: var(--muted);
-                font-size: 0.76rem;
+                font-size: 0.75rem;
                 text-transform: uppercase;
-                letter-spacing: 0.08em;
+                letter-spacing: 0.06em;
             }
 
             .card-meta-item strong {
-                display: block;
-                margin-top: 6px;
-                font-size: 0.98rem;
+                font-size: 0.95rem;
+                font-weight: 600;
             }
 
             .summary-grid {
@@ -656,7 +659,16 @@
                     display: block;
                 }
 
+                th span {
+                    display: inline;
+                }
 
+                @media (max-width: 720px) {
+                    th span {
+                        display: inline-block;
+                        line-height: 1.1;
+                    }
+                }
             }
         </style>
     </head>
@@ -1343,21 +1355,21 @@
                     .join("");
 
                 wrap.innerHTML = `
-                    <div class="table-wrap desktop-only">
+                  <div class="table-wrap">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Buy In</th>
-                                    <th>Cash Out</th>
-                                    <th>Profit Chips</th>
-                                    <th>Profit Money</th>
-                                </tr>
-                            </thead>
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Buy In</th>
+                                <th><span>Cash<br>Out</span></th>
+                                <th><span>Profit<br>Chips</span></th>
+                                <th><span>Profit<br>Money</span></th>
+                            </tr>
+                        </thead>
                             <tbody>${tableRows}</tbody>
                         </table>
                     </div>
-                    <div class="mobile-only cards">${cards}</div>
+
                 `;
             }
 
