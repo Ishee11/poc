@@ -10,6 +10,7 @@ import (
 
 func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 	var req struct {
+		RequestID string `json:"request_id"`
 		SessionID string `json:"session_id"`
 	}
 
@@ -19,6 +20,7 @@ func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.finishSessionUC.Execute(usecase.FinishSessionCommand{
+		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 	})
 

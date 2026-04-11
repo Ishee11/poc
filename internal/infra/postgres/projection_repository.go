@@ -142,10 +142,16 @@ func (r *ProjectionRepository) GetLastOperationType(
 	ctx := context.Background()
 
 	row := pgxTx.QueryRow(ctx, `
-		SELECT type
-		FROM operations
-		WHERE session_id = $1 AND player_id = $2
-		ORDER BY created_at DESC
+		SELECT o.type
+		FROM operations o
+		LEFT JOIN operations rev
+			ON rev.reference_id = o.id
+			AND rev.type = 'reversal'
+		WHERE o.session_id = $1
+		  AND o.player_id = $2
+		  AND o.type <> 'reversal'
+		  AND rev.id IS NULL
+		ORDER BY o.created_at DESC
 		LIMIT 1
 	`, sessionID, playerID)
 

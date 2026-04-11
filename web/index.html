@@ -2,155 +2,1129 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Poker API UI</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Poker Session Control</title>
         <style>
+            :root {
+                --bg: #07111f;
+                --panel: rgba(8, 23, 42, 0.82);
+                --panel-strong: rgba(10, 29, 52, 0.96);
+                --line: rgba(157, 193, 255, 0.18);
+                --text: #edf4ff;
+                --muted: #99aec9;
+                --accent: #58d0a7;
+                --accent-strong: #20a97d;
+                --danger: #ff8d7a;
+                --warning: #ffd07a;
+                --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+                --radius: 24px;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
             body {
-                font-family: Arial;
-                max-width: 800px;
-                margin: 20px auto;
+                margin: 0;
+                min-height: 100vh;
+                color: var(--text);
+                font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+                background:
+                    radial-gradient(circle at top left, rgba(38, 107, 214, 0.22), transparent 32%),
+                    radial-gradient(circle at top right, rgba(34, 169, 125, 0.16), transparent 26%),
+                    linear-gradient(160deg, #04101f 0%, #0b1f38 48%, #08111d 100%);
             }
-            h2 {
-                margin-top: 30px;
+
+            body::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                pointer-events: none;
+                background-image:
+                    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+                background-size: 30px 30px;
+                mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 85%);
             }
+
+            .app {
+                width: min(1200px, calc(100vw - 32px));
+                margin: 24px auto 48px;
+                position: relative;
+            }
+
+            .hero {
+                padding: 28px;
+                border: 1px solid var(--line);
+                border-radius: calc(var(--radius) + 8px);
+                background:
+                    linear-gradient(135deg, rgba(88, 208, 167, 0.12), transparent 42%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+                    var(--panel-strong);
+                box-shadow: var(--shadow);
+                overflow: hidden;
+                position: relative;
+            }
+
+            .hero::after {
+                content: "";
+                position: absolute;
+                width: 320px;
+                height: 320px;
+                border-radius: 50%;
+                background: radial-gradient(circle, rgba(88, 208, 167, 0.18), transparent 70%);
+                right: -80px;
+                top: -90px;
+                filter: blur(10px);
+            }
+
+            .hero h1 {
+                margin: 0;
+                font-family: Georgia, "Times New Roman", serif;
+                font-size: clamp(2.2rem, 4vw, 4rem);
+                font-weight: 700;
+                letter-spacing: -0.04em;
+                max-width: 10ch;
+            }
+
+            .hero p {
+                margin: 14px 0 0;
+                max-width: 58ch;
+                color: var(--muted);
+                line-height: 1.6;
+                font-size: 1rem;
+            }
+
+            .hero-meta {
+                margin-top: 18px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 14px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                color: #dce7f7;
+                font-size: 0.92rem;
+            }
+
+            .layout {
+                margin-top: 22px;
+                display: grid;
+                gap: 18px;
+            }
+
+            .screen {
+                display: none;
+                gap: 18px;
+            }
+
+            .screen.active {
+                display: grid;
+            }
+
+            .panel {
+                padding: 22px;
+                border-radius: var(--radius);
+                border: 1px solid var(--line);
+                background: var(--panel);
+                backdrop-filter: blur(10px);
+                box-shadow: var(--shadow);
+            }
+
+            .panel h2,
+            .panel h3 {
+                margin: 0 0 14px;
+                font-family: Georgia, "Times New Roman", serif;
+                letter-spacing: -0.02em;
+            }
+
+            .panel p {
+                color: var(--muted);
+                line-height: 1.5;
+            }
+
+            .grid {
+                display: grid;
+                gap: 18px;
+            }
+
+            .grid.two {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .grid.three {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
+            }
+
+            .stat {
+                padding: 16px;
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .stat-label {
+                color: var(--muted);
+                font-size: 0.82rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+
+            .stat-value {
+                margin-top: 10px;
+                font-size: 1.55rem;
+                font-weight: 700;
+            }
+
+            form {
+                display: grid;
+                gap: 12px;
+            }
+
+            .field-group {
+                display: grid;
+                gap: 12px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            label {
+                display: grid;
+                gap: 8px;
+                font-size: 0.9rem;
+                color: #dae7f8;
+            }
+
+            .hint {
+                color: var(--muted);
+                font-size: 0.85rem;
+            }
+
             input,
             button {
-                margin: 5px;
-                padding: 5px;
+                border: 0;
+                border-radius: 14px;
+                font: inherit;
             }
+
+            input {
+                width: 100%;
+                padding: 13px 14px;
+                color: var(--text);
+                background: rgba(2, 11, 22, 0.72);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                outline: none;
+                transition:
+                    border-color 0.18s ease,
+                    transform 0.18s ease,
+                    background 0.18s ease;
+            }
+
+            input:focus {
+                border-color: rgba(88, 208, 167, 0.75);
+                background: rgba(4, 15, 28, 0.92);
+                transform: translateY(-1px);
+            }
+
+            button {
+                padding: 12px 16px;
+                color: #04261b;
+                font-weight: 700;
+                cursor: pointer;
+                background: linear-gradient(135deg, #7ff0ca, #4bc79d);
+                transition:
+                    transform 0.18s ease,
+                    box-shadow 0.18s ease,
+                    opacity 0.18s ease;
+                box-shadow: 0 12px 28px rgba(32, 169, 125, 0.26);
+            }
+
+            button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 16px 36px rgba(32, 169, 125, 0.32);
+            }
+
+            button.secondary {
+                color: var(--text);
+                background: rgba(255, 255, 255, 0.06);
+                box-shadow: none;
+            }
+
+            button.warn {
+                color: #381608;
+                background: linear-gradient(135deg, #ffd9a2, #ffb46e);
+                box-shadow: 0 12px 28px rgba(255, 180, 110, 0.18);
+            }
+
+            button.danger {
+                color: #330f0f;
+                background: linear-gradient(135deg, #ffb6aa, #ff8f7b);
+                box-shadow: 0 12px 28px rgba(255, 143, 123, 0.2);
+            }
+
+            button:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+                transform: none;
+                box-shadow: none;
+            }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+            }
+
+            .workspace-header {
+                display: flex;
+                justify-content: space-between;
+                gap: 18px;
+                align-items: flex-start;
+            }
+
+            .workspace-header h2 {
+                margin-bottom: 6px;
+            }
+
+            .mono {
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            }
+
+            .session-status {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                border-radius: 999px;
+                font-size: 0.9rem;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+
+            .session-status.active {
+                color: #aef0d8;
+            }
+
+            .session-status.finished {
+                color: #ffe0b0;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            th,
+            td {
+                padding: 12px 10px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                text-align: left;
+                font-size: 0.92rem;
+                vertical-align: top;
+            }
+
+            th {
+                color: var(--muted);
+                font-size: 0.78rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+
+            .table-wrap {
+                overflow-x: auto;
+            }
+
+            .operation-type {
+                display: inline-flex;
+                padding: 6px 10px;
+                border-radius: 999px;
+                font-size: 0.82rem;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.04);
+            }
+
+            .operation-type.buy_in {
+                color: #aef0d8;
+            }
+
+            .operation-type.cash_out {
+                color: #ffe0b0;
+            }
+
+            .operation-type.reversal {
+                color: #ffb8b1;
+            }
+
+            .empty {
+                padding: 18px;
+                border-radius: 16px;
+                text-align: center;
+                color: var(--muted);
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px dashed rgba(255, 255, 255, 0.12);
+            }
+
+            .notice {
+                padding: 14px 16px;
+                border-radius: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.04);
+                color: var(--text);
+                line-height: 1.5;
+            }
+
+            .notice.success {
+                border-color: rgba(88, 208, 167, 0.32);
+                background: rgba(88, 208, 167, 0.12);
+            }
+
+            .notice.error {
+                border-color: rgba(255, 143, 123, 0.32);
+                background: rgba(255, 143, 123, 0.12);
+            }
+
             pre {
-                background: #f5f5f5;
-                padding: 10px;
+                margin: 0;
+                padding: 16px;
+                max-height: 360px;
+                overflow: auto;
+                border-radius: 18px;
+                background: rgba(2, 11, 22, 0.84);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                color: #d4e5ff;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+                font-size: 0.88rem;
+                line-height: 1.5;
+            }
+
+            .toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .hidden {
+                display: none !important;
+            }
+
+            @media (max-width: 980px) {
+                .grid.two,
+                .grid.three,
+                .stats,
+                .field-group {
+                    grid-template-columns: 1fr;
+                }
+
+                .workspace-header {
+                    flex-direction: column;
+                }
             }
         </style>
     </head>
     <body>
-        <h1>Poker API Debug UI</h1>
+        <div class="app">
+            <section class="hero">
+                <h1>Poker Session Control</h1>
+                <p>
+                    One page for the real flow: create a table, reconnect to an
+                    active session by ID, operate inside the session, inspect
+                    operations, review player results, and finish only when the
+                    table is settled.
+                </p>
+                <div class="hero-meta">
+                    <span class="pill">Start or reconnect to a session</span>
+                    <span class="pill">Buy in, cash out, reverse operations</span>
+                    <span class="pill">Live session stats and player results</span>
+                </div>
+            </section>
 
-        <h2>Start Session</h2>
-        <input id="start_session_id" placeholder="session_id" />
-        <input id="start_chip_rate" placeholder="chip_rate" />
-        <button onclick="startSession()">Start</button>
+            <main class="layout">
+                <section class="screen active" id="screen-lobby">
+                    <div class="grid two">
+                        <div class="panel">
+                            <h2>Start a New Session</h2>
+                            <p>
+                                Create a fresh session and immediately jump into
+                                the active workspace.
+                            </p>
+                            <form id="start-session-form">
+                                <label>
+                                    Session ID
+                                    <input
+                                        id="start-session-id"
+                                        placeholder="cash-game-0411"
+                                        required
+                                    />
+                                </label>
+                                <label>
+                                    Chip Rate
+                                    <input
+                                        id="start-chip-rate"
+                                        type="number"
+                                        min="1"
+                                        placeholder="10"
+                                        required
+                                    />
+                                </label>
+                                <div class="actions">
+                                    <button type="submit">Start Session</button>
+                                </div>
+                            </form>
+                        </div>
 
-        <h2>Buy In</h2>
-        <input id="buy_req" placeholder="request_id" />
-        <input id="buy_session" placeholder="session_id" />
-        <input id="buy_player" placeholder="player_id" />
-        <input id="buy_chips" placeholder="chips" />
-        <button onclick="buyIn()">Buy In</button>
+                        <div class="panel">
+                            <h2>Connect to Active Session</h2>
+                            <p>
+                                There is no session list endpoint yet, so
+                                reconnect happens by known <span class="mono">session_id</span>.
+                            </p>
+                            <form id="connect-session-form">
+                                <label>
+                                    Session ID
+                                    <input
+                                        id="connect-session-id"
+                                        placeholder="cash-game-0411"
+                                        required
+                                    />
+                                </label>
+                                <div class="actions">
+                                    <button type="submit">Open Workspace</button>
+                                    <button
+                                        class="secondary"
+                                        type="button"
+                                        id="refresh-lobby-health"
+                                    >
+                                        Check API
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
 
-        <h2>Cash Out</h2>
-        <input id="cash_req" placeholder="request_id" />
-        <input id="cash_session" placeholder="session_id" />
-        <input id="cash_player" placeholder="player_id" />
-        <input id="cash_chips" placeholder="chips" />
-        <button onclick="cashOut()">Cash Out</button>
+                    <div class="panel">
+                        <div class="toolbar">
+                            <h3>Latest Response</h3>
+                            <span class="hint">Raw API output for quick debugging</span>
+                        </div>
+                        <div class="notice hidden" id="lobby-notice"></div>
+                        <pre id="lobby-output">No requests yet.</pre>
+                    </div>
+                </section>
 
-        <h2>Finish Session</h2>
-        <input id="finish_session" placeholder="session_id" />
-        <button onclick="finishSession()">Finish</button>
+                <section class="screen" id="screen-session">
+                    <div class="panel">
+                        <div class="workspace-header">
+                            <div>
+                                <h2 id="workspace-title">Session Workspace</h2>
+                                <div class="actions">
+                                    <span class="session-status" id="session-status-chip"></span>
+                                    <span class="pill mono" id="workspace-request-chip"></span>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button class="secondary" id="refresh-session" type="button">
+                                    Refresh
+                                </button>
+                                <button class="secondary" id="back-to-lobby" type="button">
+                                    Leave Workspace
+                                </button>
+                            </div>
+                        </div>
 
-        <h2>Reverse Operation</h2>
-        <input id="rev_req" placeholder="request_id" />
-        <input id="rev_op" placeholder="operation_id" />
-        <input id="rev_target" placeholder="target_operation_id" />
-        <button onclick="reverseOp()">Reverse</button>
+                        <div class="stats">
+                            <div class="stat">
+                                <div class="stat-label">Chip Rate</div>
+                                <div class="stat-value" id="stat-chip-rate">-</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Total Buy In</div>
+                                <div class="stat-value" id="stat-buy-in">-</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Total Cash Out</div>
+                                <div class="stat-value" id="stat-cash-out">-</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Chips On Table</div>
+                                <div class="stat-value" id="stat-total-chips">-</div>
+                            </div>
+                        </div>
+                    </div>
 
-        <h2>Get Session</h2>
-        <input id="get_session" placeholder="session_id" />
-        <button onclick="getSession()">Get</button>
+                    <div class="grid two">
+                        <div class="panel">
+                            <h3>Buy In</h3>
+                            <form id="buy-in-form">
+                                <div class="field-group">
+                                    <label>
+                                        Player ID
+                                        <input id="buy-player-id" placeholder="p1" required />
+                                    </label>
+                                    <label>
+                                        Chips
+                                        <input id="buy-chips" type="number" min="1" placeholder="100" required />
+                                    </label>
+                                </div>
+                                <label>
+                                    Request ID
+                                    <input id="buy-request-id" placeholder="auto-generated if empty" />
+                                </label>
+                                <div class="actions">
+                                    <button type="submit">Submit Buy In</button>
+                                </div>
+                            </form>
+                        </div>
 
-        <h2>Get Operations</h2>
-        <input id="ops_session" placeholder="session_id" />
-        <input id="ops_limit" placeholder="limit" />
-        <input id="ops_offset" placeholder="offset" />
-        <button onclick="getOps()">Get Ops</button>
+                        <div class="panel">
+                            <h3>Cash Out</h3>
+                            <form id="cash-out-form">
+                                <div class="field-group">
+                                    <label>
+                                        Player ID
+                                        <input id="cash-player-id" placeholder="p1" required />
+                                    </label>
+                                    <label>
+                                        Chips
+                                        <input id="cash-chips" type="number" min="1" placeholder="50" required />
+                                    </label>
+                                </div>
+                                <label>
+                                    Request ID
+                                    <input id="cash-request-id" placeholder="auto-generated if empty" />
+                                </label>
+                                <div class="actions">
+                                    <button class="warn" type="submit">Submit Cash Out</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
 
-        <h2>Get Results</h2>
-        <input id="res_session" placeholder="session_id" />
-        <button onclick="getResults()">Get Results</button>
+                    <div class="grid two">
+                        <div class="panel">
+                            <h3>Reverse Operation</h3>
+                            <p>
+                                Pick a target operation from the journal below or
+                                paste an ID directly.
+                            </p>
+                            <form id="reverse-form">
+                                <label>
+                                    Target Operation ID
+                                    <input id="reverse-target-id" placeholder="op-2" required />
+                                </label>
+                                <label>
+                                    Request ID
+                                    <input id="reverse-request-id" placeholder="auto-generated if empty" />
+                                </label>
+                                <div class="actions">
+                                    <button class="danger" type="submit">Reverse Operation</button>
+                                </div>
+                            </form>
+                        </div>
 
-        <h2>Response</h2>
-        <pre id="output"></pre>
+                        <div class="panel">
+                            <h3>Finish Session</h3>
+                            <p>
+                                Finishing works only when <span class="mono">total_buy_in == total_cash_out</span>.
+                            </p>
+                            <form id="finish-form">
+                                <label>
+                                    Request ID
+                                    <input id="finish-request-id" placeholder="auto-generated if empty" />
+                                </label>
+                                <div class="actions">
+                                    <button class="danger" type="submit">Finish Session</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="grid two">
+                        <div class="panel">
+                            <div class="toolbar">
+                                <h3>Operations</h3>
+                                <span class="hint" id="operations-count">0 loaded</span>
+                            </div>
+                            <div class="table-wrap" id="operations-wrap"></div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="toolbar">
+                                <h3>Player Results</h3>
+                                <span class="hint">Calculated from operations</span>
+                            </div>
+                            <div class="table-wrap" id="results-wrap"></div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="toolbar">
+                            <h3>Latest Response</h3>
+                            <span class="hint" id="workspace-summary"></span>
+                        </div>
+                        <div class="notice hidden" id="session-notice"></div>
+                        <pre id="session-output">Workspace ready.</pre>
+                    </div>
+                </section>
+            </main>
+        </div>
 
         <script>
-            const API = "http://localhost:8080";
+            const API = window.location.origin;
 
-            function show(res) {
-                document.getElementById("output").textContent = res;
-            }
+            const state = {
+                activeSessionId: "",
+                session: null,
+                operations: [],
+                results: [],
+            };
 
-            async function post(path, body) {
-                const res = await fetch(API + path, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body),
+            const lobbyScreen = document.getElementById("screen-lobby");
+            const sessionScreen = document.getElementById("screen-session");
+
+            document.getElementById("start-session-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const sessionId = value("start-session-id").trim();
+                const chipRate = Number(value("start-chip-rate"));
+
+                if (!sessionId || !chipRate) {
+                    showNotice("lobby-notice", "error", "Session ID and chip rate are required.");
+                    return;
+                }
+
+                const response = await apiPost("/session/start", {
+                    session_id: sessionId,
+                    chip_rate: chipRate,
                 });
 
-                const text = await res.text();
-                show(res.status + "\n" + text);
+                showOutput("lobby-output", response);
+
+                if (!response.ok) {
+                    showNotice("lobby-notice", "error", describeResponse(response));
+                    return;
+                }
+
+                setValue("connect-session-id", sessionId);
+                showNotice("lobby-notice", "success", `Session ${sessionId} started.`);
+                await openWorkspace(sessionId);
+            });
+
+            document.getElementById("connect-session-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const sessionId = value("connect-session-id").trim();
+                if (!sessionId) {
+                    showNotice("lobby-notice", "error", "Session ID is required.");
+                    return;
+                }
+
+                await openWorkspace(sessionId);
+            });
+
+            document.getElementById("refresh-lobby-health").addEventListener("click", async () => {
+                const response = await apiGet("/health");
+                showOutput("lobby-output", response);
+                if (response.ok) {
+                    showNotice("lobby-notice", "success", "API is reachable.");
+                    return;
+                }
+                showNotice("lobby-notice", "error", describeResponse(response));
+            });
+
+            document.getElementById("refresh-session").addEventListener("click", async () => {
+                if (state.activeSessionId) {
+                    await refreshWorkspace(state.activeSessionId, "Session refreshed.");
+                }
+            });
+
+            document.getElementById("back-to-lobby").addEventListener("click", () => {
+                state.activeSessionId = "";
+                setScreen("lobby");
+                showNotice("session-notice", "", "");
+            });
+
+            document.getElementById("buy-in-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+                await submitSessionAction("buy", "/buy-in", {
+                    request_id: requestIdFrom("buy-request-id", "buy"),
+                    session_id: state.activeSessionId,
+                    player_id: value("buy-player-id").trim(),
+                    chips: Number(value("buy-chips")),
+                });
+            });
+
+            document.getElementById("cash-out-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+                await submitSessionAction("cash", "/cash-out", {
+                    request_id: requestIdFrom("cash-request-id", "cash"),
+                    session_id: state.activeSessionId,
+                    player_id: value("cash-player-id").trim(),
+                    chips: Number(value("cash-chips")),
+                });
+            });
+
+            document.getElementById("reverse-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+                await submitSessionAction("reverse", "/operation/reverse", {
+                    request_id: requestIdFrom("reverse-request-id", "reverse"),
+                    target_operation_id: value("reverse-target-id").trim(),
+                });
+            });
+
+            document.getElementById("finish-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+                await submitSessionAction("finish", "/session/finish", {
+                    request_id: requestIdFrom("finish-request-id", "finish"),
+                    session_id: state.activeSessionId,
+                });
+            });
+
+            async function submitSessionAction(kind, path, body) {
+                if (!state.activeSessionId) {
+                    showNotice("session-notice", "error", "Open a session first.");
+                    return;
+                }
+
+                const response = await apiPost(path, body);
+                showOutput("session-output", response);
+
+                if (!response.ok) {
+                    showNotice("session-notice", "error", describeResponse(response));
+                    return;
+                }
+
+                clearActionRequest(kind);
+                showNotice("session-notice", "success", `${capitalize(kind)} request accepted.`);
+                await refreshWorkspace(state.activeSessionId, "Workspace updated.");
             }
 
-            async function get(path) {
-                const res = await fetch(API + path);
-                const text = await res.text();
-                show(res.status + "\n" + text);
+            async function openWorkspace(sessionId) {
+                const success = await refreshWorkspace(sessionId, `Connected to ${sessionId}.`);
+                if (!success) {
+                    return;
+                }
+                state.activeSessionId = sessionId;
+                setScreen("session");
             }
 
-            function startSession() {
-                post("/session/start", {
-                    session_id: val("start_session_id"),
-                    chip_rate: Number(val("start_chip_rate")),
+            async function refreshWorkspace(sessionId, successMessage) {
+                const [sessionRes, opsRes, resultsRes] = await Promise.all([
+                    apiGet(`/session?session_id=${encodeURIComponent(sessionId)}`),
+                    apiGet(`/session/operations?session_id=${encodeURIComponent(sessionId)}&limit=100&offset=0`),
+                    apiGet(`/session/results?session_id=${encodeURIComponent(sessionId)}`),
+                ]);
+
+                showOutput("session-output", {
+                    status: sessionRes.status,
+                    body: {
+                        session: sessionRes.body,
+                        operations: opsRes.body,
+                        results: resultsRes.body,
+                    },
+                });
+
+                if (!sessionRes.ok) {
+                    showNotice("lobby-notice", "error", describeResponse(sessionRes));
+                    setScreen("lobby");
+                    return false;
+                }
+
+                state.activeSessionId = sessionId;
+                state.session = sessionRes.body || {};
+                state.operations = (opsRes.body && opsRes.body.Operations) || [];
+                state.results = (resultsRes.body && resultsRes.body.Results) || [];
+
+                renderWorkspace();
+                showNotice("session-notice", "success", successMessage);
+                return true;
+            }
+
+            function renderWorkspace() {
+                const session = state.session || {};
+                const status = session.Status || "-";
+                const active = status === "active";
+
+                document.getElementById("workspace-title").textContent = `Session ${session.SessionID || state.activeSessionId}`;
+                document.getElementById("workspace-request-chip").textContent = `session_id: ${session.SessionID || state.activeSessionId}`;
+
+                const statusChip = document.getElementById("session-status-chip");
+                statusChip.textContent = `status: ${status}`;
+                statusChip.className = `session-status ${status}`;
+
+                document.getElementById("stat-chip-rate").textContent = formatNumber(session.ChipRate);
+                document.getElementById("stat-buy-in").textContent = formatNumber(session.TotalBuyIn);
+                document.getElementById("stat-cash-out").textContent = formatNumber(session.TotalCashOut);
+                document.getElementById("stat-total-chips").textContent = formatNumber(session.TotalChips);
+                document.getElementById("workspace-summary").textContent = active
+                    ? "Session is active. Actions are available."
+                    : "Session is finished. Data is read-only.";
+
+                disableSessionActions(!active);
+                renderOperations(active);
+                renderResults();
+            }
+
+            function renderOperations(active) {
+                const wrap = document.getElementById("operations-wrap");
+                const operations = state.operations || [];
+
+                document.getElementById("operations-count").textContent = `${operations.length} loaded`;
+
+                if (!operations.length) {
+                    wrap.innerHTML = '<div class="empty">No operations yet.</div>';
+                    return;
+                }
+
+                const rows = operations
+                    .map((operation) => {
+                        const type = operation.Type || "";
+                        const reverseDisabled = !active || type === "reversal";
+                        const reference = operation.ReferenceID || "-";
+                        const action = reverseDisabled
+                            ? '<button class="secondary" type="button" disabled>Reverse</button>'
+                            : `<button class="secondary" type="button" data-target-operation="${escapeHtml(operation.ID)}">Reverse</button>`;
+
+                        return `
+                            <tr>
+                                <td class="mono">${escapeHtml(operation.ID)}</td>
+                                <td><span class="operation-type ${escapeHtml(type)}">${escapeHtml(type)}</span></td>
+                                <td class="mono">${escapeHtml(operation.PlayerID || "-")}</td>
+                                <td>${formatNumber(operation.Chips)}</td>
+                                <td class="mono">${escapeHtml(reference)}</td>
+                                <td class="mono">${formatDate(operation.CreatedAt)}</td>
+                                <td>${action}</td>
+                            </tr>
+                        `;
+                    })
+                    .join("");
+
+                wrap.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Player</th>
+                                <th>Chips</th>
+                                <th>Reference</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+
+                wrap.querySelectorAll("[data-target-operation]").forEach((button) => {
+                    button.addEventListener("click", () => {
+                        const target = button.getAttribute("data-target-operation");
+                        setValue("reverse-target-id", target);
+                        document.getElementById("reverse-target-id").focus();
+                    });
                 });
             }
 
-            function buyIn() {
-                post("/buy-in", {
-                    request_id: val("buy_req"),
-                    session_id: val("buy_session"),
-                    player_id: val("buy_player"),
-                    chips: Number(val("buy_chips")),
+            function renderResults() {
+                const wrap = document.getElementById("results-wrap");
+                const results = state.results || [];
+
+                if (!results.length) {
+                    wrap.innerHTML = '<div class="empty">No player results yet.</div>';
+                    return;
+                }
+
+                const rows = results
+                    .map(
+                        (result) => `
+                            <tr>
+                                <td class="mono">${escapeHtml(result.PlayerID)}</td>
+                                <td>${formatNumber(result.BuyInChips)}</td>
+                                <td>${formatNumber(result.CashOutChips)}</td>
+                                <td>${formatNumber(result.ProfitChips)}</td>
+                                <td>${formatNumber(result.ProfitMoney)}</td>
+                            </tr>
+                        `,
+                    )
+                    .join("");
+
+                wrap.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Buy In</th>
+                                <th>Cash Out</th>
+                                <th>Profit Chips</th>
+                                <th>Profit Money</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            }
+
+            function disableSessionActions(disabled) {
+                document.querySelectorAll("#buy-in-form button, #cash-out-form button, #reverse-form button, #finish-form button").forEach((button) => {
+                    button.disabled = disabled;
                 });
             }
 
-            function cashOut() {
-                post("/cash-out", {
-                    request_id: val("cash_req"),
-                    session_id: val("cash_session"),
-                    player_id: val("cash_player"),
-                    chips: Number(val("cash_chips")),
-                });
+            function setScreen(name) {
+                lobbyScreen.classList.toggle("active", name === "lobby");
+                sessionScreen.classList.toggle("active", name === "session");
             }
 
-            function finishSession() {
-                post("/session/finish", {
-                    session_id: val("finish_session"),
-                });
+            async function apiPost(path, body) {
+                try {
+                    const response = await fetch(API + path, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                    });
+                    return await normalizeResponse(response);
+                } catch (error) {
+                    return {
+                        ok: false,
+                        status: 0,
+                        body: null,
+                        text: String(error),
+                    };
+                }
             }
 
-            function reverseOp() {
-                post("/operation/reverse", {
-                    request_id: val("rev_req"),
-                    operation_id: val("rev_op"),
-                    target_operation_id: val("rev_target"),
-                });
+            async function apiGet(path) {
+                try {
+                    const response = await fetch(API + path);
+                    return await normalizeResponse(response);
+                } catch (error) {
+                    return {
+                        ok: false,
+                        status: 0,
+                        body: null,
+                        text: String(error),
+                    };
+                }
             }
 
-            function getSession() {
-                get(`/session?session_id=${val("get_session")}`);
+            async function normalizeResponse(response) {
+                const text = await response.text();
+                let body = null;
+
+                try {
+                    body = text ? JSON.parse(text) : null;
+                } catch (error) {
+                    body = null;
+                }
+
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    body,
+                    text,
+                };
             }
 
-            function getOps() {
-                get(
-                    `/session/operations?session_id=${val("ops_session")}&limit=${val("ops_limit")}&offset=${val("ops_offset")}`,
-                );
+            function describeResponse(response) {
+                if (!response) {
+                    return "Unknown response.";
+                }
+                if (response.body && response.body.error) {
+                    return response.body.details
+                        ? `${response.body.error}: ${JSON.stringify(response.body.details)}`
+                        : response.body.error;
+                }
+                if (response.text) {
+                    return response.text;
+                }
+                return `Request failed with status ${response.status}.`;
             }
 
-            function getResults() {
-                get(`/session/results?session_id=${val("res_session")}`);
+            function showNotice(id, type, message) {
+                const notice = document.getElementById(id);
+                if (!message) {
+                    notice.className = "notice hidden";
+                    notice.textContent = "";
+                    return;
+                }
+                notice.className = `notice ${type || ""}`;
+                notice.textContent = message;
             }
 
-            function val(id) {
+            function showOutput(id, response) {
+                document.getElementById(id).textContent = JSON.stringify(response, null, 2);
+            }
+
+            function requestIdFrom(inputId, prefix) {
+                const current = value(inputId).trim();
+                const requestId = current || generateRequestId(prefix);
+                setValue(inputId, requestId);
+                return requestId;
+            }
+
+            function clearActionRequest(kind) {
+                const fields = {
+                    buy: "buy-request-id",
+                    cash: "cash-request-id",
+                    reverse: "reverse-request-id",
+                    finish: "finish-request-id",
+                };
+
+                const field = fields[kind];
+                if (field) {
+                    setValue(field, "");
+                }
+            }
+
+            function generateRequestId(prefix) {
+                return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+            }
+
+            function value(id) {
                 return document.getElementById(id).value;
+            }
+
+            function setValue(id, next) {
+                document.getElementById(id).value = next;
+            }
+
+            function formatNumber(value) {
+                return Number.isFinite(Number(value)) ? Number(value).toLocaleString() : "-";
+            }
+
+            function formatDate(value) {
+                if (!value) {
+                    return "-";
+                }
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+            }
+
+            function escapeHtml(value) {
+                return String(value ?? "")
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;")
+                    .replaceAll("'", "&#39;");
+            }
+
+            function capitalize(value) {
+                return value.charAt(0).toUpperCase() + value.slice(1);
             }
         </script>
     </body>
