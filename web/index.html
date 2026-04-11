@@ -297,6 +297,11 @@
                 align-items: center;
             }
 
+            .toolbar .actions.actions-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
             .workspace-header {
                 display: flex;
                 justify-content: space-between;
@@ -428,6 +433,7 @@
                 gap: 10px;
                 justify-content: space-between;
                 align-items: center;
+                margin-bottom: 12px;
             }
 
             .tabs {
@@ -621,6 +627,21 @@
                     align-items: stretch;
                 }
 
+                .toolbar .actions {
+                    flex-direction: row;
+                    flex-wrap: nowrap;
+                    gap: 6px;
+                }
+
+                .toolbar .actions button {
+                    padding: 9px 10px;
+                    font-size: 1.0rem;
+                    border-radius: 10px;
+                    white-space: nowrap;
+                }
+
+
+
                 .actions-grid {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
@@ -671,6 +692,10 @@
                     th span {
                         display: inline-block;
                         line-height: 1.1;
+                    }
+
+                    .toolbar {
+                        align-items: flex-start;
                     }
                 }
             }
@@ -833,12 +858,12 @@
                                 <div class="session-status" id="session-status-chip"></div>
                             </div>
 
-                            <div class="actions">
+                            <div class="actions actions-grid">
                                 <button class="secondary" id="refresh-session" type="button">
                                     Refresh
                                 </button>
                                 <button class="secondary" id="back-to-lobby" type="button">
-                                    Leave
+                                    Home page
                                 </button>
                             </div>
                         </div>
