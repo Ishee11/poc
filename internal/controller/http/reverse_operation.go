@@ -11,7 +11,6 @@ import (
 func (h *Handler) ReverseOperation(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RequestID         string `json:"request_id"`
-		OperationID       string `json:"operation_id"`
 		TargetOperationID string `json:"target_operation_id"`
 	}
 
@@ -22,7 +21,6 @@ func (h *Handler) ReverseOperation(w http.ResponseWriter, r *http.Request) {
 
 	err := h.reverseOperationUC.Execute(usecase.ReverseOperationCommand{
 		RequestID:         req.RequestID,
-		OperationID:       entity.OperationID(req.OperationID),
 		TargetOperationID: entity.OperationID(req.TargetOperationID),
 	})
 

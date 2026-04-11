@@ -19,8 +19,9 @@ type CashOutUseCase struct {
 	sessionReader SessionReader
 	sessionWriter SessionWriter
 
-	txManager TxManager
-	idGen     IDGenerator
+	txManager       TxManager
+	idGen           IDGenerator
+	idempotencyRepo IdempotencyRepository
 }
 
 type CashOutCommand struct {
@@ -38,6 +39,7 @@ func NewCashOutUseCase(
 	sessionWriter SessionWriter,
 	txManager TxManager,
 	idGen IDGenerator,
+	idempotencyRepo IdempotencyRepository,
 ) *CashOutUseCase {
 	return &CashOutUseCase{
 		opWriter:          opWriter,
@@ -47,6 +49,7 @@ func NewCashOutUseCase(
 		sessionWriter:     sessionWriter,
 		txManager:         txManager,
 		idGen:             idGen,
+		idempotencyRepo:   idempotencyRepo,
 	}
 }
 
@@ -56,7 +59,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return Idempotent(tx, cmd.RequestID, func() error {
+		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 
 			// 1. session
 			session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)

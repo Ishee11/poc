@@ -31,6 +31,7 @@ func Run() error {
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
+	idempotencyRepo := postgres.NewIdempotencyRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(pool)
@@ -53,6 +54,7 @@ func Run() error {
 		sessionRepo,
 		txManager,
 		idGen,
+		idempotencyRepo,
 	)
 
 	cashOutUC := usecase.NewCashOutUseCase(
@@ -63,6 +65,7 @@ func Run() error {
 		sessionRepo,
 		txManager,
 		idGen,
+		idempotencyRepo,
 	)
 
 	finishSessionUC := usecase.NewFinishSessionUseCase(
@@ -70,6 +73,7 @@ func Run() error {
 		sessionRepo,
 		sessionRepo,
 		txManager,
+		idempotencyRepo,
 	)
 
 	reverseOpUC := usecase.NewReverseOperationUseCase(
@@ -79,6 +83,8 @@ func Run() error {
 		sessionRepo,
 		sessionRepo,
 		txManager,
+		idGen,
+		idempotencyRepo,
 	)
 
 	// read

@@ -11,11 +11,12 @@ type OperationIDGenerator interface {
 }
 
 type BuyInUseCase struct {
-	opWriter      OperationWriter
-	sessionReader SessionReader
-	sessionWriter SessionWriter
-	txManager     TxManager
-	idGen         OperationIDGenerator
+	opWriter        OperationWriter
+	sessionReader   SessionReader
+	sessionWriter   SessionWriter
+	txManager       TxManager
+	idGen           OperationIDGenerator
+	idempotencyRepo IdempotencyRepository
 }
 
 type BuyInCommand struct {
@@ -32,13 +33,15 @@ func NewBuyInUseCase(
 	sessionWriter SessionWriter,
 	txManager TxManager,
 	idGen OperationIDGenerator,
+	idempotencyRepo IdempotencyRepository,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
-		opWriter:      opWriter,
-		sessionReader: sessionReader,
-		sessionWriter: sessionWriter,
-		txManager:     txManager,
-		idGen:         idGen,
+		opWriter:        opWriter,
+		sessionReader:   sessionReader,
+		sessionWriter:   sessionWriter,
+		txManager:       txManager,
+		idGen:           idGen,
+		idempotencyRepo: idempotencyRepo,
 	}
 }
 
@@ -48,7 +51,7 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return Idempotent(tx, cmd.RequestID, func() error {
+		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 
 			// 2. загружаем session
 			session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)

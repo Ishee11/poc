@@ -54,6 +54,9 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			sessionWriter: sessionRepo,
 			txManager:     &txManagerMock{},
 			idGen:         idGen,
+			idempotencyRepo: &idempotencyRepoMock{
+				saveFn: func(tx Tx, requestID string) error { return nil },
+			},
 		}
 
 		cmd := BuyInCommand{
@@ -80,6 +83,9 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			sessionWriter: &sessionRepoMock{},
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
+			idempotencyRepo: &idempotencyRepoMock{
+				saveFn: func(tx Tx, requestID string) error { return nil },
+			},
 		}
 
 		cmd := BuyInCommand{
@@ -116,6 +122,9 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			sessionWriter: sessionRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
+			idempotencyRepo: &idempotencyRepoMock{
+				saveFn: func(tx Tx, requestID string) error { return nil },
+			},
 		}
 
 		cmd := BuyInCommand{
@@ -152,6 +161,9 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			sessionWriter: sessionRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
+			idempotencyRepo: &idempotencyRepoMock{
+				saveFn: func(tx Tx, requestID string) error { return nil },
+			},
 		}
 
 		cmd := BuyInCommand{
@@ -172,7 +184,8 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 
 		opRepo := &operationRepoMock{
 			saveFn: func(tx Tx, op *entity.Operation) error {
-				return entity.ErrDuplicateRequest
+				t.Fatal("operation save should not be called for duplicate request")
+				return nil
 			},
 		}
 
@@ -188,6 +201,9 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			sessionWriter: sessionRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
+			idempotencyRepo: &idempotencyRepoMock{
+				saveFn: func(tx Tx, requestID string) error { return entity.ErrDuplicateRequest },
+			},
 		}
 
 		cmd := BuyInCommand{

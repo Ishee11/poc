@@ -19,13 +19,15 @@ func TestIntegration_FullFlow(t *testing.T) {
 	_ = sessionRepo.Save(nil, session)
 
 	idGen := &operationIDGeneratorMock{}
+	idempotencyRepo := defaultIdempotencyRepo()
 
 	buyInUC := BuyInUseCase{
-		opWriter:      opRepo,
-		sessionReader: sessionRepo,
-		sessionWriter: sessionRepo,
-		txManager:     txManager,
-		idGen:         idGen,
+		opWriter:        opRepo,
+		sessionReader:   sessionRepo,
+		sessionWriter:   sessionRepo,
+		txManager:       txManager,
+		idGen:           idGen,
+		idempotencyRepo: idempotencyRepo,
 	}
 
 	cashOutUC := CashOutUseCase{
@@ -36,6 +38,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 		sessionWriter:     sessionRepo,
 		txManager:         txManager,
 		idGen:             idGen,
+		idempotencyRepo:   idempotencyRepo,
 	}
 
 	reverseUC := ReverseOperationUseCase{
@@ -45,13 +48,16 @@ func TestIntegration_FullFlow(t *testing.T) {
 		sessionReader:   sessionRepo,
 		sessionWriter:   sessionRepo,
 		txManager:       txManager,
+		idGen:           idGen,
+		idempotencyRepo: idempotencyRepo,
 	}
 
 	finishUC := FinishSessionUseCase{
-		projection:    opRepo,
-		sessionReader: sessionRepo,
-		sessionWriter: sessionRepo,
-		txManager:     txManager,
+		projection:      opRepo,
+		sessionReader:   sessionRepo,
+		sessionWriter:   sessionRepo,
+		txManager:       txManager,
+		idempotencyRepo: idempotencyRepo,
 	}
 
 	// --- 1. BuyIn ---
@@ -77,9 +83,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 3. Reversal (отменяем cashout) ---
+	idGen.id = "op3"
+
 	if err := reverseUC.Execute(ReverseOperationCommand{
 		RequestID:         "req-3",
-		OperationID:       "op3",
 		TargetOperationID: "op2",
 	}); err != nil {
 		t.Fatalf("reversal failed: %v", err)
@@ -87,6 +94,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 4. Finish должен упасть ---
 	if err := finishUC.Execute(FinishSessionCommand{
+		RequestID: "req-5",
 		SessionID: "s1",
 	}); err == nil {
 		t.Fatalf("expected finish to fail")
@@ -105,6 +113,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 6. Finish success ---
 	if err := finishUC.Execute(FinishSessionCommand{
+		RequestID: "req-6",
 		SessionID: "s1",
 	}); err != nil {
 		t.Fatalf("finish failed: %v", err)

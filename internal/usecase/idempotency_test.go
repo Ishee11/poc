@@ -10,7 +10,9 @@ import (
 func TestIdempotent(t *testing.T) {
 
 	t.Run("empty requestID", func(t *testing.T) {
-		err := Idempotent(nil, "", func() error {
+		repo := &idempotencyRepoMock{}
+
+		err := Idempotent(nil, repo, "", func() error {
 			return nil
 		})
 
@@ -22,7 +24,13 @@ func TestIdempotent(t *testing.T) {
 	t.Run("success execution", func(t *testing.T) {
 		called := false
 
-		err := Idempotent(nil, "req-1", func() error {
+		repo := &idempotencyRepoMock{
+			saveFn: func(tx Tx, requestID string) error {
+				return nil
+			},
+		}
+
+		err := Idempotent(nil, repo, "req-1", func() error {
 			called = true
 			return nil
 		})
@@ -39,24 +47,55 @@ func TestIdempotent(t *testing.T) {
 	t.Run("duplicate request treated as success", func(t *testing.T) {
 		called := false
 
-		err := Idempotent(nil, "req-1", func() error {
+		repo := &idempotencyRepoMock{
+			saveFn: func(tx Tx, requestID string) error {
+				return entity.ErrDuplicateRequest
+			},
+		}
+
+		err := Idempotent(nil, repo, "req-1", func() error {
 			called = true
-			return entity.ErrDuplicateRequest
+			return nil
 		})
 
 		if err != nil {
 			t.Fatalf("expected nil, got %v", err)
 		}
 
-		if !called {
-			t.Fatal("fn should be called")
+		// 🔥 важно: fn НЕ должен вызываться
+		if called {
+			t.Fatal("fn should NOT be called on duplicate")
 		}
 	})
 
-	t.Run("propagates error", func(t *testing.T) {
+	t.Run("propagates error from repo", func(t *testing.T) {
 		expectedErr := errors.New("db error")
 
-		err := Idempotent(nil, "req-1", func() error {
+		repo := &idempotencyRepoMock{
+			saveFn: func(tx Tx, requestID string) error {
+				return expectedErr
+			},
+		}
+
+		err := Idempotent(nil, repo, "req-1", func() error {
+			return nil
+		})
+
+		if !errors.Is(err, expectedErr) {
+			t.Fatalf("expected %v, got %v", expectedErr, err)
+		}
+	})
+
+	t.Run("propagates error from fn", func(t *testing.T) {
+		expectedErr := errors.New("business error")
+
+		repo := &idempotencyRepoMock{
+			saveFn: func(tx Tx, requestID string) error {
+				return nil
+			},
+		}
+
+		err := Idempotent(nil, repo, "req-1", func() error {
 			return expectedErr
 		})
 

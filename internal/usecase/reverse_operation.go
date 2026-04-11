@@ -8,7 +8,6 @@ import (
 
 type ReverseOperationCommand struct {
 	RequestID         string
-	OperationID       entity.OperationID
 	TargetOperationID entity.OperationID
 }
 
@@ -21,7 +20,9 @@ type ReverseOperationUseCase struct {
 	sessionReader SessionReader
 	sessionWriter SessionWriter
 
-	txManager TxManager
+	txManager       TxManager
+	idGen           OperationIDGenerator
+	idempotencyRepo IdempotencyRepository
 }
 
 func NewReverseOperationUseCase(
@@ -31,6 +32,8 @@ func NewReverseOperationUseCase(
 	sessionReader SessionReader,
 	sessionWriter SessionWriter,
 	txManager TxManager,
+	idGen OperationIDGenerator,
+	idempotencyRepo IdempotencyRepository,
 ) *ReverseOperationUseCase {
 	return &ReverseOperationUseCase{
 		opWriter:        opWriter,
@@ -39,12 +42,14 @@ func NewReverseOperationUseCase(
 		sessionReader:   sessionReader,
 		sessionWriter:   sessionWriter,
 		txManager:       txManager,
+		idGen:           idGen,
+		idempotencyRepo: idempotencyRepo,
 	}
 }
 
 func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return Idempotent(tx, cmd.RequestID, func() error {
+		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 
 			// 2. найти target operation
 			target, err := uc.opReader.GetByID(tx, cmd.TargetOperationID)
@@ -80,8 +85,9 @@ func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
 			}
 
 			// 6. создать reversal (FIX: правильный порядок аргументов)
+			opID := uc.idGen.New()
 			op, err := entity.NewReversalOperation(
-				cmd.OperationID,
+				opID,
 				cmd.RequestID,
 				target.SessionID(),
 				target.PlayerID(),

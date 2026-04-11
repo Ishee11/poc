@@ -2,6 +2,10 @@ package http
 
 import "github.com/ishee11/poc/internal/usecase"
 
+var req struct {
+	RequestID string `json:"request_id"`
+}
+
 type Handler struct {
 	startSessionUC      *usecase.StartSessionUseCase
 	buyInUC             *usecase.BuyInUseCase

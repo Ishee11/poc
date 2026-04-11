@@ -15,6 +15,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 	sessionRepo := NewSessionRepository()
 	opRepo := NewOperationRepository()
 	idGen := &infra.UUIDOperationIDGenerator{}
+	idempotencyRepo := NewIdempotencyRepository()
 
 	// --- сначала создаем сессию ---
 	startUC := usecase.NewStartSessionUseCase(
@@ -38,6 +39,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 		sessionRepo,
 		txManager,
 		idGen,
+		idempotencyRepo,
 	)
 
 	cmd := usecase.BuyInCommand{

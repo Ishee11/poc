@@ -130,3 +130,16 @@ type operationIDGeneratorMock struct {
 func (m *operationIDGeneratorMock) New() entity.OperationID {
 	return m.id
 }
+
+// --- IdempotencyRepository mock ---
+
+type idempotencyRepoMock struct {
+	saveFn func(tx Tx, requestID string) error
+}
+
+func (m *idempotencyRepoMock) Save(tx Tx, requestID string) error {
+	if m.saveFn != nil {
+		return m.saveFn(tx, requestID)
+	}
+	return nil
+}

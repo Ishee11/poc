@@ -56,7 +56,7 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 	applyMigrations(t, pool)
 
 	// чистим данные (не схему!)
-	_, _ = pool.Exec(ctx, "TRUNCATE operations, sessions CASCADE")
+	_, _ = pool.Exec(ctx, "TRUNCATE idempotency_keys, operations, sessions CASCADE")
 
 	return pool
 }

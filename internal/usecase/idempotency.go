@@ -8,6 +8,7 @@ import (
 
 func Idempotent(
 	tx Tx,
+	repo IdempotencyRepository,
 	requestID string,
 	fn func() error,
 ) error {
@@ -15,13 +16,14 @@ func Idempotent(
 		return entity.ErrInvalidRequestID
 	}
 
-	err := fn()
-	if err != nil {
+	// 1. пробуем записать request_id
+	if err := repo.Save(tx, requestID); err != nil {
 		if errors.Is(err, entity.ErrDuplicateRequest) {
 			return nil
 		}
 		return err
 	}
 
-	return nil
+	// 2. выполняем бизнес-логику
+	return fn()
 }

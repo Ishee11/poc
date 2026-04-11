@@ -25,9 +25,12 @@ func TestReverseOperationUseCase(t *testing.T) {
 		now,
 	)
 
+	idGen := &operationIDGeneratorMock{id: "gen-id"}
+
 	tt := []struct {
 		name    string
 		setup   func(opRepo *operationRepoMock, sessionRepo *sessionRepoMock)
+		idem    IdempotencyRepository
 		wantErr error
 	}{
 		{
@@ -44,6 +47,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 				opRepo.saveFn = func(tx Tx, op *entity.Operation) error {
 					if op.RequestID() != "req-1" {
 						t.Fatalf("unexpected requestID: %s", op.RequestID())
+					}
+					if op.ID() != "gen-id" {
+						t.Fatalf("unexpected id: %s", op.ID())
 					}
 					return nil
 				}
@@ -127,12 +133,18 @@ func TestReverseOperationUseCase(t *testing.T) {
 					return false, nil
 				}
 				opRepo.saveFn = func(tx Tx, op *entity.Operation) error {
-					return entity.ErrDuplicateRequest
+					t.Fatal("operation save should not be called for duplicate request")
+					return nil
 				}
 
 				sessionRepo.findFn = func(tx Tx, id entity.SessionID) (*entity.Session, error) {
 					return session, nil
 				}
+			},
+			idem: &idempotencyRepoMock{
+				saveFn: func(tx Tx, requestID string) error {
+					return entity.ErrDuplicateRequest
+				},
 			},
 		},
 	}
@@ -147,6 +159,11 @@ func TestReverseOperationUseCase(t *testing.T) {
 				tc.setup(opRepo, sessionRepo)
 			}
 
+			var idempotencyRepo IdempotencyRepository = defaultIdempotencyRepo()
+			if tc.idem != nil {
+				idempotencyRepo = tc.idem
+			}
+
 			uc := ReverseOperationUseCase{
 				opWriter:        opRepo,
 				opReader:        opRepo,
@@ -154,11 +171,12 @@ func TestReverseOperationUseCase(t *testing.T) {
 				sessionReader:   sessionRepo,
 				sessionWriter:   sessionRepo,
 				txManager:       txManager,
+				idGen:           idGen, // ← ВАЖНО
+				idempotencyRepo: idempotencyRepo,
 			}
 
 			err := uc.Execute(ReverseOperationCommand{
 				RequestID:         "req-1",
-				OperationID:       "op1",
 				TargetOperationID: "target",
 			})
 
