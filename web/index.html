@@ -215,13 +215,15 @@
             }
 
             input,
+            select,
             button {
                 border: 0;
                 border-radius: 14px;
                 font: inherit;
             }
 
-            input {
+            input,
+            select {
                 width: 100%;
                 padding: 13px 14px;
                 color: var(--text);
@@ -234,7 +236,8 @@
                     background 0.18s ease;
             }
 
-            input:focus {
+            input:focus,
+            select:focus {
                 border-color: rgba(88, 208, 167, 0.75);
                 background: rgba(4, 15, 28, 0.92);
                 transform: translateY(-1px);
@@ -442,6 +445,13 @@
                 align-items: end;
             }
 
+            .filters-date-row {
+                display: grid;
+                gap: 10px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+
             .filters label {
                 min-width: 150px;
                 flex: 1 1 150px;
@@ -449,6 +459,16 @@
 
             .filters .compact {
                 max-width: 120px;
+            }
+
+            .compact-bottom {
+                margin-top: 4px;
+            }
+
+            .actions-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
             }
 
             .split {
@@ -586,6 +606,10 @@
                     align-items: stretch;
                 }
 
+                .actions-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+
                 .actions button,
                 .tabs button {
                     width: 100%;
@@ -612,37 +636,32 @@
         <div class="app">
             <section class="hero">
                 <h1>Poker Session Control</h1>
-                <p>
-                    One page for the real flow: create a table, reconnect to an
-                    active session by ID, operate inside the session, inspect
-                    operations, review player results, and finish only when the
-                    table is settled.
-                </p>
-                <div class="hero-meta">
-                    <span class="pill">Start or reconnect to a session</span>
-                    <span class="pill">Buy in, cash out, reverse operations</span>
-                    <span class="pill">Live session stats and player results</span>
-                </div>
+                <p>Control panel for poker cash games.</p>
             </section>
 
             <main class="layout">
                 <section class="screen active" id="screen-lobby">
                     <div class="grid two">
                         <div class="panel">
-                            <h2>Start a New Session</h2>
-                            <p>
-                                Create a fresh session and immediately jump into
-                                the active workspace.
-                            </p>
-                            <form id="start-session-form">
+                            <h2>Connect to Active Session</h2>
+                            <p>Resume an active table. If nothing is selected, the latest active session opens.</p>
+                            <form id="connect-session-form">
                                 <label>
-                                    Session ID
-                                    <input
-                                        id="start-session-id"
-                                        placeholder="cash-game-0411"
-                                        required
-                                    />
+                                    Active Sessions
+                                    <select id="active-session-select">
+                                        <option value="">Latest active session</option>
+                                    </select>
                                 </label>
+                                <div class="actions">
+                                    <button class="secondary" type="submit">Open Workspace</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="panel">
+                            <h2>Start a New Session</h2>
+                            <p>Create a fresh table and immediately enter the workspace.</p>
+                            <form id="start-session-form">
                                 <label>
                                     Chip Rate
                                     <input
@@ -653,36 +672,9 @@
                                         required
                                     />
                                 </label>
+                                <div class="hint" id="next-session-id-hint">Next session ID: -</div>
                                 <div class="actions">
                                     <button type="submit">Start Session</button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="panel">
-                            <h2>Connect to Active Session</h2>
-                            <p>
-                                There is no session list endpoint yet, so
-                                reconnect happens by known <span class="mono">session_id</span>.
-                            </p>
-                            <form id="connect-session-form">
-                                <label>
-                                    Session ID
-                                    <input
-                                        id="connect-session-id"
-                                        placeholder="cash-game-0411"
-                                        required
-                                    />
-                                </label>
-                                <div class="actions">
-                                    <button type="submit">Open Workspace</button>
-                                    <button
-                                        class="secondary"
-                                        type="button"
-                                        id="refresh-lobby-health"
-                                    >
-                                        Check API
-                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -702,10 +694,7 @@
                             </button>
                         </div>
                         <div class="filters" id="sessions-filters">
-                            <label class="compact">
-                                Limit
-                                <input id="sessions-limit" type="number" min="1" value="20" />
-                            </label>
+                            <div class="filters-date-row">
                             <label>
                                 From
                                 <input id="sessions-from" type="date" />
@@ -714,7 +703,8 @@
                                 To
                                 <input id="sessions-to" type="date" />
                             </label>
-                            <div class="actions">
+                            </div>
+                            <div class="actions actions-grid">
                                 <button class="secondary" type="button" data-range-target="sessions" data-range="all">
                                     Latest
                                 </button>
@@ -726,12 +716,18 @@
                                 </button>
                                 <button type="button" id="load-sessions-overview">Load Sessions</button>
                             </div>
+                            <label class="compact compact-bottom">
+                                Limit
+                                <select id="sessions-limit">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
                         </div>
                         <div class="filters hidden" id="players-filters">
-                            <label class="compact">
-                                Limit
-                                <input id="players-limit" type="number" min="1" value="20" />
-                            </label>
+                            <div class="filters-date-row">
                             <label>
                                 From
                                 <input id="players-from" type="date" />
@@ -740,7 +736,8 @@
                                 To
                                 <input id="players-to" type="date" />
                             </label>
-                            <div class="actions">
+                            </div>
+                            <div class="actions actions-grid">
                                 <button class="secondary" type="button" data-range-target="players" data-range="all">
                                     All
                                 </button>
@@ -752,6 +749,15 @@
                                 </button>
                                 <button type="button" id="load-players-overview">Load Players</button>
                             </div>
+                            <label class="compact compact-bottom">
+                                Limit
+                                <select id="players-limit">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
 
@@ -990,6 +996,7 @@
                 results: [],
                 overviewTab: "sessions",
                 overviewSessions: [],
+                sessionCatalog: [],
                 overviewPlayers: [],
                 selectedPlayerId: "",
                 selectedPlayerDetail: null,
@@ -1002,11 +1009,11 @@
             document.getElementById("start-session-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
-                const sessionId = value("start-session-id").trim();
                 const chipRate = Number(value("start-chip-rate"));
+                const sessionId = String(getNextSessionId());
 
-                if (!sessionId || !chipRate) {
-                    showNotice("lobby-notice", "error", "Session ID and chip rate are required.");
+                if (!chipRate) {
+                    showNotice("lobby-notice", "error", "Chip rate is required.");
                     return;
                 }
 
@@ -1022,31 +1029,21 @@
                     return;
                 }
 
-                setValue("connect-session-id", sessionId);
                 showNotice("lobby-notice", "success", `Session ${sessionId} started.`);
+                await refreshSessionCatalog();
                 await openWorkspace(sessionId);
             });
 
             document.getElementById("connect-session-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
-                const sessionId = value("connect-session-id").trim();
+                const sessionId = value("active-session-select").trim() || getLatestActiveSessionId();
                 if (!sessionId) {
-                    showNotice("lobby-notice", "error", "Session ID is required.");
+                    showNotice("lobby-notice", "error", "No active sessions available.");
                     return;
                 }
 
                 await openWorkspace(sessionId);
-            });
-
-            document.getElementById("refresh-lobby-health").addEventListener("click", async () => {
-                const response = await apiGet("/health");
-                showOutput("lobby-output", response);
-                if (response.ok) {
-                    showNotice("lobby-notice", "success", "API is reachable.");
-                    return;
-                }
-                showNotice("lobby-notice", "error", describeResponse(response));
             });
 
             document.querySelectorAll("[data-overview-tab]").forEach((button) => {
@@ -1344,6 +1341,8 @@
                 }
 
                 state.overviewSessions = (response.body && response.body.Sessions) || [];
+                state.sessionCatalog = state.overviewSessions;
+                syncActiveSessionsUI();
                 renderSessionsOverview();
                 setOverviewTab("sessions");
                 showNotice("lobby-notice", "success", "Sessions overview updated.");
@@ -1427,7 +1426,7 @@
                 wrap.querySelectorAll("[data-open-session]").forEach((button) => {
                     button.addEventListener("click", async () => {
                         const sessionId = button.getAttribute("data-open-session");
-                        setValue("connect-session-id", sessionId);
+                        setValue("active-session-select", sessionId);
                         await openWorkspace(sessionId);
                     });
                 });
@@ -1549,10 +1548,61 @@
                 wrap.querySelectorAll("[data-player-session]").forEach((button) => {
                     button.addEventListener("click", async () => {
                         const sessionId = button.getAttribute("data-player-session");
-                        setValue("connect-session-id", sessionId);
+                        setValue("active-session-select", sessionId);
                         await openWorkspace(sessionId);
                     });
                 });
+            }
+
+            async function refreshSessionCatalog() {
+                const response = await apiGet("/stats/sessions?limit=100");
+                if (!response.ok) {
+                    return;
+                }
+                state.sessionCatalog = (response.body && response.body.Sessions) || [];
+                syncActiveSessionsUI();
+            }
+
+            function syncActiveSessionsUI() {
+                const select = document.getElementById("active-session-select");
+                const activeSessions = getActiveSessions();
+                const current = select.value;
+
+                const options = [
+                    '<option value="">Latest active session</option>',
+                    ...activeSessions.map(
+                        (session) =>
+                            `<option value="${escapeHtml(session.SessionID)}">${escapeHtml(session.SessionID)} · ${escapeHtml(formatDate(session.CreatedAt))}</option>`,
+                    ),
+                ];
+
+                select.innerHTML = options.join("");
+                if (activeSessions.some((session) => session.SessionID === current)) {
+                    select.value = current;
+                }
+
+                document.getElementById("next-session-id-hint").textContent = `Next session ID: ${getNextSessionId()}`;
+            }
+
+            function getActiveSessions() {
+                return (state.sessionCatalog || []).filter((session) => session.Status === "active");
+            }
+
+            function getLatestActiveSessionId() {
+                const [latest] = getActiveSessions();
+                return latest ? latest.SessionID : "";
+            }
+
+            function getNextSessionId() {
+                const ids = (state.sessionCatalog || [])
+                    .map((session) => Number.parseInt(session.SessionID, 10))
+                    .filter((value) => Number.isFinite(value));
+
+                if (!ids.length) {
+                    return 1;
+                }
+
+                return Math.max(...ids) + 1;
             }
 
             function applyPresetRange(target, preset) {
@@ -1745,6 +1795,7 @@
             applyPresetRange("players", "all");
             applyPresetRange("player-detail", "all");
             setOverviewTab("sessions");
+            refreshSessionCatalog();
             loadSessionsOverview();
             loadPlayersOverview();
         </script>
