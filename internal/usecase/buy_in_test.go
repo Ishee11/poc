@@ -25,6 +25,12 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		t.Fatalf("failed to create chip rate: %v", err)
 	}
 
+	playerRepo := &playerRepoMock{
+		getFn: func(tx Tx, id entity.PlayerID) (*entity.Player, error) {
+			return &entity.Player{}, nil
+		},
+	}
+
 	t.Run("success", func(t *testing.T) {
 		session := entity.NewSession("s1", rate, time.Now())
 
@@ -49,11 +55,12 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		idGen := &idGeneratorMock{id: "op-internal-1"}
 
 		uc := BuyInUseCase{
-			opWriter:      opRepo,
-			sessionReader: sessionRepo,
-			sessionWriter: sessionRepo,
-			txManager:     &txManagerMock{},
-			idGen:         idGen,
+			opWriter:        opRepo,
+			sessionReader:   sessionRepo,
+			sessionWriter:   sessionRepo,
+			playerRepo:      playerRepo,
+			txManager:       &txManagerMock{},
+			idGen:           idGen,
 			idempotencyRepo: &idempotencyRepoMock{
 				saveFn: func(tx Tx, requestID string) error { return nil },
 			},
@@ -81,6 +88,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			opWriter:      &operationRepoMock{},
 			sessionReader: &sessionRepoMock{},
 			sessionWriter: &sessionRepoMock{},
+			playerRepo:    playerRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
 			idempotencyRepo: &idempotencyRepoMock{
@@ -120,6 +128,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			opWriter:      opRepo,
 			sessionReader: sessionRepo,
 			sessionWriter: sessionRepo,
+			playerRepo:    playerRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
 			idempotencyRepo: &idempotencyRepoMock{
@@ -159,6 +168,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			opWriter:      opRepo,
 			sessionReader: sessionRepo,
 			sessionWriter: sessionRepo,
+			playerRepo:    playerRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
 			idempotencyRepo: &idempotencyRepoMock{
@@ -199,6 +209,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			opWriter:      opRepo,
 			sessionReader: sessionRepo,
 			sessionWriter: sessionRepo,
+			playerRepo:    playerRepo,
 			txManager:     &txManagerMock{},
 			idGen:         &idGeneratorMock{id: "op"},
 			idempotencyRepo: &idempotencyRepoMock{

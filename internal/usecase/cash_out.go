@@ -13,6 +13,8 @@ type IDGenerator interface {
 type CashOutUseCase struct {
 	opWriter OperationWriter
 
+	playerRepo PlayerRepository
+
 	playerStateReader OperationPlayerStateReader
 	projection        ProjectionRepository
 
@@ -33,6 +35,7 @@ type CashOutCommand struct {
 
 func NewCashOutUseCase(
 	opWriter OperationWriter,
+	playerRepo PlayerRepository,
 	playerStateReader OperationPlayerStateReader,
 	projection ProjectionRepository,
 	sessionReader SessionReader,
@@ -43,6 +46,7 @@ func NewCashOutUseCase(
 ) *CashOutUseCase {
 	return &CashOutUseCase{
 		opWriter:          opWriter,
+		playerRepo:        playerRepo,
 		playerStateReader: playerStateReader,
 		projection:        projection,
 		sessionReader:     sessionReader,
@@ -61,7 +65,13 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 
-			// 1. session
+			// 1. проверяем игрока
+			_, err := uc.playerRepo.GetByID(tx, cmd.PlayerID)
+			if err != nil {
+				return err
+			}
+
+			// 2. session
 			session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
 			if err != nil {
 				return err
@@ -71,7 +81,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 				return entity.ErrSessionNotActive
 			}
 
-			// 2. состояние игрока
+			// 3. состояние игрока
 			lastOpType, found, err := uc.playerStateReader.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
 			if err != nil {
 				return err
@@ -85,7 +95,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 				return entity.ErrInvalidOperation
 			}
 
-			// 3. агрегаты (через projection)
+			// 4. агрегаты
 			aggr, err := uc.projection.GetSessionAggregates(tx, cmd.SessionID)
 			if err != nil {
 				return err
@@ -96,7 +106,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 				return entity.ErrInvalidCashOut
 			}
 
-			// 4. создаём операцию
+			// 5. создаём операцию
 			opID := uc.idGen.New()
 
 			op, err := entity.NewOperation(
@@ -112,12 +122,12 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 				return err
 			}
 
-			// 5. сохраняем
+			// 6. сохраняем
 			if err := uc.opWriter.Save(tx, op); err != nil {
 				return err
 			}
 
-			// 6. обновляем session cache
+			// 7. обновляем session
 			if err := session.CashOut(cmd.Chips); err != nil {
 				return err
 			}

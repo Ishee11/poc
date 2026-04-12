@@ -14,6 +14,7 @@ type BuyInUseCase struct {
 	opWriter        OperationWriter
 	sessionReader   SessionReader
 	sessionWriter   SessionWriter
+	playerRepo      PlayerRepository
 	txManager       TxManager
 	idGen           OperationIDGenerator
 	idempotencyRepo IdempotencyRepository
@@ -31,6 +32,7 @@ func NewBuyInUseCase(
 	opWriter OperationWriter,
 	sessionReader SessionReader,
 	sessionWriter SessionWriter,
+	playerRepo PlayerRepository,
 	txManager TxManager,
 	idGen OperationIDGenerator,
 	idempotencyRepo IdempotencyRepository,
@@ -39,6 +41,7 @@ func NewBuyInUseCase(
 		opWriter:        opWriter,
 		sessionReader:   sessionReader,
 		sessionWriter:   sessionWriter,
+		playerRepo:      playerRepo,
 		txManager:       txManager,
 		idGen:           idGen,
 		idempotencyRepo: idempotencyRepo,
@@ -52,6 +55,12 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
+
+			// 1. проверяем игрока
+			_, err := uc.playerRepo.GetByID(tx, cmd.PlayerID)
+			if err != nil {
+				return err
+			}
 
 			// 2. загружаем session
 			session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)

@@ -26,35 +26,21 @@ func (m *operationRepoMock) Save(tx Tx, op *entity.Operation) error {
 	return nil
 }
 
-func (m *operationRepoMock) ListBySession(
-	tx Tx,
-	sessionID entity.SessionID,
-	limit int,
-	offset int,
-) ([]*entity.Operation, error) {
-
+func (m *operationRepoMock) ListBySession(tx Tx, sessionID entity.SessionID, limit int, offset int) ([]*entity.Operation, error) {
 	if m.listBySessionFn != nil {
 		return m.listBySessionFn(tx, sessionID, limit, offset)
 	}
-
 	return []*entity.Operation{}, nil
 }
 
-func (m *operationRepoMock) GetLastOperationType(
-	tx Tx,
-	sessionID entity.SessionID,
-	playerID entity.PlayerID,
-) (entity.OperationType, bool, error) {
+func (m *operationRepoMock) GetLastOperationType(tx Tx, sessionID entity.SessionID, playerID entity.PlayerID) (entity.OperationType, bool, error) {
 	if m.getLastOpFn != nil {
 		return m.getLastOpFn(tx, sessionID, playerID)
 	}
 	return "", false, nil
 }
 
-func (m *operationRepoMock) GetSessionAggregates(
-	tx Tx,
-	sessionID entity.SessionID,
-) (SessionAggregates, error) {
+func (m *operationRepoMock) GetSessionAggregates(tx Tx, sessionID entity.SessionID) (SessionAggregates, error) {
 	if m.getAggFn != nil {
 		return m.getAggFn(tx, sessionID)
 	}
@@ -82,10 +68,7 @@ func (m *operationRepoMock) GetByRequestID(tx Tx, requestID string) (*entity.Ope
 	return nil, nil
 }
 
-func (m *operationRepoMock) GetPlayerAggregates(
-	tx Tx,
-	sessionID entity.SessionID,
-) (map[entity.PlayerID]PlayerAggregates, error) {
+func (m *operationRepoMock) GetPlayerAggregates(tx Tx, sessionID entity.SessionID) (map[entity.PlayerID]PlayerAggregates, error) {
 	if m.getPlayerAggFn != nil {
 		return m.getPlayerAggFn(tx, sessionID)
 	}
@@ -111,6 +94,27 @@ func (m *sessionRepoMock) Save(tx Tx, s *entity.Session) error {
 		return m.saveFn(tx, s)
 	}
 	return nil
+}
+
+// --- PlayerRepository mock ---
+
+type playerRepoMock struct {
+	getFn func(tx Tx, id entity.PlayerID) (*entity.Player, error)
+}
+
+func (m *playerRepoMock) GetByID(tx Tx, id entity.PlayerID) (*entity.Player, error) {
+	if m.getFn != nil {
+		return m.getFn(tx, id)
+	}
+	return &entity.Player{}, nil
+}
+
+func (m *playerRepoMock) Save(tx Tx, p *entity.Player) error {
+	return nil
+}
+
+func (m *playerRepoMock) List(tx Tx) ([]*entity.Player, error) {
+	return []*entity.Player{}, nil
 }
 
 // --- TxManager mock ---
