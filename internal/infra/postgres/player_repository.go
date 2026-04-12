@@ -1,3 +1,7 @@
+package postgres
+
+
+
 type PlayerRepository struct{}
 
 func NewPlayerRepository() *PlayerRepository {
