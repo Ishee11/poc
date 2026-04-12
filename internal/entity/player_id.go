@@ -13,7 +13,7 @@ func NewPlayer(id PlayerID, name string) (*Player, error) {
     }
 
     if name == "" {
-        return nil, ErrInvalidPlayerName1ап5
+        return nil, ErrInvalidPlayerName
     }
 
     return &Player{

@@ -12,6 +12,12 @@ type PlayerAggregates struct {
 	CashOut int64
 }
 
+type PlayerRepository interface {
+    Save(tx Tx, player *entity.Player) error
+    GetByID(tx Tx, id entity.PlayerID) (*entity.Player, error)
+    List(tx Tx) ([]*entity.Player, error)
+}
+
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }
