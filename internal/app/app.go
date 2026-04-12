@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -21,11 +22,36 @@ func Run() error {
 	ctx := context.Background()
 
 	// ===== DB =====
-	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/poc_test?sslmode=disable")
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		return fmt.Errorf("DATABASE_URL is required")
+	}
+
+	var (
+		pool *pgxpool.Pool
+		err  error
+	)
+
+	for i := 0; i < 10; i++ {
+		pool, err = pgxpool.New(ctx, dsn)
+		if err == nil {
+			if pingErr := pool.Ping(ctx); pingErr == nil {
+				break
+			} else {
+				err = pingErr
+			}
+		}
+
+		log.Println("waiting for db...")
+		time.Sleep(2 * time.Second)
+	}
+
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to db: %w", err)
 	}
 	defer pool.Close()
+
+	log.Println("connected to db")
 
 	// ===== Repositories =====
 	sessionRepo := postgres.NewSessionRepository()
@@ -60,8 +86,8 @@ func Run() error {
 
 	cashOutUC := usecase.NewCashOutUseCase(
 		opRepo,
-		projectionRepo, // OperationPlayerStateReader
-		projectionRepo, // ProjectionRepository
+		projectionRepo,
+		projectionRepo,
 		sessionRepo,
 		sessionRepo,
 		txManager,
@@ -106,14 +132,17 @@ func Run() error {
 		projectionRepo,
 		txManager,
 	)
+
 	getStatsSessionsUC := usecase.NewGetStatsSessionsUseCase(
 		statsRepo,
 		txManager,
 	)
+
 	getStatsPlayersUC := usecase.NewGetStatsPlayersUseCase(
 		statsRepo,
 		txManager,
 	)
+
 	getPlayerStatsUC := usecase.NewGetPlayerStatsUseCase(
 		statsRepo,
 		txManager,

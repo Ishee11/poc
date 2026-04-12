@@ -1,29 +1,28 @@
-# Step 1: Modules caching
-FROM golang:1.24.2-alpine3.21 as modules
-
-COPY go.mod go.sum /modules/
-
-WORKDIR /modules
-
-RUN go mod download
-
-# Step 2: Builder
-FROM golang:1.24.2-alpine3.21 as builder
-
-COPY --from=modules /go/pkg /go/pkg
-COPY . /app
+# ========= BUILD =========
+FROM golang:1.25.0-alpine AS builder
 
 WORKDIR /app
 
+# зависимости
+COPY go.mod go.sum ./
+RUN go mod download
+
+# код
+COPY . .
+
+# билд (static)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -tags migrate -o /bin/app ./cmd/app
+    go build -o app ./cmd/app/main.go
 
-# Step 3: Final
-FROM scratch
+# ========= RUNTIME =========
+FROM gcr.io/distroless/base-debian12
 
-COPY --from=builder /app/config /config
-COPY --from=builder /app/migrations /migrations
-COPY --from=builder /bin/app /app
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+WORKDIR /app
 
-CMD ["/app"]
+COPY --from=builder /app/app .
+
+# порт
+EXPOSE 8080
+
+# запуск
+ENTRYPOINT ["/app/app"]
