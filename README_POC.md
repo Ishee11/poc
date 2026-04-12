@@ -1,3 +1,5 @@
+vless://48548a00-de3c-4c63-b5ef-2912e04e719b@194.238.58.135:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=firefox&sni=api.github.com&pbk=SJ83E_d0LzuHc6ubCW64dFE1zBKtWMbNsE9nUZp65lA#a07a007e-0594-4a0c-9215-8f7d03220717@papervpn.io%23PaperVPN_DE
+
 # ***Контекст***
 
 Система — это **журнал (ledger) операций с фишками в рамках игровой сессии**.
