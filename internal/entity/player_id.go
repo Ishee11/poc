@@ -29,3 +29,5 @@ func (p *Player) ID() PlayerID {
 func (p *Player) Name() string {
 	return p.name
 }
+
+//
