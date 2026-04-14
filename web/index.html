@@ -1082,6 +1082,7 @@
                 pendingBuyIn: null,
                 pendingCashOut: null,
                 pendingFinish: false,
+                players: [],
             };
 
             const lobbyScreen = document.getElementById("screen-lobby");
@@ -1240,60 +1241,7 @@
             //         chips: Number(value("cash-chips")),
             //     });
             // });
-            document.getElementById("cash-out-form").addEventListener("submit", async (event) => {
-                event.preventDefault();
-
-                if (state.pendingCashOut) {
-                    const body = state.pendingCashOut;
-
-                    state.pendingCashOut = null;
-                    renderCashOutConfirm();
-
-                    await submitSessionAction("cash", "/cash-out", body);
-                    return;
-                }
-
-                const playerId = value("cash-player-id").trim();
-
-                if (!playerId) {
-                    showNotice("session-notice", "error", "Select player first.");
-                    return;
-                }
-
-                let chips = Number(value("cash-chips"));
-                if (!chips) {
-                    chips = 1000;
-                }
-
-                const player = (state.results || []).find(r => r.PlayerID === playerId);
-
-                if (player) {
-                    const available = Number(player.BuyInChips) - Number(player.CashOutChips);
-
-                    if (chips > available) {
-                        showNotice(
-                            "session-notice",
-                            "error",
-                            `Not enough chips. Available: ${formatNumber(available)}`
-                        );
-
-                        document.getElementById("cash-chips").style.borderColor = "red";
-                        return;
-                    }
-                }
-
-                document.getElementById("cash-chips").style.borderColor = "";
-                showNotice("session-notice", "", "");
-
-                state.pendingCashOut = {
-                    request_id: generateRequestId("cash"),
-                    session_id: state.activeSessionId,
-                    player_id: playerId,
-                    chips,
-                };
-
-                renderCashOutConfirm();
-            });
+            document.getElementById("cash-out-form").addEventListener("submit", async (event) => { event.preventDefault(); if (state.pendingCashOut) { const body = state.pendingCashOut; state.pendingCashOut = null; renderCashOutConfirm(); await submitSessionAction("cash", "/cash-out", body); return; } const playerId = value("cash-player-id").trim(); if (!playerId) { showNotice("session-notice", "error", "Select player first."); return; } let chips = Number(value("cash-chips")); if (!chips) { chips = 1000; } const player = (state.results || []).find(r => r.PlayerID === playerId); if (!player) { showNotice("session-notice", "error", "Player has no activity yet."); return; } const available = Number(player.BuyInChips) - Number(player.CashOutChips); if (chips > available) { showNotice( "session-notice", "error", `Not enough chips. Available: ${formatNumber(available)}` ); document.getElementById("cash-chips").style.borderColor = "red"; return; } document.getElementById("cash-chips").style.borderColor = ""; showNotice("session-notice", "", ""); state.pendingCashOut = { request_id: generateRequestId("cash"), session_id: state.activeSessionId, player_id: playerId, chips, }; renderCashOutConfirm(); });
 
             // document.getElementById("finish-form").addEventListener("submit", async (event) => {
             //     event.preventDefault();
@@ -1358,10 +1306,11 @@
             }
 
             async function refreshWorkspace(sessionId, successMessage) {
-                const [sessionRes, opsRes, resultsRes] = await Promise.all([
+                const [sessionRes, opsRes, resultsRes, playersRes] = await Promise.all([
                     apiGet(`/session?session_id=${encodeURIComponent(sessionId)}`),
                     apiGet(`/session/operations?session_id=${encodeURIComponent(sessionId)}&limit=100&offset=0`),
                     apiGet(`/session/results?session_id=${encodeURIComponent(sessionId)}`),
+                    apiGet(`/session/players?session_id=${encodeURIComponent(sessionId)}`),
                 ]);
 
                 showOutput("session-output", {
@@ -1383,6 +1332,7 @@
                 state.session = sessionRes.body || {};
                 state.operations = (opsRes.body && opsRes.body.Operations) || [];
                 state.results = (resultsRes.body && resultsRes.body.Results) || [];
+                state.players = (playersRes.body && playersRes.body.Players) || [];
                 state.pendingReverseOperationId = "";
 
                 renderWorkspace();
@@ -1590,14 +1540,7 @@
                 const players = (state.results || [])
                     .filter(r => Number(r.BuyInChips) > Number(r.CashOutChips));
 
-                const options = [
-                    '<option value="">Select player</option>',
-                    ...players.map(p =>
-                        `<option value="${escapeHtml(p.PlayerID)}">
-                            ${escapeHtml(p.PlayerID)} (${formatNumber(p.BuyInChips - p.CashOutChips)} chips)
-                        </option>`
-                    )
-                ];
+                const options = [ '<option value="">Select player</option>', ...players.map(p => { const r = results.find(x => x.PlayerID === p.PlayerID); const available = r ? Number(r.BuyInChips) - Number(r.CashOutChips) : 0; return `<option value="${escapeHtml(p.PlayerID)}"> ${escapeHtml(p.PlayerID)} (${formatNumber(available)} chips) </option>`; }) ];
 
                 select.innerHTML = options.join("");
             }
