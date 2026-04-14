@@ -110,19 +110,20 @@ func (r *StatsRepository) ListPlayers(
 			  AND rev.id IS NULL
 		)
 		SELECT
-			eo.player_id,
-			COUNT(DISTINCT eo.session_id),
-			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
-				- COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
-			MAX(eo.created_at)
+		    p.name,
+		    COUNT(DISTINCT eo.session_id),
+		    COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
+		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
+		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
+		        - COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
+		    MAX(eo.created_at)
 		FROM effective_operations eo
+		JOIN players_in_session p ON p.id = eo.player_id
 		JOIN sessions s ON s.id = eo.session_id
 		WHERE ($1::timestamp IS NULL OR eo.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR eo.created_at < $2::timestamp)
-		GROUP BY eo.player_id
-		ORDER BY MAX(eo.created_at) DESC, eo.player_id ASC
+		GROUP BY p.name
+		ORDER BY MAX(eo.created_at) DESC, p.name ASC
 		LIMIT $3
 	`, boundTime(filter.From), boundTime(filter.To), limit)
 	if err != nil {
@@ -184,8 +185,9 @@ func (r *StatsRepository) GetPlayerOverall(
 				- COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
 			MAX(eo.created_at)
 		FROM effective_operations eo
+		JOIN players_in_session p ON p.id = eo.player_id
 		JOIN sessions s ON s.id = eo.session_id
-		WHERE eo.player_id = $1
+		WHERE p.name = $1
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
 	`, playerID, boundTime(filter.From), boundTime(filter.To))
@@ -243,15 +245,15 @@ func (r *StatsRepository) ListPlayerSessions(
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
 			MAX(eo.created_at)
 		FROM sessions s
-		JOIN effective_operations eo
-			ON eo.session_id = s.id
-		   AND eo.player_id = $1
-		WHERE ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
+		JOIN effective_operations eo ON eo.session_id = s.id
+		JOIN players_in_session p ON p.id = eo.player_id
+		WHERE p.name = $1
+		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
 		GROUP BY s.id, s.status, s.chip_rate, s.created_at
 		ORDER BY MAX(eo.created_at) DESC, s.created_at DESC
 		LIMIT $4
-	`, playerID, boundTime(filter.From), boundTime(filter.To), filterLimit(filter.Limit, 100))
+`, playerID, boundTime(filter.From), boundTime(filter.To), filterLimit(filter.Limit, 100))
 	if err != nil {
 		return nil, err
 	}

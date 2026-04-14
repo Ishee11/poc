@@ -29,6 +29,7 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 	idGen := &staticOperationIDGenerator{
 		ids: []entity.OperationID{"op-1", "op-2", "op-3", "op-4"},
 	}
+	playerRepo := NewPlayerRepository()
 
 	startUC := usecase.NewStartSessionUseCase(
 		sessionRepo,
@@ -42,6 +43,7 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 		txManager,
 		idGen,
 		idempotencyRepo,
+		playerRepo,
 	)
 	cashOutUC := usecase.NewCashOutUseCase(
 		opRepo,
@@ -52,6 +54,7 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 		txManager,
 		idGen,
 		idempotencyRepo,
+		playerRepo,
 	)
 	reverseUC := usecase.NewReverseOperationUseCase(
 		opRepo,

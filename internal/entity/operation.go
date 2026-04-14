@@ -6,7 +6,6 @@ import (
 
 type OperationType string
 type OperationID string
-type PlayerID string
 
 const (
 	OperationBuyIn    OperationType = "buy_in"

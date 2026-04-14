@@ -28,6 +28,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 		txManager:       txManager,
 		idGen:           idGen,
 		idempotencyRepo: idempotencyRepo,
+		playerRepo:      &playerRepoMock{},
 	}
 
 	cashOutUC := CashOutUseCase{
@@ -39,6 +40,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 		txManager:         txManager,
 		idGen:             idGen,
 		idempotencyRepo:   idempotencyRepo,
+		playerRepo:        &playerRepoMock{},
 	}
 
 	reverseUC := ReverseOperationUseCase{

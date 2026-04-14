@@ -17,6 +17,7 @@ type BuyInUseCase struct {
 	txManager       TxManager
 	idGen           OperationIDGenerator
 	idempotencyRepo IdempotencyRepository
+	playerRepo      PlayerRepository
 }
 
 type BuyInCommand struct {
@@ -34,6 +35,7 @@ func NewBuyInUseCase(
 	txManager TxManager,
 	idGen OperationIDGenerator,
 	idempotencyRepo IdempotencyRepository,
+	playerRepo PlayerRepository,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
 		opWriter:        opWriter,
@@ -42,6 +44,7 @@ func NewBuyInUseCase(
 		txManager:       txManager,
 		idGen:           idGen,
 		idempotencyRepo: idempotencyRepo,
+		playerRepo:      playerRepo,
 	}
 }
 
@@ -71,12 +74,21 @@ func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
 			// 4. создаём operation
 			opID := uc.idGen.New()
 
+			playerID, err := uc.playerRepo.GetOrCreate(
+				tx,
+				cmd.SessionID,
+				string(cmd.PlayerID), // пока используем как name
+			)
+			if err != nil {
+				return err
+			}
+
 			op, err := entity.NewOperation(
 				opID,
 				cmd.RequestID,
 				cmd.SessionID,
 				entity.OperationBuyIn,
-				cmd.PlayerID,
+				playerID,
 				cmd.Chips,
 				time.Now(),
 			)

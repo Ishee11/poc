@@ -15,6 +15,20 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
+func resetDB(t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	_, err := pool.Exec(ctx, `
+		DROP SCHEMA public CASCADE;
+		CREATE SCHEMA public;
+	`)
+	if err != nil {
+		t.Fatalf("failed to reset schema: %v", err)
+	}
+}
+
 func applyMigrations(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 
@@ -53,6 +67,7 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("failed to connect db: %v", err)
 	}
 
+	//resetDB(t, pool) // пересоздаем базу
 	applyMigrations(t, pool)
 
 	// чистим данные (не схему!)

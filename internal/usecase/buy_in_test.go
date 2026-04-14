@@ -57,6 +57,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			idempotencyRepo: &idempotencyRepoMock{
 				saveFn: func(tx Tx, requestID string) error { return nil },
 			},
+			playerRepo: &playerRepoMock{},
 		}
 
 		cmd := BuyInCommand{
@@ -86,6 +87,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			idempotencyRepo: &idempotencyRepoMock{
 				saveFn: func(tx Tx, requestID string) error { return nil },
 			},
+			playerRepo: &playerRepoMock{},
 		}
 
 		cmd := BuyInCommand{
@@ -125,6 +127,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			idempotencyRepo: &idempotencyRepoMock{
 				saveFn: func(tx Tx, requestID string) error { return nil },
 			},
+			playerRepo: &playerRepoMock{},
 		}
 
 		cmd := BuyInCommand{
@@ -164,6 +167,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			idempotencyRepo: &idempotencyRepoMock{
 				saveFn: func(tx Tx, requestID string) error { return nil },
 			},
+			playerRepo: &playerRepoMock{},
 		}
 
 		cmd := BuyInCommand{
@@ -204,6 +208,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			idempotencyRepo: &idempotencyRepoMock{
 				saveFn: func(tx Tx, requestID string) error { return entity.ErrDuplicateRequest },
 			},
+			playerRepo: &playerRepoMock{},
 		}
 
 		cmd := BuyInCommand{

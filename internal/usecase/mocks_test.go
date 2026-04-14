@@ -143,3 +143,22 @@ func (m *idempotencyRepoMock) Save(tx Tx, requestID string) error {
 	}
 	return nil
 }
+
+// --- PlayerRepository mock ---
+
+type playerRepoMock struct{}
+
+func (m *playerRepoMock) GetOrCreate(
+	tx Tx,
+	sessionID entity.SessionID,
+	name string,
+) (entity.PlayerID, error) {
+	return entity.PlayerID(name), nil
+}
+
+func (m *playerRepoMock) ListBySession(
+	tx Tx,
+	sessionID entity.SessionID,
+) ([]PlayerDTO, error) {
+	return []PlayerDTO{}, nil
+}

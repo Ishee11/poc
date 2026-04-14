@@ -52,6 +52,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			txManager:         &txManagerMock{},
 			idGen:             &operationIDGeneratorMock{id: "op-1"},
 			idempotencyRepo:   defaultIdempotencyRepo(),
+			playerRepo:        &playerRepoMock{},
 		}
 
 		err := uc.Execute(CashOutCommand{
@@ -96,6 +97,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			txManager:         &txManagerMock{},
 			idGen:             &operationIDGeneratorMock{id: "op"},
 			idempotencyRepo:   idem,
+			playerRepo:        &playerRepoMock{},
 		}
 
 		err := uc.Execute(CashOutCommand{

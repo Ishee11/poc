@@ -15,6 +15,8 @@ var (
 	ErrInsufficientTableChips = errors.New("not enough chips")
 
 	ErrPlayersStillInGame   = errors.New("players still have chips in game")
+	ErrInvalidPlayerID      = errors.New("invalid player id")
+	ErrInvalidPlayerName    = errors.New("invalid player name")
 	ErrSessionNotFinished   = errors.New("session is not finished")
 	ErrUnbalancedSession    = errors.New("session money is not balanced")
 	ErrSessionNotFound      = errors.New("session not found")

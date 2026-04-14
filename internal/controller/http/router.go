@@ -36,6 +36,8 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/session/operations", h.GetSessionOperations)
 	mux.HandleFunc("/session/results", h.GetSessionResults)
 	mux.HandleFunc("/stats/sessions", h.GetStatsSessions)
+	mux.HandleFunc("/session/players", h.GetSessionPlayers)
+
 	mux.HandleFunc("/stats/players", h.GetStatsPlayers)
 	mux.HandleFunc("/stats/player", h.GetPlayerStats)
 

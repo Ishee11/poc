@@ -22,6 +22,8 @@ type CashOutUseCase struct {
 	txManager       TxManager
 	idGen           IDGenerator
 	idempotencyRepo IdempotencyRepository
+
+	playerRepo PlayerRepository
 }
 
 type CashOutCommand struct {
@@ -40,6 +42,7 @@ func NewCashOutUseCase(
 	txManager TxManager,
 	idGen IDGenerator,
 	idempotencyRepo IdempotencyRepository,
+	playerRepo PlayerRepository,
 ) *CashOutUseCase {
 	return &CashOutUseCase{
 		opWriter:          opWriter,
@@ -50,6 +53,7 @@ func NewCashOutUseCase(
 		txManager:         txManager,
 		idGen:             idGen,
 		idempotencyRepo:   idempotencyRepo,
+		playerRepo:        playerRepo,
 	}
 }
 
@@ -72,7 +76,15 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 			}
 
 			// 2. состояние игрока
-			lastOpType, found, err := uc.playerStateReader.GetLastOperationType(tx, cmd.SessionID, cmd.PlayerID)
+			playerID, err := uc.playerRepo.GetOrCreate(
+				tx,
+				cmd.SessionID,
+				string(cmd.PlayerID), // name из UI
+			)
+			if err != nil {
+				return err
+			}
+			lastOpType, found, err := uc.playerStateReader.GetLastOperationType(tx, cmd.SessionID, playerID)
 			if err != nil {
 				return err
 			}
@@ -104,7 +116,7 @@ func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
 				cmd.RequestID,
 				cmd.SessionID,
 				entity.OperationCashOut,
-				cmd.PlayerID,
+				playerID,
 				cmd.Chips,
 				time.Now(),
 			)

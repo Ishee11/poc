@@ -12,6 +12,23 @@ type PlayerAggregates struct {
 	CashOut int64
 }
 
+type PlayerDTO struct {
+	ID   entity.PlayerID
+	Name string
+}
+
+type PlayerRepository interface {
+	GetOrCreate(
+		tx Tx,
+		sessionID entity.SessionID,
+		name string,
+	) (entity.PlayerID, error)
+	ListBySession(
+		tx Tx,
+		sessionID entity.SessionID,
+	) ([]PlayerDTO, error)
+}
+
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }

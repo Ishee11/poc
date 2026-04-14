@@ -18,6 +18,7 @@ type Handler struct {
 	getStatsSessionsUC  *usecase.GetStatsSessionsUseCase
 	getStatsPlayersUC   *usecase.GetStatsPlayersUseCase
 	getPlayerStatsUC    *usecase.GetPlayerStatsUseCase
+	getSessionPlayersUC *usecase.GetSessionPlayersUseCase
 }
 
 func NewHandler(
@@ -32,6 +33,7 @@ func NewHandler(
 	getStatsSessions *usecase.GetStatsSessionsUseCase,
 	getStatsPlayers *usecase.GetStatsPlayersUseCase,
 	getPlayerStats *usecase.GetPlayerStatsUseCase,
+	getSessionPlayers *usecase.GetSessionPlayersUseCase,
 ) *Handler {
 	return &Handler{
 		startSessionUC:      start,
@@ -45,5 +47,6 @@ func NewHandler(
 		getStatsSessionsUC:  getStatsSessions,
 		getStatsPlayersUC:   getStatsPlayers,
 		getPlayerStatsUC:    getPlayerStats,
+		getSessionPlayersUC: getSessionPlayers,
 	}
 }

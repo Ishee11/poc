@@ -19,10 +19,11 @@ func TestStatsRepository_Integration(t *testing.T) {
 	idGen := &staticOperationIDGenerator{
 		ids: []entity.OperationID{"op-1", "op-2", "op-3", "op-4", "op-5"},
 	}
+	playerRepo := NewPlayerRepository()
 
 	startUC := usecase.NewStartSessionUseCase(sessionRepo, sessionRepo, txManager)
-	buyInUC := usecase.NewBuyInUseCase(opRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo)
-	cashOutUC := usecase.NewCashOutUseCase(opRepo, projectionRepo, projectionRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo)
+	buyInUC := usecase.NewBuyInUseCase(opRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo, playerRepo)
+	cashOutUC := usecase.NewCashOutUseCase(opRepo, projectionRepo, projectionRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo, playerRepo)
 	reverseUC := usecase.NewReverseOperationUseCase(opRepo, opRepo, opRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo)
 
 	if err := startUC.Execute(usecase.StartSessionCommand{SessionID: "s1", ChipRate: 10}); err != nil {
