@@ -53,6 +53,12 @@ func Run() error {
 
 	log.Println("connected to db")
 
+	// ===== MIGRATIONS =====
+	if err := postgres.RunMigrations(ctx, pool, postgres.MigrationsFS); err != nil {
+		return fmt.Errorf("migrations failed: %w", err)
+	}
+	log.Println("migrations applied")
+
 	// ===== Repositories =====
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
