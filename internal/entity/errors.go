@@ -38,4 +38,14 @@ var (
 	ErrSessionNotBalanced = errors.New("session not balanced")
 )
 
-//
+func (e *SessionNotBalancedError) Is(target error) bool {
+	return target == ErrSessionNotBalanced
+}
+
+type SessionNotBalancedError struct {
+	RemainingChips int64
+}
+
+func (e *SessionNotBalancedError) Error() string {
+	return "session not balanced"
+}

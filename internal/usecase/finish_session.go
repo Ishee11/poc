@@ -5,18 +5,6 @@ import (
 	"github.com/ishee11/poc/internal/usecase/command"
 )
 
-func (e *SessionNotBalancedError) Is(target error) bool {
-	return target == entity.ErrSessionNotBalanced
-}
-
-type SessionNotBalancedError struct {
-	RemainingChips int64
-}
-
-func (e *SessionNotBalancedError) Error() string {
-	return "session not balanced"
-}
-
 type FinishSessionUseCase struct {
 	projection      ProjectionRepository
 	sessionReader   SessionReader
@@ -64,7 +52,7 @@ func (uc *FinishSessionUseCase) Execute(cmd command.FinishSessionCommand) error 
 			}
 
 			if aggr.TotalBuyIn != aggr.TotalCashOut {
-				return &SessionNotBalancedError{
+				return &entity.SessionNotBalancedError{
 					RemainingChips: aggr.TotalBuyIn - aggr.TotalCashOut,
 				}
 			}

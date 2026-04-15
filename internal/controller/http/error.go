@@ -6,14 +6,13 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
-	"github.com/ishee11/poc/internal/usecase"
 )
 
 func writeError(w http.ResponseWriter, err error) {
 	switch e := err.(type) {
 
 	// --- кастомная бизнес-ошибка ---
-	case *usecase.SessionNotBalancedError:
+	case *entity.SessionNotBalancedError:
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "session not balanced",
 			"details": map[string]any{
