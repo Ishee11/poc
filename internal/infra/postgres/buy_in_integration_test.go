@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/infra"
 	"github.com/ishee11/poc/internal/usecase"
 	"github.com/ishee11/poc/internal/usecase/command"
@@ -18,6 +19,15 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 	idGen := &infra.UUIDOperationIDGenerator{}
 	idempotencyRepo := NewIdempotencyRepository()
 	playerRepo := NewPlayerRepository()
+
+	// --- helper ---
+	helper := usecase.NewHelper(
+		sessionRepo,
+		sessionRepo,
+		playerRepo,
+		opRepo,
+		idGen,
+	)
 
 	// --- сначала создаем сессию ---
 	startUC := usecase.NewStartSessionUseCase(
@@ -36,20 +46,16 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 
 	// --- BuyIn ---
 	buyUC := usecase.NewBuyInUseCase(
-		opRepo,
-		sessionRepo,
-		sessionRepo,
+		helper,
 		txManager,
-		idGen,
 		idempotencyRepo,
-		playerRepo,
 	)
 
 	cmd := command.BuyInCommand{
-		RequestID: "req-1",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     100,
+		RequestID:  "req-1",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      100,
 	}
 
 	err = buyUC.Execute(cmd)

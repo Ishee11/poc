@@ -75,6 +75,14 @@ func Run() error {
 
 	// ===== UseCases =====
 
+	helper := usecase.NewHelper(
+		sessionRepo,
+		sessionRepo,
+		playerRepo,
+		opRepo,
+		idGen,
+	)
+
 	// write
 	startSessionUC := usecase.NewStartSessionUseCase(
 		sessionRepo,
@@ -83,25 +91,17 @@ func Run() error {
 	)
 
 	buyInUC := usecase.NewBuyInUseCase(
-		opRepo,
-		sessionRepo,
-		sessionRepo,
+		helper,
 		txManager,
-		idGen,
 		idempotencyRepo,
-		playerRepo,
 	)
 
 	cashOutUC := usecase.NewCashOutUseCase(
-		opRepo,
+		helper,
 		projectionRepo,
 		projectionRepo,
-		sessionRepo,
-		sessionRepo,
 		txManager,
-		idGen,
 		idempotencyRepo,
-		playerRepo,
 	)
 
 	finishSessionUC := usecase.NewFinishSessionUseCase(

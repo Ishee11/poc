@@ -23,26 +23,28 @@ func TestIntegration_FullFlow(t *testing.T) {
 	idGen := &operationIDGeneratorMock{}
 	idempotencyRepo := defaultIdempotencyRepo()
 
-	buyInUC := usecase.NewBuyInUseCase(
-		opRepo,
+	// --- helper ---
+	helper := usecase.NewHelper(
 		sessionRepo,
 		sessionRepo,
-		txManager,
-		idGen,
-		idempotencyRepo,
 		&playerRepoMock{},
+		opRepo,
+		idGen,
+	)
+
+	// --- usecases ---
+	buyInUC := usecase.NewBuyInUseCase(
+		helper,
+		txManager,
+		idempotencyRepo,
 	)
 
 	cashOutUC := usecase.NewCashOutUseCase(
-		opRepo,
-		opRepo,
-		opRepo,
-		sessionRepo,
-		sessionRepo,
+		helper,
+		opRepo, // playerStateReader
+		opRepo, // projection
 		txManager,
-		idGen,
 		idempotencyRepo,
-		&playerRepoMock{},
 	)
 
 	reverseUC := usecase.NewReverseOperationUseCase(
@@ -67,10 +69,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 1. BuyIn ---
 	idGen.id = "op1"
 	if err := buyInUC.Execute(command.BuyInCommand{
-		RequestID: "req-1",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     100,
+		RequestID:  "req-1",
+		SessionID:  "s1",
+		PlayerName: "p1",
+		Chips:      100,
 	}); err != nil {
 		t.Fatalf("buyin failed: %v", err)
 	}
@@ -78,17 +80,16 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 2. CashOut ---
 	idGen.id = "op2"
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID: "req-2",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     100,
+		RequestID:  "req-2",
+		SessionID:  "s1",
+		PlayerName: "p1",
+		Chips:      100,
 	}); err != nil {
 		t.Fatalf("cashout failed: %v", err)
 	}
 
-	// --- 3. Reversal (отменяем cashout) ---
+	// --- 3. Reversal ---
 	idGen.id = "op3"
-
 	if err := reverseUC.Execute(command.ReverseOperationCommand{
 		RequestID:         "req-3",
 		TargetOperationID: "op2",
@@ -107,10 +108,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 5. CashOut again ---
 	idGen.id = "op4"
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID: "req-4",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     100,
+		RequestID:  "req-4",
+		SessionID:  "s1",
+		PlayerName: "p1",
+		Chips:      100,
 	}); err != nil {
 		t.Fatalf("cashout2 failed: %v", err)
 	}
@@ -123,7 +124,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 		t.Fatalf("finish failed: %v", err)
 	}
 
-	// --- 7. Проверка состояния ---
+	// --- 7. Проверка ---
 	s, _ := sessionRepo.FindByID(nil, "s1")
 
 	if s.Status() != entity.StatusFinished {

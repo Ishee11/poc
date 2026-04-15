@@ -17,16 +17,49 @@ func TestStatsRepository_Integration(t *testing.T) {
 	projectionRepo := NewProjectionRepository()
 	idempotencyRepo := NewIdempotencyRepository()
 	statsRepo := NewStatsRepository()
+	playerRepo := NewPlayerRepository()
+
 	idGen := &staticOperationIDGenerator{
 		ids: []entity.OperationID{"op-1", "op-2", "op-3", "op-4", "op-5"},
 	}
-	playerRepo := NewPlayerRepository()
+
+	// --- helper ---
+	helper := usecase.NewHelper(
+		sessionRepo,
+		sessionRepo,
+		playerRepo,
+		opRepo,
+		idGen,
+	)
 
 	startUC := usecase.NewStartSessionUseCase(sessionRepo, sessionRepo, txManager)
-	buyInUC := usecase.NewBuyInUseCase(opRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo, playerRepo)
-	cashOutUC := usecase.NewCashOutUseCase(opRepo, projectionRepo, projectionRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo, playerRepo)
-	reverseUC := usecase.NewReverseOperationUseCase(opRepo, opRepo, opRepo, sessionRepo, sessionRepo, txManager, idGen, idempotencyRepo)
 
+	buyInUC := usecase.NewBuyInUseCase(
+		helper,
+		txManager,
+		idempotencyRepo,
+	)
+
+	cashOutUC := usecase.NewCashOutUseCase(
+		helper,
+		projectionRepo,
+		projectionRepo,
+		txManager,
+		idempotencyRepo,
+	)
+
+	reverseUC := usecase.NewReverseOperationUseCase(
+		opRepo,
+		opRepo,
+		opRepo,
+		sessionRepo,
+		sessionRepo,
+		txManager,
+		idGen,
+		idempotencyRepo,
+	)
+
+	// --- setup ---
 	if err := startUC.Execute(command.StartSessionCommand{SessionID: "s1", ChipRate: 10}); err != nil {
 		t.Fatalf("start session 1 failed: %v", err)
 	}
@@ -34,22 +67,50 @@ func TestStatsRepository_Integration(t *testing.T) {
 		t.Fatalf("start session 2 failed: %v", err)
 	}
 
-	if err := buyInUC.Execute(command.BuyInCommand{RequestID: "req-1", SessionID: "s1", PlayerID: "p1", Chips: 100}); err != nil {
+	if err := buyInUC.Execute(command.BuyInCommand{
+		RequestID:  "req-1",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      100,
+	}); err != nil {
 		t.Fatalf("buy in 1 failed: %v", err)
 	}
-	if err := cashOutUC.Execute(command.CashOutCommand{RequestID: "req-2", SessionID: "s1", PlayerID: "p1", Chips: 40}); err != nil {
+
+	if err := cashOutUC.Execute(command.CashOutCommand{
+		RequestID:  "req-2",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      40,
+	}); err != nil {
 		t.Fatalf("cash out 1 failed: %v", err)
 	}
-	if err := reverseUC.Execute(command.ReverseOperationCommand{RequestID: "req-3", TargetOperationID: "op-2"}); err != nil {
+
+	if err := reverseUC.Execute(command.ReverseOperationCommand{
+		RequestID:         "req-3",
+		TargetOperationID: "op-2",
+	}); err != nil {
 		t.Fatalf("reverse failed: %v", err)
 	}
-	if err := cashOutUC.Execute(command.CashOutCommand{RequestID: "req-4", SessionID: "s1", PlayerID: "p1", Chips: 20}); err != nil {
+
+	if err := cashOutUC.Execute(command.CashOutCommand{
+		RequestID:  "req-4",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      20,
+	}); err != nil {
 		t.Fatalf("cash out 2 failed: %v", err)
 	}
-	if err := buyInUC.Execute(command.BuyInCommand{RequestID: "req-5", SessionID: "s2", PlayerID: "p2", Chips: 200}); err != nil {
+
+	if err := buyInUC.Execute(command.BuyInCommand{
+		RequestID:  "req-5",
+		SessionID:  entity.SessionID("s2"),
+		PlayerName: "p2",
+		Chips:      200,
+	}); err != nil {
 		t.Fatalf("buy in 2 failed: %v", err)
 	}
 
+	// --- assertions ---
 	err := txManager.RunInTx(func(tx usecase.Tx) error {
 		sessions, err := statsRepo.ListSessions(tx, usecase.SessionStatsFilter{Limit: 10})
 		if err != nil {

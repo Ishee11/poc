@@ -45,23 +45,29 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			},
 		}
 
-		uc := usecase.NewCashOutUseCase(
-			opRepo,
-			opRepo,
-			opRepo,
+		idGen := &operationIDGeneratorMock{id: "op-1"}
+
+		helper := usecase.NewHelper(
 			sessionRepo,
 			sessionRepo,
-			&txManagerMock{},
-			&operationIDGeneratorMock{id: "op-1"},
-			defaultIdempotencyRepo(),
 			&playerRepoMock{},
+			opRepo,
+			idGen,
+		)
+
+		uc := usecase.NewCashOutUseCase(
+			helper,
+			opRepo, // playerStateReader
+			opRepo, // projection
+			&txManagerMock{},
+			defaultIdempotencyRepo(),
 		)
 
 		err := uc.Execute(command.CashOutCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     50,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      50,
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -90,23 +96,29 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			},
 		}
 
-		uc := usecase.NewCashOutUseCase(
-			opRepo,
-			opRepo,
-			opRepo,
+		idGen := &operationIDGeneratorMock{id: "op"}
+
+		helper := usecase.NewHelper(
 			sessionRepo,
 			sessionRepo,
-			&txManagerMock{},
-			&operationIDGeneratorMock{id: "op"},
-			idem,
 			&playerRepoMock{},
+			opRepo,
+			idGen,
+		)
+
+		uc := usecase.NewCashOutUseCase(
+			helper,
+			opRepo,
+			opRepo,
+			&txManagerMock{},
+			idem,
 		)
 
 		err := uc.Execute(command.CashOutCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     10,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      10,
 		})
 
 		if err != nil {

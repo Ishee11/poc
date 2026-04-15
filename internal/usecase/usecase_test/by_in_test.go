@@ -50,17 +50,27 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 
 		idGen := &idGeneratorMock{id: "op-internal-1"}
 
+		helper := usecase.NewHelper(
+			sessionRepo,
+			sessionRepo,
+			&playerRepoMock{},
+			opRepo,
+			idGen,
+		)
+
 		uc := usecase.NewBuyInUseCase(
-			opRepo, sessionRepo, sessionRepo, &txManagerMock{}, idGen, &idempotencyRepoMock{
+			helper,
+			&txManagerMock{},
+			&idempotencyRepoMock{
 				saveFn: func(tx usecase.Tx, requestID string) error { return nil },
-			}, &playerRepoMock{},
+			},
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     100,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      100,
 		}
 
 		err := uc.Execute(cmd)
@@ -74,17 +84,27 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("invalid chips", func(t *testing.T) {
-		uc := usecase.NewBuyInUseCase(&operationRepoMock{}, &sessionRepoMock{}, &sessionRepoMock{},
-			&txManagerMock{}, &idGeneratorMock{id: "op"}, &idempotencyRepoMock{
+		helper := usecase.NewHelper(
+			&sessionRepoMock{},
+			&sessionRepoMock{},
+			&playerRepoMock{},
+			&operationRepoMock{},
+			&idGeneratorMock{id: "op"},
+		)
+
+		uc := usecase.NewBuyInUseCase(
+			helper,
+			&txManagerMock{},
+			&idempotencyRepoMock{
 				saveFn: func(tx usecase.Tx, requestID string) error { return nil },
-			}, &playerRepoMock{},
+			},
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     0,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      0,
 		}
 
 		err := uc.Execute(cmd)
@@ -100,31 +120,33 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			t.Fatalf("failed to finish session: %v", err)
 		}
 
-		opRepo := &operationRepoMock{}
-
 		sessionRepo := &sessionRepoMock{
 			findFn: func(tx usecase.Tx, id entity.SessionID) (*entity.Session, error) {
 				return session, nil
 			},
 		}
 
-		uc := usecase.NewBuyInUseCase(
-			opRepo,
+		helper := usecase.NewHelper(
 			sessionRepo,
 			sessionRepo,
-			&txManagerMock{},
+			&playerRepoMock{},
+			&operationRepoMock{},
 			&idGeneratorMock{id: "op"},
+		)
+
+		uc := usecase.NewBuyInUseCase(
+			helper,
+			&txManagerMock{},
 			&idempotencyRepoMock{
 				saveFn: func(tx usecase.Tx, requestID string) error { return nil },
 			},
-			&playerRepoMock{},
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     100,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      100,
 		}
 
 		err := uc.Execute(cmd)
@@ -148,23 +170,27 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			},
 		}
 
-		uc := usecase.NewBuyInUseCase(
+		helper := usecase.NewHelper(
+			sessionRepo,
+			sessionRepo,
+			&playerRepoMock{},
 			opRepo,
-			sessionRepo,
-			sessionRepo,
-			&txManagerMock{},
 			&idGeneratorMock{id: "op"},
+		)
+
+		uc := usecase.NewBuyInUseCase(
+			helper,
+			&txManagerMock{},
 			&idempotencyRepoMock{
 				saveFn: func(tx usecase.Tx, requestID string) error { return nil },
 			},
-			&playerRepoMock{},
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     100,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      100,
 		}
 
 		err := uc.Execute(cmd)
@@ -176,36 +202,35 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 	t.Run("idempotent via duplicate request error", func(t *testing.T) {
 		session := entity.NewSession("s1", rate, time.Now())
 
-		opRepo := &operationRepoMock{
-			saveFn: func(tx usecase.Tx, op *entity.Operation) error {
-				t.Fatal("operation save should not be called for duplicate request")
-				return nil
-			},
-		}
-
 		sessionRepo := &sessionRepoMock{
 			findFn: func(tx usecase.Tx, id entity.SessionID) (*entity.Session, error) {
 				return session, nil
 			},
 		}
 
-		uc := usecase.NewBuyInUseCase(
-			opRepo,
+		helper := usecase.NewHelper(
 			sessionRepo,
 			sessionRepo,
-			&txManagerMock{},
-			&idGeneratorMock{id: "op"},
-			&idempotencyRepoMock{
-				saveFn: func(tx usecase.Tx, requestID string) error { return entity.ErrDuplicateRequest },
-			},
 			&playerRepoMock{},
+			&operationRepoMock{},
+			&idGeneratorMock{id: "op"},
+		)
+
+		uc := usecase.NewBuyInUseCase(
+			helper,
+			&txManagerMock{},
+			&idempotencyRepoMock{
+				saveFn: func(tx usecase.Tx, requestID string) error {
+					return entity.ErrDuplicateRequest
+				},
+			},
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID: "req-1",
-			SessionID: "s1",
-			PlayerID:  "p1",
-			Chips:     100,
+			RequestID:  "req-1",
+			SessionID:  "s1",
+			PlayerName: "p1",
+			Chips:      100,
 		}
 
 		err := uc.Execute(cmd)

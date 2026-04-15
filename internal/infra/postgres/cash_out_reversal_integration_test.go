@@ -27,36 +27,41 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 	opRepo := NewOperationRepository()
 	projectionRepo := NewProjectionRepository()
 	idempotencyRepo := NewIdempotencyRepository()
+	playerRepo := NewPlayerRepository()
+
 	idGen := &staticOperationIDGenerator{
 		ids: []entity.OperationID{"op-1", "op-2", "op-3", "op-4"},
 	}
-	playerRepo := NewPlayerRepository()
+
+	// --- helper ---
+	helper := usecase.NewHelper(
+		sessionRepo,
+		sessionRepo,
+		playerRepo,
+		opRepo,
+		idGen,
+	)
 
 	startUC := usecase.NewStartSessionUseCase(
 		sessionRepo,
 		sessionRepo,
 		txManager,
 	)
+
 	buyInUC := usecase.NewBuyInUseCase(
-		opRepo,
-		sessionRepo,
-		sessionRepo,
+		helper,
 		txManager,
-		idGen,
 		idempotencyRepo,
-		playerRepo,
 	)
+
 	cashOutUC := usecase.NewCashOutUseCase(
-		opRepo,
-		projectionRepo,
-		projectionRepo,
-		sessionRepo,
-		sessionRepo,
+		helper,
+		projectionRepo, // playerStateReader
+		projectionRepo, // projection
 		txManager,
-		idGen,
 		idempotencyRepo,
-		playerRepo,
 	)
+
 	reverseUC := usecase.NewReverseOperationUseCase(
 		opRepo,
 		opRepo,
@@ -76,19 +81,19 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 	}
 
 	if err := buyInUC.Execute(command.BuyInCommand{
-		RequestID: "req-buy-1",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     100,
+		RequestID:  "req-buy-1",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      100,
 	}); err != nil {
 		t.Fatalf("buy in failed: %v", err)
 	}
 
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID: "req-cash-1",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     40,
+		RequestID:  "req-cash-1",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      40,
 	}); err != nil {
 		t.Fatalf("cash out failed: %v", err)
 	}
@@ -101,10 +106,10 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 	}
 
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID: "req-cash-2",
-		SessionID: "s1",
-		PlayerID:  "p1",
-		Chips:     30,
+		RequestID:  "req-cash-2",
+		SessionID:  entity.SessionID("s1"),
+		PlayerName: "p1",
+		Chips:      30,
 	}); err != nil {
 		t.Fatalf("cash out after reversal failed: %v", err)
 	}
