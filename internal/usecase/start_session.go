@@ -13,6 +13,13 @@ type StartSessionCommand struct {
 	ChipRate  int64
 }
 
+func NewStartSessionCommand(sessionID entity.SessionID, chipRate int64) StartSessionCommand {
+	return StartSessionCommand{
+		SessionID: sessionID,
+		ChipRate:  chipRate,
+	}
+}
+
 type StartSessionUseCase struct {
 	sessionReader SessionReader
 	sessionWriter SessionWriter

@@ -7,6 +7,13 @@ type SessionAggregates struct {
 	TotalCashOut int64
 }
 
+func NewSessionAggregates(totalBuyIn, totalCashOut int64) SessionAggregates {
+	return SessionAggregates{
+		TotalBuyIn:   totalBuyIn,
+		TotalCashOut: totalCashOut,
+	}
+}
+
 type PlayerAggregates struct {
 	BuyIn   int64
 	CashOut int64

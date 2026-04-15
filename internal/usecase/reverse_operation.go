@@ -11,6 +11,16 @@ type ReverseOperationCommand struct {
 	TargetOperationID entity.OperationID
 }
 
+func NewReverseOperationCommand(
+	requestID string,
+	targetOperationID entity.OperationID,
+) ReverseOperationCommand {
+	return ReverseOperationCommand{
+		RequestID:         requestID,
+		TargetOperationID: targetOperationID,
+	}
+}
+
 type ReverseOperationUseCase struct {
 	opWriter OperationWriter
 

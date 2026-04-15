@@ -20,9 +20,12 @@ type BuyInUseCase struct {
 	playerRepo      PlayerRepository
 }
 
+func (uc *BuyInUseCase) OperationWriter() OperationWriter {
+	return uc.opWriter
+}
+
 type BuyInCommand struct {
 	RequestID string
-
 	SessionID entity.SessionID
 	PlayerID  entity.PlayerID
 	Chips     int64

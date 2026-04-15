@@ -10,6 +10,10 @@ type GetSessionQuery struct {
 	SessionID entity.SessionID
 }
 
+func NewGetSessionQuery(sessionID entity.SessionID) *GetSessionQuery {
+	return &GetSessionQuery{SessionID: sessionID}
+}
+
 type GetSessionResponse struct {
 	SessionID    entity.SessionID
 	Status       entity.Status
