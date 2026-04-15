@@ -47,13 +47,13 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if len(res.Results) != 2 {
-			t.Fatalf("expected 2 results, got %d", len(res.Results))
+		if len(res) != 2 {
+			t.Fatalf("expected 2 results, got %d", len(res))
 		}
 
 		// проверяем p1
 		var p1 usecase.PlayerResultDTO
-		for _, r := range res.Results {
+		for _, r := range res {
 			if r.PlayerID == "p1" {
 				p1 = r
 			}
@@ -69,7 +69,7 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 
 		// проверяем p2
 		var p2 usecase.PlayerResultDTO
-		for _, r := range res.Results {
+		for _, r := range res {
 			if r.PlayerID == "p2" {
 				p2 = r
 			}

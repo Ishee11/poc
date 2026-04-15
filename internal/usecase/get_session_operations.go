@@ -1,26 +1,5 @@
 package usecase
 
-import (
-	"time"
-
-	"github.com/ishee11/poc/internal/entity"
-)
-
-type OperationDTO struct {
-	ID          entity.OperationID
-	Type        entity.OperationType
-	PlayerID    entity.PlayerID
-	Chips       int64
-	CreatedAt   time.Time
-	ReferenceID *entity.OperationID
-}
-
-type GetSessionOperationsResponse struct {
-	Operations []OperationDTO
-}
-
-// --- usecase ---
-
 type GetSessionOperationsUseCase struct {
 	sessionReader SessionReader
 	projection    ProjectionRepository
@@ -41,9 +20,9 @@ func NewGetSessionOperationsUseCase(
 
 func (uc *GetSessionOperationsUseCase) Execute(
 	q GetSessionOperationsQuery,
-) (*GetSessionOperationsResponse, error) {
+) ([]OperationDTO, error) {
 
-	var result *GetSessionOperationsResponse
+	var result []OperationDTO
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
 
@@ -73,10 +52,7 @@ func (uc *GetSessionOperationsUseCase) Execute(
 			})
 		}
 
-		result = &GetSessionOperationsResponse{
-			Operations: res,
-		}
-
+		result = res
 		return nil
 	})
 

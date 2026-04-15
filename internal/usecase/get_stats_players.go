@@ -1,9 +1,5 @@
 package usecase
 
-type GetStatsPlayersResponse struct {
-	Players []PlayerStat
-}
-
 type GetStatsPlayersUseCase struct {
 	statsRepo StatsRepository
 	txManager TxManager
@@ -19,12 +15,12 @@ func NewGetStatsPlayersUseCase(
 	}
 }
 
-func (uc *GetStatsPlayersUseCase) Execute(q GetStatsPlayersQuery) (*GetStatsPlayersResponse, error) {
+func (uc *GetStatsPlayersUseCase) Execute(q GetStatsPlayersQuery) ([]PlayerStat, error) {
 	if q.Limit <= 0 {
 		q.Limit = 20
 	}
 
-	var result *GetStatsPlayersResponse
+	var result []PlayerStat
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
 		players, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{
@@ -36,9 +32,7 @@ func (uc *GetStatsPlayersUseCase) Execute(q GetStatsPlayersQuery) (*GetStatsPlay
 			return err
 		}
 
-		result = &GetStatsPlayersResponse{
-			Players: players,
-		}
+		result = players
 
 		return nil
 	})

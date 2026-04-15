@@ -48,19 +48,19 @@ func TestGetSessionOperationsUseCase_Execute(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if len(res.Operations) != 3 {
-			t.Fatalf("expected 3 operations, got %d", len(res.Operations))
+		if len(res) != 3 {
+			t.Fatalf("expected 3 operations, got %d", len(res))
 		}
 
 		// DESC порядок: op3, op2, op1
-		if res.Operations[0].ID != "op3" {
-			t.Fatalf("expected first op=op3, got %s", res.Operations[0].ID)
+		if res[0].ID != "op3" {
+			t.Fatalf("expected first op=op3, got %s", res[0].ID)
 		}
-		if res.Operations[1].ID != "op2" {
-			t.Fatalf("expected second op=op2, got %s", res.Operations[1].ID)
+		if res[1].ID != "op2" {
+			t.Fatalf("expected second op=op2, got %s", res[1].ID)
 		}
-		if res.Operations[2].ID != "op1" {
-			t.Fatalf("expected third op=op1, got %s", res.Operations[2].ID)
+		if res[2].ID != "op1" {
+			t.Fatalf("expected third op=op1, got %s", res[2].ID)
 		}
 	})
 
@@ -95,8 +95,8 @@ func TestGetSessionOperationsUseCase_Execute(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if len(res.Operations) != 2 {
-			t.Fatalf("expected 2 operations, got %d", len(res.Operations))
+		if len(res) != 2 {
+			t.Fatalf("expected 2 operations, got %d", len(res))
 		}
 	})
 
@@ -132,13 +132,13 @@ func TestGetSessionOperationsUseCase_Execute(t *testing.T) {
 		}
 
 		// ожидаем: пропустили последнюю → остаётся 2
-		if len(res.Operations) != 2 {
-			t.Fatalf("expected 2 operations, got %d", len(res.Operations))
+		if len(res) != 2 {
+			t.Fatalf("expected 2 operations, got %d", len(res))
 		}
 
 		// порядок: op2, op1
-		if res.Operations[0].ID != "op2" {
-			t.Fatalf("expected first op=op2, got %s", res.Operations[0].ID)
+		if res[0].ID != "op2" {
+			t.Fatalf("expected first op=op2, got %s", res[0].ID)
 		}
 	})
 
@@ -166,8 +166,8 @@ func TestGetSessionOperationsUseCase_Execute(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if len(res.Operations) != 0 {
-			t.Fatalf("expected 0 operations, got %d", len(res.Operations))
+		if len(res) != 0 {
+			t.Fatalf("expected 0 operations, got %d", len(res))
 		}
 	})
 }

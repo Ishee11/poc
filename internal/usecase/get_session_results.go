@@ -1,21 +1,5 @@
 package usecase
 
-import (
-	"github.com/ishee11/poc/internal/entity"
-)
-
-type PlayerResultDTO struct {
-	PlayerID     entity.PlayerID
-	BuyInChips   int64
-	CashOutChips int64
-	ProfitChips  int64
-	ProfitMoney  int64
-}
-
-type GetSessionResultsResponse struct {
-	Results []PlayerResultDTO
-}
-
 type GetSessionResultsUseCase struct {
 	sessionReader SessionReader
 	projection    ProjectionRepository
@@ -36,9 +20,9 @@ func NewGetSessionResultsUseCase(
 
 func (uc *GetSessionResultsUseCase) Execute(
 	q GetSessionResultsQuery,
-) (*GetSessionResultsResponse, error) {
+) ([]PlayerResultDTO, error) {
 
-	var result *GetSessionResultsResponse
+	var result []PlayerResultDTO
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
 
@@ -77,9 +61,7 @@ func (uc *GetSessionResultsUseCase) Execute(
 			})
 		}
 
-		result = &GetSessionResultsResponse{
-			Results: res,
-		}
+		result = res
 
 		return nil
 	})

@@ -19,11 +19,6 @@ type PlayerAggregates struct {
 	CashOut int64
 }
 
-type PlayerDTO struct {
-	ID   entity.PlayerID
-	Name string
-}
-
 type PlayerRepository interface {
 	GetOrCreate(
 		tx Tx,

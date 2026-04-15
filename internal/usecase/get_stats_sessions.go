@@ -1,9 +1,5 @@
 package usecase
 
-type GetStatsSessionsResponse struct {
-	Sessions []SessionStat
-}
-
 type GetStatsSessionsUseCase struct {
 	statsRepo StatsRepository
 	txManager TxManager
@@ -19,12 +15,12 @@ func NewGetStatsSessionsUseCase(
 	}
 }
 
-func (uc *GetStatsSessionsUseCase) Execute(q GetStatsSessionsQuery) (*GetStatsSessionsResponse, error) {
+func (uc *GetStatsSessionsUseCase) Execute(q GetStatsSessionsQuery) ([]SessionStat, error) {
 	if q.Limit <= 0 {
 		q.Limit = 20
 	}
 
-	var result *GetStatsSessionsResponse
+	var result []SessionStat
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
 		sessions, err := uc.statsRepo.ListSessions(tx, SessionStatsFilter{
@@ -36,9 +32,7 @@ func (uc *GetStatsSessionsUseCase) Execute(q GetStatsSessionsQuery) (*GetStatsSe
 			return err
 		}
 
-		result = &GetStatsSessionsResponse{
-			Sessions: sessions,
-		}
+		result = sessions
 
 		return nil
 	})
