@@ -67,7 +67,7 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("failed to connect db: %v", err)
 	}
 
-	//resetDB(t, pool) // пересоздаем базу
+	resetDB(t, pool) // пересоздаем базу
 	applyMigrations(t, pool)
 
 	// чистим данные (не схему!)

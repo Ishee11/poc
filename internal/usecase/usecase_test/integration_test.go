@@ -1,4 +1,4 @@
-package usecase
+package usecase_test
 
 import (
 	"testing"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
+	"github.com/ishee11/poc/internal/usecase"
 )
 
 func TestIntegration_FullFlow(t *testing.T) {
@@ -21,50 +22,50 @@ func TestIntegration_FullFlow(t *testing.T) {
 	idGen := &operationIDGeneratorMock{}
 	idempotencyRepo := defaultIdempotencyRepo()
 
-	buyInUC := BuyInUseCase{
-		opWriter:        opRepo,
-		sessionReader:   sessionRepo,
-		sessionWriter:   sessionRepo,
-		txManager:       txManager,
-		idGen:           idGen,
-		idempotencyRepo: idempotencyRepo,
-		playerRepo:      &playerRepoMock{},
-	}
+	buyInUC := usecase.NewBuyInUseCase(
+		opRepo,
+		sessionRepo,
+		sessionRepo,
+		txManager,
+		idGen,
+		idempotencyRepo,
+		&playerRepoMock{},
+	)
 
-	cashOutUC := CashOutUseCase{
-		opWriter:          opRepo,
-		playerStateReader: opRepo,
-		projection:        opRepo,
-		sessionReader:     sessionRepo,
-		sessionWriter:     sessionRepo,
-		txManager:         txManager,
-		idGen:             idGen,
-		idempotencyRepo:   idempotencyRepo,
-		playerRepo:        &playerRepoMock{},
-	}
+	cashOutUC := usecase.NewCashOutUseCase(
+		opRepo,
+		opRepo,
+		opRepo,
+		sessionRepo,
+		sessionRepo,
+		txManager,
+		idGen,
+		idempotencyRepo,
+		&playerRepoMock{},
+	)
 
-	reverseUC := ReverseOperationUseCase{
-		opWriter:        opRepo,
-		opReader:        opRepo,
-		reversalChecker: opRepo,
-		sessionReader:   sessionRepo,
-		sessionWriter:   sessionRepo,
-		txManager:       txManager,
-		idGen:           idGen,
-		idempotencyRepo: idempotencyRepo,
-	}
+	reverseUC := usecase.NewReverseOperationUseCase(
+		opRepo,
+		opRepo,
+		opRepo,
+		sessionRepo,
+		sessionRepo,
+		txManager,
+		idGen,
+		idempotencyRepo,
+	)
 
-	finishUC := FinishSessionUseCase{
-		projection:      opRepo,
-		sessionReader:   sessionRepo,
-		sessionWriter:   sessionRepo,
-		txManager:       txManager,
-		idempotencyRepo: idempotencyRepo,
-	}
+	finishUC := usecase.NewFinishSessionUseCase(
+		opRepo,
+		sessionRepo,
+		sessionRepo,
+		txManager,
+		idempotencyRepo,
+	)
 
 	// --- 1. BuyIn ---
 	idGen.id = "op1"
-	if err := buyInUC.Execute(BuyInCommand{
+	if err := buyInUC.Execute(usecase.BuyInCommand{
 		RequestID: "req-1",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -75,7 +76,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 2. CashOut ---
 	idGen.id = "op2"
-	if err := cashOutUC.Execute(CashOutCommand{
+	if err := cashOutUC.Execute(usecase.CashOutCommand{
 		RequestID: "req-2",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -87,7 +88,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 3. Reversal (отменяем cashout) ---
 	idGen.id = "op3"
 
-	if err := reverseUC.Execute(ReverseOperationCommand{
+	if err := reverseUC.Execute(usecase.ReverseOperationCommand{
 		RequestID:         "req-3",
 		TargetOperationID: "op2",
 	}); err != nil {
@@ -95,7 +96,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 4. Finish должен упасть ---
-	if err := finishUC.Execute(FinishSessionCommand{
+	if err := finishUC.Execute(usecase.FinishSessionCommand{
 		RequestID: "req-5",
 		SessionID: "s1",
 	}); err == nil {
@@ -104,7 +105,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 5. CashOut again ---
 	idGen.id = "op4"
-	if err := cashOutUC.Execute(CashOutCommand{
+	if err := cashOutUC.Execute(usecase.CashOutCommand{
 		RequestID: "req-4",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -114,7 +115,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 6. Finish success ---
-	if err := finishUC.Execute(FinishSessionCommand{
+	if err := finishUC.Execute(usecase.FinishSessionCommand{
 		RequestID: "req-6",
 		SessionID: "s1",
 	}); err != nil {
