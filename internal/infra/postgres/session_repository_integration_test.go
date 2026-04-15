@@ -13,6 +13,7 @@ import (
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func resetDB(t *testing.T, pool *pgxpool.Pool) {
@@ -88,7 +89,7 @@ func TestStartSessionUseCase_Integration(t *testing.T) {
 		txManager,
 	)
 
-	cmd := usecase.StartSessionCommand{
+	cmd := command.StartSessionCommand{
 		SessionID: entity.SessionID("s1"),
 		ChipRate:  10,
 	}

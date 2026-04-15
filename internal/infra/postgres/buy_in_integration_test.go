@@ -6,6 +6,7 @@ import (
 
 	"github.com/ishee11/poc/internal/infra"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func TestBuyInUseCase_Integration(t *testing.T) {
@@ -25,7 +26,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 		txManager,
 	)
 
-	err := startUC.Execute(usecase.StartSessionCommand{
+	err := startUC.Execute(command.StartSessionCommand{
 		SessionID: "s1",
 		ChipRate:  10,
 	})
@@ -44,7 +45,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 		playerRepo,
 	)
 
-	cmd := usecase.BuyInCommand{
+	cmd := command.BuyInCommand{
 		RequestID: "req-1",
 		SessionID: "s1",
 		PlayerID:  "p1",

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
-	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.finishSessionUC.Execute(usecase.FinishSessionCommand{
+	err := h.finishSessionUC.Execute(command.FinishSessionCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 	})

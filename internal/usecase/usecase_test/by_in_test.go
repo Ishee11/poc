@@ -8,6 +8,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 // --- mock id generator ---
@@ -55,7 +56,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			}, &playerRepoMock{},
 		)
 
-		cmd := usecase.BuyInCommand{
+		cmd := command.BuyInCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",
@@ -79,7 +80,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			}, &playerRepoMock{},
 		)
 
-		cmd := usecase.BuyInCommand{
+		cmd := command.BuyInCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",
@@ -119,7 +120,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			&playerRepoMock{},
 		)
 
-		cmd := usecase.BuyInCommand{
+		cmd := command.BuyInCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",
@@ -159,7 +160,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			&playerRepoMock{},
 		)
 
-		cmd := usecase.BuyInCommand{
+		cmd := command.BuyInCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",
@@ -200,7 +201,7 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 			&playerRepoMock{},
 		)
 
-		cmd := usecase.BuyInCommand{
+		cmd := command.BuyInCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",

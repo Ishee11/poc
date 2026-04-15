@@ -8,6 +8,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func TestReverseOperationUseCase(t *testing.T) {
@@ -176,10 +177,10 @@ func TestReverseOperationUseCase(t *testing.T) {
 				idempotencyRepo,
 			)
 
-			err := uc.Execute(usecase.NewReverseOperationCommand(
-				"req-1",
-				"target",
-			))
+			err := uc.Execute(command.ReverseOperationCommand{
+				RequestID:         "req-1",
+				TargetOperationID: "target",
+			})
 
 			if tc.wantErr != nil {
 				if !errors.Is(err, tc.wantErr) {

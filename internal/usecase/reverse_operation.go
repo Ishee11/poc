@@ -4,22 +4,8 @@ import (
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
-
-type ReverseOperationCommand struct {
-	RequestID         string
-	TargetOperationID entity.OperationID
-}
-
-func NewReverseOperationCommand(
-	requestID string,
-	targetOperationID entity.OperationID,
-) ReverseOperationCommand {
-	return ReverseOperationCommand{
-		RequestID:         requestID,
-		TargetOperationID: targetOperationID,
-	}
-}
 
 type ReverseOperationUseCase struct {
 	opWriter OperationWriter
@@ -57,7 +43,7 @@ func NewReverseOperationUseCase(
 	}
 }
 
-func (uc *ReverseOperationUseCase) Execute(cmd ReverseOperationCommand) error {
+func (uc *ReverseOperationUseCase) Execute(cmd command.ReverseOperationCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 

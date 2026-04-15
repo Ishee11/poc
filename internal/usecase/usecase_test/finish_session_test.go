@@ -8,6 +8,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func TestFinishSessionUseCase_Execute(t *testing.T) {
@@ -42,7 +43,7 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 			defaultIdempotencyRepo(), // ← вот это ты пропустил
 		)
 
-		err := uc.Execute(usecase.FinishSessionCommand{
+		err := uc.Execute(command.FinishSessionCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 		})
@@ -78,7 +79,7 @@ func TestFinishSessionUseCase_Execute(t *testing.T) {
 			defaultIdempotencyRepo(),
 		)
 
-		err := uc.Execute(usecase.FinishSessionCommand{
+		err := uc.Execute(command.FinishSessionCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 		})

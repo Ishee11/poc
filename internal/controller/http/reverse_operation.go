@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
-	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func (h *Handler) ReverseOperation(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (h *Handler) ReverseOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.reverseOperationUC.Execute(usecase.ReverseOperationCommand{
+	err := h.reverseOperationUC.Execute(command.ReverseOperationCommand{
 		RequestID:         req.RequestID,
 		TargetOperationID: entity.OperationID(req.TargetOperationID),
 	})

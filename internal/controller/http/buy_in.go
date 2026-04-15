@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
-	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func (h *Handler) BuyIn(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func (h *Handler) BuyIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.buyInUC.Execute(usecase.BuyInCommand{
+	err := h.buyInUC.Execute(command.BuyInCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 		PlayerID:  entity.PlayerID(req.PlayerID),

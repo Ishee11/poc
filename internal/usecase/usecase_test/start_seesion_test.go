@@ -8,6 +8,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func TestStartSessionUseCase_Execute(t *testing.T) {
@@ -17,7 +18,7 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 	tt := []struct {
 		name    string
 		setup   func(repo *sessionRepoMock)
-		cmd     usecase.StartSessionCommand
+		cmd     command.StartSessionCommand
 		wantErr error
 	}{
 		{
@@ -30,10 +31,10 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return nil
 				}
 			},
-			cmd: usecase.NewStartSessionCommand(
-				"s1",
-				2,
-			),
+			cmd: command.StartSessionCommand{
+				SessionID: "s1",
+				ChipRate:  2,
+			},
 		},
 		{
 			name: "idempotent - session already exists",
@@ -45,10 +46,10 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return existing, nil
 				}
 			},
-			cmd: usecase.NewStartSessionCommand(
-				"s1",
-				2,
-			),
+			cmd: command.StartSessionCommand{
+				SessionID: "s1",
+				ChipRate:  2,
+			},
 		},
 		{
 			name: "find error",
@@ -57,10 +58,10 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return nil, dbErr
 				}
 			},
-			cmd: usecase.NewStartSessionCommand(
-				"s1",
-				2,
-			),
+			cmd: command.StartSessionCommand{
+				SessionID: "s1",
+				ChipRate:  2,
+			},
 			wantErr: dbErr,
 		},
 		{
@@ -70,10 +71,10 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return nil, entity.ErrSessionNotFound
 				}
 			},
-			cmd: usecase.NewStartSessionCommand(
-				"s1",
-				0,
-			),
+			cmd: command.StartSessionCommand{
+				SessionID: "s1",
+				ChipRate:  0,
+			},
 			wantErr: valueobject.ErrInvalidChips,
 		},
 		{
@@ -86,10 +87,10 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return dbErr
 				}
 			},
-			cmd: usecase.NewStartSessionCommand(
-				"s1",
-				2,
-			),
+			cmd: command.StartSessionCommand{
+				SessionID: "s1",
+				ChipRate:  2,
+			},
 			wantErr: dbErr,
 		},
 		{
@@ -102,10 +103,10 @@ func TestStartSessionUseCase_Execute(t *testing.T) {
 					return entity.ErrSessionAlreadyExists
 				}
 			},
-			cmd: usecase.NewStartSessionCommand(
-				"s1",
-				2,
-			),
+			cmd: command.StartSessionCommand{
+				SessionID: "s1",
+				ChipRate:  2,
+			},
 		},
 	}
 

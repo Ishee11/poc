@@ -7,6 +7,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func defaultIdempotencyRepo() *idempotencyRepoMock {
@@ -56,7 +57,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			&playerRepoMock{},
 		)
 
-		err := uc.Execute(usecase.CashOutCommand{
+		err := uc.Execute(command.CashOutCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",
@@ -101,7 +102,7 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			&playerRepoMock{},
 		)
 
-		err := uc.Execute(usecase.CashOutCommand{
+		err := uc.Execute(command.CashOutCommand{
 			RequestID: "req-1",
 			SessionID: "s1",
 			PlayerID:  "p1",

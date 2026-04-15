@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func (e *SessionNotBalancedError) Is(target error) bool {
@@ -14,11 +15,6 @@ type SessionNotBalancedError struct {
 
 func (e *SessionNotBalancedError) Error() string {
 	return "session not balanced"
-}
-
-type FinishSessionCommand struct {
-	RequestID string
-	SessionID entity.SessionID
 }
 
 type FinishSessionUseCase struct {
@@ -45,7 +41,7 @@ func NewFinishSessionUseCase(
 	}
 }
 
-func (uc *FinishSessionUseCase) Execute(cmd FinishSessionCommand) error {
+func (uc *FinishSessionUseCase) Execute(cmd command.FinishSessionCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 

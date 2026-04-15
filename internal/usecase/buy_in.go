@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 type OperationIDGenerator interface {
@@ -22,13 +23,6 @@ type BuyInUseCase struct {
 
 func (uc *BuyInUseCase) OperationWriter() OperationWriter {
 	return uc.opWriter
-}
-
-type BuyInCommand struct {
-	RequestID string
-	SessionID entity.SessionID
-	PlayerID  entity.PlayerID
-	Chips     int64
 }
 
 func NewBuyInUseCase(
@@ -51,7 +45,7 @@ func NewBuyInUseCase(
 	}
 }
 
-func (uc *BuyInUseCase) Execute(cmd BuyInCommand) error {
+func (uc *BuyInUseCase) Execute(cmd command.BuyInCommand) error {
 	if cmd.Chips <= 0 {
 		return entity.ErrInvalidChips
 	}

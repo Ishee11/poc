@@ -6,19 +6,8 @@ import (
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
-
-type StartSessionCommand struct {
-	SessionID entity.SessionID
-	ChipRate  int64
-}
-
-func NewStartSessionCommand(sessionID entity.SessionID, chipRate int64) StartSessionCommand {
-	return StartSessionCommand{
-		SessionID: sessionID,
-		ChipRate:  chipRate,
-	}
-}
 
 type StartSessionUseCase struct {
 	sessionReader SessionReader
@@ -38,7 +27,7 @@ func NewStartSessionUseCase(
 	}
 }
 
-func (uc *StartSessionUseCase) Execute(cmd StartSessionCommand) error {
+func (uc *StartSessionUseCase) Execute(cmd command.StartSessionCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
 
 		// 1. идемпотентность

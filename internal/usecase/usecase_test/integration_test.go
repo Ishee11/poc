@@ -7,6 +7,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/entity/valueobject"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func TestIntegration_FullFlow(t *testing.T) {
@@ -65,7 +66,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 1. BuyIn ---
 	idGen.id = "op1"
-	if err := buyInUC.Execute(usecase.BuyInCommand{
+	if err := buyInUC.Execute(command.BuyInCommand{
 		RequestID: "req-1",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -76,7 +77,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 2. CashOut ---
 	idGen.id = "op2"
-	if err := cashOutUC.Execute(usecase.CashOutCommand{
+	if err := cashOutUC.Execute(command.CashOutCommand{
 		RequestID: "req-2",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -88,7 +89,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 3. Reversal (отменяем cashout) ---
 	idGen.id = "op3"
 
-	if err := reverseUC.Execute(usecase.ReverseOperationCommand{
+	if err := reverseUC.Execute(command.ReverseOperationCommand{
 		RequestID:         "req-3",
 		TargetOperationID: "op2",
 	}); err != nil {
@@ -96,7 +97,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 4. Finish должен упасть ---
-	if err := finishUC.Execute(usecase.FinishSessionCommand{
+	if err := finishUC.Execute(command.FinishSessionCommand{
 		RequestID: "req-5",
 		SessionID: "s1",
 	}); err == nil {
@@ -105,7 +106,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	// --- 5. CashOut again ---
 	idGen.id = "op4"
-	if err := cashOutUC.Execute(usecase.CashOutCommand{
+	if err := cashOutUC.Execute(command.CashOutCommand{
 		RequestID: "req-4",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -115,7 +116,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	}
 
 	// --- 6. Finish success ---
-	if err := finishUC.Execute(usecase.FinishSessionCommand{
+	if err := finishUC.Execute(command.FinishSessionCommand{
 		RequestID: "req-6",
 		SessionID: "s1",
 	}); err != nil {

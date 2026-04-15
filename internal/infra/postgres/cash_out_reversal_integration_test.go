@@ -5,6 +5,7 @@ import (
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 type staticOperationIDGenerator struct {
@@ -67,14 +68,14 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 		idempotencyRepo,
 	)
 
-	if err := startUC.Execute(usecase.StartSessionCommand{
+	if err := startUC.Execute(command.StartSessionCommand{
 		SessionID: "s1",
 		ChipRate:  10,
 	}); err != nil {
 		t.Fatalf("start session failed: %v", err)
 	}
 
-	if err := buyInUC.Execute(usecase.BuyInCommand{
+	if err := buyInUC.Execute(command.BuyInCommand{
 		RequestID: "req-buy-1",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -83,7 +84,7 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 		t.Fatalf("buy in failed: %v", err)
 	}
 
-	if err := cashOutUC.Execute(usecase.CashOutCommand{
+	if err := cashOutUC.Execute(command.CashOutCommand{
 		RequestID: "req-cash-1",
 		SessionID: "s1",
 		PlayerID:  "p1",
@@ -92,14 +93,14 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 		t.Fatalf("cash out failed: %v", err)
 	}
 
-	if err := reverseUC.Execute(usecase.ReverseOperationCommand{
+	if err := reverseUC.Execute(command.ReverseOperationCommand{
 		RequestID:         "req-rev-1",
 		TargetOperationID: "op-2",
 	}); err != nil {
 		t.Fatalf("reverse operation failed: %v", err)
 	}
 
-	if err := cashOutUC.Execute(usecase.CashOutCommand{
+	if err := cashOutUC.Execute(command.CashOutCommand{
 		RequestID: "req-cash-2",
 		SessionID: "s1",
 		PlayerID:  "p1",

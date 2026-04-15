@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 type IDGenerator interface {
@@ -24,13 +25,6 @@ type CashOutUseCase struct {
 	idempotencyRepo IdempotencyRepository
 
 	playerRepo PlayerRepository
-}
-
-type CashOutCommand struct {
-	RequestID string
-	SessionID entity.SessionID
-	PlayerID  entity.PlayerID
-	Chips     int64
 }
 
 func NewCashOutUseCase(
@@ -57,7 +51,7 @@ func NewCashOutUseCase(
 	}
 }
 
-func (uc *CashOutUseCase) Execute(cmd CashOutCommand) error {
+func (uc *CashOutUseCase) Execute(cmd command.CashOutCommand) error {
 	if cmd.Chips <= 0 {
 		return entity.ErrInvalidChips
 	}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
-	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.startSessionUC.Execute(usecase.StartSessionCommand{
+	err := h.startSessionUC.Execute(command.StartSessionCommand{
 		SessionID: entity.SessionID(req.SessionID),
 		ChipRate:  req.ChipRate,
 	})

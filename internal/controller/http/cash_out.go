@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
-	"github.com/ishee11/poc/internal/usecase"
+	"github.com/ishee11/poc/internal/usecase/command"
 )
 
 func (h *Handler) CashOut(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func (h *Handler) CashOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.cashOutUC.Execute(usecase.CashOutCommand{
+	err := h.cashOutUC.Execute(command.CashOutCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 		PlayerID:  entity.PlayerID(req.PlayerID),
