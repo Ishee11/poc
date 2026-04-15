@@ -160,6 +160,7 @@ func Run() error {
 	getSessionPlayersUC := usecase.NewGetSessionPlayersUseCase(
 		playerRepo,
 		txManager,
+		sessionRepo,
 	)
 
 	// ===== Handler =====

@@ -23,22 +23,25 @@ func (uc *GetStatsSessionsUseCase) Execute(q GetStatsSessionsQuery) ([]SessionSt
 	var result []SessionStat
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
-		sessions, err := uc.statsRepo.ListSessions(tx, SessionStatsFilter{
-			Limit: q.Limit,
-			From:  q.From,
-			To:    q.To,
-		})
-		if err != nil {
-			return err
-		}
-
-		result = sessions
-
-		return nil
+		var err error
+		result, err = uc.execute(tx, q)
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+func (uc *GetStatsSessionsUseCase) execute(
+	tx Tx,
+	q GetStatsSessionsQuery,
+) ([]SessionStat, error) {
+
+	return uc.statsRepo.ListSessions(tx, SessionStatsFilter{
+		Limit: q.Limit,
+		From:  q.From,
+		To:    q.To,
+	})
 }

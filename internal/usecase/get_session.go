@@ -38,35 +38,38 @@ func (uc *GetSessionUseCase) Execute(q GetSessionQuery) (*GetSessionResponse, er
 	var result *GetSessionResponse
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
-		// 1. загрузка session
-		session, err := uc.sessionReader.FindByID(tx, q.SessionID)
-		if err != nil {
-			return err
-		}
-
-		// 2. агрегаты (источник истины)
-		aggr, err := uc.projection.GetSessionAggregates(tx, q.SessionID)
-		if err != nil {
-			return err
-		}
-
-		// 3. сбор ответа
-		result = &GetSessionResponse{
-			SessionID:    session.ID(),
-			Status:       session.Status(),
-			ChipRate:     session.ChipRate().Value(),
-			CreatedAt:    session.CreatedAt().Format(time.RFC3339),
-			TotalBuyIn:   aggr.TotalBuyIn,
-			TotalCashOut: aggr.TotalCashOut,
-			TotalChips:   aggr.TotalBuyIn - aggr.TotalCashOut,
-		}
-
-		return nil
+		var err error
+		result, err = uc.execute(tx, q)
+		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+func (uc *GetSessionUseCase) execute(tx Tx, q GetSessionQuery) (*GetSessionResponse, error) {
+	// 1. session
+	session, err := uc.sessionReader.FindByID(tx, q.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. агрегаты
+	aggr, err := uc.projection.GetSessionAggregates(tx, q.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. response
+	return &GetSessionResponse{
+		SessionID:    session.ID(),
+		Status:       session.Status(),
+		ChipRate:     session.ChipRate().Value(),
+		CreatedAt:    session.CreatedAt().Format(time.RFC3339),
+		TotalBuyIn:   aggr.TotalBuyIn,
+		TotalCashOut: aggr.TotalCashOut,
+		TotalChips:   aggr.TotalBuyIn - aggr.TotalCashOut,
+	}, nil
 }

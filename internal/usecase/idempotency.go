@@ -6,6 +6,10 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
+type IdempotencyRepository interface {
+	Save(tx Tx, requestID string) error
+}
+
 func Idempotent(
 	tx Tx,
 	repo IdempotencyRepository,

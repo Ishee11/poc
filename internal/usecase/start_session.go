@@ -29,38 +29,41 @@ func NewStartSessionUseCase(
 
 func (uc *StartSessionUseCase) Execute(cmd command.StartSessionCommand) error {
 	return uc.txManager.RunInTx(func(tx Tx) error {
-
-		// 1. идемпотентность
-		existing, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
-		if err != nil && !errors.Is(err, entity.ErrSessionNotFound) {
-			return err
-		}
-
-		if existing != nil {
-			if existing.Status() == entity.StatusActive {
-				return nil // идемпотентный повтор
-			}
-			return entity.ErrSessionAlreadyExists
-		}
-
-		// 2. безопасная валидация chipRate
-		rate, err := valueobject.NewChipRate(cmd.ChipRate)
-		if err != nil {
-			return err
-		}
-
-		// 3. создаём session
-		now := time.Now()
-		session := entity.NewSession(cmd.SessionID, rate, now)
-
-		// 4. сохраняем
-		if err := uc.sessionWriter.Save(tx, session); err != nil {
-			if errors.Is(err, entity.ErrSessionAlreadyExists) {
-				return nil
-			}
-			return err
-		}
-
-		return nil
+		return uc.execute(tx, cmd)
 	})
+}
+
+func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) error {
+
+	// 1. идемпотентность
+	existing, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
+	if err != nil && !errors.Is(err, entity.ErrSessionNotFound) {
+		return err
+	}
+
+	if existing != nil {
+		if existing.Status() == entity.StatusActive {
+			return nil
+		}
+		return entity.ErrSessionAlreadyExists
+	}
+
+	// 2. валидация
+	rate, err := valueobject.NewChipRate(cmd.ChipRate)
+	if err != nil {
+		return err
+	}
+
+	// 3. создание
+	session := entity.NewSession(cmd.SessionID, rate, time.Now())
+
+	// 4. сохранение
+	if err := uc.sessionWriter.Save(tx, session); err != nil {
+		if errors.Is(err, entity.ErrSessionAlreadyExists) {
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }

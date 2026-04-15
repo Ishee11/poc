@@ -6,13 +6,11 @@ import (
 )
 
 type CashOutUseCase struct {
-	helper *Helper
-
+	helper            *Helper
 	playerStateReader OperationPlayerStateReader
 	projection        ProjectionRepository
-
-	txManager       TxManager
-	idempotencyRepo IdempotencyRepository
+	txManager         TxManager
+	idempotencyRepo   IdempotencyRepository
 }
 
 func NewCashOutUseCase(

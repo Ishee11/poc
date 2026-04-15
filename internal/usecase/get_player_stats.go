@@ -24,36 +24,40 @@ func (uc *GetPlayerStatsUseCase) Execute(q GetPlayerStatsQuery) (*GetPlayerStats
 	var result *GetPlayerStatsResponse
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
-		filter := PlayerStatsFilter{
-			Limit: 100,
-			From:  q.From,
-			To:    q.To,
-		}
-
-		player, err := uc.statsRepo.GetPlayerOverall(tx, q.PlayerID, filter)
-		if err != nil {
-			return err
-		}
-
-		sessions, err := uc.statsRepo.ListPlayerSessions(tx, q.PlayerID, filter)
-		if err != nil {
-			return err
-		}
-
-		if player == nil {
-			player = &PlayerOverallStat{PlayerID: q.PlayerID}
-		}
-
-		result = &GetPlayerStatsResponse{
-			Player:   *player,
-			Sessions: sessions,
-		}
-
-		return nil
+		var err error
+		result, err = uc.execute(tx, q)
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {
+	filter := PlayerStatsFilter{
+		Limit: 100,
+		From:  q.From,
+		To:    q.To,
+	}
+
+	player, err := uc.statsRepo.GetPlayerOverall(tx, q.PlayerID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	sessions, err := uc.statsRepo.ListPlayerSessions(tx, q.PlayerID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if player == nil {
+		player = &PlayerOverallStat{PlayerID: q.PlayerID}
+	}
+
+	return &GetPlayerStatsResponse{
+		Player:   *player,
+		Sessions: sessions,
+	}, nil
 }

@@ -25,49 +25,56 @@ func (uc *GetSessionResultsUseCase) Execute(
 	var result []PlayerResultDTO
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
-
-		// 1. загрузка session
-		session, err := uc.sessionReader.FindByID(tx, q.SessionID)
-		if err != nil {
-			return err
-		}
-
-		// 2. агрегаты по игрокам
-		playerAggs, err := uc.projection.GetPlayerAggregates(tx, q.SessionID)
-		if err != nil {
-			return err
-		}
-
-		// 3. сбор результата
-		res := make([]PlayerResultDTO, 0, len(playerAggs))
-
-		rate := session.ChipRate().Value() // :contentReference[oaicite:1]{index=1}
-
-		for playerID, aggr := range playerAggs {
-
-			profitChips := aggr.CashOut - aggr.BuyIn
-
-			var profitMoney int64
-			if rate > 0 {
-				profitMoney = profitChips / rate
-			}
-
-			res = append(res, PlayerResultDTO{
-				PlayerID:     playerID,
-				BuyInChips:   aggr.BuyIn,
-				CashOutChips: aggr.CashOut,
-				ProfitChips:  profitChips,
-				ProfitMoney:  profitMoney,
-			})
-		}
-
-		result = res
-
-		return nil
+		var err error
+		result, err = uc.execute(tx, q)
+		return err
 	})
 
 	if err != nil {
 		return nil, err
+	}
+
+	return result, nil
+}
+
+func (uc *GetSessionResultsUseCase) execute(
+	tx Tx,
+	q GetSessionResultsQuery,
+) ([]PlayerResultDTO, error) {
+
+	// 1. session
+	session, err := uc.sessionReader.FindByID(tx, q.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. агрегаты
+	playerAggs, err := uc.projection.GetPlayerAggregates(tx, q.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. сбор результата
+	result := make([]PlayerResultDTO, 0, len(playerAggs))
+
+	rate := session.ChipRate().Value()
+
+	for playerID, aggr := range playerAggs {
+
+		profitChips := aggr.CashOut - aggr.BuyIn
+
+		var profitMoney int64
+		if rate > 0 {
+			profitMoney = profitChips / rate
+		}
+
+		result = append(result, PlayerResultDTO{
+			PlayerID:     playerID,
+			BuyInChips:   aggr.BuyIn,
+			CashOutChips: aggr.CashOut,
+			ProfitChips:  profitChips,
+			ProfitMoney:  profitMoney,
+		})
 	}
 
 	return result, nil

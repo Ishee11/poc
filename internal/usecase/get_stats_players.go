@@ -23,22 +23,25 @@ func (uc *GetStatsPlayersUseCase) Execute(q GetStatsPlayersQuery) ([]PlayerStat,
 	var result []PlayerStat
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
-		players, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{
-			Limit: q.Limit,
-			From:  q.From,
-			To:    q.To,
-		})
-		if err != nil {
-			return err
-		}
-
-		result = players
-
-		return nil
+		var err error
+		result, err = uc.execute(tx, q)
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+func (uc *GetStatsPlayersUseCase) execute(
+	tx Tx,
+	q GetStatsPlayersQuery,
+) ([]PlayerStat, error) {
+
+	return uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{
+		Limit: q.Limit,
+		From:  q.From,
+		To:    q.To,
+	})
 }
