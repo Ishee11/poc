@@ -40,7 +40,7 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 			&txManagerMock{},
 		)
 
-		res, err := uc.Execute(*usecase.NewGetSessionQuery("s1"))
+		res, err := uc.Execute(usecase.GetSessionQuery{SessionID: "s1"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -87,9 +87,9 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 			&txManagerMock{},
 		)
 
-		_, err := uc.Execute(*usecase.NewGetSessionQuery(
-			"s1",
-		))
+		_, err := uc.Execute(usecase.GetSessionQuery{
+			SessionID: "s1",
+		})
 
 		if !errors.Is(err, expectedErr) {
 			t.Fatalf("expected %v, got %v", expectedErr, err)
@@ -119,9 +119,9 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 			&txManagerMock{},
 		)
 
-		_, err := uc.Execute(*usecase.NewGetSessionQuery(
-			"s1",
-		))
+		_, err := uc.Execute(usecase.GetSessionQuery{
+			SessionID: "s1",
+		})
 
 		if !errors.Is(err, expectedErr) {
 			t.Fatalf("expected %v, got %v", expectedErr, err)

@@ -1,11 +1,5 @@
 package usecase
 
-import "github.com/ishee11/poc/internal/entity"
-
-type GetSessionPlayersQuery struct {
-	SessionID entity.SessionID
-}
-
 type GetSessionPlayersUseCase struct {
 	playerRepo PlayerRepository
 	txManager  TxManager

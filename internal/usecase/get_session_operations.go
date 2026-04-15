@@ -6,13 +6,6 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
-type GetSessionOperationsQuery struct {
-	SessionID entity.SessionID
-
-	Limit  int
-	Offset int
-}
-
 type OperationDTO struct {
 	ID          entity.OperationID
 	Type        entity.OperationType

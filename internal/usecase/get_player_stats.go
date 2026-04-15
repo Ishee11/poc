@@ -1,13 +1,5 @@
 package usecase
 
-import "github.com/ishee11/poc/internal/entity"
-
-type GetPlayerStatsQuery struct {
-	PlayerID entity.PlayerID
-	From     *DateTimeRangeBound
-	To       *DateTimeRangeBound
-}
-
 type GetPlayerStatsResponse struct {
 	Player   PlayerOverallStat
 	Sessions []PlayerSessionStat

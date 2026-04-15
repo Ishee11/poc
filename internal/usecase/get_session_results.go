@@ -4,10 +4,6 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
-type GetSessionResultsQuery struct {
-	SessionID entity.SessionID
-}
-
 type PlayerResultDTO struct {
 	PlayerID     entity.PlayerID
 	BuyInChips   int64

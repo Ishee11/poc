@@ -36,6 +36,10 @@ type PlayerRepository interface {
 	) ([]PlayerDTO, error)
 }
 
+type OperationIDGenerator interface {
+	New() entity.OperationID
+}
+
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }

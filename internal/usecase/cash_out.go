@@ -7,10 +7,6 @@ import (
 	"github.com/ishee11/poc/internal/usecase/command"
 )
 
-type IDGenerator interface {
-	New() entity.OperationID
-}
-
 type CashOutUseCase struct {
 	opWriter OperationWriter
 
@@ -21,7 +17,7 @@ type CashOutUseCase struct {
 	sessionWriter SessionWriter
 
 	txManager       TxManager
-	idGen           IDGenerator
+	idGen           OperationIDGenerator
 	idempotencyRepo IdempotencyRepository
 
 	playerRepo PlayerRepository
@@ -34,7 +30,7 @@ func NewCashOutUseCase(
 	sessionReader SessionReader,
 	sessionWriter SessionWriter,
 	txManager TxManager,
-	idGen IDGenerator,
+	idGen OperationIDGenerator,
 	idempotencyRepo IdempotencyRepository,
 	playerRepo PlayerRepository,
 ) *CashOutUseCase {

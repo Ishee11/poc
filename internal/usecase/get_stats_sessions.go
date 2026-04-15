@@ -1,11 +1,5 @@
 package usecase
 
-type GetStatsSessionsQuery struct {
-	Limit int
-	From  *DateTimeRangeBound
-	To    *DateTimeRangeBound
-}
-
 type GetStatsSessionsResponse struct {
 	Sessions []SessionStat
 }

@@ -1,11 +1,5 @@
 package usecase
 
-type GetStatsPlayersQuery struct {
-	Limit int
-	From  *DateTimeRangeBound
-	To    *DateTimeRangeBound
-}
-
 type GetStatsPlayersResponse struct {
 	Players []PlayerStat
 }

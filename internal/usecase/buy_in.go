@@ -7,10 +7,6 @@ import (
 	"github.com/ishee11/poc/internal/usecase/command"
 )
 
-type OperationIDGenerator interface {
-	New() entity.OperationID
-}
-
 type BuyInUseCase struct {
 	opWriter        OperationWriter
 	sessionReader   SessionReader
