@@ -28,9 +28,25 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 			getLastOpFn: func(tx usecase.Tx, sID entity.SessionID, pID entity.PlayerID) (entity.OperationType, bool, error) {
 				return entity.OperationBuyIn, true, nil
 			},
-			getAggFn: func(tx usecase.Tx, sID entity.SessionID) (usecase.SessionAggregates, error) {
-				return usecase.SessionAggregates{TotalBuyIn: 100, TotalCashOut: 20}, nil
+
+			// 👇 НОВОЕ (для PlayerState)
+			getPlayerAggFn: func(tx usecase.Tx, sID entity.SessionID) (map[entity.PlayerID]usecase.PlayerAggregates, error) {
+				return map[entity.PlayerID]usecase.PlayerAggregates{
+					"p1": {
+						BuyIn:   100,
+						CashOut: 20,
+					},
+				}, nil
 			},
+
+			// 👇 ОСТАЁТСЯ (для table check)
+			getAggFn: func(tx usecase.Tx, sID entity.SessionID) (usecase.SessionAggregates, error) {
+				return usecase.SessionAggregates{
+					TotalBuyIn:   100,
+					TotalCashOut: 20,
+				}, nil
+			},
+
 			saveFn: func(tx usecase.Tx, op *entity.Operation) error {
 				return nil
 			},

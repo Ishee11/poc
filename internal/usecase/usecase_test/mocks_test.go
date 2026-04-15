@@ -11,7 +11,12 @@ type operationRepoMock struct {
 	saveFn func(tx usecase.Tx, op *entity.Operation) error
 
 	getLastOpFn func(tx usecase.Tx, sessionID entity.SessionID, playerID entity.PlayerID) (entity.OperationType, bool, error)
-	getAggFn    func(tx usecase.Tx, sessionID entity.SessionID) (usecase.SessionAggregates, error)
+
+	// session aggregates (для validateTableChips)
+	getAggFn func(tx usecase.Tx, sessionID entity.SessionID) (usecase.SessionAggregates, error)
+
+	// player aggregates (для PlayerState)
+	getPlayerAggFn func(tx usecase.Tx, sessionID entity.SessionID) (map[entity.PlayerID]usecase.PlayerAggregates, error)
 
 	getByIDFn        func(tx usecase.Tx, id entity.OperationID) (*entity.Operation, error)
 	existsReversalFn func(tx usecase.Tx, targetID entity.OperationID) (bool, error)
@@ -19,7 +24,6 @@ type operationRepoMock struct {
 	getByRequestIDFn func(tx usecase.Tx, requestID string) (*entity.Operation, error)
 
 	listBySessionFn func(tx usecase.Tx, sessionID entity.SessionID, limit int, offset int) ([]*entity.Operation, error)
-	getPlayerAggFn  func(tx usecase.Tx, sessionID entity.SessionID) (map[entity.PlayerID]usecase.PlayerAggregates, error)
 }
 
 func (m *operationRepoMock) Save(tx usecase.Tx, op *entity.Operation) error {
@@ -64,6 +68,16 @@ func (m *operationRepoMock) GetSessionAggregates(
 	return usecase.SessionAggregates{}, nil
 }
 
+func (m *operationRepoMock) GetPlayerAggregates(
+	tx usecase.Tx,
+	sessionID entity.SessionID,
+) (map[entity.PlayerID]usecase.PlayerAggregates, error) {
+	if m.getPlayerAggFn != nil {
+		return m.getPlayerAggFn(tx, sessionID)
+	}
+	return map[entity.PlayerID]usecase.PlayerAggregates{}, nil
+}
+
 func (m *operationRepoMock) GetByID(tx usecase.Tx, id entity.OperationID) (*entity.Operation, error) {
 	if m.getByIDFn != nil {
 		return m.getByIDFn(tx, id)
@@ -83,16 +97,6 @@ func (m *operationRepoMock) GetByRequestID(tx usecase.Tx, requestID string) (*en
 		return m.getByRequestIDFn(tx, requestID)
 	}
 	return nil, nil
-}
-
-func (m *operationRepoMock) GetPlayerAggregates(
-	tx usecase.Tx,
-	sessionID entity.SessionID,
-) (map[entity.PlayerID]usecase.PlayerAggregates, error) {
-	if m.getPlayerAggFn != nil {
-		return m.getPlayerAggFn(tx, sessionID)
-	}
-	return map[entity.PlayerID]usecase.PlayerAggregates{}, nil
 }
 
 // --- SessionRepository mock ---

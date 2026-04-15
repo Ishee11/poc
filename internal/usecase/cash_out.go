@@ -59,7 +59,12 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 	}
 
 	// 3. проверка состояния игрока
-	if err := uc.validatePlayerState(tx, cmd.SessionID, playerID); err != nil {
+	state, err := uc.loadPlayerState(tx, cmd.SessionID, playerID)
+	if err != nil {
+		return err
+	}
+
+	if err := state.ValidateCashOut(cmd.Chips); err != nil {
 		return err
 	}
 
@@ -89,11 +94,11 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 	return uc.helper.Save(tx, op, session)
 }
 
-func (uc *CashOutUseCase) validatePlayerState(
+func (uc *CashOutUseCase) loadPlayerState(
 	tx Tx,
 	sessionID entity.SessionID,
 	playerID entity.PlayerID,
-) error {
+) (entity.PlayerState, error) {
 
 	lastOpType, found, err := uc.playerStateReader.GetLastOperationType(
 		tx,
@@ -101,18 +106,23 @@ func (uc *CashOutUseCase) validatePlayerState(
 		playerID,
 	)
 	if err != nil {
-		return err
+		return entity.PlayerState{}, err
 	}
 
-	if !found {
-		return entity.ErrPlayerNotInGame
+	playerAggs, err := uc.projection.GetPlayerAggregates(tx, sessionID)
+	if err != nil {
+		return entity.PlayerState{}, err
 	}
 
-	if lastOpType != entity.OperationBuyIn {
-		return entity.ErrInvalidOperation
-	}
+	aggr := playerAggs[playerID]
 
-	return nil
+	return entity.NewPlayerState(
+		playerID,
+		aggr.BuyIn,
+		aggr.CashOut,
+		lastOpType,
+		found,
+	), nil
 }
 
 func (uc *CashOutUseCase) validateTableChips(
