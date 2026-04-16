@@ -1,6 +1,6 @@
-import { apiGet } from "./api.js";
-import { state } from "./state.js";
-import { formatDate, escapeHtml } from "./utils.js";
+import { apiGet } from "../api.js";
+import { state } from "../state.js";
+import { formatDate, escapeHtml } from "../utils.js";
 
 export async function loadSessions() {
   const res = await apiGet("/stats/sessions?limit=20");
