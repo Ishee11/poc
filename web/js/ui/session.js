@@ -2,6 +2,9 @@ import { apiGet } from "../api.js";
 import { state } from "../state.js";
 import { formatNumber } from "../utils.js";
 
+/**
+ * открыть сессию
+ */
 export async function openSession(sessionId) {
   const res = await apiGet(`/session?session_id=${sessionId}`);
 
@@ -25,17 +28,61 @@ export async function openSession(sessionId) {
   setScreen("session");
 }
 
+/**
+ * загрузка операций
+ */
+export async function loadOperations(sessionId) {
+  const res = await apiGet(`/session/operations?session_id=${sessionId}`);
+
+  if (!res.ok) {
+    console.error(res.text);
+    return;
+  }
+
+  state.operations = res.body || [];
+
+  renderOperations();
+}
+
+/**
+ * рендер сессии (статы)
+ */
 export function renderSession() {
   const s = state.session;
   if (!s) return;
 
-  const chipRate = document.getElementById("stat-chip-rate");
-  const buyIn = document.getElementById("stat-buy-in");
-  const cashOut = document.getElementById("stat-cash-out");
+  document.getElementById("stat-chip-rate").textContent = formatNumber(
+    s.chipRate,
+  );
+  document.getElementById("stat-buy-in").textContent = formatNumber(
+    s.totalBuyIn,
+  );
+  document.getElementById("stat-cash-out").textContent = formatNumber(
+    s.totalCashOut,
+  );
+}
 
-  if (chipRate) chipRate.textContent = formatNumber(s.chipRate);
-  if (buyIn) buyIn.textContent = formatNumber(s.totalBuyIn);
-  if (cashOut) cashOut.textContent = formatNumber(s.totalCashOut);
+/**
+ * рендер операций
+ */
+function renderOperations() {
+  const wrap = document.getElementById("operations-wrap");
+  if (!wrap) return;
+
+  if (!state.operations.length) {
+    wrap.innerHTML = "<div>No operations</div>";
+    return;
+  }
+
+  wrap.innerHTML = state.operations
+    .map(
+      (op) => `
+        <div>
+          ${op.type} — ${op.chips}
+        </div>
+      `,
+    )
+    .join("");
 }
 
 /**
