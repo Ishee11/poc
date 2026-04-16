@@ -10,8 +10,16 @@ import (
 func NewRouter(h *Handler) http.Handler {
 	mux := http.NewServeMux()
 
-	sub, _ := fs.Sub(web.FS, ".")
+	// embed FS
+	sub, err := fs.Sub(web.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
+	// ===== STATIC (CSS / JS) =====
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+
+	// ===== INDEX =====
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -20,11 +28,10 @@ func NewRouter(h *Handler) http.Handler {
 		http.ServeFileFS(w, r, sub, "index.html")
 	})
 
-	// static (если будут css/js)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web"))))
-
+	// ===== HEALTH =====
 	mux.HandleFunc("/health", h.Health)
 
+	// ===== WRITE =====
 	mux.HandleFunc("/session/start", h.StartSession)
 	mux.HandleFunc("/session/finish", h.FinishSession)
 
@@ -32,6 +39,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/cash-out", h.CashOut)
 	mux.HandleFunc("/operation/reverse", h.ReverseOperation)
 
+	// ===== READ =====
 	mux.HandleFunc("/session", h.GetSession)
 	mux.HandleFunc("/session/operations", h.GetSessionOperations)
 	mux.HandleFunc("/session/results", h.GetSessionResults)
@@ -41,6 +49,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/stats/players", h.GetStatsPlayers)
 	mux.HandleFunc("/stats/player", h.GetPlayerStats)
 
+	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux
 	handler = CORSMiddleware(handler)
 	handler = RequestIDMiddleware(handler)
