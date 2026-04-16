@@ -1,6 +1,7 @@
 import { apiGet } from "../api.js";
 import { state } from "../state.js";
 import { formatNumber } from "../utils.js";
+import { loadPlayers } from "./player.js";
 
 /**
  * открыть сессию
@@ -8,7 +9,7 @@ import { formatNumber } from "../utils.js";
 export async function openSession(sessionId) {
   const res = await apiGet(`/session?session_id=${sessionId}`);
 
-  if (!res.ok) {
+  if (!res.ok || !res.body) {
     console.error(res.text);
     return;
   }
@@ -25,6 +26,10 @@ export async function openSession(sessionId) {
   };
 
   renderSession();
+
+  // 👉 грузим всё, а не только session
+  await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
+
   setScreen("session");
 }
 
@@ -54,9 +59,11 @@ export function renderSession() {
   document.getElementById("stat-chip-rate").textContent = formatNumber(
     s.chipRate,
   );
+
   document.getElementById("stat-buy-in").textContent = formatNumber(
     s.totalBuyIn,
   );
+
   document.getElementById("stat-cash-out").textContent = formatNumber(
     s.totalCashOut,
   );

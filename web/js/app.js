@@ -1,6 +1,4 @@
 import { loadSessions } from "./ui/lobby.js";
-import { loadPlayers } from "./ui/player.js";
-import { loadOperations } from "./ui/session.js";
 import { openSession } from "./ui/session.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -14,7 +12,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   btn.onclick = async () => {
     let sessionId = select.value;
 
-    // если не выбрано — берём первую сессию из state
     if (!sessionId) {
       const first = document.querySelector("[data-open-session]");
       if (first) {
@@ -24,8 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!sessionId) return;
 
+    // 👉 теперь openSession сам всё грузит
     await openSession(sessionId);
-    await loadPlayers(sessionId);
-    await loadOperations(sessionId);
   };
 });

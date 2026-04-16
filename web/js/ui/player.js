@@ -3,16 +3,59 @@ import { state } from "../state.js";
 import { formatNumber, formatDate, escapeHtml, setValue } from "../utils.js";
 
 /**
+ * загрузка игроков сессии
+ */
+export async function loadPlayers(sessionId) {
+  const res = await apiGet(`/session/players?session_id=${sessionId}`);
+
+  if (!res.ok) {
+    console.error(res.text);
+    return;
+  }
+
+  state.players = res.body || [];
+
+  renderPlayers();
+}
+
+/**
+ * рендер игроков
+ */
+function renderPlayers() {
+  const wrap = document.getElementById("players-wrap");
+  if (!wrap) return;
+
+  if (!state.players.length) {
+    wrap.innerHTML = "<div>No players</div>";
+    return;
+  }
+
+  wrap.innerHTML = state.players
+    .map(
+      (p) => `
+        <div>
+          <button data-open-player="${escapeHtml(p.player_id)}">
+            Open
+          </button>
+          ${escapeHtml(p.player_id)}
+        </div>
+      `,
+    )
+    .join("");
+
+  wrap.querySelectorAll("[data-open-player]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const playerId = btn.getAttribute("data-open-player");
+      await loadPlayerDetail(playerId);
+    });
+  });
+}
+
+/**
  * Загрузка детальной статистики игрока
  */
 export async function loadPlayerDetail(playerId) {
-  const query = buildQuery({
-    player_id: playerId,
-    from: value("player-detail-from"),
-    to: value("player-detail-to"),
-  });
-
-  const res = await apiGet(`/stats/player${query}`);
+  const res = await apiGet(`/stats/player?player_id=${playerId}`);
 
   if (!res.ok) {
     console.error(res.text);
@@ -44,11 +87,11 @@ export function renderPlayerDetail() {
   const player = detail.player;
   const sessions = detail.sessions || [];
 
-  document.getElementById("player-screen-title").textContent =
-    `Player ${player.player_id}`;
+  const title = document.getElementById("player-screen-title");
+  const id = document.getElementById("player-screen-id");
 
-  document.getElementById("player-screen-id").textContent =
-    `player_id: ${player.player_id}`;
+  if (title) title.textContent = `Player ${player.player_id}`;
+  if (id) id.textContent = `player_id: ${player.player_id}`;
 
   const rows = sessions
     .map(
@@ -97,7 +140,6 @@ export function renderPlayerDetail() {
         </div>
     `;
 
-  // обработчик перехода в session
   wrap.querySelectorAll("[data-open-session]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.getAttribute("data-open-session");
@@ -111,36 +153,18 @@ export function renderPlayerDetail() {
 }
 
 /**
- * Переключение экранов
+ * переключение экранов
  */
 function setScreen(name) {
   document
     .getElementById("screen-lobby")
-    .classList.toggle("active", name === "lobby");
+    ?.classList.toggle("active", name === "lobby");
 
   document
     .getElementById("screen-session")
-    .classList.toggle("active", name === "session");
+    ?.classList.toggle("active", name === "session");
 
   document
     .getElementById("screen-player")
-    .classList.toggle("active", name === "player");
-}
-
-/**
- * helpers
- */
-function value(id) {
-  const el = document.getElementById(id);
-  return el ? el.value : "";
-}
-
-function buildQuery(params) {
-  const q = new URLSearchParams();
-
-  Object.entries(params).forEach(([k, v]) => {
-    if (v) q.set(k, v);
-  });
-
-  return q.toString() ? `?${q}` : "";
+    ?.classList.toggle("active", name === "player");
 }
