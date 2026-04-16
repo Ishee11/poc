@@ -13,6 +13,7 @@ export async function loadSessions() {
   state.overviewSessions = res.body || [];
 
   renderSessions();
+  syncSelect();
 }
 
 export function renderSessions() {
@@ -37,7 +38,6 @@ export function renderSessions() {
     )
     .join("");
 
-  // обработчик открытия session
   wrap.querySelectorAll("[data-open-session]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.getAttribute("data-open-session");
@@ -48,4 +48,37 @@ export function renderSessions() {
       await openSession(sessionId);
     });
   });
+}
+
+/**
+ * синхронизация select
+ */
+function syncSelect() {
+  const select = document.getElementById("active-session-select");
+  if (!select) return;
+
+  const current = select.value;
+
+  const options = [
+    '<option value="">Latest active session</option>',
+    ...state.overviewSessions.map(
+      (s) =>
+        `<option value="${escapeHtml(s.session_id)}">${escapeHtml(
+          s.session_id,
+        )}</option>`,
+    ),
+  ];
+
+  select.innerHTML = options.join("");
+
+  // ✔ если текущий есть — оставляем
+  if (current && state.overviewSessions.some((s) => s.session_id === current)) {
+    select.value = current;
+    return;
+  }
+
+  // ✔ иначе — ставим первую
+  if (state.overviewSessions.length > 0) {
+    select.value = state.overviewSessions[0].session_id;
+  }
 }

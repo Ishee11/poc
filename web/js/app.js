@@ -19,9 +19,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    if (!sessionId) return;
+    // ❗ ВАЖНО: защита
+    if (!sessionId) {
+      alert("No session available");
+      return;
+    }
 
-    // 👉 теперь openSession сам всё грузит
     await openSession(sessionId);
   };
 });

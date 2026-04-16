@@ -7,14 +7,26 @@ import { loadPlayers } from "./player.js";
  * открыть сессию
  */
 export async function openSession(sessionId) {
+  if (!sessionId) {
+    console.error("openSession: empty sessionId");
+    return;
+  }
+
   const res = await apiGet(`/session?session_id=${sessionId}`);
 
   if (!res.ok || !res.body) {
-    console.error(res.text);
+    console.error("openSession failed:", res.text);
     return;
   }
 
   const s = res.body;
+
+  // 👉 фикс: сохраняем активную сессию
+  state.activeSessionId = sessionId;
+
+  // 👉 фикс: очищаем старое состояние (иначе артефакты)
+  state.operations = [];
+  state.players = [];
 
   state.session = {
     id: s.session_id,
@@ -27,7 +39,7 @@ export async function openSession(sessionId) {
 
   renderSession();
 
-  // 👉 грузим всё, а не только session
+  // 👉 грузим всё параллельно
   await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
 
   setScreen("session");
@@ -37,10 +49,12 @@ export async function openSession(sessionId) {
  * загрузка операций
  */
 export async function loadOperations(sessionId) {
+  if (!sessionId) return;
+
   const res = await apiGet(`/session/operations?session_id=${sessionId}`);
 
   if (!res.ok) {
-    console.error(res.text);
+    console.error("loadOperations failed:", res.text);
     return;
   }
 
@@ -56,17 +70,13 @@ export function renderSession() {
   const s = state.session;
   if (!s) return;
 
-  document.getElementById("stat-chip-rate").textContent = formatNumber(
-    s.chipRate,
-  );
+  const chipRate = document.getElementById("stat-chip-rate");
+  const buyIn = document.getElementById("stat-buy-in");
+  const cashOut = document.getElementById("stat-cash-out");
 
-  document.getElementById("stat-buy-in").textContent = formatNumber(
-    s.totalBuyIn,
-  );
-
-  document.getElementById("stat-cash-out").textContent = formatNumber(
-    s.totalCashOut,
-  );
+  if (chipRate) chipRate.textContent = formatNumber(s.chipRate);
+  if (buyIn) buyIn.textContent = formatNumber(s.totalBuyIn);
+  if (cashOut) cashOut.textContent = formatNumber(s.totalCashOut);
 }
 
 /**
