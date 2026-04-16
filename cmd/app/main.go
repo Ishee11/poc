@@ -1,12 +1,13 @@
 package main
 
 import (
+	"log"
+
 	"github.com/ishee11/poc/internal/app"
 )
 
 func main() {
-	// Configuration
-
-	// Run
-	app.Run()
+	if err := app.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
