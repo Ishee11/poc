@@ -17,6 +17,8 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /app
-            git pull
-            docker compose up -d --build
+            script: |
+              rm -rf /app
+              git clone https://github.com/Ishee11/poc.git /app
+              cd /app
+              docker compose up -d --build
