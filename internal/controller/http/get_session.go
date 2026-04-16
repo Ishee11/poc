@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -19,5 +18,6 @@ func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(res)
+	// 👇 ВАЖНО: используем тот же метод, что и в других handler'ах
+	writeJSON(w, http.StatusOK, res)
 }
