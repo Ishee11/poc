@@ -1335,6 +1335,8 @@
                 state.players = (playersRes.body && playersRes.body.Players) || [];
                 state.pendingReverseOperationId = "";
 
+                console.log("RESULTS:", state.results);
+
                 renderWorkspace();
                 showNotice("session-notice", "success", successMessage);
                 return true;
