@@ -3,17 +3,21 @@ import { state } from "../state.js";
 import { formatNumber, formatDate, escapeHtml, setValue } from "../utils.js";
 
 /**
- * загрузка игроков сессии
+ * загрузка игроков
  */
 export async function loadPlayers(sessionId) {
+  if (!sessionId) return;
+
   const res = await apiGet(`/session/players?session_id=${sessionId}`);
 
   if (!res.ok) {
-    console.error(res.text);
+    console.error("loadPlayers failed:", res.text);
     return;
   }
 
   state.players = res.body || [];
+
+  console.log("players:", state.players); // 👈 важно для дебага
 
   renderPlayers();
 }
@@ -31,34 +35,47 @@ function renderPlayers() {
   }
 
   wrap.innerHTML = state.players
-    .map(
-      (p) => `
+    .map((p) => {
+      const id = p.player_id || p.id; // 👈 КЛЮЧЕВОЙ ФИКС
+
+      return `
         <div>
-          <button data-open-player="${escapeHtml(p.player_id)}">
+          <button data-open-player="${escapeHtml(id)}">
             Open
           </button>
-          ${escapeHtml(p.player_id)}
+          ${escapeHtml(id)}
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 
   wrap.querySelectorAll("[data-open-player]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const playerId = btn.getAttribute("data-open-player");
+
+      if (!playerId) {
+        console.error("empty playerId");
+        return;
+      }
+
       await loadPlayerDetail(playerId);
     });
   });
 }
 
 /**
- * Загрузка детальной статистики игрока
+ * загрузка детальной статистики
  */
 export async function loadPlayerDetail(playerId) {
+  if (!playerId) {
+    console.error("playerId is empty");
+    return;
+  }
+
   const res = await apiGet(`/stats/player?player_id=${playerId}`);
 
   if (!res.ok) {
-    console.error(res.text);
+    console.error("loadPlayerDetail failed:", res.text);
     return;
   }
 
@@ -70,7 +87,7 @@ export async function loadPlayerDetail(playerId) {
 }
 
 /**
- * Рендер экрана игрока
+ * рендер игрока
  */
 export function renderPlayerDetail() {
   const wrap = document.getElementById("player-detail-wrap");

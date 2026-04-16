@@ -23,8 +23,11 @@
                         <div class="panel">
                             <h2>Connect to Active Session</h2>
 
-                            <!-- ❗ ВАЖНО: кнопка submit → preventDefault нужен -->
-                            <form id="connect-session-form">
+                            <!-- 👇 добавили prevent submit -->
+                            <form
+                                id="connect-session-form"
+                                onsubmit="return false;"
+                            >
                                 <select id="active-session-select">
                                     <option value="">
                                         Latest active session
@@ -46,7 +49,11 @@
                         <div class="panel">
                             <h2>Start a New Session</h2>
 
-                            <form id="start-session-form">
+                            <!-- 👇 тоже защита -->
+                            <form
+                                id="start-session-form"
+                                onsubmit="return false;"
+                            >
                                 <label>
                                     Chip Rate
                                     <input
@@ -97,13 +104,11 @@
                         </div>
                     </div>
 
-                    <!-- ❗ ДОБАВЛЕНО: players -->
                     <div class="panel">
                         <h3>Players</h3>
                         <div id="players-wrap"></div>
                     </div>
 
-                    <!-- ❗ ДОБАВЛЕНО: operations -->
                     <div class="panel">
                         <h3>Operations</h3>
                         <div id="operations-wrap"></div>
