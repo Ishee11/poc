@@ -36,16 +36,17 @@ function renderPlayers() {
 
   wrap.innerHTML = state.players
     .map((p) => {
-      const id = p.player_id || p.id; // 👈 КЛЮЧЕВОЙ ФИКС
+      const id = p.player_id || p.id;
+      const name = p.player_name || p.name || id; // 👈 ВОТ ЧТО НЕ ХВАТАЛО
 
       return `
-        <div>
-          <button data-open-player="${escapeHtml(id)}">
-            Open
-          </button>
-          ${escapeHtml(id)}
-        </div>
-      `;
+         <div class="player-row">
+           <span>${escapeHtml(name)}</span>
+           <button data-open-player="${escapeHtml(id)}">
+             Open
+           </button>
+         </div>
+       `;
     })
     .join("");
 
