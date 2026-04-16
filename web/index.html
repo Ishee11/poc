@@ -1331,7 +1331,7 @@
                 state.activeSessionId = sessionId;
                 state.session = sessionRes.body || {};
                 state.operations = (opsRes.body && opsRes.body.Operations) || [];
-                state.results = (resultsRes.body && resultsRes.body.Results) || [];
+                state.results = resultsRes.body || [];
                 state.players = (playersRes.body && playersRes.body.Players) || [];
                 state.pendingReverseOperationId = "";
 
