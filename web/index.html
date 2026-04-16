@@ -1355,18 +1355,18 @@
                 const status = session.status || "-";
                 const active = status === "active";
 
-                document.getElementById("workspace-title").textContent = session.CreatedAt
-                    ? `Session ${formatShortDate(session.CreatedAt)}`
+                document.getElementById("workspace-title").textContent = session.created_at
+                    ? `Session ${formatShortDate(session.created_at)}`
                     : "Session";
 
                 const statusChip = document.getElementById("session-status-chip");
                 statusChip.textContent = `status: ${status}`;
                 statusChip.className = `session-status ${status}`;
 
-                document.getElementById("stat-chip-rate").textContent = formatNumber(session.ChipRate);
-                document.getElementById("stat-buy-in").textContent = formatNumber(session.TotalBuyIn);
-                document.getElementById("stat-cash-out").textContent = formatNumber(session.TotalCashOut);
-                document.getElementById("stat-total-chips").textContent = formatNumber(session.TotalChips);
+                document.getElementById("stat-chip-rate").textContent = formatNumber(session.chip_rate);
+                document.getElementById("stat-buy-in").textContent = formatNumber(session.total_buy_in);
+                document.getElementById("stat-cash-out").textContent = formatNumber(session.total_cash_out);
+                document.getElementById("stat-total-chips").textContent = formatNumber(session.total_chips);
                 document.getElementById("workspace-summary").textContent = active
                     ? "Session is active. Actions are available."
                     : "Session is finished. Data is read-only.";
@@ -1665,7 +1665,16 @@
                     return;
                 }
 
-                state.overviewSessions = response.body || [];
+                state.overviewSessions = (response.body || []).map(s => ({
+                    SessionID: s.session_id,
+                    Status: s.status,
+                    CreatedAt: s.created_at,
+                    ChipRate: s.chip_rate,
+                    TotalBuyIn: s.total_buy_in,
+                    TotalCashOut: s.total_cash_out,
+                    PlayerCount: s.player_count,
+                }));
+
                 state.sessionCatalog = state.overviewSessions;
                 syncActiveSessionsUI();
                 renderSessionsOverview();
@@ -1732,16 +1741,16 @@
                             <article class="card-item">
                                 <div class="card-header">
                                     <div>
-                                        <div class="card-title mono">${escapeHtml(session.SessionID)}</div>
-                                        <div class="hint">${escapeHtml(session.status)} • ${formatDate(session.CreatedAt)}</div>
+                                        <div class="card-title mono">${escapeHtml(session.session_id)}</div>
+                                        <div class="hint">${escapeHtml(session.status)} • ${formatDate(session.created_at)}</div>
                                     </div>
-                                    <button class="secondary" type="button" data-open-session="${escapeHtml(session.SessionID)}">Open</button>
+                                    <button class="secondary" type="button" data-open-session="${escapeHtml(session.session_id)}">Open</button>
                                 </div>
                                 <div class="card-meta">
-                                    <div class="card-meta-item"><span>Chip Rate</span><strong>${formatNumber(session.ChipRate)}</strong></div>
-                                    <div class="card-meta-item"><span>Players</span><strong>${formatNumber(session.PlayerCount)}</strong></div>
-                                    <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(session.TotalBuyIn)}</strong></div>
-                                    <div class="card-meta-item"><span>Cash Out</span><strong>${formatNumber(session.TotalCashOut)}</strong></div>
+                                    <div class="card-meta-item"><span>Chip Rate</span><strong>${formatNumber(session.chip_rate)}</strong></div>
+                                    <div class="card-meta-item"><span>Players</span><strong>${formatNumber(session.player_count)}</strong></div>
+                                    <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(session.total_buy_in)}</strong></div>
+                                    <div class="card-meta-item"><span>Cash Out</span><strong>${session.total_cash_out)}</strong></div>
                                 </div>
                             </article>
                         `,
@@ -1830,13 +1839,13 @@
                                     .map(
                                         (session) => `
                                             <tr>
-                                                <td class="mono">${escapeHtml(session.SessionID)}</td>
+                                                <td class="mono">${escapeHtml(session.session_id)}</td>
                                                 <td>${escapeHtml(session.status)}</td>
                                                 <td>${formatNumber(session.BuyInChips)}</td>
                                                 <td>${formatNumber(session.CashOutChips)}</td>
                                                 <td>${formatNumber(session.ProfitMoney)}</td>
                                                 <td class="mono">${formatDate(session.LastActivityAt || session.SessionCreatedAt)}</td>
-                                                <td><button class="secondary" type="button" data-player-session="${escapeHtml(session.SessionID)}">Open</button></td>
+                                                <td><button class="secondary" type="button" data-player-session="${escapeHtml(session.session_id)}">Open</button></td>
                                             </tr>
                                         `,
                                     )
@@ -1896,13 +1905,15 @@
                 const options = [
                     '<option value="">Latest active session</option>',
                     ...activeSessions.map(
-                        (session) =>
-                            `<option value="${escapeHtml(session.SessionID)}">${escapeHtml(session.SessionID)} · ${escapeHtml(formatDate(session.CreatedAt))}</option>`,
-                    ),
+                      (session) =>
+                          `<option value="${escapeHtml(session.session_id)}">
+                            ${escapeHtml(session.session_id)} · ${escapeHtml(formatDate(session.created_at))}
+                          </option>`
+                      ),
                 ];
 
                 select.innerHTML = options.join("");
-                if (activeSessions.some((session) => session.SessionID === current)) {
+                if (activeSessions.some((session) => session.session_id === current)) {
                     select.value = current;
                 }
 
@@ -1915,12 +1926,12 @@
 
             function getLatestActiveSessionId() {
                 const [latest] = getActiveSessions();
-                return latest ? latest.SessionID : "";
+                return latest ? latest.session_id : "";
             }
 
             function getNextSessionId() {
                 const ids = (state.sessionCatalog || [])
-                    .map((session) => Number.parseInt(session.SessionID, 10))
+                    .map((session) => Number.parseInt(session.session_id, 10))
                     .filter((value) => Number.isFinite(value));
 
                 if (!ids.length) {
