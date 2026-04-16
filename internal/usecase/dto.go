@@ -28,3 +28,33 @@ type PlayerResultDTO struct {
 	ProfitChips  int64           `json:"profit_chips"`
 	ProfitMoney  int64           `json:"profit_money"`
 }
+
+type PlayerStat struct {
+	PlayerID       entity.PlayerID `json:"player_id"`
+	SessionsCount  int64           `json:"sessions_count"`
+	TotalBuyIn     int64           `json:"total_buy_in"`
+	TotalCashOut   int64           `json:"total_cash_out"`
+	ProfitChips    int64           `json:"profit_chips"`
+	ProfitMoney    int64           `json:"profit_money"`
+	LastActivityAt *string         `json:"last_activity_at"`
+}
+
+type SessionStat struct {
+	SessionID    entity.SessionID `json:"session_id"`
+	Status       entity.Status    `json:"status"`
+	ChipRate     int64            `json:"chip_rate"`
+	CreatedAt    string           `json:"created_at"`
+	TotalBuyIn   int64            `json:"total_buy_in"`
+	TotalCashOut int64            `json:"total_cash_out"`
+	PlayerCount  int64            `json:"player_count"`
+}
+
+type PlayerOverallStat struct {
+	PlayerID       entity.PlayerID `json:"player_id"`
+	SessionsCount  int64           `json:"sessions_count"`
+	TotalBuyIn     int64           `json:"total_buy_in"`
+	TotalCashOut   int64           `json:"total_cash_out"`
+	ProfitChips    int64           `json:"profit_chips"`
+	ProfitMoney    int64           `json:"profit_money"`
+	LastActivityAt *string         `json:"last_activity_at"`
+}

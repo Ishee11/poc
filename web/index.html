@@ -1136,7 +1136,11 @@
             document.getElementById("connect-session-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
-                const sessionId = value("active-session-select").trim() || getLatestActiveSessionId();
+                const sessionId =
+                    value("active-session-select").trim()
+                    || getLatestActiveSessionId();
+
+
                 if (!sessionId) {
                     showNotice("lobby-notice", "error", "No active sessions available.");
                     return;
@@ -1297,7 +1301,11 @@
             }
 
             async function openWorkspace(sessionId) {
-                const success = await refreshWorkspace(sessionId, `Connected to ${sessionId}.`);
+              if (!sessionId) {
+                  console.error("EMPTY SESSION ID");
+                  return;
+              }
+              const success = await refreshWorkspace(sessionId, `Connected to ${sessionId}.`);
                 if (!success) {
                     return;
                 }
@@ -2130,9 +2138,11 @@
             // document.getElementById("lobby-debug-panel").classList.toggle("hidden", !debug);
             document.getElementById("session-debug-panel").classList.toggle("hidden", !debug);
             document.getElementById("lobby-response-panel").classList.toggle("hidden", !debug);
-            refreshSessionCatalog();
-            loadSessionsOverview();
-            loadPlayersOverview();
+            (async () => {
+                await refreshSessionCatalog();
+                await loadSessionsOverview();
+                await loadPlayersOverview();
+            })();
         </script>
     </body>
 </html>
