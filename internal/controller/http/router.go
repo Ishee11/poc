@@ -17,10 +17,7 @@ func NewRouter(h *Handler) http.Handler {
 	}
 
 	// ===== STATIC (CSS / JS) =====
-	//mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
-	fs := http.FS(web.FS)
-
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(fs)))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
 
 	// ===== INDEX =====
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
