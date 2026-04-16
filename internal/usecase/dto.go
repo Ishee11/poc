@@ -7,8 +7,8 @@ import (
 )
 
 type PlayerDTO struct {
-	ID   entity.PlayerID
-	Name string
+	ID   entity.PlayerID `json:"player_id"`
+	Name string          `json:"name"`
 }
 
 type OperationDTO struct {
