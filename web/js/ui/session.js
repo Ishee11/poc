@@ -10,7 +10,16 @@ export async function openSession(sessionId) {
     return;
   }
 
-  state.session = res.body;
+  const s = res.body;
+
+  state.session = {
+    id: s.session_id,
+    status: s.status,
+    chipRate: s.chip_rate,
+    totalBuyIn: s.total_buy_in,
+    totalCashOut: s.total_cash_out,
+    totalChips: s.total_chips,
+  };
 
   renderSession();
 }
@@ -19,14 +28,14 @@ export function renderSession() {
   const s = state.session;
 
   document.getElementById("stat-chip-rate").textContent = formatNumber(
-    s.chip_rate,
+    s.chipRate,
   );
 
   document.getElementById("stat-buy-in").textContent = formatNumber(
-    s.total_buy_in,
+    s.totalBuyIn,
   );
 
   document.getElementById("stat-cash-out").textContent = formatNumber(
-    s.total_cash_out,
+    s.totalCashOut,
   );
 }
