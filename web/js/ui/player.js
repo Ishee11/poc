@@ -31,22 +31,24 @@ export async function loadPlayerDetail(playerId) {
  */
 export function renderPlayerDetail() {
   const wrap = document.getElementById("player-detail-wrap");
+  if (!wrap) return;
+
   const detail = state.selectedPlayerDetail;
 
-  if (!detail || !detail.Player) {
+  if (!detail || !detail.player) {
     wrap.className = "empty";
     wrap.textContent = "No data";
     return;
   }
 
-  const player = detail.Player;
-  const sessions = detail.Sessions || [];
+  const player = detail.player;
+  const sessions = detail.sessions || [];
 
   document.getElementById("player-screen-title").textContent =
-    `Player ${player.PlayerID}`;
+    `Player ${player.player_id}`;
 
   document.getElementById("player-screen-id").textContent =
-    `player_id: ${player.PlayerID}`;
+    `player_id: ${player.player_id}`;
 
   const rows = sessions
     .map(
@@ -54,10 +56,10 @@ export function renderPlayerDetail() {
         <tr>
             <td class="mono">${escapeHtml(s.session_id)}</td>
             <td>${escapeHtml(s.status)}</td>
-            <td>${formatNumber(s.BuyInChips)}</td>
-            <td>${formatNumber(s.CashOutChips)}</td>
-            <td>${formatNumber(s.ProfitMoney)}</td>
-            <td>${formatDate(s.LastActivityAt)}</td>
+            <td>${formatNumber(s.buy_in_chips)}</td>
+            <td>${formatNumber(s.cash_out_chips)}</td>
+            <td>${formatNumber(s.profit_money)}</td>
+            <td>${formatDate(s.last_activity_at)}</td>
             <td>
                 <button data-open-session="${escapeHtml(s.session_id)}">
                     Open
@@ -71,10 +73,10 @@ export function renderPlayerDetail() {
   wrap.className = "";
   wrap.innerHTML = `
         <div>
-            Sessions: ${formatNumber(player.SessionsCount)}
+            Sessions: ${formatNumber(player.sessions_count)}
         </div>
         <div>
-            Profit: ${formatNumber(player.ProfitMoney)}
+            Profit: ${formatNumber(player.profit_money)}
         </div>
 
         <div class="table-wrap">
@@ -102,8 +104,7 @@ export function renderPlayerDetail() {
 
       setValue("active-session-select", sessionId);
 
-      // динамический импорт, чтобы не было циклов
-      const { openSession } = await import("../session.js");
+      const { openSession } = await import("./session.js");
       await openSession(sessionId);
     });
   });
@@ -127,10 +128,11 @@ function setScreen(name) {
 }
 
 /**
- * helpers (можно потом вынести)
+ * helpers
  */
 function value(id) {
-  return document.getElementById(id).value;
+  const el = document.getElementById(id);
+  return el ? el.value : "";
 }
 
 function buildQuery(params) {

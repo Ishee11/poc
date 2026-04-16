@@ -5,7 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Poker Session Control</title>
 
-        <!-- CSS -->
         <link rel="stylesheet" href="/static/css/main.css" />
     </head>
 
@@ -24,6 +23,7 @@
                         <div class="panel">
                             <h2>Connect to Active Session</h2>
 
+                            <!-- ❗ ВАЖНО: кнопка submit → preventDefault нужен -->
                             <form id="connect-session-form">
                                 <select id="active-session-select">
                                     <option value="">
@@ -32,7 +32,11 @@
                                 </select>
 
                                 <div class="actions">
-                                    <button type="submit" class="secondary">
+                                    <button
+                                        type="button"
+                                        id="open-workspace-btn"
+                                        class="secondary"
+                                    >
                                         Open Workspace
                                     </button>
                                 </div>
@@ -92,6 +96,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- ❗ ДОБАВЛЕНО: players -->
+                    <div class="panel">
+                        <h3>Players</h3>
+                        <div id="players-wrap"></div>
+                    </div>
+
+                    <!-- ❗ ДОБАВЛЕНО: operations -->
+                    <div class="panel">
+                        <h3>Operations</h3>
+                        <div id="operations-wrap"></div>
+                    </div>
                 </section>
 
                 <!-- ================= PLAYER ================= -->
@@ -110,7 +126,6 @@
             </main>
         </div>
 
-        <!-- JS -->
         <script type="module" src="/static/js/app.js"></script>
     </body>
 </html>

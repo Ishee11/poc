@@ -2,7 +2,11 @@ const API = window.location.origin;
 
 export async function apiGet(path) {
   try {
-    const res = await fetch(API + path);
+    const res = await fetch(API + path, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
     return await normalize(res);
   } catch (e) {
     return { ok: false, text: String(e) };
@@ -13,7 +17,10 @@ export async function apiPost(path, body) {
   try {
     const res = await fetch(API + path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(body),
     });
     return await normalize(res);
@@ -23,12 +30,23 @@ export async function apiPost(path, body) {
 }
 
 async function normalize(res) {
-  const text = await res.text();
+  let text = "";
+
+  try {
+    text = await res.text();
+  } catch (e) {
+    return { ok: false, status: 0, body: null, text: String(e) };
+  }
 
   let body = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {}
+
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      // оставляем body = null, текст остаётся в text
+    }
+  }
 
   return {
     ok: res.ok,

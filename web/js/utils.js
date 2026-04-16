@@ -1,19 +1,22 @@
 export function value(id) {
-  return document.getElementById(id).value;
+  const el = document.getElementById(id);
+  return el ? el.value : "";
 }
 
 export function setValue(id, val) {
-  document.getElementById(id).value = val;
+  const el = document.getElementById(id);
+  if (el) el.value = val ?? "";
 }
 
 export function formatNumber(v) {
-  return Number.isFinite(Number(v)) ? Number(v).toLocaleString() : "-";
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toLocaleString() : "-";
 }
 
 export function formatDate(v) {
   if (!v) return "-";
   const d = new Date(v);
-  return isNaN(d.getTime()) ? v : d.toLocaleString();
+  return isNaN(d.getTime()) ? String(v) : d.toLocaleString();
 }
 
 export function escapeHtml(str) {
@@ -25,6 +28,8 @@ export function escapeHtml(str) {
     .replaceAll("'", "&#39;");
 }
 
-export function generateRequestId(prefix) {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+export function generateRequestId(prefix = "req") {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
 }

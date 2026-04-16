@@ -1,6 +1,6 @@
-import { apiGet } from "./api.js";
-import { state } from "./state.js";
-import { formatNumber, formatDate } from "./utils.js";
+import { apiGet } from "../api.js";
+import { state } from "../state.js";
+import { formatNumber } from "../utils.js";
 
 export async function openSession(sessionId) {
   const res = await apiGet(`/session?session_id=${sessionId}`);
@@ -22,20 +22,35 @@ export async function openSession(sessionId) {
   };
 
   renderSession();
+  setScreen("session");
 }
 
 export function renderSession() {
   const s = state.session;
+  if (!s) return;
 
-  document.getElementById("stat-chip-rate").textContent = formatNumber(
-    s.chipRate,
-  );
+  const chipRate = document.getElementById("stat-chip-rate");
+  const buyIn = document.getElementById("stat-buy-in");
+  const cashOut = document.getElementById("stat-cash-out");
 
-  document.getElementById("stat-buy-in").textContent = formatNumber(
-    s.totalBuyIn,
-  );
+  if (chipRate) chipRate.textContent = formatNumber(s.chipRate);
+  if (buyIn) buyIn.textContent = formatNumber(s.totalBuyIn);
+  if (cashOut) cashOut.textContent = formatNumber(s.totalCashOut);
+}
 
-  document.getElementById("stat-cash-out").textContent = formatNumber(
-    s.totalCashOut,
-  );
+/**
+ * переключение экранов
+ */
+function setScreen(name) {
+  document
+    .getElementById("screen-lobby")
+    ?.classList.toggle("active", name === "lobby");
+
+  document
+    .getElementById("screen-session")
+    ?.classList.toggle("active", name === "session");
+
+  document
+    .getElementById("screen-player")
+    ?.classList.toggle("active", name === "player");
 }
