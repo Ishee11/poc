@@ -1337,7 +1337,15 @@
                 }
 
                 state.activeSessionId = sessionId;
-                state.session = sessionRes.body || {};
+                state.session = {
+                    SessionID: response.body.session_id,
+                    Status: response.body.status,
+                    CreatedAt: response.body.created_at,
+                    ChipRate: response.body.chip_rate,
+                    TotalBuyIn: response.body.total_buy_in,
+                    TotalCashOut: response.body.total_cash_out,
+                    TotalChips: response.body.total_chips,
+                };
                 state.operations = (opsRes.body && opsRes.body.Operations) || [];
                 state.results = resultsRes.body || [];
                 state.players = (playersRes.body && playersRes.body.Players) || [];
