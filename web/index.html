@@ -1352,7 +1352,7 @@
 
             function renderWorkspace() {
                 const session = state.session || {};
-                const status = session.Status || "-";
+                const status = session.status || "-";
                 const active = status === "active";
 
                 document.getElementById("workspace-title").textContent = session.CreatedAt
@@ -1733,7 +1733,7 @@
                                 <div class="card-header">
                                     <div>
                                         <div class="card-title mono">${escapeHtml(session.SessionID)}</div>
-                                        <div class="hint">${escapeHtml(session.Status)} • ${formatDate(session.CreatedAt)}</div>
+                                        <div class="hint">${escapeHtml(session.status)} • ${formatDate(session.CreatedAt)}</div>
                                     </div>
                                     <button class="secondary" type="button" data-open-session="${escapeHtml(session.SessionID)}">Open</button>
                                 </div>
@@ -1831,7 +1831,7 @@
                                         (session) => `
                                             <tr>
                                                 <td class="mono">${escapeHtml(session.SessionID)}</td>
-                                                <td>${escapeHtml(session.Status)}</td>
+                                                <td>${escapeHtml(session.status)}</td>
                                                 <td>${formatNumber(session.BuyInChips)}</td>
                                                 <td>${formatNumber(session.CashOutChips)}</td>
                                                 <td>${formatNumber(session.ProfitMoney)}</td>
@@ -1910,7 +1910,7 @@
             }
 
             function getActiveSessions() {
-                return (state.sessionCatalog || []).filter((session) => session.Status === "active");
+                return (state.sessionCatalog || []).filter((session) => session.status === "active");
             }
 
             function getLatestActiveSessionId() {
