@@ -1657,7 +1657,7 @@
                     return;
                 }
 
-                state.overviewSessions = (response.body && response.body.Sessions) || [];
+                state.overviewSessions = response.body || [];
                 state.sessionCatalog = state.overviewSessions;
                 syncActiveSessionsUI();
                 renderSessionsOverview();
@@ -1876,7 +1876,7 @@
                 if (!response.ok) {
                     return;
                 }
-                state.sessionCatalog = (response.body && response.body.Sessions) || [];
+                state.sessionCatalog = response.body || [];
                 syncActiveSessionsUI();
             }
 
