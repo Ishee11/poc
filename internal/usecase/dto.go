@@ -21,9 +21,10 @@ type OperationDTO struct {
 }
 
 type PlayerResultDTO struct {
-	PlayerID     entity.PlayerID
-	BuyInChips   int64
-	CashOutChips int64
-	ProfitChips  int64
-	ProfitMoney  int64
+	PlayerID     entity.PlayerID `json:"player_id"`
+	PlayerName   string          `json:"player_name"`
+	BuyInChips   int64           `json:"buy_in_chips"`
+	CashOutChips int64           `json:"cash_out_chips"`
+	ProfitChips  int64           `json:"profit_chips"`
+	ProfitMoney  int64           `json:"profit_money"`
 }

@@ -1459,7 +1459,7 @@
                     .map(
                         (result) => `
                             <tr>
-                                <td class="mono">${escapeHtml(result.PlayerID)}</td>
+                                <td class="mono">${escapeHtml(result.PlayerName || result.PlayerID)}</td>
                                 <td>${formatNumber(result.BuyInChips)}</td>
                                 <td>${formatNumber(result.CashOutChips)}</td>
                                 <td>${formatNumber(result.ProfitChips)}</td>
@@ -1474,7 +1474,7 @@
                         (result) => `
                             <article class="card-item">
                                 <div class="card-header">
-                                    <div class="card-title mono">${escapeHtml(result.PlayerID)}</div>
+                                    <div class="card-title mono">${escapeHtml(result.PlayerName || result.PlayerID)}</div>
                                 </div>
                                 <div class="card-meta">
                                     <div class="card-meta-item"><span>Buy In</span><strong>${formatNumber(result.BuyInChips)}</strong></div>
@@ -1535,14 +1535,28 @@
 
 
             function renderCashOutPlayers() {
-                const select = document.getElementById("cash-player-id");
+              const select = document.getElementById("cash-player-id");
 
-                const players = (state.results || [])
-                    .filter(r => Number(r.BuyInChips) > Number(r.CashOutChips));
+              const players = (state.results || [])
+                .filter(r => Number(r.BuyInChips) > Number(r.CashOutChips));
 
-                const options = [ '<option value="">Select player</option>', ...players.map(p => { const r = results.find(x => x.PlayerID === p.PlayerID); const available = r ? Number(r.BuyInChips) - Number(r.CashOutChips) : 0; return `<option value="${escapeHtml(p.PlayerID)}"> ${escapeHtml(p.PlayerID)} (${formatNumber(available)} chips) </option>`; }) ];
+              const options = [
+                '<option value="">Select player</option>',
+                ...players.map(r => {
+                  const available =
+                    Number(r.BuyInChips) - Number(r.CashOutChips);
 
-                select.innerHTML = options.join("");
+                  const name = r.PlayerName || r.PlayerID;
+
+                  return `
+                    <option value="${escapeHtml(r.PlayerID)}">
+                      ${escapeHtml(name)} (${formatNumber(available)} chips)
+                    </option>
+                  `;
+                })
+              ];
+
+              select.innerHTML = options.join("");
             }
 
             function renderCashOutConfirm() {

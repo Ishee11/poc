@@ -139,6 +139,7 @@ func Run() error {
 	getSessionResultsUC := usecase.NewGetSessionResultsUseCase(
 		sessionRepo,
 		projectionRepo,
+		playerRepo,
 		txManager,
 	)
 

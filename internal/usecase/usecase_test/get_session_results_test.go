@@ -34,9 +34,19 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 			},
 		}
 
+		playerRepoMock := &playerRepoMock{
+			listFn: func(tx usecase.Tx, sessionID entity.SessionID) ([]usecase.PlayerDTO, error) {
+				return []usecase.PlayerDTO{
+					{ID: "p1", Name: "nikita"},
+					{ID: "p2", Name: "alex"},
+				}, nil
+			},
+		}
+
 		uc := usecase.NewGetSessionResultsUseCase(
 			sessionRepo,
 			opRepo,
+			playerRepoMock,
 			&txManagerMock{},
 		)
 
@@ -96,9 +106,19 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 
 		opRepo := &operationRepoMock{}
 
+		playerRepoMock := &playerRepoMock{
+			listFn: func(tx usecase.Tx, sessionID entity.SessionID) ([]usecase.PlayerDTO, error) {
+				return []usecase.PlayerDTO{
+					{ID: "p1", Name: "nikita"},
+					{ID: "p2", Name: "alex"},
+				}, nil
+			},
+		}
+
 		uc := usecase.NewGetSessionResultsUseCase(
 			sessionRepo,
 			opRepo,
+			playerRepoMock,
 			&txManagerMock{},
 		)
 
@@ -129,9 +149,19 @@ func TestGetSessionResultsUseCase_Execute(t *testing.T) {
 			},
 		}
 
+		playerRepoMock := &playerRepoMock{
+			listFn: func(tx usecase.Tx, sessionID entity.SessionID) ([]usecase.PlayerDTO, error) {
+				return []usecase.PlayerDTO{
+					{ID: "p1", Name: "nikita"},
+					{ID: "p2", Name: "alex"},
+				}, nil
+			},
+		}
+
 		uc := usecase.NewGetSessionResultsUseCase(
 			sessionRepo,
 			opRepo,
+			playerRepoMock,
 			&txManagerMock{},
 		)
 

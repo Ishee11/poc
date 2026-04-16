@@ -1,19 +1,24 @@
 package usecase
 
+import "github.com/ishee11/poc/internal/entity"
+
 type GetSessionResultsUseCase struct {
 	sessionReader SessionReader
 	projection    ProjectionRepository
+	playerReader  PlayerReader
 	txManager     TxManager
 }
 
 func NewGetSessionResultsUseCase(
 	sessionReader SessionReader,
 	projection ProjectionRepository,
+	playerReader PlayerReader,
 	txManager TxManager,
 ) *GetSessionResultsUseCase {
 	return &GetSessionResultsUseCase{
 		sessionReader: sessionReader,
 		projection:    projection,
+		playerReader:  playerReader,
 		txManager:     txManager,
 	}
 }
@@ -54,6 +59,18 @@ func (uc *GetSessionResultsUseCase) execute(
 		return nil, err
 	}
 
+	// 2.1 получаем игроков (НОВОЕ)
+	players, err := uc.playerReader.ListBySession(tx, q.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// строим map id → name
+	playerNames := make(map[entity.PlayerID]string, len(players))
+	for _, p := range players {
+		playerNames[p.ID] = p.Name
+	}
+
 	// 3. сбор результата
 	result := make([]PlayerResultDTO, 0, len(playerAggs))
 
@@ -68,8 +85,14 @@ func (uc *GetSessionResultsUseCase) execute(
 			profitMoney = profitChips / rate
 		}
 
+		name := playerNames[playerID]
+		if name == "" {
+			name = string(playerID) // fallback (опционально)
+		}
+
 		result = append(result, PlayerResultDTO{
 			PlayerID:     playerID,
+			PlayerName:   name, // 👈 ВОТ ЭТО
 			BuyInChips:   aggr.BuyIn,
 			CashOutChips: aggr.CashOut,
 			ProfitChips:  profitChips,

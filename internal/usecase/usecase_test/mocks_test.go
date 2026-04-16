@@ -153,7 +153,9 @@ func (m *idempotencyRepoMock) Save(tx usecase.Tx, requestID string) error {
 
 // --- PlayerRepository mock ---
 
-type playerRepoMock struct{}
+type playerRepoMock struct {
+	listFn func(tx usecase.Tx, sessionID entity.SessionID) ([]usecase.PlayerDTO, error)
+}
 
 func (m *playerRepoMock) GetOrCreate(
 	tx usecase.Tx,
@@ -167,5 +169,10 @@ func (m *playerRepoMock) ListBySession(
 	tx usecase.Tx,
 	sessionID entity.SessionID,
 ) ([]usecase.PlayerDTO, error) {
+
+	if m.listFn != nil {
+		return m.listFn(tx, sessionID)
+	}
+
 	return []usecase.PlayerDTO{}, nil
 }

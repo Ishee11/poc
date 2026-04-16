@@ -19,6 +19,10 @@ type PlayerAggregates struct {
 	CashOut int64
 }
 
+type PlayerReader interface {
+	ListBySession(tx Tx, sessionID entity.SessionID) ([]PlayerDTO, error)
+}
+
 type PlayerRepository interface {
 	GetOrCreate(
 		tx Tx,
