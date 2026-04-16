@@ -9,6 +9,7 @@ import (
 )
 
 func (h *Handler) GetSessionResults(w http.ResponseWriter, r *http.Request) {
+	println("NEW HANDLER WORKS")
 	sessionID := r.URL.Query().Get("session_id")
 
 	res, err := h.getSessionResultsUC.Execute(usecase.GetSessionResultsQuery{
