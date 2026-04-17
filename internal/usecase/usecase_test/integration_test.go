@@ -69,10 +69,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 1. BuyIn ---
 	idGen.id = "op1"
 	if err := buyInUC.Execute(command.BuyInCommand{
-		RequestID:  "req-1",
-		SessionID:  "s1",
-		PlayerName: "p1",
-		Chips:      100,
+		RequestID: "req-1",
+		SessionID: "s1",
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("buyin failed: %v", err)
 	}
@@ -80,10 +80,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 2. CashOut ---
 	idGen.id = "op2"
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID:  "req-2",
-		SessionID:  "s1",
-		PlayerName: "p1",
-		Chips:      100,
+		RequestID: "req-2",
+		SessionID: "s1",
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("cashout failed: %v", err)
 	}
@@ -108,10 +108,10 @@ func TestIntegration_FullFlow(t *testing.T) {
 	// --- 5. CashOut again ---
 	idGen.id = "op4"
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID:  "req-4",
-		SessionID:  "s1",
-		PlayerName: "p1",
-		Chips:      100,
+		RequestID: "req-4",
+		SessionID: "s1",
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("cashout2 failed: %v", err)
 	}

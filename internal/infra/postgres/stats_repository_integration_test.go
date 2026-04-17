@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -67,20 +68,40 @@ func TestStatsRepository_Integration(t *testing.T) {
 		t.Fatalf("start session 2 failed: %v", err)
 	}
 
+	ctx := context.Background()
+
+	// создаём p1
+	_, err := pool.Exec(ctx,
+		`INSERT INTO players (id, name) VALUES ($1, $2)`,
+		"p1", "player1",
+	)
+	if err != nil {
+		t.Fatalf("failed to create player p1: %v", err)
+	}
+
+	// создаём p2
+	_, err = pool.Exec(ctx,
+		`INSERT INTO players (id, name) VALUES ($1, $2)`,
+		"p2", "player2",
+	)
+	if err != nil {
+		t.Fatalf("failed to create player p2: %v", err)
+	}
+
 	if err := buyInUC.Execute(command.BuyInCommand{
-		RequestID:  "req-1",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      100,
+		RequestID: "req-1",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("buy in 1 failed: %v", err)
 	}
 
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID:  "req-2",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      40,
+		RequestID: "req-2",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     40,
 	}); err != nil {
 		t.Fatalf("cash out 1 failed: %v", err)
 	}
@@ -93,25 +114,25 @@ func TestStatsRepository_Integration(t *testing.T) {
 	}
 
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID:  "req-4",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      20,
+		RequestID: "req-4",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     20,
 	}); err != nil {
 		t.Fatalf("cash out 2 failed: %v", err)
 	}
 
 	if err := buyInUC.Execute(command.BuyInCommand{
-		RequestID:  "req-5",
-		SessionID:  entity.SessionID("s2"),
-		PlayerName: "p2",
-		Chips:      200,
+		RequestID: "req-5",
+		SessionID: entity.SessionID("s2"),
+		PlayerID:  "p2",
+		Chips:     200,
 	}); err != nil {
 		t.Fatalf("buy in 2 failed: %v", err)
 	}
 
 	// --- assertions ---
-	err := txManager.RunInTx(func(tx usecase.Tx) error {
+	err = txManager.RunInTx(func(tx usecase.Tx) error {
 		sessions, err := statsRepo.ListSessions(tx, usecase.SessionStatsFilter{Limit: 10})
 		if err != nil {
 			return err

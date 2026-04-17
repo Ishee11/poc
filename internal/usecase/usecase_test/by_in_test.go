@@ -67,10 +67,10 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      100,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     100,
 		}
 
 		err := uc.Execute(cmd)
@@ -101,10 +101,10 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      0,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     0,
 		}
 
 		err := uc.Execute(cmd)
@@ -143,10 +143,10 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      100,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     100,
 		}
 
 		err := uc.Execute(cmd)
@@ -187,10 +187,10 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      100,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     100,
 		}
 
 		err := uc.Execute(cmd)
@@ -227,10 +227,10 @@ func TestBuyInUseCase_Execute(t *testing.T) {
 		)
 
 		cmd := command.BuyInCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      100,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     100,
 		}
 
 		err := uc.Execute(cmd)

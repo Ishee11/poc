@@ -10,10 +10,10 @@ import (
 
 func (h *Handler) BuyIn(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		RequestID  string `json:"request_id"`
-		SessionID  string `json:"session_id"`
-		PlayerName string `json:"player_name"`
-		Chips      int64  `json:"chips"`
+		RequestID string `json:"request_id"`
+		SessionID string `json:"session_id"`
+		PlayerID  string `json:"player_id"`
+		Chips     int64  `json:"chips"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -22,10 +22,10 @@ func (h *Handler) BuyIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.buyInUC.Execute(command.BuyInCommand{
-		RequestID:  req.RequestID,
-		SessionID:  entity.SessionID(req.SessionID),
-		PlayerName: req.PlayerName,
-		Chips:      req.Chips,
+		RequestID: req.RequestID,
+		SessionID: entity.SessionID(req.SessionID),
+		PlayerID:  entity.PlayerID(req.PlayerID),
+		Chips:     req.Chips,
 	})
 
 	if err != nil {

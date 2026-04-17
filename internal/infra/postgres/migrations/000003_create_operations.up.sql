@@ -12,6 +12,6 @@ CREATE TABLE IF NOT EXISTS operations (
     created_at TIMESTAMP NOT NULL DEFAULT now(),
 
     FOREIGN KEY (session_id) REFERENCES sessions(id),
-    FOREIGN KEY (player_id) REFERENCES players_in_session(id),
+    FOREIGN KEY (player_id) REFERENCES players(id),
     FOREIGN KEY (reference_id) REFERENCES operations(id)
 );

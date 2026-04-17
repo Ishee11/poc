@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -80,20 +81,30 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 		t.Fatalf("start session failed: %v", err)
 	}
 
+	ctx := context.Background()
+
+	_, err := pool.Exec(ctx,
+		`INSERT INTO players (id, name) VALUES ($1, $2)`,
+		"p1", "player1",
+	)
+	if err != nil {
+		t.Fatalf("failed to create player: %v", err)
+	}
+
 	if err := buyInUC.Execute(command.BuyInCommand{
-		RequestID:  "req-buy-1",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      100,
+		RequestID: "req-buy-1",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     100,
 	}); err != nil {
 		t.Fatalf("buy in failed: %v", err)
 	}
 
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID:  "req-cash-1",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      40,
+		RequestID: "req-cash-1",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     40,
 	}); err != nil {
 		t.Fatalf("cash out failed: %v", err)
 	}
@@ -106,10 +117,10 @@ func TestCashOutAfterReversal_Integration(t *testing.T) {
 	}
 
 	if err := cashOutUC.Execute(command.CashOutCommand{
-		RequestID:  "req-cash-2",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      30,
+		RequestID: "req-cash-2",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     30,
 	}); err != nil {
 		t.Fatalf("cash out after reversal failed: %v", err)
 	}

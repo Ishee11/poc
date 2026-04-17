@@ -29,16 +29,6 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 				return entity.OperationBuyIn, true, nil
 			},
 
-			// 👇 НОВОЕ (для PlayerState)
-			getPlayerAggFn: func(tx usecase.Tx, sID entity.SessionID) (map[entity.PlayerID]usecase.PlayerAggregates, error) {
-				return map[entity.PlayerID]usecase.PlayerAggregates{
-					"p1": {
-						BuyIn:   100,
-						CashOut: 20,
-					},
-				}, nil
-			},
-
 			// 👇 ОСТАЁТСЯ (для table check)
 			getAggFn: func(tx usecase.Tx, sID entity.SessionID) (usecase.SessionAggregates, error) {
 				return usecase.SessionAggregates{
@@ -80,10 +70,10 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		)
 
 		err := uc.Execute(command.CashOutCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      50,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     50,
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -131,10 +121,10 @@ func TestCashOutUseCase_Execute(t *testing.T) {
 		)
 
 		err := uc.Execute(command.CashOutCommand{
-			RequestID:  "req-1",
-			SessionID:  "s1",
-			PlayerName: "p1",
-			Chips:      10,
+			RequestID: "req-1",
+			SessionID: "s1",
+			PlayerID:  "p1",
+			Chips:     10,
 		})
 
 		if err != nil {

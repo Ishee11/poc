@@ -48,23 +48,13 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		return err
 	}
 
-	// 2. player
-	playerID, err := uc.helper.GetOrCreatePlayer(
-		tx,
-		cmd.SessionID,
-		cmd.PlayerName,
-	)
-	if err != nil {
-		return err
-	}
-
 	// 3. проверка состояния игрока
-	state, err := uc.loadPlayerState(tx, cmd.SessionID, playerID)
+	state, err := uc.loadPlayerState(tx, cmd.SessionID, cmd.PlayerID)
 	if err != nil {
 		return err
 	}
 
-	if err := state.ValidateCashOut(cmd.Chips); err != nil {
+	if err := state.ValidateInGame(); err != nil {
 		return err
 	}
 
@@ -78,7 +68,7 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		cmd.RequestID,
 		cmd.SessionID,
 		entity.OperationCashOut,
-		playerID,
+		cmd.PlayerID,
 		cmd.Chips,
 	)
 	if err != nil {
@@ -109,17 +99,8 @@ func (uc *CashOutUseCase) loadPlayerState(
 		return entity.PlayerState{}, err
 	}
 
-	playerAggs, err := uc.projection.GetPlayerAggregates(tx, sessionID)
-	if err != nil {
-		return entity.PlayerState{}, err
-	}
-
-	aggr := playerAggs[playerID]
-
 	return entity.NewPlayerState(
 		playerID,
-		aggr.BuyIn,
-		aggr.CashOut,
 		lastOpType,
 		found,
 	), nil

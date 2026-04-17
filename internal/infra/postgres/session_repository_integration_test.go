@@ -61,7 +61,7 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 
 	ctx := context.Background()
 
-	dsn := "postgres://postgres:postgres@localhost:5432/poc_test?sslmode=disable"
+	dsn := "postgres://postgres:postgres@localhost:5434/poc_test?sslmode=disable"
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

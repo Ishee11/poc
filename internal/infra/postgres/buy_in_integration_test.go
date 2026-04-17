@@ -12,6 +12,7 @@ import (
 
 func TestBuyInUseCase_Integration(t *testing.T) {
 	pool := setupTestDB(t)
+	ctx := context.Background()
 
 	txManager := NewTxManager(pool)
 	sessionRepo := NewSessionRepository()
@@ -44,6 +45,15 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 		t.Fatalf("start session failed: %v", err)
 	}
 
+	// --- создаём игрока (ВАЖНО) ---
+	_, err = pool.Exec(ctx,
+		`INSERT INTO players (id, name) VALUES ($1, $2)`,
+		"p1", "player1",
+	)
+	if err != nil {
+		t.Fatalf("failed to create player: %v", err)
+	}
+
 	// --- BuyIn ---
 	buyUC := usecase.NewBuyInUseCase(
 		helper,
@@ -52,10 +62,10 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 	)
 
 	cmd := command.BuyInCommand{
-		RequestID:  "req-1",
-		SessionID:  entity.SessionID("s1"),
-		PlayerName: "p1",
-		Chips:      100,
+		RequestID: "req-1",
+		SessionID: entity.SessionID("s1"),
+		PlayerID:  "p1",
+		Chips:     100,
 	}
 
 	err = buyUC.Execute(cmd)
@@ -65,7 +75,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 
 	// --- проверяем operations ---
 	var opCount int
-	err = pool.QueryRow(context.Background(),
+	err = pool.QueryRow(ctx,
 		`SELECT COUNT(*) FROM operations WHERE session_id = $1`,
 		"s1",
 	).Scan(&opCount)
@@ -79,7 +89,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 
 	// --- проверяем session cache ---
 	var totalBuyIn int64
-	err = pool.QueryRow(context.Background(),
+	err = pool.QueryRow(ctx,
 		`SELECT total_buy_in FROM sessions WHERE id = $1`,
 		"s1",
 	).Scan(&totalBuyIn)
@@ -98,7 +108,7 @@ func TestBuyInUseCase_Integration(t *testing.T) {
 	}
 
 	// operations всё ещё 1
-	err = pool.QueryRow(context.Background(),
+	err = pool.QueryRow(ctx,
 		`SELECT COUNT(*) FROM operations WHERE session_id = $1`,
 		"s1",
 	).Scan(&opCount)

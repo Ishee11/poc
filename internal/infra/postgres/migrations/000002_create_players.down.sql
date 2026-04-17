@@ -1,1 +1,1 @@
-DROP TABLE players_in_session;
+DROP TABLE IF EXISTS players;

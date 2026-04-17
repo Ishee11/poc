@@ -41,16 +41,11 @@ func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
 		return err
 	}
 
-	playerID, err := uc.helper.GetOrCreatePlayer(tx, cmd.SessionID, cmd.PlayerName)
-	if err != nil {
-		return err
-	}
-
 	if err := session.BuyIn(cmd.Chips); err != nil {
 		return err
 	}
 
-	op, err := uc.helper.BuildOperation(cmd.RequestID, cmd.SessionID, entity.OperationBuyIn, playerID, cmd.Chips)
+	op, err := uc.helper.BuildOperation(cmd.RequestID, cmd.SessionID, entity.OperationBuyIn, cmd.PlayerID, cmd.Chips)
 	if err != nil {
 		return err
 	}
