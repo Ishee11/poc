@@ -2,12 +2,12 @@ name: Deploy
 
 on:
   push:
-    branches: ["master"]  # или main
+    branches: ["master"]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20   # ← сюда
+    timeout-minutes: 20
 
     steps:
       - name: Deploy to VPS
@@ -17,8 +17,28 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            script: |
-              rm -rf /app
-              git clone https://github.com/Ishee11/poc.git /app
-              cd /app
-              docker compose up -d --build
+            set -e
+
+            echo "== Pull project =="
+            rm -rf /app
+            git clone https://github.com/Ishee11/poc.git /app
+            cd /app
+
+            echo "== Start containers =="
+            docker compose up -d --build
+
+            echo "== Wait for postgres =="
+            for i in {1..10}; do
+              if docker exec poker-db pg_isready -U poker; then
+                echo "Postgres is ready"
+                break
+              fi
+              echo "Waiting for postgres..."
+              sleep 2
+            done
+
+            echo "== Check app logs =="
+            sleep 3
+            docker logs poker-app --tail=50
+
+            echo "== Done =="
