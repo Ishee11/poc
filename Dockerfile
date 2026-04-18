@@ -15,7 +15,7 @@ COPY . .
 
 # билд (static)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o app ./cmd/app/main.go
+    go build -a -o app ./cmd/app/main.go
 
 # ========= RUNTIME =========
 FROM gcr.io/distroless/base-debian12
