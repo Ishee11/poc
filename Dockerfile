@@ -7,6 +7,9 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+# 👇 ВАЖНО: ломаем кеш перед копированием кода
+ARG CACHE_BUST=1
+
 # код
 COPY . .
 
@@ -21,8 +24,6 @@ WORKDIR /app
 
 COPY --from=builder /app/app .
 
-# порт
 EXPOSE 8080
 
-# запуск
 ENTRYPOINT ["/app/app"]
