@@ -16,7 +16,7 @@ const translations = {
     "lobby.latestActiveSession": "Latest active session",
     "lobby.openWorkspace": "Open Workspace",
     "lobby.startTitle": "Start a New Session",
-    "lobby.chipRate": "Rate",
+    "lobby.chipRate": "Rate (1 ruble for N chips)",
     "lobby.startHint":
       "New sessions are created as active and become visible in the list below.",
     "lobby.startSession": "Start Session",
@@ -180,7 +180,7 @@ const translations = {
     "lobby.latestActiveSession": "Последняя активная сессия",
     "lobby.openWorkspace": "Открыть сессию",
     "lobby.startTitle": "Начать новую сессию",
-    "lobby.chipRate": "Курс",
+    "lobby.chipRate": "Курс (1 рубль за N фишек)",
     "lobby.startHint":
       "Новые сессии создаются активными и появляются в списке ниже.",
     "lobby.startSession": "Начать сессию",
