@@ -92,7 +92,11 @@ export function renderSession() {
   if (subtitle) {
     subtitle.textContent = formatDate(session.createdAt);
   }
-  if (chipRate) chipRate.textContent = formatNumber(session.chipRate);
+  if (chipRate) {
+    chipRate.textContent = t("session.chipRateValue", {
+      chips: formatNumber(session.chipRate),
+    });
+  }
   if (buyIn) buyIn.textContent = formatNumber(session.totalBuyIn);
   if (cashOut) cashOut.textContent = formatNumber(session.totalCashOut);
   if (totalChips) totalChips.textContent = formatNumber(session.totalChips);
