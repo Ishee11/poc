@@ -1,4 +1,5 @@
 import {
+  debugDeletePlayer,
   getPlayerStats,
   getPlayers,
   getPlayersStats,
@@ -7,14 +8,18 @@ import {
 import { statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
 import {
+  describeError,
   escapeHtml,
   formatDate,
   formatNumber,
+  openModal,
   pushRoute,
   replaceRoute,
+  routeToHome,
   routeToPlayer,
   setScreen,
   setValue,
+  showNotice,
 } from "../utils.js";
 
 export async function loadPlayers(sessionId) {
@@ -157,6 +162,7 @@ export function renderPlayerDetail() {
   if (!detail || !detail.player) {
     wrap.className = "empty";
     wrap.textContent = t("common.noData");
+    renderPlayerDebugActions(null);
     return;
   }
 
@@ -168,6 +174,7 @@ export function renderPlayerDetail() {
 
   if (title) title.textContent = playerName;
   if (id) id.textContent = `ID: ${player.player_id}`;
+  renderPlayerDebugActions(player);
 
   const rows = sessions
     .map(
@@ -270,6 +277,46 @@ export function renderPlayerDetail() {
       await openSession(sessionId);
     });
   });
+}
+
+function renderPlayerDebugActions(player) {
+  const actions = document.getElementById("player-debug-actions");
+  if (!actions) return;
+
+  actions.hidden = !state.debugMode || !player;
+  actions.querySelector("#debug-delete-player-btn")?.replaceWith(
+    actions.querySelector("#debug-delete-player-btn").cloneNode(true),
+  );
+  actions
+    .querySelector("#debug-delete-player-btn")
+    ?.addEventListener("click", async () => {
+      await confirmDebugDeletePlayer(player);
+    });
+}
+
+async function confirmDebugDeletePlayer(player) {
+  if (!state.debugMode || !player?.player_id) return;
+
+  const playerName = player.player_name || player.name || player.player_id;
+  const confirmed = await openModal({
+    title: t("modal.deletePlayerTitle"),
+    description: t("modal.deletePlayerDescription", { name: playerName }),
+    confirmText: t("debug.deletePlayer"),
+  });
+  if (!confirmed) return;
+
+  const res = await debugDeletePlayer(player.player_id);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedDeletePlayer")), "error");
+    return;
+  }
+
+  state.selectedPlayerId = "";
+  state.selectedPlayerDetail = null;
+  await loadPlayersOverview();
+  setScreen("lobby");
+  pushRoute(routeToHome());
+  showNotice(t("notice.playerDeleted"), "success");
 }
 
 function bindOpenPlayerButtons(container) {

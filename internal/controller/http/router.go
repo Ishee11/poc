@@ -57,6 +57,10 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/stats/sessions", h.Stats.GetStatsSessions)
 	mux.HandleFunc("/stats/players", h.Stats.GetStatsPlayers)
 
+	// ===== TEMP DEBUG ADMIN =====
+	mux.HandleFunc("/debug/player", h.Debug.DeletePlayer)
+	mux.HandleFunc("/debug/session", h.Debug.DeleteSession)
+
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux
 	handler = CORSMiddleware(handler)

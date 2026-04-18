@@ -7,6 +7,7 @@ type Handler struct {
 	Operation *OperationHandler
 	Player    *PlayerHandler
 	Stats     *StatsHandler
+	Debug     *DebugHandler
 }
 
 func NewHandler(
@@ -30,6 +31,10 @@ func NewHandler(
 	// stats
 	getStatsSessions *usecase.GetStatsSessionsUseCase,
 	getStatsPlayers *usecase.GetStatsPlayersUseCase,
+
+	// debug admin
+	deleteDebugPlayer *usecase.DeleteDebugPlayerUseCase,
+	deleteDebugSession *usecase.DeleteDebugSessionUseCase,
 ) *Handler {
 
 	return &Handler{
@@ -53,6 +58,10 @@ func NewHandler(
 		Stats: &StatsHandler{
 			getStatsSessionsUC: getStatsSessions,
 			getStatsPlayersUC:  getStatsPlayers,
+		},
+		Debug: &DebugHandler{
+			deletePlayerUC:  deleteDebugPlayer,
+			deleteSessionUC: deleteDebugSession,
 		},
 	}
 }
@@ -80,4 +89,9 @@ type PlayerHandler struct {
 type StatsHandler struct {
 	getStatsSessionsUC *usecase.GetStatsSessionsUseCase
 	getStatsPlayersUC  *usecase.GetStatsPlayersUseCase
+}
+
+type DebugHandler struct {
+	deletePlayerUC  *usecase.DeleteDebugPlayerUseCase
+	deleteSessionUC *usecase.DeleteDebugSessionUseCase
 }

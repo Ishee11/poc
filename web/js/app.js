@@ -20,11 +20,13 @@ import {
   describeError,
   openModal,
   replaceRoute,
+  routeToHome,
   setScreen,
   showNotice,
 } from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  state.debugMode = new URLSearchParams(window.location.search).has("debug");
   initI18n();
   initSessionActions();
   initLanguageSelect();
@@ -148,6 +150,7 @@ function renderCurrentLanguage() {
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {
+  state.debugMode = new URLSearchParams(window.location.search).has("debug");
   const [, section, rawId] = window.location.pathname.split("/");
   const id = rawId ? decodeURIComponent(rawId) : "";
 
@@ -162,5 +165,5 @@ async function openInitialRoute({ fromHistory = false } = {}) {
   }
 
   setScreen("lobby");
-  if (!fromHistory) replaceRoute("/");
+  if (!fromHistory) replaceRoute(routeToHome());
 }

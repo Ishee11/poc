@@ -22,6 +22,7 @@ func NewContainer(db *DB) *Container {
 	idempotencyRepo := postgres.NewIdempotencyRepository()
 	statsRepo := postgres.NewStatsRepository(db.Pool)
 	playerRepo := postgres.NewPlayerRepository()
+	debugAdminRepo := postgres.NewDebugAdminRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(db.Pool)
@@ -131,6 +132,16 @@ func NewContainer(db *DB) *Container {
 		sessionRepo,
 	)
 
+	deleteDebugPlayerUC := usecase.NewDeleteDebugPlayerUseCase(
+		debugAdminRepo,
+		txManager,
+	)
+
+	deleteDebugSessionUC := usecase.NewDeleteDebugSessionUseCase(
+		debugAdminRepo,
+		txManager,
+	)
+
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
 		// session
@@ -153,6 +164,10 @@ func NewContainer(db *DB) *Container {
 		// stats
 		getStatsSessionsUC,
 		getStatsPlayersUC,
+
+		// debug admin
+		deleteDebugPlayerUC,
+		deleteDebugSessionUC,
 	)
 
 	// ===== Router =====

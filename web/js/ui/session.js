@@ -2,6 +2,7 @@ import {
   buyIn,
   cashOut,
   createPlayer,
+  debugDeleteSession,
   finishSession,
   getSession,
   getSessionOperations,
@@ -17,6 +18,7 @@ import {
   openModal,
   pushRoute,
   replaceRoute,
+  routeToHome,
   routeToSession,
   setScreen,
   showNotice,
@@ -83,6 +85,7 @@ export function renderSession() {
   const status = document.getElementById("workspace-status");
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
+  const debugActions = document.getElementById("session-debug-actions");
   const playerActions = document.getElementById("session-player-actions");
   const actionsPanel = document.getElementById("session-actions-panel");
   const finishActions = document.getElementById("session-finish-actions");
@@ -118,6 +121,7 @@ export function renderSession() {
   if (playerActions) playerActions.hidden = !isActive;
   if (actionsPanel) actionsPanel.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
+  if (debugActions) debugActions.hidden = !state.debugMode;
 }
 
 export function renderOperations() {
@@ -220,13 +224,16 @@ export function initSessionActions() {
       case "finish-session-btn":
         await confirmFinishSession();
         break;
+      case "debug-delete-session-btn":
+        await confirmDebugDeleteSession();
+        break;
       case "session-back-home-btn":
         setScreen("lobby");
-        pushRoute("/");
+        pushRoute(routeToHome());
         break;
       case "player-back-home-btn":
         setScreen("lobby");
-        pushRoute("/");
+        pushRoute(routeToHome());
         break;
       case "player-back-session-btn":
         if (state.activeSessionId) {
@@ -234,7 +241,7 @@ export function initSessionActions() {
           pushRoute(routeToSession(state.activeSessionId));
         } else {
           setScreen("lobby");
-          pushRoute("/");
+          pushRoute(routeToHome());
         }
         break;
       default:
@@ -453,6 +460,32 @@ async function confirmFinishSession() {
 
   await refreshSessionData();
   showNotice(t("notice.sessionFinished"), "success");
+}
+
+async function confirmDebugDeleteSession() {
+  if (!state.debugMode || !state.activeSessionId) return;
+
+  const confirmed = await openModal({
+    title: t("modal.deleteSessionTitle"),
+    description: t("modal.deleteSessionDescription"),
+    confirmText: t("debug.deleteSession"),
+  });
+  if (!confirmed) return;
+
+  const res = await debugDeleteSession(state.activeSessionId);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedDeleteSession")), "error");
+    return;
+  }
+
+  state.activeSessionId = "";
+  state.session = null;
+  state.players = [];
+  state.operations = [];
+  await Promise.all([loadSessions(), loadPlayersOverview()]);
+  setScreen("lobby");
+  pushRoute(routeToHome());
+  showNotice(t("notice.sessionDeleted"), "success");
 }
 
 async function confirmReverse(operationId) {

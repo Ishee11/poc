@@ -174,3 +174,17 @@ export function getPlayerStats(playerId, { from, to } = {}) {
   if (to) params.set("to", to);
   return request(`/stats/player?${params.toString()}`);
 }
+
+export function debugDeletePlayer(playerId) {
+  const params = new URLSearchParams({ player_id: playerId });
+  return request(`/debug/player?${params.toString()}`, {
+    method: "DELETE",
+  });
+}
+
+export function debugDeleteSession(sessionId) {
+  const params = new URLSearchParams({ session_id: sessionId });
+  return request(`/debug/session?${params.toString()}`, {
+    method: "DELETE",
+  });
+}

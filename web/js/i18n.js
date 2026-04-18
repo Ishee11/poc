@@ -29,6 +29,8 @@ const translations = {
     "language.title": "Interface Language",
     "language.hint":
       "Russian is selected automatically for Russian-language devices. Everyone else gets English.",
+    "debug.deletePlayer": "Delete Player",
+    "debug.deleteSession": "Delete Session",
     "session.title": "Session",
     "session.finish": "Finish Session",
     "session.chipRate": "Rate",
@@ -133,6 +135,12 @@ const translations = {
       "Finish the session now? The backend allows this only when total buy in equals total cash out.",
     "modal.reverseTitle": "Reverse Operation",
     "modal.reverseDescription": "Reverse {type} for {name} with {chips} chips?",
+    "modal.deletePlayerTitle": "Delete Player",
+    "modal.deletePlayerDescription":
+      "Delete player {name}? This also deletes this player's operations and recalculates affected sessions.",
+    "modal.deleteSessionTitle": "Delete Session",
+    "modal.deleteSessionDescription":
+      "Delete this session and all its operations? This cannot be undone.",
     "error.fallback": "Request failed",
     "error.failedStartSession": "Failed to start session",
     "error.failedCreatePlayer": "Failed to create player",
@@ -144,6 +152,10 @@ const translations = {
     "error.failedFinish": "Failed to finish session",
     "error.failedReverse": "Failed to reverse operation",
     "error.failedRefresh": "Failed to refresh session",
+    "error.failedDeletePlayer": "Failed to delete player",
+    "error.failedDeleteSession": "Failed to delete session",
+    "notice.playerDeleted": "Player deleted.",
+    "notice.sessionDeleted": "Session deleted.",
     "error.sessionNotBalanced":
       "Session is not balanced yet. Remaining chips on table: {chips}.",
     "error.invalid_request_id": "Request ID is missing.",
@@ -181,6 +193,8 @@ const translations = {
     "language.title": "Язык интерфейса",
     "language.hint":
       "Русский выбирается автоматически для русскоязычных устройств. Для остальных используется английский.",
+    "debug.deletePlayer": "Удалить игрока",
+    "debug.deleteSession": "Удалить сессию",
     "session.title": "Сессия",
     "session.finish": "Завершить сессию",
     "session.chipRate": "Курс",
@@ -284,6 +298,12 @@ const translations = {
       "Завершить сессию сейчас? Бэкенд разрешает это только когда общий бай-ин равен общему кэш-ауту.",
     "modal.reverseTitle": "Отменить операцию",
     "modal.reverseDescription": "Отменить {type} для {name} на {chips} фишек?",
+    "modal.deletePlayerTitle": "Удалить игрока",
+    "modal.deletePlayerDescription":
+      "Удалить игрока {name}? Это также удалит операции этого игрока и пересчитает затронутые сессии.",
+    "modal.deleteSessionTitle": "Удалить сессию",
+    "modal.deleteSessionDescription":
+      "Удалить эту сессию и все ее операции? Это действие нельзя отменить.",
     "error.fallback": "Запрос не выполнен",
     "error.failedStartSession": "Не удалось начать сессию",
     "error.failedCreatePlayer": "Не удалось создать игрока",
@@ -295,6 +315,10 @@ const translations = {
     "error.failedFinish": "Не удалось завершить сессию",
     "error.failedReverse": "Не удалось отменить операцию",
     "error.failedRefresh": "Не удалось обновить сессию",
+    "error.failedDeletePlayer": "Не удалось удалить игрока",
+    "error.failedDeleteSession": "Не удалось удалить сессию",
+    "notice.playerDeleted": "Игрок удален.",
+    "notice.sessionDeleted": "Сессия удалена.",
     "error.sessionNotBalanced":
       "Сессия пока не сбалансирована. Осталось фишек на столе: {chips}.",
     "error.invalid_request_id": "Отсутствует ID запроса.",

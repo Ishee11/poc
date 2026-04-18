@@ -1,4 +1,6 @@
 export const state = {
+  debugMode: false,
+
   activeSessionId: "",
   session: null,
 

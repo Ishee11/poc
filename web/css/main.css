@@ -379,6 +379,12 @@ button:disabled {
     margin-top: 14px;
 }
 
+.debug-admin-actions {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 143, 123, 0.22);
+}
+
 .finish-hint {
     margin-top: 12px;
     padding: 12px 14px;

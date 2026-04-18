@@ -124,3 +124,8 @@ type StatsRepository interface {
 	GetPlayerOverall(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) (*PlayerOverallStat, error)
 	ListPlayerSessions(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) ([]PlayerSessionStat, error)
 }
+
+type DebugAdminRepository interface {
+	DeletePlayer(tx Tx, playerID entity.PlayerID) error
+	DeleteSession(tx Tx, sessionID entity.SessionID) error
+}

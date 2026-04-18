@@ -85,6 +85,8 @@ export function describeError(res, fallback = t("error.fallback")) {
 }
 
 export function setScreen(name) {
+  showNotice("");
+
   document
     .getElementById("screen-lobby")
     ?.classList.toggle("active", name === "lobby");
@@ -101,23 +103,36 @@ export function setScreen(name) {
 }
 
 export function routeToSession(sessionId) {
-  return `/session/${encodeURIComponent(sessionId)}`;
+  return withCurrentDebugSearch(`/session/${encodeURIComponent(sessionId)}`);
 }
 
 export function routeToPlayer(playerId) {
-  return `/player/${encodeURIComponent(playerId)}`;
+  return withCurrentDebugSearch(`/player/${encodeURIComponent(playerId)}`);
 }
 
 export function pushRoute(path) {
-  if (window.location.pathname !== path) {
+  if (currentPath() !== path) {
     window.history.pushState({}, "", path);
   }
 }
 
 export function replaceRoute(path) {
-  if (window.location.pathname !== path) {
+  if (currentPath() !== path) {
     window.history.replaceState({}, "", path);
   }
+}
+
+export function routeToHome() {
+  return withCurrentDebugSearch("/");
+}
+
+function withCurrentDebugSearch(path) {
+  const params = new URLSearchParams(window.location.search);
+  return params.has("debug") ? `${path}?debug` : path;
+}
+
+function currentPath() {
+  return `${window.location.pathname}${window.location.search}`;
 }
 
 export function openModal({
