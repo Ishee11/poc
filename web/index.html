@@ -110,9 +110,6 @@
                     <div class="panel language-panel">
                         <div>
                             <h3 data-i18n="language.title">Interface Language</h3>
-                            <p class="hint" data-i18n="language.hint">
-                                Russian is selected automatically for Russian-language devices. Everyone else gets English.
-                            </p>
                         </div>
                         <label class="language-select-label">
                             <span data-i18n="language.title">Interface Language</span>
@@ -189,6 +186,9 @@
 
                     <div class="panel" id="session-actions-panel">
                         <h3 data-i18n="session.actions">Actions</h3>
+                        <p class="hint" data-i18n="session.actionsHint">
+                            You can choose only players already added to this session.
+                        </p>
 
                         <form id="session-operation-form" onsubmit="return false;">
                             <div class="grid two">
@@ -206,7 +206,7 @@
                             </div>
 
                             <div class="actions">
-                                <button type="button" id="buy-in-btn" data-i18n="session.buyIn">Buy In</button>
+                                <button type="button" id="buy-in-btn" data-i18n="session.buyIn">Rebuy</button>
                                 <button type="button" id="cash-out-btn" class="secondary" data-i18n="session.cashOut">
                                     Cash Out
                                 </button>

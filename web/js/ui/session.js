@@ -105,11 +105,11 @@ export function renderSession() {
     totalChipsCard.classList.toggle("on-table-warning", isActive && onTable > 0);
     totalChipsCard.classList.toggle("on-table-clear", isActive && onTable === 0);
   }
-  if (finishButton) finishButton.disabled = !isActive || onTable > 0;
+  if (finishButton) finishButton.disabled = !isActive;
   if (finishActions) finishActions.hidden = !isActive;
   if (finishHint) {
-    finishHint.hidden = !isActive || onTable === 0;
-    finishHint.textContent = t("hint.finishBlocked");
+    finishHint.hidden = true;
+    finishHint.textContent = "";
   }
   if (playerActions) playerActions.hidden = !isActive;
   if (actionsPanel) actionsPanel.hidden = !isActive;
