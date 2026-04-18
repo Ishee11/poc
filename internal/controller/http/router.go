@@ -34,9 +34,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/health", h.Health)
 
 	// ===== SWAGGER =====
-	mux.HandleFunc("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
-	))
+	mux.HandleFunc("/swagger/", httpSwagger.Handler())
 
 	// ===== SESSIONS =====
 	mux.HandleFunc("/sessions/start", h.Session.StartSession)

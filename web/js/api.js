@@ -1,57 +1,109 @@
 const API = window.location.origin;
 
-export async function apiGet(path) {
-  try {
-    const res = await fetch(API + path, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    return await normalize(res);
-  } catch (e) {
-    return { ok: false, text: String(e) };
-  }
-}
+// ===== core =====
 
-export async function apiPost(path, body) {
+async function request(path, options = {}) {
   try {
     const res = await fetch(API + path, {
-      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body),
+      ...options,
     });
-    return await normalize(res);
-  } catch (e) {
-    return { ok: false, text: String(e) };
-  }
-}
 
-async function normalize(res) {
-  let text = "";
+    const text = await res.text();
 
-  try {
-    text = await res.text();
+    let body = null;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {}
+    }
+
+    return {
+      ok: res.ok,
+      status: res.status,
+      body,
+      text,
+    };
   } catch (e) {
     return { ok: false, status: 0, body: null, text: String(e) };
   }
+}
 
-  let body = null;
+// ===== utils =====
 
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch {
-      // оставляем body = null, текст остаётся в text
-    }
-  }
+function rid() {
+  return crypto.randomUUID();
+}
 
-  return {
-    ok: res.ok,
-    status: res.status,
-    body,
-    text,
-  };
+// ===== sessions =====
+
+export function startSession({ sessionId, chipRate }) {
+  return request("/sessions/start", {
+    method: "POST",
+    body: JSON.stringify({
+      // session_id: sessionId,
+      chip_rate: chipRate,
+    }),
+  });
+}
+
+export function finishSession({ sessionId }) {
+  return request("/sessions/finish", {
+    method: "POST",
+    body: JSON.stringify({
+      session_id: sessionId,
+      request_id: rid(),
+    }),
+  });
+}
+
+export function getSession(sessionId) {
+  return request(`/sessions?session_id=${sessionId}`);
+}
+
+export function getSessionPlayers(sessionId) {
+  return request(`/sessions/players?session_id=${sessionId}`);
+}
+
+export function getSessionOperations(sessionId) {
+  return request(`/sessions/operations?session_id=${sessionId}`);
+}
+
+// ===== operations =====
+
+export function buyIn({ sessionId, playerId, chips }) {
+  return request("/operations/buy-in", {
+    method: "POST",
+    body: JSON.stringify({
+      session_id: sessionId,
+      player_id: playerId,
+      chips,
+      request_id: rid(),
+    }),
+  });
+}
+
+export function cashOut({ sessionId, playerId, chips }) {
+  return request("/operations/cash-out", {
+    method: "POST",
+    body: JSON.stringify({
+      session_id: sessionId,
+      player_id: playerId,
+      chips,
+      request_id: rid(),
+    }),
+  });
+}
+
+export function reverseOperation({ operationId }) {
+  return request("/operations/reverse", {
+    method: "POST",
+    body: JSON.stringify({
+      target_operation_id: operationId,
+      request_id: rid(),
+    }),
+  });
 }
