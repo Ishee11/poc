@@ -24,6 +24,12 @@ jobs:
             git clone https://github.com/Ishee11/poc.git /app
             cd /app
           
+            # 👇 ВОТ СЮДА
+            echo "== Generate swagger =="
+            go install github.com/swaggo/swag/cmd/swag@latest
+            export PATH=$PATH:/root/go/bin
+            swag init -g cmd/app/main.go -d . --parseInternal --parseDependency
+          
             echo "== Build & start containers =="
             docker compose build --build-arg CACHE_BUST=$(date +%s)
             docker compose up -d --force-recreate
