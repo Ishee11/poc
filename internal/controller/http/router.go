@@ -5,6 +5,9 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/web"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
+	_ "github.com/ishee11/poc/docs"
 )
 
 func NewRouter(h *Handler) http.Handler {
@@ -29,6 +32,11 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== HEALTH =====
 	mux.HandleFunc("/health", h.Health)
+
+	// ===== SWAGGER =====
+	mux.HandleFunc("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	))
 
 	// ===== SESSIONS =====
 	mux.HandleFunc("/sessions/start", h.Session.StartSession)
