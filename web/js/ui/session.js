@@ -42,7 +42,6 @@ export async function openSession(sessionId) {
   await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
   renderActionPlayerOptions();
   setScreen("session");
-  showNotice("");
 }
 
 export async function loadOperations(sessionId) {
@@ -183,11 +182,9 @@ export function initSessionActions() {
         break;
       case "session-back-home-btn":
         setScreen("lobby");
-        showNotice("");
         break;
       case "player-back-home-btn":
         setScreen("lobby");
-        showNotice("");
         break;
       case "player-back-session-btn":
         if (state.activeSessionId) {
@@ -195,7 +192,6 @@ export function initSessionActions() {
         } else {
           setScreen("lobby");
         }
-        showNotice("");
         break;
       default:
         break;

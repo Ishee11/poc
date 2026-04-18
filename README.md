@@ -60,6 +60,23 @@ make compose-up
 make run
 ```
 
+Minimal local loop for this poker app:
+
+```sh
+# 1. Start only Postgres in Docker
+docker compose up -d db
+
+# 2. Run the app locally against that DB
+DATABASE_URL='postgres://poker:poker@127.0.0.1:5432/poker?sslmode=disable' \
+HTTP_PORT=8080 \
+go run ./cmd/app
+
+# 3. Open the UI
+http://127.0.0.1:8080/
+```
+
+This mode is useful when you want fast UI/backend iteration without rebuilding the whole Docker app image on every change.
+
 ### Integration tests (can be run in CI)
 
 ```sh
