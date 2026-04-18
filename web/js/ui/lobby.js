@@ -44,7 +44,7 @@ export function renderSessions() {
       const id = session.session_id || session.id;
 
       return `
-        <div class="session-row">
+        <div class="session-row clickable-row" data-open-session="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title">${escapeHtml(formatDate(session.created_at))}</div>
             <div class="inline-stats">
@@ -53,22 +53,28 @@ export function renderSessions() {
               <span>Buy in: ${formatNumber(session.total_buy_in)}</span>
             </div>
           </div>
-          <button type="button" data-open-session="${escapeHtml(id)}">Open</button>
         </div>
       `;
     })
     .join("");
 
-  wrap.querySelectorAll("[data-open-session]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const sessionId = button.getAttribute("data-open-session");
-      if (!sessionId) return;
-
-      setValue("active-session-select", sessionId);
-      const { openSession } = await import("./session.js");
-      await openSession(sessionId);
+  wrap.querySelectorAll("[data-open-session]").forEach((row) => {
+    row.addEventListener("click", async () => openSessionFromRow(row));
+    row.addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      await openSessionFromRow(row);
     });
   });
+}
+
+async function openSessionFromRow(row) {
+  const sessionId = row.getAttribute("data-open-session");
+  if (!sessionId) return;
+
+  setValue("active-session-select", sessionId);
+  const { openSession } = await import("./session.js");
+  await openSession(sessionId);
 }
 
 function syncSelect() {
