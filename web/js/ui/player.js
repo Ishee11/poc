@@ -4,6 +4,7 @@ import {
   getPlayersStats,
   getSessionPlayers,
 } from "../api.js";
+import { statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
 import {
   escapeHtml,
@@ -64,7 +65,7 @@ export function renderPlayersOverview() {
   count.textContent = String(state.overviewPlayers.length);
 
   if (!state.overviewPlayers.length) {
-    wrap.innerHTML = '<div class="empty-inline">No players</div>';
+    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
     return;
   }
 
@@ -76,8 +77,8 @@ export function renderPlayersOverview() {
           <div class="row-main">
             <div class="row-title">${escapeHtml(player.player_name || id)}</div>
             <div class="inline-stats">
-              <span>Sessions: ${formatNumber(player.sessions_count)}</span>
-              <span>Profit: ${formatNumber(player.profit_money)}</span>
+              <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
+              <span>${escapeHtml(t("common.profit"))}: ${formatNumber(player.profit_money)}</span>
             </div>
           </div>
         </div>
@@ -119,7 +120,7 @@ export function renderPlayers() {
   if (!wrap) return;
 
   if (!state.players.length) {
-    wrap.innerHTML = '<div class="empty-inline">No players in this session yet</div>';
+    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
     return;
   }
 
@@ -134,10 +135,10 @@ export function renderPlayers() {
           <div class="row-main">
             <div class="row-title">${escapeHtml(name)}</div>
             <div class="inline-stats">
-              <span>Buy in: ${formatNumber(player.buy_in)}</span>
-              <span>Cash out: ${formatNumber(player.cash_out)}</span>
-              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">Profit: ${formatNumber(profitMoney)}</span>
-              <span>${player.in_game ? "In game" : "Settled"}</span>
+              <span>${escapeHtml(t("common.buyIn"))}: ${formatNumber(player.buy_in)}</span>
+              <span>${escapeHtml(t("common.cashOut"))}: ${formatNumber(player.cash_out)}</span>
+              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatNumber(profitMoney)}</span>
+              <span>${player.in_game ? escapeHtml(t("common.inGame")) : escapeHtml(t("common.settled"))}</span>
             </div>
           </div>
         </div>
@@ -155,7 +156,7 @@ export function renderPlayerDetail() {
   const detail = normalizePlayerDetail(state.selectedPlayerDetail);
   if (!detail || !detail.player) {
     wrap.className = "empty";
-    wrap.textContent = "No data";
+    wrap.textContent = t("common.noData");
     return;
   }
 
@@ -173,14 +174,14 @@ export function renderPlayerDetail() {
       (session) => `
         <tr>
           <td>${escapeHtml(formatDate(session.session_created_at))}</td>
-          <td>${escapeHtml(session.status)}</td>
+          <td>${escapeHtml(statusLabel(session.status))}</td>
           <td>${formatNumber(session.buy_in_chips)}</td>
           <td>${formatNumber(session.cash_out_chips)}</td>
           <td>${formatNumber(session.profit_chips)}</td>
           <td>${formatNumber(session.profit_money)}</td>
           <td>${formatDate(session.last_activity_at)}</td>
           <td>
-            <button type="button" data-open-session="${escapeHtml(session.session_id)}">Open</button>
+            <button type="button" data-open-session="${escapeHtml(session.session_id)}">${escapeHtml(t("common.open"))}</button>
           </td>
         </tr>
       `,
@@ -192,31 +193,31 @@ export function renderPlayerDetail() {
     <div class="panel-stack">
       <form id="player-period-form" class="filters" onsubmit="return false;">
         <label>
-          From
+          ${escapeHtml(t("player.from"))}
           <input type="date" id="player-period-from" value="${escapeHtml(state.selectedPlayerFilters.from)}" />
         </label>
         <label>
-          To
+          ${escapeHtml(t("player.to"))}
           <input type="date" id="player-period-to" value="${escapeHtml(state.selectedPlayerFilters.to)}" />
         </label>
-        <button type="submit">Apply Period</button>
-        <button type="button" class="secondary" id="player-period-clear">All Time</button>
+        <button type="submit">${escapeHtml(t("player.applyPeriod"))}</button>
+        <button type="button" class="secondary" id="player-period-clear">${escapeHtml(t("player.allTime"))}</button>
       </form>
       <div class="stats player-stats">
         <div class="stat">
-          <div class="stat-label">Sessions</div>
+          <div class="stat-label">${escapeHtml(t("player.sessions"))}</div>
           <div>${formatNumber(player.sessions_count)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Total Buy In</div>
+          <div class="stat-label">${escapeHtml(t("player.totalBuyIn"))}</div>
           <div>${formatNumber(player.total_buy_in)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Total Cash Out</div>
+          <div class="stat-label">${escapeHtml(t("player.totalCashOut"))}</div>
           <div>${formatNumber(player.total_cash_out)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Profit Money</div>
+          <div class="stat-label">${escapeHtml(t("player.profitMoney"))}</div>
           <div class="${Number(player.profit_money) >= 0 ? "profit-positive" : "profit-negative"}">${formatNumber(player.profit_money)}</div>
         </div>
       </div>
@@ -224,13 +225,13 @@ export function renderPlayerDetail() {
         <table>
           <thead>
             <tr>
-              <th>Session</th>
-              <th>Status</th>
-              <th>Buy In</th>
-              <th>Cash Out</th>
-              <th>Profit Chips</th>
-              <th>Profit</th>
-              <th>Last Activity</th>
+              <th>${escapeHtml(t("table.session"))}</th>
+              <th>${escapeHtml(t("table.status"))}</th>
+              <th>${escapeHtml(t("table.buyIn"))}</th>
+              <th>${escapeHtml(t("table.cashOut"))}</th>
+              <th>${escapeHtml(t("table.profitChips"))}</th>
+              <th>${escapeHtml(t("table.profit"))}</th>
+              <th>${escapeHtml(t("table.lastActivity"))}</th>
               <th></th>
             </tr>
           </thead>

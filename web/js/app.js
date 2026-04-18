@@ -1,7 +1,21 @@
 import { createPlayer, startSession } from "./api.js";
-import { loadSessions } from "./ui/lobby.js";
-import { loadPlayerDetail, loadPlayersOverview } from "./ui/player.js";
-import { initSessionActions, openSession } from "./ui/session.js";
+import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
+import { state } from "./state.js";
+import { loadSessions, renderSessions, syncSelect } from "./ui/lobby.js";
+import {
+  loadPlayerDetail,
+  loadPlayersOverview,
+  renderPlayerDetail,
+  renderPlayers,
+  renderPlayersOverview,
+} from "./ui/player.js";
+import {
+  initSessionActions,
+  openSession,
+  renderActionPlayerOptions,
+  renderOperations,
+  renderSession,
+} from "./ui/session.js";
 import {
   describeError,
   openModal,
@@ -11,7 +25,10 @@ import {
 } from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  initI18n();
   initSessionActions();
+  initLanguageSelect();
+  onLanguageChange(renderCurrentLanguage);
 
   await Promise.all([loadSessions(), loadPlayersOverview()]);
   await openInitialRoute();
@@ -33,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (!sessionId) {
-        showNotice("No session available to open.", "info");
+        showNotice(t("notice.noSession"), "info");
         return;
       }
 
@@ -49,26 +66,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const chipRate = Number(chipInput.value);
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
-        showNotice("Enter a valid chip rate.", "error");
+        showNotice(t("notice.validChipRate"), "error");
         return;
       }
 
       const confirmed = await openModal({
-        title: "Start Session",
-        description: `Start a new session with chip rate ${chipRate}?`,
-        confirmText: "Start Session",
+        title: t("modal.startTitle"),
+        description: t("modal.startDescription", { chipRate }),
+        confirmText: t("lobby.startSession"),
       });
       if (!confirmed) return;
 
       const res = await startSession({ chipRate });
       if (!res.ok || !res.body?.session_id) {
-        showNotice(describeError(res, "Failed to start session"), "error");
+        showNotice(describeError(res, t("error.failedStartSession")), "error");
         return;
       }
 
       await Promise.all([loadSessions(), loadPlayersOverview()]);
       await openSession(res.body.session_id);
-      showNotice("Session started.", "success");
+      showNotice(t("notice.sessionStarted"), "success");
     });
   }
 
@@ -80,29 +97,55 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const name = createPlayerName.value.trim();
       if (!name) {
-        showNotice("Enter player name.", "error");
+        showNotice(t("notice.enterPlayerName"), "error");
         return;
       }
 
       const confirmed = await openModal({
-        title: "Create Player",
-        description: `Create player "${name}"?`,
-        confirmText: "Create Player",
+        title: t("modal.createPlayerTitle"),
+        description: t("modal.createPlayerDescription", { name }),
+        confirmText: t("lobby.createPlayer"),
       });
       if (!confirmed) return;
 
       const res = await createPlayer(name);
       if (!res.ok) {
-        showNotice(describeError(res, "Failed to create player"), "error");
+        showNotice(describeError(res, t("error.failedCreatePlayer")), "error");
         return;
       }
 
       createPlayerName.value = "";
       await loadPlayersOverview();
-      showNotice(`Player ${name} created.`, "success");
+      showNotice(t("notice.playerCreated", { name }), "success");
     });
   }
 });
+
+function initLanguageSelect() {
+  const select = document.getElementById("language-select");
+  if (!select) return;
+
+  select.addEventListener("change", () => {
+    setLanguage(select.value);
+  });
+}
+
+function renderCurrentLanguage() {
+  renderSessions();
+  syncSelect();
+  renderPlayersOverview();
+  if (state.session) {
+    renderSession();
+    renderOperations();
+    renderActionPlayerOptions();
+  }
+  if (state.players.length) {
+    renderPlayers();
+  }
+  if (state.selectedPlayerDetail) {
+    renderPlayerDetail();
+  }
+}
 
 async function openInitialRoute({ fromHistory = false } = {}) {
   const [, section, rawId] = window.location.pathname.split("/");

@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+
 export function value(id) {
   const el = document.getElementById(id);
   return el ? el.value : "";
@@ -59,7 +61,7 @@ export function showNotice(message, kind = "info") {
   el.className = `notice ${kind}`;
 }
 
-export function describeError(res, fallback = "Request failed") {
+export function describeError(res, fallback = t("error.fallback")) {
   if (!res) return fallback;
 
   const details = res.body?.details;
@@ -69,25 +71,14 @@ export function describeError(res, fallback = "Request failed") {
     errorCode === "session_not_balanced" &&
     typeof details?.remaining_chips !== "undefined"
   ) {
-    return `Session is not balanced yet. Remaining chips on table: ${formatNumber(details.remaining_chips)}.`;
+    return t("error.sessionNotBalanced", {
+      chips: formatNumber(details.remaining_chips),
+    });
   }
 
   if (errorCode) {
-    const messages = {
-      invalid_request_id: "Request ID is missing.",
-      invalid_chips: "Enter a chip amount greater than zero.",
-      invalid_cash_out: "Cash out is not valid for the current table state.",
-      invalid_operation: "This operation cannot be performed.",
-      player_not_found: "Selected player does not exist.",
-      session_not_found: "Session was not found.",
-      session_not_active: "Session is not active anymore.",
-      session_finished: "Session is already finished.",
-      operation_not_found: "Operation was not found.",
-      operation_already_reversed: "Operation has already been reversed.",
-      internal_error: "Server returned an internal error.",
-    };
-
-    return messages[errorCode] || errorCode.replaceAll("_", " ");
+    const message = t(`error.${errorCode}`);
+    return message === `error.${errorCode}` ? errorCode.replaceAll("_", " ") : message;
   }
 
   return res.text || fallback;
@@ -133,8 +124,8 @@ export function openModal({
   title,
   description = "",
   fields = [],
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText = t("common.confirm"),
+  cancelText = t("common.cancel"),
 }) {
   const root = document.getElementById("modal-root");
   if (!root) {

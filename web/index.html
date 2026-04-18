@@ -13,17 +13,17 @@
             <section class="hero">
                 <div class="hero-content">
                     <div>
-                        <h1>Poker Session Control</h1>
-                        <p>Control panel for poker cash games.</p>
+                        <h1 data-i18n="app.title">Poker Session Control</h1>
+                        <p data-i18n="app.subtitle">Control panel for poker cash games.</p>
                     </div>
-                    <nav class="top-nav" aria-label="Page navigation">
-                        <button type="button" class="secondary nav-session-only" id="session-back-home-btn">
+                    <nav class="top-nav" aria-label="Page navigation" data-i18n-aria-label="nav.page">
+                        <button type="button" class="secondary nav-session-only" id="session-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
-                        <button type="button" class="secondary nav-player-only" id="player-back-session-btn">
+                        <button type="button" class="secondary nav-player-only" id="player-back-session-btn" data-i18n="nav.backSession">
                             Back to Session
                         </button>
-                        <button type="button" class="secondary nav-player-only" id="player-back-home-btn">
+                        <button type="button" class="secondary nav-player-only" id="player-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
                     </nav>
@@ -36,15 +36,15 @@
                 <section class="screen active" id="screen-lobby">
                     <div class="grid two">
                         <div class="panel">
-                            <h2>Connect to Active Session</h2>
+                            <h2 data-i18n="lobby.connectTitle">Connect to Active Session</h2>
 
                             <form id="connect-session-form" onsubmit="return false;">
                                 <select id="active-session-select">
-                                    <option value="">Latest active session</option>
+                                    <option value="" data-i18n="lobby.latestActiveSession">Latest active session</option>
                                 </select>
 
                                 <div class="actions">
-                                    <button type="button" id="open-workspace-btn" class="secondary">
+                                    <button type="button" id="open-workspace-btn" class="secondary" data-i18n="lobby.openWorkspace">
                                         Open Workspace
                                     </button>
                                 </div>
@@ -53,34 +53,34 @@
 
                         <div class="grid panel-grid">
                             <div class="panel">
-                                <h2>Start a New Session</h2>
+                                <h2 data-i18n="lobby.startTitle">Start a New Session</h2>
 
                                 <form id="start-session-form" onsubmit="return false;">
                                     <label>
-                                        Chip Rate
+                                        <span data-i18n="lobby.chipRate">Chip Rate</span>
                                         <input id="start-chip-rate" type="number" min="1" value="2" />
                                     </label>
 
-                                    <div class="hint">
+                                    <div class="hint" data-i18n="lobby.startHint">
                                         New sessions are created as active and become visible in the list below.
                                     </div>
 
                                     <div class="actions">
-                                        <button type="submit">Start Session</button>
+                                        <button type="submit" data-i18n="lobby.startSession">Start Session</button>
                                     </div>
                                 </form>
                             </div>
 
                             <div class="panel">
-                                <h3>Add New Player</h3>
+                                <h3 data-i18n="lobby.addPlayerTitle">Add New Player</h3>
                                 <form id="create-player-form" onsubmit="return false;">
                                     <label>
-                                        Player Name
-                                        <input id="create-player-name" type="text" placeholder="Enter player name" />
+                                        <span data-i18n="lobby.playerName">Player Name</span>
+                                        <input id="create-player-name" type="text" placeholder="Enter player name" data-i18n-placeholder="lobby.playerNamePlaceholder" />
                                     </label>
 
                                     <div class="actions">
-                                        <button type="submit">Create Player</button>
+                                        <button type="submit" data-i18n="lobby.createPlayer">Create Player</button>
                                     </div>
                                 </form>
                             </div>
@@ -90,7 +90,7 @@
                     <div class="panel">
                         <details class="disclosure" id="overview-sessions-panel">
                             <summary>
-                                <span>Sessions</span>
+                                <span data-i18n="lobby.sessions">Sessions</span>
                                 <span class="summary-count" id="overview-sessions-count">0</span>
                             </summary>
                             <div class="disclosure-body" id="overview-sessions-wrap"></div>
@@ -100,11 +100,27 @@
                     <div class="panel">
                         <details class="disclosure" id="overview-players-panel">
                             <summary>
-                                <span>Players</span>
+                                <span data-i18n="lobby.players">Players</span>
                                 <span class="summary-count" id="overview-players-count">0</span>
                             </summary>
                             <div class="disclosure-body" id="overview-players-wrap"></div>
                         </details>
+                    </div>
+
+                    <div class="panel language-panel">
+                        <div>
+                            <h3 data-i18n="language.title">Interface Language</h3>
+                            <p class="hint" data-i18n="language.hint">
+                                Russian is selected automatically for Russian-language devices. Everyone else gets English.
+                            </p>
+                        </div>
+                        <label class="language-select-label">
+                            <span data-i18n="language.title">Interface Language</span>
+                            <select id="language-select">
+                                <option value="ru">Русский</option>
+                                <option value="en">English</option>
+                            </select>
+                        </label>
                     </div>
                 </section>
 
@@ -112,14 +128,14 @@
                     <div class="panel">
                         <div class="toolbar">
                             <div>
-                                <h2 id="workspace-title">Session</h2>
+                                <h2 id="workspace-title" data-i18n="session.title">Session</h2>
                                 <div class="title-row">
                                     <div id="workspace-subtitle" class="muted"></div>
                                     <span id="workspace-status" class="session-status">-</span>
                                 </div>
                             </div>
                             <div class="actions" id="session-finish-actions">
-                                <button type="button" class="warn" id="finish-session-btn">
+                                <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
                                     Finish Session
                                 </button>
                             </div>
@@ -127,22 +143,22 @@
 
                         <div class="stats">
                             <div class="stat">
-                                <div class="stat-label">Chip Rate</div>
+                                <div class="stat-label" data-i18n="session.chipRate">Chip Rate</div>
                                 <div id="stat-chip-rate">-</div>
                             </div>
 
                             <div class="stat">
-                                <div class="stat-label">Total Buy In</div>
+                                <div class="stat-label" data-i18n="session.totalBuyIn">Total Buy In</div>
                                 <div id="stat-buy-in">-</div>
                             </div>
 
                             <div class="stat">
-                                <div class="stat-label">Total Cash Out</div>
+                                <div class="stat-label" data-i18n="session.totalCashOut">Total Cash Out</div>
                                 <div id="stat-cash-out">-</div>
                             </div>
 
                             <div class="stat" id="stat-total-chips-card">
-                                <div class="stat-label">On Table</div>
+                                <div class="stat-label" data-i18n="session.onTable">On Table</div>
                                 <div id="stat-total-chips">-</div>
                             </div>
                         </div>
@@ -151,47 +167,47 @@
 
                         <div class="stats top-gap" id="session-money-panel" hidden>
                             <div class="stat money-stat">
-                                <div class="stat-label">Total Money In</div>
+                                <div class="stat-label" data-i18n="session.totalMoneyIn">Total Money In</div>
                                 <div id="stat-total-money">-</div>
                             </div>
                         </div>
 
                         <div class="actions top-gap" id="session-player-actions">
-                            <button type="button" id="session-add-existing-player-btn">
+                            <button type="button" id="session-add-existing-player-btn" data-i18n="session.addExistingPlayer">
                                 Add Player to Session
                             </button>
-                            <button type="button" class="secondary" id="session-add-new-player-btn">
+                            <button type="button" class="secondary" id="session-add-new-player-btn" data-i18n="session.createNewPlayer">
                                 Create New Player
                             </button>
                         </div>
                     </div>
 
                     <div class="panel">
-                        <h3>Players</h3>
+                        <h3 data-i18n="session.players">Players</h3>
                         <div id="players-wrap"></div>
                     </div>
 
                     <div class="panel" id="session-actions-panel">
-                        <h3>Actions</h3>
+                        <h3 data-i18n="session.actions">Actions</h3>
 
                         <form id="session-operation-form" onsubmit="return false;">
                             <div class="grid two">
                                 <label>
-                                    Player
+                                    <span data-i18n="session.player">Player</span>
                                     <select id="action-player-select">
-                                        <option value="">Select player</option>
+                                        <option value="" data-i18n="session.selectPlayer">Select player</option>
                                     </select>
                                 </label>
 
                                 <label>
-                                    Chips
-                                    <input id="action-chips" type="number" min="1" placeholder="Chips" />
+                                    <span data-i18n="session.chips">Chips</span>
+                                    <input id="action-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
                                 </label>
                             </div>
 
                             <div class="actions">
-                                <button type="button" id="buy-in-btn">Buy In</button>
-                                <button type="button" id="cash-out-btn" class="secondary">
+                                <button type="button" id="buy-in-btn" data-i18n="session.buyIn">Buy In</button>
+                                <button type="button" id="cash-out-btn" class="secondary" data-i18n="session.cashOut">
                                     Cash Out
                                 </button>
                             </div>
@@ -201,7 +217,7 @@
                     <div class="panel">
                         <details class="disclosure" id="session-operations-panel">
                             <summary>
-                                <span>Latest Operations</span>
+                                <span data-i18n="session.latestOperations">Latest Operations</span>
                                 <span class="summary-count" id="session-operations-count">0</span>
                             </summary>
                             <div class="disclosure-body" id="operations-wrap"></div>
@@ -213,14 +229,14 @@
                     <div class="panel">
                         <div class="toolbar">
                             <div>
-                                <h2 id="player-screen-title">Player</h2>
+                                <h2 id="player-screen-title" data-i18n="player.title">Player</h2>
                                 <div id="player-screen-id" class="muted"></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="panel">
-                        <div id="player-detail-wrap" class="empty">
+                        <div id="player-detail-wrap" class="empty" data-i18n="player.dataPlaceholder">
                             Player data will appear here
                         </div>
                     </div>

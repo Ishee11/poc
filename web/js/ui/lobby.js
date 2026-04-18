@@ -1,4 +1,5 @@
 import { getSessions } from "../api.js";
+import { statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
 import { escapeHtml, formatDate, formatNumber, setValue } from "../utils.js";
 
@@ -35,7 +36,7 @@ export function renderSessions() {
   count.textContent = String(state.overviewSessions.length);
 
   if (!state.overviewSessions.length) {
-    wrap.innerHTML = '<div class="empty-inline">No sessions</div>';
+    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noSessions"))}</div>`;
     return;
   }
 
@@ -48,9 +49,9 @@ export function renderSessions() {
           <div class="row-main">
             <div class="row-title">${escapeHtml(formatDate(session.created_at))}</div>
             <div class="inline-stats">
-              <span>${escapeHtml(session.status || "-")}</span>
-              <span>Players: ${formatNumber(session.player_count)}</span>
-              <span>Buy in: ${formatNumber(session.total_buy_in)}</span>
+              <span>${escapeHtml(statusLabel(session.status || "-"))}</span>
+              <span>${escapeHtml(t("common.players"))}: ${formatNumber(session.player_count)}</span>
+              <span>${escapeHtml(t("common.buyIn"))}: ${formatNumber(session.total_buy_in)}</span>
             </div>
           </div>
         </div>
@@ -77,16 +78,16 @@ async function openSessionFromRow(row) {
   await openSession(sessionId);
 }
 
-function syncSelect() {
+export function syncSelect() {
   const select = document.getElementById("active-session-select");
   if (!select) return;
 
   const current = select.value;
   const options = [
-    '<option value="">Latest active session</option>',
+    `<option value="">${escapeHtml(t("lobby.latestActiveSession"))}</option>`,
     ...state.overviewSessions.map((session) => {
       const id = session.session_id || session.id;
-      const label = `${formatDate(session.created_at)} (${session.status || "-"})`;
+      const label = `${formatDate(session.created_at)} (${statusLabel(session.status || "-")})`;
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
     }),
   ];

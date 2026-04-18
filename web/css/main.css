@@ -186,6 +186,26 @@ body:not([data-screen="player"]) .nav-player-only {
     line-height: 1.5;
 }
 
+.language-panel {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: end;
+}
+
+.language-panel h3 {
+    margin-bottom: 8px;
+}
+
+.language-panel .hint {
+    margin: 0;
+    max-width: 64ch;
+}
+
+.language-select-label {
+    min-width: 220px;
+}
+
 .grid {
     display: grid;
     gap: 18px;
@@ -908,6 +928,15 @@ pre {
     .actions {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .language-panel {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .language-select-label {
+        min-width: 0;
     }
 
     .toolbar .actions {

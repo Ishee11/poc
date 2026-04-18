@@ -7,6 +7,7 @@ import {
   getSessionOperations,
   reverseOperation,
 } from "../api.js";
+import { operationLabel, statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
 import {
   describeError,
@@ -33,7 +34,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
 
   const res = await getSession(sessionId);
   if (!res.ok || !res.body) {
-    showNotice(describeError(res, "Failed to load session"), "error");
+    showNotice(describeError(res, t("error.failedLoadSession")), "error");
     return;
   }
 
@@ -97,7 +98,7 @@ export function renderSession() {
   if (totalChips) totalChips.textContent = formatNumber(session.totalChips);
   if (totalMoney) totalMoney.textContent = formatNumber(totalMoneyIn(session));
   if (status) {
-    status.textContent = session.status;
+    status.textContent = statusLabel(session.status);
     status.className = `session-status ${session.status}`;
   }
   if (totalChipsCard) {
@@ -108,8 +109,7 @@ export function renderSession() {
   if (finishActions) finishActions.hidden = !isActive;
   if (finishHint) {
     finishHint.hidden = !isActive || onTable === 0;
-    finishHint.textContent =
-      "Cannot finish session yet: cash out or reverse operations until ON TABLE becomes 0.";
+    finishHint.textContent = t("hint.finishBlocked");
   }
   if (playerActions) playerActions.hidden = !isActive;
   if (actionsPanel) actionsPanel.hidden = !isActive;
@@ -124,7 +124,7 @@ export function renderOperations() {
   count.textContent = String(state.operations.length);
 
   if (!state.operations.length) {
-    wrap.innerHTML = '<div class="empty-inline">No operations yet</div>';
+    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noOperations"))}</div>`;
     return;
   }
 
@@ -146,17 +146,17 @@ export function renderOperations() {
         <div class="operation-row">
           <div class="row-main">
             <div class="row-title">
-              <span class="operation-type ${escapeHtml(operation.type)}">${escapeHtml(operation.type)}</span>
+              <span class="operation-type ${escapeHtml(operation.type)}">${escapeHtml(operationLabel(operation.type))}</span>
               ${escapeHtml(playerName)}
             </div>
             <div class="inline-stats">
-              <span>Chips: ${formatNumber(operation.chips)}</span>
+              <span>${escapeHtml(t("session.chips"))}: ${formatNumber(operation.chips)}</span>
               <span>${escapeHtml(formatDate(operation.created_at))}</span>
             </div>
           </div>
           ${
             reversible
-              ? `<button type="button" class="secondary" data-reverse-operation="${escapeHtml(operation.id)}">Reverse</button>`
+              ? `<button type="button" class="secondary" data-reverse-operation="${escapeHtml(operation.id)}">${escapeHtml(t("common.reverse"))}</button>`
               : '<span class="muted">-</span>'
           }
         </div>
@@ -179,7 +179,7 @@ export function renderActionPlayerOptions() {
 
   const current = select.value;
   const options = [
-    '<option value="">Select player</option>',
+    `<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`,
     ...state.players.map((player) => {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
@@ -244,15 +244,18 @@ async function confirmBuyIn() {
   const chips = Number(document.getElementById("action-chips")?.value);
 
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice("Select a player and enter a valid chip amount.", "error");
+    showNotice(t("notice.selectPlayerAndChips"), "error");
     return;
   }
 
   const playerName = findPlayerName(playerId);
   const values = await openModal({
-    title: "Confirm Buy In",
-    description: `Add ${formatNumber(chips)} chips for ${playerName}?`,
-    confirmText: "Confirm Buy In",
+    title: t("modal.confirmBuyInTitle"),
+    description: t("modal.confirmBuyInDescription", {
+      chips: formatNumber(chips),
+      name: playerName,
+    }),
+    confirmText: t("session.buyIn"),
   });
   if (!values) return;
 
@@ -262,13 +265,13 @@ async function confirmBuyIn() {
     chips,
   });
   if (!res.ok) {
-    showNotice(describeError(res, "Failed to apply buy in"), "error");
+    showNotice(describeError(res, t("error.failedBuyIn")), "error");
     return;
   }
 
   await refreshSessionData();
   document.getElementById("action-chips").value = "";
-  showNotice(`Buy in recorded for ${playerName}.`, "success");
+  showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
 async function confirmCashOut() {
@@ -276,15 +279,18 @@ async function confirmCashOut() {
   const chips = Number(document.getElementById("action-chips")?.value);
 
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice("Select a player and enter a valid chip amount.", "error");
+    showNotice(t("notice.selectPlayerAndChips"), "error");
     return;
   }
 
   const playerName = findPlayerName(playerId);
   const values = await openModal({
-    title: "Confirm Cash Out",
-    description: `Cash out ${formatNumber(chips)} chips for ${playerName}?`,
-    confirmText: "Confirm Cash Out",
+    title: t("modal.confirmCashOutTitle"),
+    description: t("modal.confirmCashOutDescription", {
+      chips: formatNumber(chips),
+      name: playerName,
+    }),
+    confirmText: t("session.cashOut"),
   });
   if (!values) return;
 
@@ -294,13 +300,13 @@ async function confirmCashOut() {
     chips,
   });
   if (!res.ok) {
-    showNotice(describeError(res, "Failed to apply cash out"), "error");
+    showNotice(describeError(res, t("error.failedCashOut")), "error");
     return;
   }
 
   await refreshSessionData();
   document.getElementById("action-chips").value = "";
-  showNotice(`Cash out recorded for ${playerName}.`, "success");
+  showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
 async function confirmAddExistingPlayer() {
@@ -314,19 +320,18 @@ async function confirmAddExistingPlayer() {
   );
 
   if (!availablePlayers.length) {
-    showNotice("No available players to add. Create a new player instead.", "info");
+    showNotice(t("notice.noAvailablePlayers"), "info");
     return;
   }
 
   const values = await openModal({
-    title: "Add Player to Session",
-    description:
-      "The player will appear in the session after the first buy in. This matches the current backend flow.",
-    confirmText: "Add to Session",
+    title: t("modal.addPlayerTitle"),
+    description: t("modal.addPlayerDescription"),
+    confirmText: t("modal.addToSession"),
     fields: [
       {
         name: "player_id",
-        label: "Player",
+        label: t("session.player"),
         type: "select",
         options: availablePlayers.map((player) => ({
           value: player.player_id,
@@ -335,10 +340,10 @@ async function confirmAddExistingPlayer() {
       },
       {
         name: "chips",
-        label: "Initial Buy In",
+        label: t("modal.initialBuyIn"),
         type: "number",
         min: "1",
-        placeholder: "Chips",
+        placeholder: t("session.chips"),
       },
     ],
   });
@@ -346,7 +351,7 @@ async function confirmAddExistingPlayer() {
 
   const chips = Number(values.chips);
   if (!values.player_id || !Number.isFinite(chips) || chips <= 0) {
-    showNotice("Choose a player and enter a valid initial buy in.", "error");
+    showNotice(t("notice.choosePlayerAndBuyIn"), "error");
     return;
   }
 
@@ -356,33 +361,35 @@ async function confirmAddExistingPlayer() {
     chips,
   });
   if (!res.ok) {
-    showNotice(describeError(res, "Failed to add player to session"), "error");
+    showNotice(describeError(res, t("error.failedAddPlayer")), "error");
     return;
   }
 
   await refreshSessionData();
-  showNotice(`Player ${findPlayerName(values.player_id)} added to session.`, "success");
+  showNotice(
+    t("notice.playerAdded", { name: findPlayerName(values.player_id) }),
+    "success",
+  );
 }
 
 async function confirmAddNewPlayer() {
   const values = await openModal({
-    title: "Create New Player",
-    description:
-      "A new player is created in the global player list and immediately added to this session through the first buy in.",
-    confirmText: "Create and Add",
+    title: t("modal.createNewPlayerTitle"),
+    description: t("modal.createNewPlayerDescription"),
+    confirmText: t("modal.createAndAdd"),
     fields: [
       {
         name: "name",
-        label: "Player Name",
+        label: t("lobby.playerName"),
         type: "text",
-        placeholder: "Enter player name",
+        placeholder: t("lobby.playerNamePlaceholder"),
       },
       {
         name: "chips",
-        label: "Initial Buy In",
+        label: t("modal.initialBuyIn"),
         type: "number",
         min: "1",
-        placeholder: "Chips",
+        placeholder: t("session.chips"),
       },
     ],
   });
@@ -391,13 +398,13 @@ async function confirmAddNewPlayer() {
   const name = (values.name || "").trim();
   const chips = Number(values.chips);
   if (!name || !Number.isFinite(chips) || chips <= 0) {
-    showNotice("Enter player name and a valid initial buy in.", "error");
+    showNotice(t("notice.enterPlayerAndBuyIn"), "error");
     return;
   }
 
   const createRes = await createPlayer(name);
   if (!createRes.ok || !createRes.body?.player_id) {
-    showNotice(describeError(createRes, "Failed to create player"), "error");
+    showNotice(describeError(createRes, t("error.failedCreatePlayer")), "error");
     return;
   }
 
@@ -407,40 +414,41 @@ async function confirmAddNewPlayer() {
     chips,
   });
   if (!buyInRes.ok) {
-    showNotice(describeError(buyInRes, "Player created, but add to session failed"), "error");
+    showNotice(describeError(buyInRes, t("error.failedCreateAdd")), "error");
     return;
   }
 
   await Promise.all([refreshSessionData(), loadPlayersOverview()]);
-  showNotice(`Player ${name} created and added to session.`, "success");
+  showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
 }
 
 async function confirmFinishSession() {
   if (state.session?.status !== "active") return;
   if ((Number(state.session.totalChips) || 0) > 0) {
     showNotice(
-      `Cannot finish session yet. Remaining chips on table: ${formatNumber(state.session.totalChips)}.`,
+      t("notice.cannotFinish", {
+        chips: formatNumber(state.session.totalChips),
+      }),
       "error",
     );
     return;
   }
 
   const values = await openModal({
-    title: "Finish Session",
-    description:
-      "Finish the session now? The backend allows this only when total buy in equals total cash out.",
-    confirmText: "Finish Session",
+    title: t("modal.finishTitle"),
+    description: t("modal.finishDescription"),
+    confirmText: t("session.finish"),
   });
   if (!values) return;
 
   const res = await finishSession({ sessionId: state.activeSessionId });
   if (!res.ok) {
-    showNotice(describeError(res, "Failed to finish session"), "error");
+    showNotice(describeError(res, t("error.failedFinish")), "error");
     return;
   }
 
   await refreshSessionData();
-  showNotice("Session finished.", "success");
+  showNotice(t("notice.sessionFinished"), "success");
 }
 
 async function confirmReverse(operationId) {
@@ -448,20 +456,24 @@ async function confirmReverse(operationId) {
   if (!operation) return;
 
   const values = await openModal({
-    title: "Reverse Operation",
-    description: `Reverse ${operation.type} for ${findPlayerName(operation.player_id)} with ${formatNumber(operation.chips)} chips?`,
-    confirmText: "Reverse",
+    title: t("modal.reverseTitle"),
+    description: t("modal.reverseDescription", {
+      type: operationLabel(operation.type),
+      name: findPlayerName(operation.player_id),
+      chips: formatNumber(operation.chips),
+    }),
+    confirmText: t("common.reverse"),
   });
   if (!values) return;
 
   const res = await reverseOperation({ operationId });
   if (!res.ok) {
-    showNotice(describeError(res, "Failed to reverse operation"), "error");
+    showNotice(describeError(res, t("error.failedReverse")), "error");
     return;
   }
 
   await refreshSessionData();
-  showNotice("Operation reversed.", "success");
+  showNotice(t("notice.operationReversed"), "success");
 }
 
 async function refreshSessionData() {
@@ -470,7 +482,7 @@ async function refreshSessionData() {
 
   const res = await getSession(id);
   if (!res.ok || !res.body) {
-    showNotice(describeError(res, "Failed to refresh session"), "error");
+    showNotice(describeError(res, t("error.failedRefresh")), "error");
     return;
   }
 
