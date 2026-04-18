@@ -19,7 +19,7 @@ import (
 // @Failure 400 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /session/start [post]
+// @Router /sessions/start [post]
 func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

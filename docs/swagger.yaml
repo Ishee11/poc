@@ -353,41 +353,6 @@ paths:
       summary: Create player
       tags:
       - players
-  /session/start:
-    post:
-      consumes:
-      - application/json
-      description: Create new poker session
-      parameters:
-      - description: start session request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_controller_http.StartSessionRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
-      summary: Start session
-      tags:
-      - sessions
   /sessions:
     get:
       consumes:
@@ -482,6 +447,41 @@ paths:
           schema:
             $ref: '#/definitions/internal_controller_http.ErrorResponse'
       summary: Get session players
+      tags:
+      - sessions
+  /sessions/start:
+    post:
+      consumes:
+      - application/json
+      description: Create new poker session
+      parameters:
+      - description: start session request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller_http.StartSessionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Start session
       tags:
       - sessions
   /stats/player:

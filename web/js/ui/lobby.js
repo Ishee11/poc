@@ -2,20 +2,39 @@ import { getSessions } from "../api.js";
 import { state } from "../state.js";
 import { formatDate, escapeHtml, setValue } from "../utils.js";
 
+/**
+ * загрузка сессий
+ */
 export async function loadSessions() {
   const res = await getSessions();
 
   if (!res.ok) {
-    console.error(res.text);
+    console.error("loadSessions failed:", res.text);
     return;
   }
 
-  state.overviewSessions = Array.isArray(res.body) ? res.body : [];
+  console.log("sessions raw:", res.body); // 👈 важно
+
+  // 👉 поддержка разных форматов ответа
+  let sessions = [];
+
+  if (Array.isArray(res.body)) {
+    sessions = res.body;
+  } else if (Array.isArray(res.body?.sessions)) {
+    sessions = res.body.sessions;
+  } else if (Array.isArray(res.body?.items)) {
+    sessions = res.body.items;
+  }
+
+  state.overviewSessions = sessions;
 
   renderSessions();
   syncSelect();
 }
 
+/**
+ * рендер списка сессий
+ */
 export function renderSessions() {
   const wrap = document.getElementById("overview-sessions-wrap");
   if (!wrap) return;
@@ -26,21 +45,26 @@ export function renderSessions() {
   }
 
   wrap.innerHTML = state.overviewSessions
-    .map(
-      (s) => `
-        <div>
-            <button data-open-session="${escapeHtml(s.session_id)}">
+    .map((s) => {
+      const id = s.session_id || s.id;
+
+      return `
+        <div class="session-row">
+            <button data-open-session="${escapeHtml(id)}">
                 Open
             </button>
-            ${escapeHtml(s.session_id)} — ${formatDate(s.created_at)}
+            ${escapeHtml(id)} — ${formatDate(s.created_at)}
         </div>
-    `,
-    )
+      `;
+    })
     .join("");
 
+  // 👉 навешиваем события
   wrap.querySelectorAll("[data-open-session]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.getAttribute("data-open-session");
+
+      if (!sessionId) return;
 
       setValue("active-session-select", sessionId);
 
@@ -50,6 +74,9 @@ export function renderSessions() {
   });
 }
 
+/**
+ * синхронизация select
+ */
 function syncSelect() {
   const select = document.getElementById("active-session-select");
   if (!select) return;
@@ -58,22 +85,24 @@ function syncSelect() {
 
   const options = [
     '<option value="">Latest active session</option>',
-    ...state.overviewSessions.map(
-      (s) =>
-        `<option value="${escapeHtml(s.session_id)}">${escapeHtml(
-          s.session_id,
-        )}</option>`,
-    ),
+    ...state.overviewSessions.map((s) => {
+      const id = s.session_id || s.id;
+
+      return `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`;
+    }),
   ];
 
   select.innerHTML = options.join("");
 
+  // оставить выбранное если есть
   if (current && state.overviewSessions.some((s) => s.session_id === current)) {
     select.value = current;
     return;
   }
 
+  // иначе выбрать первую
   if (state.overviewSessions.length > 0) {
-    select.value = state.overviewSessions[0].session_id;
+    select.value =
+      state.overviewSessions[0].session_id || state.overviewSessions[0].id;
   }
 }
