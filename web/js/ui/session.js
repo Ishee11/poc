@@ -4,12 +4,24 @@ import { state } from "../state.js";
 import { formatNumber } from "../utils.js";
 import { loadPlayers } from "./player.js";
 
+/**
+ * открыть сессию
+ */
 export async function openSession(sessionId) {
   if (!sessionId) {
     console.error("openSession: empty sessionId");
     return;
   }
 
+  // 👉 сохраняем сразу (единый источник правды)
+  state.activeSessionId = sessionId;
+
+  // 👉 очищаем старое состояние
+  state.session = null;
+  state.operations = [];
+  state.players = [];
+
+  // 👉 грузим сессию
   const res = await getSession(sessionId);
 
   if (!res.ok || !res.body) {
@@ -18,11 +30,6 @@ export async function openSession(sessionId) {
   }
 
   const s = res.body;
-
-  state.activeSessionId = sessionId;
-
-  state.operations = [];
-  state.players = [];
 
   state.session = {
     id: s.session_id,
@@ -33,13 +40,20 @@ export async function openSession(sessionId) {
     totalChips: s.total_chips,
   };
 
+  // 👉 первичный рендер (можно как loading state)
   renderSession();
+  renderOperations(); // очистит UI
 
+  // 👉 параллельно грузим данные
   await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
 
+  // 👉 переключаем экран
   setScreen("session");
 }
 
+/**
+ * загрузка операций
+ */
 export async function loadOperations(sessionId) {
   if (!sessionId) return;
 
@@ -55,23 +69,25 @@ export async function loadOperations(sessionId) {
   renderOperations();
 }
 
+/**
+ * рендер сессии (статы)
+ */
 export function renderSession() {
   const s = state.session;
   if (!s) return;
 
-  document.getElementById("stat-chip-rate").textContent = formatNumber(
-    s.chipRate,
-  );
+  const chipRate = document.getElementById("stat-chip-rate");
+  const buyIn = document.getElementById("stat-buy-in");
+  const cashOut = document.getElementById("stat-cash-out");
 
-  document.getElementById("stat-buy-in").textContent = formatNumber(
-    s.totalBuyIn,
-  );
-
-  document.getElementById("stat-cash-out").textContent = formatNumber(
-    s.totalCashOut,
-  );
+  if (chipRate) chipRate.textContent = formatNumber(s.chipRate);
+  if (buyIn) buyIn.textContent = formatNumber(s.totalBuyIn);
+  if (cashOut) cashOut.textContent = formatNumber(s.totalCashOut);
 }
 
+/**
+ * рендер операций
+ */
 function renderOperations() {
   const wrap = document.getElementById("operations-wrap");
   if (!wrap) return;
@@ -84,14 +100,18 @@ function renderOperations() {
   wrap.innerHTML = state.operations
     .map(
       (op) => `
-        <div>
-          ${op.type} — ${op.chips}
+        <div class="operation-row">
+          <span>${op.type}</span>
+          <span>${formatNumber(op.chips)}</span>
         </div>
       `,
     )
     .join("");
 }
 
+/**
+ * переключение экранов
+ */
 function setScreen(name) {
   document
     .getElementById("screen-lobby")
