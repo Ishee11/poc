@@ -106,6 +106,7 @@ func (r *StatsRepository) ListPlayers(
 		)
 		SELECT
 		    eo.player_id,
+		    COALESCE(p.name, eo.player_id),
 		    COUNT(DISTINCT eo.session_id),
 		    COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
@@ -114,9 +115,10 @@ func (r *StatsRepository) ListPlayers(
 		    MAX(eo.created_at)
 		FROM effective_operations eo
 		JOIN sessions s ON s.id = eo.session_id
+		LEFT JOIN players p ON p.id = eo.player_id
 		WHERE ($1::timestamp IS NULL OR eo.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR eo.created_at < $2::timestamp)
-		GROUP BY eo.player_id
+		GROUP BY eo.player_id, p.name
 		ORDER BY MAX(eo.created_at) DESC, eo.player_id ASC
 		LIMIT $3
 `, boundTime(filter.From), boundTime(filter.To), limit)
@@ -131,6 +133,7 @@ func (r *StatsRepository) ListPlayers(
 		var lastActivity *time.Time
 		if err := rows.Scan(
 			&stat.PlayerID,
+			&stat.PlayerName,
 			&stat.SessionsCount,
 			&stat.TotalBuyIn,
 			&stat.TotalCashOut,
@@ -168,6 +171,7 @@ func (r *StatsRepository) GetPlayerOverall(
 			  AND rev.id IS NULL
 		)
 		SELECT
+			COALESCE(MAX(p.name), $1),
 			COUNT(DISTINCT eo.session_id),
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
@@ -176,6 +180,7 @@ func (r *StatsRepository) GetPlayerOverall(
 			MAX(eo.created_at)
 		FROM effective_operations eo
 		JOIN sessions s ON s.id = eo.session_id
+		LEFT JOIN players p ON p.id = eo.player_id
 		WHERE eo.player_id = $1
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
@@ -186,6 +191,7 @@ func (r *StatsRepository) GetPlayerOverall(
 	stat.PlayerID = playerID
 
 	if err := row.Scan(
+		&stat.PlayerName,
 		&stat.SessionsCount,
 		&stat.TotalBuyIn,
 		&stat.TotalCashOut,

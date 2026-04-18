@@ -59,10 +59,14 @@ func (uc *GetSessionPlayersUseCase) execute(
 
 	for playerID, agg := range aggs {
 		inGame := agg.BuyIn > agg.CashOut
+		player, err := uc.playerRepo.GetByID(tx, playerID)
+		if err != nil {
+			return nil, err
+		}
 
 		result = append(result, SessionPlayerDTO{
 			PlayerID: playerID,
-			Name:     "", // TODO: через playerRepo.GetByID
+			Name:     player.Name(),
 			BuyIn:    agg.BuyIn,
 			CashOut:  agg.CashOut,
 			InGame:   inGame,

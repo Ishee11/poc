@@ -114,6 +114,11 @@ func NewContainer(db *DB) *Container {
 		txManager,
 	)
 
+	getPlayersUC := usecase.NewGetPlayersUseCase(
+		playerRepo,
+		txManager,
+	)
+
 	getPlayerStatsUC := usecase.NewGetPlayerStatsUseCase(
 		statsRepo,
 		txManager,
@@ -142,6 +147,7 @@ func NewContainer(db *DB) *Container {
 
 		// player
 		createPlayerUC,
+		getPlayersUC,
 		getPlayerStatsUC,
 
 		// stats

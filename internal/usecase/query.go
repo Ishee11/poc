@@ -10,6 +10,11 @@ type GetPlayerStatsQuery struct {
 	To       *DateTimeRangeBound
 }
 
+type GetPlayersQuery struct {
+	Limit  int
+	Offset int
+}
+
 type GetSessionQuery struct {
 	SessionID entity.SessionID
 }

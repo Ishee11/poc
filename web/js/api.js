@@ -32,6 +32,10 @@ async function request(path, options = {}) {
   }
 }
 
+export function apiGet(path) {
+  return request(path);
+}
+
 // ===== utils =====
 
 function rid() {
@@ -66,6 +70,15 @@ export function getSession(sessionId) {
 
 export function getSessions() {
   return request("/stats/sessions");
+}
+
+export function getPlayers({ limit, offset } = {}) {
+  const params = new URLSearchParams();
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/players${suffix}`);
 }
 
 export function getSessionPlayers(sessionId) {
@@ -122,4 +135,8 @@ export function createPlayer(name) {
       request_id: rid(),
     }),
   });
+}
+
+export function getPlayerStats(playerId) {
+  return request(`/stats/player?player_id=${playerId}`);
 }

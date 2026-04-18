@@ -1,11 +1,12 @@
 import { loadSessions } from "./ui/lobby.js";
+import { loadPlayersOverview } from "./ui/player.js";
 import { openSession, initSessionActions } from "./ui/session.js";
 import { startSession } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   initSessionActions();
 
-  await loadSessions();
+  await Promise.all([loadSessions(), loadPlayersOverview()]);
 
   // ===== open session =====
   const btn = document.getElementById("open-workspace-btn");
@@ -36,7 +37,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const chipInput = document.getElementById("start-chip-rate");
 
   if (startForm && chipInput) {
-    startForm.addEventListener("submit", async () => {
+    startForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
       const chipRate = Number(chipInput.value);
 
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
@@ -54,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       await openSession(res.body.session_id);
 
-      await loadSessions();
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
   }
 });

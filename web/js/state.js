@@ -3,6 +3,7 @@ export const state = {
   session: null,
 
   overviewSessions: [],
+  overviewPlayers: [],
 
   players: [],
   operations: [],

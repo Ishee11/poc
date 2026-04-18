@@ -1,4 +1,4 @@
-import { apiGet } from "../api.js";
+import { getPlayerStats, getPlayers, getSessionPlayers } from "../api.js";
 import { state } from "../state.js";
 import { formatNumber, formatDate, escapeHtml, setValue } from "../utils.js";
 
@@ -8,7 +8,7 @@ import { formatNumber, formatDate, escapeHtml, setValue } from "../utils.js";
 export async function loadPlayers(sessionId) {
   if (!sessionId) return;
 
-  const res = await apiGet(`/session/players?session_id=${sessionId}`);
+  const res = await getSessionPlayers(sessionId);
 
   if (!res.ok) {
     console.error("loadPlayers failed:", res.text);
@@ -20,6 +20,47 @@ export async function loadPlayers(sessionId) {
   console.log("players:", state.players); // 👈 важно для дебага
 
   renderPlayers();
+}
+
+export async function loadPlayersOverview() {
+  const res = await getPlayers({ limit: 200 });
+
+  if (!res.ok) {
+    console.error("loadPlayersOverview failed:", res.text);
+    return;
+  }
+
+  state.overviewPlayers = Array.isArray(res.body) ? res.body : [];
+  renderPlayersOverview();
+}
+
+export function renderPlayersOverview() {
+  const wrap = document.getElementById("overview-players-wrap");
+  if (!wrap) return;
+
+  if (!state.overviewPlayers.length) {
+    wrap.innerHTML = "<div>No players</div>";
+    return;
+  }
+
+  wrap.innerHTML = state.overviewPlayers
+    .map((player) => {
+      const id = player.player_id || player.id;
+      const name = player.player_name || player.name || id;
+
+      return `
+        <div class="player-row">
+          <div>
+            <div>${escapeHtml(name)}</div>
+            <div class="muted mono">${escapeHtml(id)}</div>
+          </div>
+          <button data-open-player="${escapeHtml(id)}">Open</button>
+        </div>
+      `;
+    })
+    .join("");
+
+  bindOpenPlayerButtons(wrap);
 }
 
 /**
@@ -37,11 +78,14 @@ function renderPlayers() {
   wrap.innerHTML = state.players
     .map((p) => {
       const id = p.player_id || p.id;
-      const name = p.player_name || p.name || id; // 👈 ВОТ ЧТО НЕ ХВАТАЛО
+      const name = p.player_name || p.name || id;
 
       return `
          <div class="player-row">
-           <span>${escapeHtml(name)}</span>
+           <div>
+             <div>${escapeHtml(name)}</div>
+             <div class="muted mono">${escapeHtml(id)}</div>
+           </div>
            <button data-open-player="${escapeHtml(id)}">
              Open
            </button>
@@ -50,18 +94,7 @@ function renderPlayers() {
     })
     .join("");
 
-  wrap.querySelectorAll("[data-open-player]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const playerId = btn.getAttribute("data-open-player");
-
-      if (!playerId) {
-        console.error("empty playerId");
-        return;
-      }
-
-      await loadPlayerDetail(playerId);
-    });
-  });
+  bindOpenPlayerButtons(wrap);
 }
 
 /**
@@ -73,7 +106,7 @@ export async function loadPlayerDetail(playerId) {
     return;
   }
 
-  const res = await apiGet(`/stats/player?player_id=${playerId}`);
+  const res = await getPlayerStats(playerId);
 
   if (!res.ok) {
     console.error("loadPlayerDetail failed:", res.text);
@@ -108,7 +141,12 @@ export function renderPlayerDetail() {
   const title = document.getElementById("player-screen-title");
   const id = document.getElementById("player-screen-id");
 
-  if (title) title.textContent = `Player ${player.player_id}`;
+  const playerName = player.player_name || player.name;
+  if (title) {
+    title.textContent = playerName
+      ? `${playerName} (${player.player_id})`
+      : `Player ${player.player_id}`;
+  }
   if (id) id.textContent = `player_id: ${player.player_id}`;
 
   const rows = sessions
@@ -166,6 +204,21 @@ export function renderPlayerDetail() {
 
       const { openSession } = await import("./session.js");
       await openSession(sessionId);
+    });
+  });
+}
+
+function bindOpenPlayerButtons(container) {
+  container.querySelectorAll("[data-open-player]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const playerId = btn.getAttribute("data-open-player");
+
+      if (!playerId) {
+        console.error("empty playerId");
+        return;
+      }
+
+      await loadPlayerDetail(playerId);
     });
   });
 }

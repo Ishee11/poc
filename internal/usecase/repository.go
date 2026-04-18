@@ -27,6 +27,7 @@ type PlayerRepository interface {
 	Create(tx Tx, player *entity.Player) error
 	Exists(tx Tx, id entity.PlayerID) (bool, error)
 	GetByID(tx Tx, id entity.PlayerID) (*entity.Player, error)
+	List(tx Tx, limit int, offset int) ([]PlayerDTO, error)
 }
 
 type PlayerIDGenerator interface {

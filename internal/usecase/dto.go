@@ -39,6 +39,7 @@ type PlayerResultDTO struct {
 
 type PlayerStat struct {
 	PlayerID       entity.PlayerID `json:"player_id"`
+	PlayerName     string          `json:"player_name"`
 	SessionsCount  int64           `json:"sessions_count"`
 	TotalBuyIn     int64           `json:"total_buy_in"`
 	TotalCashOut   int64           `json:"total_cash_out"`
@@ -59,6 +60,7 @@ type SessionStat struct {
 
 type PlayerOverallStat struct {
 	PlayerID       entity.PlayerID `json:"player_id"`
+	PlayerName     string          `json:"player_name"`
 	SessionsCount  int64           `json:"sessions_count"`
 	TotalBuyIn     int64           `json:"total_buy_in"`
 	TotalCashOut   int64           `json:"total_cash_out"`

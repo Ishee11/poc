@@ -23,7 +23,18 @@ func NewGetPlayerStatsUseCase(
 }
 
 func (uc *GetPlayerStatsUseCase) Execute(q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {
-	return uc.execute(nil, q)
+	var result *GetPlayerStatsResponse
+
+	err := uc.txManager.RunInTx(func(tx Tx) error {
+		var err error
+		result, err = uc.execute(tx, q)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {

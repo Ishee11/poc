@@ -24,6 +24,7 @@ func NewHandler(
 
 	// player
 	createPlayer *usecase.CreatePlayerUseCase,
+	getPlayers *usecase.GetPlayersUseCase,
 	getPlayerStats *usecase.GetPlayerStatsUseCase,
 
 	// stats
@@ -46,6 +47,7 @@ func NewHandler(
 		},
 		Player: &PlayerHandler{
 			createPlayerUC:   createPlayer,
+			getPlayersUC:     getPlayers,
 			getPlayerStatsUC: getPlayerStats,
 		},
 		Stats: &StatsHandler{
@@ -71,6 +73,7 @@ type OperationHandler struct {
 
 type PlayerHandler struct {
 	createPlayerUC   *usecase.CreatePlayerUseCase
+	getPlayersUC     *usecase.GetPlayersUseCase
 	getPlayerStatsUC *usecase.GetPlayerStatsUseCase
 }
 

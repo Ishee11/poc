@@ -3,12 +3,10 @@ import {
   getSessionOperations,
   buyIn,
   cashOut,
-  state,
-  formatNumber,
-  loadPlayers,
-  renderSession,
-  renderOperations,
 } from "../api.js";
+import { state } from "../state.js";
+import { formatNumber } from "../utils.js";
+import { loadPlayers } from "./player.js";
 
 /**
  * открыть сессию
@@ -94,7 +92,7 @@ export function renderSession() {
 /**
  * рендер операций
  */
-function renderOperations() {
+export function renderOperations() {
   const wrap = document.getElementById("operations-wrap");
   if (!wrap) return;
 

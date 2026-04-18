@@ -328,6 +328,27 @@ button:disabled {
     word-break: break-word;
 }
 
+.muted {
+    color: var(--muted);
+}
+
+.session-row,
+.player-row,
+.operation-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.session-row:last-child,
+.player-row:last-child,
+.operation-row:last-child {
+    border-bottom: 0;
+}
+
 .session-status {
     display: inline-flex;
     align-items: center;

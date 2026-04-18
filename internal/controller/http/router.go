@@ -49,8 +49,9 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/operations/reverse", h.Operation.ReverseOperation)
 
 	// ===== PLAYERS =====
-	mux.HandleFunc("/players", h.Player.CreatePlayer)
+	mux.HandleFunc("/players", h.Player.Players)
 	mux.HandleFunc("/players/stats", h.Player.GetPlayerStats)
+	mux.HandleFunc("/stats/player", h.Player.GetPlayerStats)
 
 	// ===== STATS =====
 	mux.HandleFunc("/stats/sessions", h.Stats.GetStatsSessions)

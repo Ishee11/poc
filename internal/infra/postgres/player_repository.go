@@ -69,6 +69,35 @@ func (r *PlayerRepository) GetByID(
 	return entity.NewPlayer(id, name)
 }
 
+func (r *PlayerRepository) List(
+	tx usecase.Tx,
+	limit int,
+	offset int,
+) ([]usecase.PlayerDTO, error) {
+
+	rows, err := tx.Query(context.Background(), `
+		SELECT id, name
+		FROM players
+		ORDER BY name ASC, id ASC
+		LIMIT $1 OFFSET $2
+	`, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]usecase.PlayerDTO, 0)
+	for rows.Next() {
+		var player usecase.PlayerDTO
+		if err := rows.Scan(&player.ID, &player.Name); err != nil {
+			return nil, err
+		}
+		result = append(result, player)
+	}
+
+	return result, rows.Err()
+}
+
 // --- уже было ---
 
 func (r *PlayerRepository) ListBySession(
