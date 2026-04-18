@@ -18,15 +18,16 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-
+          
             echo "== Pull project =="
             rm -rf /app
             git clone https://github.com/Ishee11/poc.git /app
             cd /app
-
-            echo "== Start containers =="
-            docker compose up -d --build
-
+          
+            echo "== Build & start containers =="
+            docker compose build --build-arg CACHE_BUST=$(date +%s)
+            docker compose up -d --force-recreate
+          
             echo "== Wait for postgres =="
             for i in {1..10}; do
               if docker exec poker-db pg_isready -U poker; then
@@ -36,9 +37,9 @@ jobs:
               echo "Waiting for postgres..."
               sleep 2
             done
-
+          
             echo "== Check app logs =="
             sleep 3
             docker logs poker-app --tail=50
-
+          
             echo "== Done =="
