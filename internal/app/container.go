@@ -20,7 +20,7 @@ func NewContainer(db *DB) *Container {
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
 	idempotencyRepo := postgres.NewIdempotencyRepository()
-	statsRepo := postgres.NewStatsRepository()
+	statsRepo := postgres.NewStatsRepository(db.Pool)
 	playerRepo := postgres.NewPlayerRepository()
 
 	// ===== TxManager =====

@@ -6,12 +6,17 @@ import (
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type StatsRepository struct{}
+type StatsRepository struct {
+	db *pgxpool.Pool
+}
 
-func NewStatsRepository() *StatsRepository {
-	return &StatsRepository{}
+func NewStatsRepository(db *pgxpool.Pool) *StatsRepository {
+	return &StatsRepository{
+		db: db,
+	}
 }
 
 func (r *StatsRepository) ListSessions(
