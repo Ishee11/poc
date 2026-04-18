@@ -64,6 +64,10 @@ export function getSession(sessionId) {
   return request(`/sessions?session_id=${sessionId}`);
 }
 
+export function getSessions() {
+  return request("/stats/sessions");
+}
+
 export function getSessionPlayers(sessionId) {
   return request(`/sessions/players?session_id=${sessionId}`);
 }
@@ -103,6 +107,18 @@ export function reverseOperation({ operationId }) {
     method: "POST",
     body: JSON.stringify({
       target_operation_id: operationId,
+      request_id: rid(),
+    }),
+  });
+}
+
+// ===== players =====
+
+export function createPlayer(name) {
+  return request("/players", {
+    method: "POST",
+    body: JSON.stringify({
+      name,
       request_id: rid(),
     }),
   });
