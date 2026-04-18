@@ -2,7 +2,7 @@ import { createPlayer, startSession } from "./api.js";
 import { loadSessions } from "./ui/lobby.js";
 import { loadPlayersOverview } from "./ui/player.js";
 import { initSessionActions, openSession } from "./ui/session.js";
-import { describeError, showNotice } from "./utils.js";
+import { describeError, openModal, showNotice } from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   initSessionActions();
@@ -42,6 +42,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
+      const confirmed = await openModal({
+        title: "Start Session",
+        description: `Start a new session with chip rate ${chipRate}?`,
+        confirmText: "Start Session",
+      });
+      if (!confirmed) return;
+
       const res = await startSession({ chipRate });
       if (!res.ok || !res.body?.session_id) {
         showNotice(describeError(res, "Failed to start session"), "error");
@@ -65,6 +72,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         showNotice("Enter player name.", "error");
         return;
       }
+
+      const confirmed = await openModal({
+        title: "Create Player",
+        description: `Create player "${name}"?`,
+        confirmText: "Create Player",
+      });
+      if (!confirmed) return;
 
       const res = await createPlayer(name);
       if (!res.ok) {

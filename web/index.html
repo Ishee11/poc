@@ -36,23 +36,39 @@
                             </form>
                         </div>
 
-                        <div class="panel">
-                            <h2>Start a New Session</h2>
+                        <div class="panel panel-stack">
+                            <div>
+                                <h2>Start a New Session</h2>
 
-                            <form id="start-session-form" onsubmit="return false;">
-                                <label>
-                                    Chip Rate
-                                    <input id="start-chip-rate" type="number" min="1" value="2" />
-                                </label>
+                                <form id="start-session-form" onsubmit="return false;">
+                                    <label>
+                                        Chip Rate
+                                        <input id="start-chip-rate" type="number" min="1" value="2" />
+                                    </label>
 
-                                <div class="hint">
-                                    New sessions are created as active and become visible in the list below.
-                                </div>
+                                    <div class="hint">
+                                        New sessions are created as active and become visible in the list below.
+                                    </div>
 
-                                <div class="actions">
-                                    <button type="submit">Start Session</button>
-                                </div>
-                            </form>
+                                    <div class="actions">
+                                        <button type="submit">Start Session</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div>
+                                <h3>Add New Player</h3>
+                                <form id="create-player-form" onsubmit="return false;">
+                                    <label>
+                                        Player Name
+                                        <input id="create-player-name" type="text" placeholder="Enter player name" />
+                                    </label>
+
+                                    <div class="actions">
+                                        <button type="submit">Create Player</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
@@ -66,30 +82,14 @@
                         </details>
                     </div>
 
-                    <div class="grid two">
-                        <div class="panel">
-                            <details class="disclosure" id="overview-players-panel">
-                                <summary>
-                                    <span>Players</span>
-                                    <span class="summary-count" id="overview-players-count">0</span>
-                                </summary>
-                                <div class="disclosure-body" id="overview-players-wrap"></div>
-                            </details>
-                        </div>
-
-                        <div class="panel">
-                            <h3>Add New Player</h3>
-                            <form id="create-player-form" onsubmit="return false;">
-                                <label>
-                                    Player Name
-                                    <input id="create-player-name" type="text" placeholder="Enter player name" />
-                                </label>
-
-                                <div class="actions">
-                                    <button type="submit">Create Player</button>
-                                </div>
-                            </form>
-                        </div>
+                    <div class="panel">
+                        <details class="disclosure" id="overview-players-panel">
+                            <summary>
+                                <span>Players</span>
+                                <span class="summary-count" id="overview-players-count">0</span>
+                            </summary>
+                            <div class="disclosure-body" id="overview-players-wrap"></div>
+                        </details>
                     </div>
                 </section>
 

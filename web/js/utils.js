@@ -54,16 +54,31 @@ export function describeError(res, fallback = "Request failed") {
   if (!res) return fallback;
 
   const details = res.body?.details;
+  const errorCode = res.body?.error;
+
   if (
-    res.body?.error === "session_not_balanced" &&
+    errorCode === "session_not_balanced" &&
     typeof details?.remaining_chips !== "undefined"
   ) {
     return `Session is not balanced yet. Remaining chips on table: ${formatNumber(details.remaining_chips)}.`;
   }
 
-  const errorCode = res.body?.error;
   if (errorCode) {
-    return errorCode.replaceAll("_", " ");
+    const messages = {
+      invalid_request_id: "Request ID is missing.",
+      invalid_chips: "Enter a chip amount greater than zero.",
+      invalid_cash_out: "Cash out is not valid for the current table state.",
+      invalid_operation: "This operation cannot be performed.",
+      player_not_found: "Selected player does not exist.",
+      session_not_found: "Session was not found.",
+      session_not_active: "Session is not active anymore.",
+      session_finished: "Session is already finished.",
+      operation_not_found: "Operation was not found.",
+      operation_already_reversed: "Operation has already been reversed.",
+      internal_error: "Server returned an internal error.",
+    };
+
+    return messages[errorCode] || errorCode.replaceAll("_", " ");
   }
 
   return res.text || fallback;
