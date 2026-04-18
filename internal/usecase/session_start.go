@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"errors"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -13,59 +12,56 @@ type StartSessionUseCase struct {
 	sessionReader SessionReader
 	sessionWriter SessionWriter
 	txManager     TxManager
+	idGenerator   SessionIDGenerator
 }
 
 func NewStartSessionUseCase(
 	sessionReader SessionReader,
 	sessionWriter SessionWriter,
 	txManager TxManager,
+	idGenerator SessionIDGenerator,
 ) *StartSessionUseCase {
 	return &StartSessionUseCase{
 		sessionReader: sessionReader,
 		sessionWriter: sessionWriter,
 		txManager:     txManager,
+		idGenerator:   idGenerator,
 	}
 }
 
-func (uc *StartSessionUseCase) Execute(cmd command.StartSessionCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
-		return uc.execute(tx, cmd)
-	})
-}
+func (uc *StartSessionUseCase) Execute(cmd command.StartSessionCommand) (entity.SessionID, error) {
+	var result entity.SessionID
 
-func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) error {
-
-	// 1. идемпотентность
-	existing, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
-	if err != nil && !errors.Is(err, entity.ErrSessionNotFound) {
-		return err
-	}
-
-	if existing != nil {
-		if existing.Status() == entity.StatusActive {
-			return nil
+	err := uc.txManager.RunInTx(func(tx Tx) error {
+		id, err := uc.execute(tx, cmd)
+		if err != nil {
+			return err
 		}
-		return entity.ErrSessionAlreadyExists
+		result = id
+		return nil
+	})
+
+	if err != nil {
+		return "", err
 	}
 
-	// 2. валидация
+	return result, nil
+}
+
+func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) (entity.SessionID, error) {
+
 	rate, err := valueobject.NewChipRate(cmd.ChipRate)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// 3. создание
-	session := entity.NewSession(cmd.SessionID, rate, time.Now())
+	id := uc.idGenerator.New()
 
-	// 4. сохранение
+	session := entity.NewSession(id, rate, time.Now())
+
 	if err := uc.sessionWriter.Save(tx, session); err != nil {
-		if errors.Is(err, entity.ErrSessionAlreadyExists) {
-			return nil
-		}
-		return err
+		return "", err
 	}
 
-	return nil
+	return id, nil
 }
-
-//

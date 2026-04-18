@@ -37,6 +37,10 @@ type OperationIDGenerator interface {
 	New() entity.OperationID
 }
 
+type SessionIDGenerator interface {
+	New() entity.SessionID
+}
+
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }

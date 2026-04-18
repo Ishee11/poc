@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
 
@@ -30,14 +29,8 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.SessionID == "" {
-		http.Error(w, "session_id required", http.StatusBadRequest)
-		return
-	}
-
-	err := h.startSessionUC.Execute(command.StartSessionCommand{
-		SessionID: entity.SessionID(req.SessionID),
-		ChipRate:  req.ChipRate,
+	id, err := h.startSessionUC.Execute(command.StartSessionCommand{
+		ChipRate: req.ChipRate,
 	})
 
 	if err != nil {
@@ -45,5 +38,7 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"session_id": id,
+	})
 }

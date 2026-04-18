@@ -3,8 +3,7 @@ package command
 import "github.com/ishee11/poc/internal/entity"
 
 type StartSessionCommand struct {
-	SessionID entity.SessionID
-	ChipRate  int64
+	ChipRate int64
 }
 
 type FinishSessionCommand struct {

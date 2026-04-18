@@ -3,8 +3,7 @@ package http
 import "github.com/ishee11/poc/internal/entity"
 
 type StartSessionRequest struct {
-	SessionID string `json:"session_id"`
-	ChipRate  int64  `json:"chip_rate"`
+	ChipRate int64 `json:"chip_rate"`
 }
 
 type FinishSessionRequest struct {

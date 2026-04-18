@@ -17,3 +17,9 @@ type UUIDPlayerIDGenerator struct{}
 func (g *UUIDPlayerIDGenerator) New() entity.PlayerID {
 	return entity.PlayerID(uuid.New().String())
 }
+
+type UUIDSessionIDGenerator struct{}
+
+func (g *UUIDSessionIDGenerator) New() entity.SessionID {
+	return entity.SessionID(uuid.New().String())
+}
