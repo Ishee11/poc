@@ -892,9 +892,6 @@ const docTemplate = `{
             "properties": {
                 "chip_rate": {
                     "type": "integer"
-                },
-                "session_id": {
-                    "type": "string"
                 }
             }
         }
