@@ -9,6 +9,65 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/operations": {
+            "get": {
+                "description": "List operations for session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "operations"
+                ],
+                "summary": "Get session operations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.OperationDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/operations/buy-in": {
             "post": {
                 "description": "Add chips to session",
@@ -143,6 +202,52 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/players": {
+            "post": {
+                "description": "Creates a new player",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "players"
+                ],
+                "summary": "Create player",
+                "parameters": [
+                    {
+                        "description": "Create player request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.CreatePlayerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.CreatePlayerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/internal_controller_http.ErrorResponse"
                         }
@@ -307,9 +412,229 @@
                     }
                 }
             }
+        },
+        "/sessions/players": {
+            "get": {
+                "description": "Returns players in a session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get session players",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.PlayerDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/player": {
+            "get": {
+                "description": "Returns overall statistics for a specific player",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stats"
+                ],
+                "summary": "Get player stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "From date (RFC3339 or YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "To date (RFC3339 or YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.PlayerOverallStat"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/players": {
+            "get": {
+                "description": "Returns aggregated statistics for players",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stats"
+                ],
+                "summary": "Get players stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "From date (RFC3339 or YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "To date (RFC3339 or YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.PlayerStat"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/sessions": {
+            "get": {
+                "description": "Returns statistics for sessions (aggregated)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stats"
+                ],
+                "summary": "Get sessions stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "From date (RFC3339 or YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "To date (RFC3339 or YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.SessionStat"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "github_com_ishee11_poc_internal_entity.OperationType": {
+            "type": "string",
+            "enum": [
+                "buy_in",
+                "cash_out",
+                "reversal"
+            ],
+            "x-enum-varnames": [
+                "OperationBuyIn",
+                "OperationCashOut",
+                "OperationReversal"
+            ]
+        },
         "github_com_ishee11_poc_internal_entity.Status": {
             "type": "string",
             "enum": [
@@ -343,6 +668,118 @@
                     "type": "integer"
                 },
                 "total_chips": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_ishee11_poc_internal_usecase.OperationDTO": {
+            "type": "object",
+            "properties": {
+                "chips": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "reference_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_ishee11_poc_internal_entity.OperationType"
+                }
+            }
+        },
+        "github_com_ishee11_poc_internal_usecase.PlayerDTO": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ishee11_poc_internal_usecase.PlayerOverallStat": {
+            "type": "object",
+            "properties": {
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "profit_chips": {
+                    "type": "integer"
+                },
+                "profit_money": {
+                    "type": "integer"
+                },
+                "sessions_count": {
+                    "type": "integer"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_ishee11_poc_internal_usecase.PlayerStat": {
+            "type": "object",
+            "properties": {
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "profit_chips": {
+                    "type": "integer"
+                },
+                "profit_money": {
+                    "type": "integer"
+                },
+                "sessions_count": {
+                    "type": "integer"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_ishee11_poc_internal_usecase.SessionStat": {
+            "type": "object",
+            "properties": {
+                "chip_rate": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "player_count": {
+                    "type": "integer"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_ishee11_poc_internal_entity.Status"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
                     "type": "integer"
                 }
             }
@@ -386,6 +823,28 @@
                 "session_id": {
                     "type": "string",
                     "example": "session-1"
+                }
+            }
+        },
+        "internal_controller_http.CreatePlayerRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Alice"
+                },
+                "request_id": {
+                    "type": "string",
+                    "example": "req-123"
+                }
+            }
+        },
+        "internal_controller_http.CreatePlayerResponse": {
+            "type": "object",
+            "properties": {
+                "player_id": {
+                    "type": "string",
+                    "example": "player-123"
                 }
             }
         },

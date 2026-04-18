@@ -1,17 +1,13 @@
 export const state = {
-  pendingStartSession: null,
-
   activeSessionId: "",
   session: null,
-  operations: [],
-  results: [],
 
   overviewSessions: [],
-  sessionCatalog: [],
 
   players: [],
+  operations: [],
 
-  // player detail screen
+  // player screen
   selectedPlayerId: "",
   selectedPlayerDetail: null,
 };

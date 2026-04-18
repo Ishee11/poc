@@ -1,16 +1,16 @@
-import { apiGet } from "../api.js";
+import { getSessions } from "../api.js";
 import { state } from "../state.js";
 import { formatDate, escapeHtml, setValue } from "../utils.js";
 
 export async function loadSessions() {
-  const res = await apiGet("/stats/sessions?limit=20");
+  const res = await getSessions();
 
   if (!res.ok) {
     console.error(res.text);
     return;
   }
 
-  state.overviewSessions = res.body || [];
+  state.overviewSessions = Array.isArray(res.body) ? res.body : [];
 
   renderSessions();
   syncSelect();
@@ -50,9 +50,6 @@ export function renderSessions() {
   });
 }
 
-/**
- * синхронизация select
- */
 function syncSelect() {
   const select = document.getElementById("active-session-select");
   if (!select) return;
@@ -71,13 +68,11 @@ function syncSelect() {
 
   select.innerHTML = options.join("");
 
-  // ✔ если текущий есть — оставляем
   if (current && state.overviewSessions.some((s) => s.session_id === current)) {
     select.value = current;
     return;
   }
 
-  // ✔ иначе — ставим первую
   if (state.overviewSessions.length > 0) {
     select.value = state.overviewSessions[0].session_id;
   }

@@ -1,5 +1,15 @@
 basePath: /
 definitions:
+  github_com_ishee11_poc_internal_entity.OperationType:
+    enum:
+    - buy_in
+    - cash_out
+    - reversal
+    type: string
+    x-enum-varnames:
+    - OperationBuyIn
+    - OperationCashOut
+    - OperationReversal
   github_com_ishee11_poc_internal_entity.Status:
     enum:
     - active
@@ -23,6 +33,79 @@ definitions:
       total_cash_out:
         type: integer
       total_chips:
+        type: integer
+    type: object
+  github_com_ishee11_poc_internal_usecase.OperationDTO:
+    properties:
+      chips:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      player_id:
+        type: string
+      reference_id:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_ishee11_poc_internal_entity.OperationType'
+    type: object
+  github_com_ishee11_poc_internal_usecase.PlayerDTO:
+    properties:
+      name:
+        type: string
+      player_id:
+        type: string
+    type: object
+  github_com_ishee11_poc_internal_usecase.PlayerOverallStat:
+    properties:
+      last_activity_at:
+        type: string
+      player_id:
+        type: string
+      profit_chips:
+        type: integer
+      profit_money:
+        type: integer
+      sessions_count:
+        type: integer
+      total_buy_in:
+        type: integer
+      total_cash_out:
+        type: integer
+    type: object
+  github_com_ishee11_poc_internal_usecase.PlayerStat:
+    properties:
+      last_activity_at:
+        type: string
+      player_id:
+        type: string
+      profit_chips:
+        type: integer
+      profit_money:
+        type: integer
+      sessions_count:
+        type: integer
+      total_buy_in:
+        type: integer
+      total_cash_out:
+        type: integer
+    type: object
+  github_com_ishee11_poc_internal_usecase.SessionStat:
+    properties:
+      chip_rate:
+        type: integer
+      created_at:
+        type: string
+      player_count:
+        type: integer
+      session_id:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_ishee11_poc_internal_entity.Status'
+      total_buy_in:
+        type: integer
+      total_cash_out:
         type: integer
     type: object
   internal_controller_http.BuyInRequest:
@@ -53,6 +136,21 @@ definitions:
         type: string
       session_id:
         example: session-1
+        type: string
+    type: object
+  internal_controller_http.CreatePlayerRequest:
+    properties:
+      name:
+        example: Alice
+        type: string
+      request_id:
+        example: req-123
+        type: string
+    type: object
+  internal_controller_http.CreatePlayerResponse:
+    properties:
+      player_id:
+        example: player-123
         type: string
     type: object
   internal_controller_http.ErrorResponse:
@@ -91,6 +189,45 @@ info:
   title: Poker API
   version: "1.0"
 paths:
+  /operations:
+    get:
+      consumes:
+      - application/json
+      description: List operations for session
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.OperationDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Get session operations
+      tags:
+      - operations
   /operations/buy-in:
     post:
       consumes:
@@ -187,6 +324,36 @@ paths:
       summary: Reverse operation
       tags:
       - operations
+  /players:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new player
+      parameters:
+      - description: Create player request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller_http.CreatePlayerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller_http.CreatePlayerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Create player
+      tags:
+      - players
   /session/start:
     post:
       consumes:
@@ -287,4 +454,140 @@ paths:
       summary: Finish session
       tags:
       - sessions
+  /sessions/players:
+    get:
+      consumes:
+      - application/json
+      description: Returns players in a session
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.PlayerDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Get session players
+      tags:
+      - sessions
+  /stats/player:
+    get:
+      consumes:
+      - application/json
+      description: Returns overall statistics for a specific player
+      parameters:
+      - description: Player ID
+        in: query
+        name: player_id
+        required: true
+        type: string
+      - description: From date (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: To date (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.PlayerOverallStat'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Get player stats
+      tags:
+      - stats
+  /stats/players:
+    get:
+      consumes:
+      - application/json
+      description: Returns aggregated statistics for players
+      parameters:
+      - description: Limit (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: From date (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: To date (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.PlayerStat'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Get players stats
+      tags:
+      - stats
+  /stats/sessions:
+    get:
+      consumes:
+      - application/json
+      description: Returns statistics for sessions (aggregated)
+      parameters:
+      - description: Limit (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: From date (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: To date (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.SessionStat'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Get sessions stats
+      tags:
+      - stats
 swagger: "2.0"

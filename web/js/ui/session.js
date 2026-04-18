@@ -1,18 +1,16 @@
-import { apiGet } from "../api.js";
+import { getSession, getSessionOperations } from "../api.js";
+
 import { state } from "../state.js";
 import { formatNumber } from "../utils.js";
 import { loadPlayers } from "./player.js";
 
-/**
- * открыть сессию
- */
 export async function openSession(sessionId) {
   if (!sessionId) {
     console.error("openSession: empty sessionId");
     return;
   }
 
-  const res = await apiGet(`/session?session_id=${sessionId}`);
+  const res = await getSession(sessionId);
 
   if (!res.ok || !res.body) {
     console.error("openSession failed:", res.text);
@@ -21,10 +19,8 @@ export async function openSession(sessionId) {
 
   const s = res.body;
 
-  // 👉 фикс: сохраняем активную сессию
   state.activeSessionId = sessionId;
 
-  // 👉 фикс: очищаем старое состояние (иначе артефакты)
   state.operations = [];
   state.players = [];
 
@@ -39,49 +35,43 @@ export async function openSession(sessionId) {
 
   renderSession();
 
-  // 👉 грузим всё параллельно
   await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
 
   setScreen("session");
 }
 
-/**
- * загрузка операций
- */
 export async function loadOperations(sessionId) {
   if (!sessionId) return;
 
-  const res = await apiGet(`/session/operations?session_id=${sessionId}`);
+  const res = await getSessionOperations(sessionId);
 
   if (!res.ok) {
     console.error("loadOperations failed:", res.text);
     return;
   }
 
-  state.operations = res.body || [];
+  state.operations = Array.isArray(res.body) ? res.body : [];
 
   renderOperations();
 }
 
-/**
- * рендер сессии (статы)
- */
 export function renderSession() {
   const s = state.session;
   if (!s) return;
 
-  const chipRate = document.getElementById("stat-chip-rate");
-  const buyIn = document.getElementById("stat-buy-in");
-  const cashOut = document.getElementById("stat-cash-out");
+  document.getElementById("stat-chip-rate").textContent = formatNumber(
+    s.chipRate,
+  );
 
-  if (chipRate) chipRate.textContent = formatNumber(s.chipRate);
-  if (buyIn) buyIn.textContent = formatNumber(s.totalBuyIn);
-  if (cashOut) cashOut.textContent = formatNumber(s.totalCashOut);
+  document.getElementById("stat-buy-in").textContent = formatNumber(
+    s.totalBuyIn,
+  );
+
+  document.getElementById("stat-cash-out").textContent = formatNumber(
+    s.totalCashOut,
+  );
 }
 
-/**
- * рендер операций
- */
 function renderOperations() {
   const wrap = document.getElementById("operations-wrap");
   if (!wrap) return;
@@ -102,9 +92,6 @@ function renderOperations() {
     .join("");
 }
 
-/**
- * переключение экранов
- */
 function setScreen(name) {
   document
     .getElementById("screen-lobby")
