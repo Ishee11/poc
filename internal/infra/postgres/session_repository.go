@@ -102,3 +102,59 @@ func (r *SessionRepository) Save(
 
 	return err
 }
+
+func (r *SessionRepository) FindByIDForUpdate(
+	tx usecase.Tx,
+	id entity.SessionID,
+) (*entity.Session, error) {
+
+	row := tx.QueryRow(
+		context.Background(),
+		`
+		SELECT id, chip_rate, status, created_at, total_buy_in, total_cash_out
+		FROM sessions
+		WHERE id = $1
+		FOR UPDATE
+		`,
+		id,
+	)
+
+	var (
+		sessionID    entity.SessionID
+		chipRate     int64
+		status       entity.Status
+		createdAt    time.Time
+		totalBuyIn   int64
+		totalCashOut int64
+	)
+
+	err := row.Scan(
+		&sessionID,
+		&chipRate,
+		&status,
+		&createdAt,
+		&totalBuyIn,
+		&totalCashOut,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, entity.ErrSessionNotFound
+		}
+		return nil, err
+	}
+
+	rate, err := valueobject.NewChipRate(chipRate)
+	if err != nil {
+		return nil, err
+	}
+
+	return entity.RestoreSession(
+		sessionID,
+		rate,
+		status,
+		createdAt,
+		totalBuyIn,
+		totalCashOut,
+	), nil
+}

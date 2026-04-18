@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
@@ -22,6 +23,53 @@ func (r *PlayerRepository) Create(tx usecase.Tx, p *entity.Player) error {
 	_, err := tx.Exec(context.Background(), q, p.ID(), p.Name())
 	return err
 }
+
+// --- НОВОЕ ---
+
+func (r *PlayerRepository) Exists(
+	tx usecase.Tx,
+	id entity.PlayerID,
+) (bool, error) {
+
+	var exists bool
+
+	err := tx.QueryRow(
+		context.Background(),
+		`SELECT EXISTS (SELECT 1 FROM players WHERE id = $1)`,
+		id,
+	).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (r *PlayerRepository) GetByID(
+	tx usecase.Tx,
+	id entity.PlayerID,
+) (*entity.Player, error) {
+
+	var name string
+
+	err := tx.QueryRow(
+		context.Background(),
+		`SELECT name FROM players WHERE id = $1`,
+		id,
+	).Scan(&name)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, entity.ErrPlayerNotFound
+		}
+		return nil, err
+	}
+
+	return entity.NewPlayer(id, name)
+}
+
+// --- уже было ---
 
 func (r *PlayerRepository) ListBySession(
 	tx usecase.Tx,
