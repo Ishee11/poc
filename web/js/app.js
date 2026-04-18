@@ -1,13 +1,24 @@
 import { createPlayer, startSession } from "./api.js";
 import { loadSessions } from "./ui/lobby.js";
-import { loadPlayersOverview } from "./ui/player.js";
+import { loadPlayerDetail, loadPlayersOverview } from "./ui/player.js";
 import { initSessionActions, openSession } from "./ui/session.js";
-import { describeError, openModal, showNotice } from "./utils.js";
+import {
+  describeError,
+  openModal,
+  replaceRoute,
+  setScreen,
+  showNotice,
+} from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   initSessionActions();
 
   await Promise.all([loadSessions(), loadPlayersOverview()]);
+  await openInitialRoute();
+
+  window.addEventListener("popstate", () => {
+    openInitialRoute({ fromHistory: true });
+  });
 
   const openButton = document.getElementById("open-workspace-btn");
   const sessionSelect = document.getElementById("active-session-select");
@@ -92,3 +103,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+
+async function openInitialRoute({ fromHistory = false } = {}) {
+  const [, section, rawId] = window.location.pathname.split("/");
+  const id = rawId ? decodeURIComponent(rawId) : "";
+
+  if (section === "session" && id) {
+    await openSession(id, { replace: !fromHistory });
+    return;
+  }
+
+  if (section === "player" && id) {
+    await loadPlayerDetail(id, { replace: !fromHistory });
+    return;
+  }
+
+  setScreen("lobby");
+  if (!fromHistory) replaceRoute("/");
+}

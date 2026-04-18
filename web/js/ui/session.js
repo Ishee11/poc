@@ -14,13 +14,16 @@ import {
   formatDate,
   formatNumber,
   openModal,
+  pushRoute,
+  replaceRoute,
+  routeToSession,
   setScreen,
   showNotice,
 } from "../utils.js";
 import { loadSessions } from "./lobby.js";
 import { loadPlayers, loadPlayersOverview } from "./player.js";
 
-export async function openSession(sessionId) {
+export async function openSession(sessionId, { replace = false } = {}) {
   if (!sessionId) return;
 
   state.activeSessionId = sessionId;
@@ -42,6 +45,11 @@ export async function openSession(sessionId) {
   await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
   renderActionPlayerOptions();
   setScreen("session");
+  if (replace) {
+    replaceRoute(routeToSession(sessionId));
+  } else {
+    pushRoute(routeToSession(sessionId));
+  }
 }
 
 export async function loadOperations(sessionId) {
@@ -68,16 +76,44 @@ export function renderSession() {
   const buyIn = document.getElementById("stat-buy-in");
   const cashOut = document.getElementById("stat-cash-out");
   const totalChips = document.getElementById("stat-total-chips");
+  const totalChipsCard = document.getElementById("stat-total-chips-card");
+  const totalMoney = document.getElementById("stat-total-money");
+  const moneyPanel = document.getElementById("session-money-panel");
+  const status = document.getElementById("workspace-status");
   const finishButton = document.getElementById("finish-session-btn");
+  const finishHint = document.getElementById("finish-session-hint");
+  const playerActions = document.getElementById("session-player-actions");
+  const actionsPanel = document.getElementById("session-actions-panel");
+  const finishActions = document.getElementById("session-finish-actions");
+  const isActive = session.status === "active";
+  const onTable = Number(session.totalChips) || 0;
 
   if (subtitle) {
-    subtitle.textContent = `${formatDate(session.createdAt)} • ${session.status}`;
+    subtitle.textContent = formatDate(session.createdAt);
   }
   if (chipRate) chipRate.textContent = formatNumber(session.chipRate);
   if (buyIn) buyIn.textContent = formatNumber(session.totalBuyIn);
   if (cashOut) cashOut.textContent = formatNumber(session.totalCashOut);
   if (totalChips) totalChips.textContent = formatNumber(session.totalChips);
-  if (finishButton) finishButton.disabled = session.status !== "active";
+  if (totalMoney) totalMoney.textContent = formatNumber(totalMoneyIn(session));
+  if (status) {
+    status.textContent = session.status;
+    status.className = `session-status ${session.status}`;
+  }
+  if (totalChipsCard) {
+    totalChipsCard.classList.toggle("on-table-warning", isActive && onTable > 0);
+    totalChipsCard.classList.toggle("on-table-clear", isActive && onTable === 0);
+  }
+  if (finishButton) finishButton.disabled = !isActive || onTable > 0;
+  if (finishActions) finishActions.hidden = !isActive;
+  if (finishHint) {
+    finishHint.hidden = !isActive || onTable === 0;
+    finishHint.textContent =
+      "Cannot finish session yet: cash out or reverse operations until ON TABLE becomes 0.";
+  }
+  if (playerActions) playerActions.hidden = !isActive;
+  if (actionsPanel) actionsPanel.hidden = !isActive;
+  if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
 }
 
 export function renderOperations() {
@@ -182,15 +218,19 @@ export function initSessionActions() {
         break;
       case "session-back-home-btn":
         setScreen("lobby");
+        pushRoute("/");
         break;
       case "player-back-home-btn":
         setScreen("lobby");
+        pushRoute("/");
         break;
       case "player-back-session-btn":
         if (state.activeSessionId) {
           setScreen("session");
+          pushRoute(routeToSession(state.activeSessionId));
         } else {
           setScreen("lobby");
+          pushRoute("/");
         }
         break;
       default:
@@ -377,6 +417,13 @@ async function confirmAddNewPlayer() {
 
 async function confirmFinishSession() {
   if (state.session?.status !== "active") return;
+  if ((Number(state.session.totalChips) || 0) > 0) {
+    showNotice(
+      `Cannot finish session yet. Remaining chips on table: ${formatNumber(state.session.totalChips)}.`,
+      "error",
+    );
+    return;
+  }
 
   const values = await openModal({
     title: "Finish Session",
@@ -462,4 +509,13 @@ function findPlayerName(playerId) {
 
   const overview = state.overviewPlayers.find((player) => player.player_id === playerId);
   return overview?.player_name || playerId;
+}
+
+function totalMoneyIn(session) {
+  const chipRate = Number(session.chipRate);
+  const totalBuyIn = Number(session.totalBuyIn);
+  if (!Number.isFinite(chipRate) || chipRate <= 0 || !Number.isFinite(totalBuyIn)) {
+    return 0;
+  }
+  return totalBuyIn / chipRate;
 }

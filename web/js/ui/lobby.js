@@ -1,6 +1,6 @@
 import { getSessions } from "../api.js";
 import { state } from "../state.js";
-import { escapeHtml, formatDate, setValue } from "../utils.js";
+import { escapeHtml, formatDate, formatNumber, setValue } from "../utils.js";
 
 export async function loadSessions() {
   const res = await getSessions();
@@ -47,6 +47,11 @@ export function renderSessions() {
         <div class="session-row">
           <div class="row-main">
             <div class="row-title">${escapeHtml(formatDate(session.created_at))}</div>
+            <div class="inline-stats">
+              <span>${escapeHtml(session.status || "-")}</span>
+              <span>Players: ${formatNumber(session.player_count)}</span>
+              <span>Buy in: ${formatNumber(session.total_buy_in)}</span>
+            </div>
           </div>
           <button type="button" data-open-session="${escapeHtml(id)}">Open</button>
         </div>
@@ -75,7 +80,7 @@ function syncSelect() {
     '<option value="">Latest active session</option>',
     ...state.overviewSessions.map((session) => {
       const id = session.session_id || session.id;
-      const label = formatDate(session.created_at);
+      const label = `${formatDate(session.created_at)} (${session.status || "-"})`;
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
     }),
   ];

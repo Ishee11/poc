@@ -23,7 +23,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== INDEX =====
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
+		if r.URL.Path != "/" && !isClientRoute(r.URL.Path) {
 			http.NotFound(w, r)
 			return
 		}
@@ -64,4 +64,9 @@ func NewRouter(h *Handler) http.Handler {
 	handler = LoggingMiddleware(handler)
 
 	return handler
+}
+
+func isClientRoute(path string) bool {
+	return len(path) > len("/session/") && path[:len("/session/")] == "/session/" ||
+		len(path) > len("/player/") && path[:len("/player/")] == "/player/"
 }

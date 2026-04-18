@@ -11,4 +11,8 @@ export const state = {
   // player screen
   selectedPlayerId: "",
   selectedPlayerDetail: null,
+  selectedPlayerFilters: {
+    from: "",
+    to: "",
+  },
 };

@@ -3,8 +3,8 @@ package usecase
 import "github.com/ishee11/poc/internal/entity"
 
 type GetPlayerStatsResponse struct {
-	Player   PlayerOverallStat
-	Sessions []PlayerSessionStat
+	Player   PlayerOverallStat   `json:"player"`
+	Sessions []PlayerSessionStat `json:"sessions"`
 }
 
 type GetPlayerStatsUseCase struct {

@@ -105,6 +105,27 @@ body::before {
     font-size: 1rem;
 }
 
+.hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+}
+
+.top-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+body:not([data-screen="session"]) .nav-session-only,
+body:not([data-screen="player"]) .nav-player-only {
+    display: none;
+}
+
 .hero-meta {
     margin-top: 18px;
     display: flex;
@@ -198,6 +219,26 @@ body::before {
 
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stat.on-table-warning {
+    border-color: rgba(255, 208, 122, 0.62);
+    background: rgba(255, 208, 122, 0.13);
+}
+
+.stat.on-table-warning #stat-total-chips {
+    color: var(--warning);
+    font-size: 1.28rem;
+    font-weight: 800;
+}
+
+.stat.on-table-clear {
+    border-color: rgba(88, 208, 167, 0.42);
+    background: rgba(88, 208, 167, 0.1);
+}
+
+.money-stat {
+    grid-column: 1 / -1;
 }
 
 .stat-label {
@@ -318,6 +359,16 @@ button:disabled {
     margin-top: 14px;
 }
 
+.finish-hint {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 208, 122, 0.42);
+    color: #ffe2aa;
+    background: rgba(255, 208, 122, 0.1);
+    font-weight: 700;
+}
+
 .toolbar .actions.actions-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -389,23 +440,72 @@ button:disabled {
     font-size: 0.88rem;
 }
 
+.title-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
 .session-status {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
     border-radius: 999px;
-    font-size: 0.9rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    text-transform: uppercase;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .session-status.active {
-    color: #aef0d8;
+    color: #8cffd3;
+    border-color: rgba(88, 208, 167, 0.38);
+    background: rgba(88, 208, 167, 0.12);
 }
 
 .session-status.finished {
-    color: #ffe0b0;
+    color: #ff9a8b;
+    border-color: rgba(255, 143, 123, 0.42);
+    background: rgba(255, 143, 123, 0.12);
+    font-size: 1.15rem;
+}
+
+.clickable-row {
+    cursor: pointer;
+    border-radius: 14px;
+    padding-inline: 10px;
+    transition:
+        background 0.18s ease,
+        transform 0.18s ease;
+}
+
+.clickable-row:hover,
+.clickable-row:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.profit-positive {
+    color: #8cffd3;
+    font-weight: 800;
+}
+
+.profit-negative {
+    color: var(--danger);
+    font-weight: 800;
+}
+
+.panel-stack {
+    display: grid;
+    gap: 16px;
+}
+
+.player-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 table {
@@ -769,6 +869,19 @@ pre {
 
     .hero {
         padding: 18px 16px;
+    }
+
+    .hero-content {
+        flex-direction: column;
+    }
+
+    .top-nav {
+        justify-content: stretch;
+        width: 100%;
+    }
+
+    .top-nav button {
+        flex: 1 1 100%;
     }
 
     .hero h1 {

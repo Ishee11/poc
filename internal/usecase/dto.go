@@ -13,8 +13,10 @@ type SessionPlayerDTO struct {
 	PlayerID entity.PlayerID `json:"player_id"`
 	Name     string          `json:"name"`
 
-	BuyIn   int64 `json:"buy_in"`
-	CashOut int64 `json:"cash_out"`
+	BuyIn       int64 `json:"buy_in"`
+	CashOut     int64 `json:"cash_out"`
+	ProfitChips int64 `json:"profit_chips"`
+	ProfitMoney int64 `json:"profit_money"`
 
 	InGame bool `json:"in_game"`
 }

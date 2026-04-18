@@ -168,6 +168,9 @@ export function createPlayer(name) {
   });
 }
 
-export function getPlayerStats(playerId) {
-  return request(`/stats/player?player_id=${playerId}`);
+export function getPlayerStats(playerId, { from, to } = {}) {
+  const params = new URLSearchParams({ player_id: playerId });
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  return request(`/stats/player?${params.toString()}`);
 }

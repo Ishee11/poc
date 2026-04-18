@@ -1,5 +1,7 @@
 package usecase
 
+import "github.com/ishee11/poc/internal/entity"
+
 type GetSessionPlayersUseCase struct {
 	projection    ProjectionRepository
 	playerRepo    PlayerRepository
@@ -46,8 +48,12 @@ func (uc *GetSessionPlayersUseCase) execute(
 	q GetSessionPlayersQuery,
 ) ([]SessionPlayerDTO, error) {
 
-	if _, err := uc.sessionReader.FindByID(tx, q.SessionID); err != nil {
+	session, err := uc.sessionReader.FindByID(tx, q.SessionID)
+	if err != nil {
 		return nil, err
+	}
+	if session == nil {
+		return nil, entity.ErrSessionNotFound
 	}
 
 	aggs, err := uc.projection.GetPlayerAggregates(tx, q.SessionID)
@@ -58,18 +64,25 @@ func (uc *GetSessionPlayersUseCase) execute(
 	result := make([]SessionPlayerDTO, 0, len(aggs))
 
 	for playerID, agg := range aggs {
-		inGame := agg.BuyIn > agg.CashOut
+		inGame := session.Status() == entity.StatusActive && agg.BuyIn > agg.CashOut
 		player, err := uc.playerRepo.GetByID(tx, playerID)
 		if err != nil {
 			return nil, err
 		}
+		profitChips := agg.CashOut - agg.BuyIn
+		profitMoney := int64(0)
+		if session.ChipRate().Value() > 0 {
+			profitMoney = profitChips / session.ChipRate().Value()
+		}
 
 		result = append(result, SessionPlayerDTO{
-			PlayerID: playerID,
-			Name:     player.Name(),
-			BuyIn:    agg.BuyIn,
-			CashOut:  agg.CashOut,
-			InGame:   inGame,
+			PlayerID:    playerID,
+			Name:        player.Name(),
+			BuyIn:       agg.BuyIn,
+			CashOut:     agg.CashOut,
+			ProfitChips: profitChips,
+			ProfitMoney: profitMoney,
+			InGame:      inGame,
 		})
 	}
 

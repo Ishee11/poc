@@ -13,10 +13,19 @@ export function formatNumber(v) {
   return Number.isFinite(n) ? n.toLocaleString() : "-";
 }
 
-export function formatDate(v) {
+export function formatDate(v, { seconds = false } = {}) {
   if (!v) return "-";
   const d = new Date(v);
-  return isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+  return isNaN(d.getTime())
+    ? String(v)
+    : d.toLocaleString([], {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        ...(seconds ? { second: "2-digit" } : {}),
+      });
 }
 
 export function escapeHtml(str) {
@@ -96,6 +105,28 @@ export function setScreen(name) {
   document
     .getElementById("screen-player")
     ?.classList.toggle("active", name === "player");
+
+  document.body.dataset.screen = name;
+}
+
+export function routeToSession(sessionId) {
+  return `/session/${encodeURIComponent(sessionId)}`;
+}
+
+export function routeToPlayer(playerId) {
+  return `/player/${encodeURIComponent(playerId)}`;
+}
+
+export function pushRoute(path) {
+  if (window.location.pathname !== path) {
+    window.history.pushState({}, "", path);
+  }
+}
+
+export function replaceRoute(path) {
+  if (window.location.pathname !== path) {
+    window.history.replaceState({}, "", path);
+  }
 }
 
 export function openModal({
