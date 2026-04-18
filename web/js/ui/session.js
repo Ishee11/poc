@@ -1,218 +1,469 @@
 import {
-  getSession,
-  getSessionOperations,
   buyIn,
   cashOut,
+  createPlayer,
+  finishSession,
+  getSession,
+  getSessionOperations,
+  reverseOperation,
 } from "../api.js";
 import { state } from "../state.js";
-import { formatNumber } from "../utils.js";
-import { loadPlayers } from "./player.js";
+import {
+  describeError,
+  escapeHtml,
+  formatDate,
+  formatNumber,
+  openModal,
+  setScreen,
+  showNotice,
+} from "../utils.js";
+import { loadSessions } from "./lobby.js";
+import { loadPlayers, loadPlayersOverview } from "./player.js";
 
-/**
- * открыть сессию
- */
 export async function openSession(sessionId) {
-  if (!sessionId) {
-    console.error("openSession: empty sessionId");
-    return;
-  }
+  if (!sessionId) return;
 
-  // 👉 сохраняем сразу (единый источник правды)
   state.activeSessionId = sessionId;
-
-  // 👉 очищаем старое состояние
   state.session = null;
   state.operations = [];
   state.players = [];
 
-  // 👉 грузим сессию
   const res = await getSession(sessionId);
-
   if (!res.ok || !res.body) {
-    console.error("openSession failed:", res.text);
+    showNotice(describeError(res, "Failed to load session"), "error");
     return;
   }
 
-  const s = res.body;
-
-  state.session = {
-    id: s.session_id,
-    status: s.status,
-    chipRate: s.chip_rate,
-    totalBuyIn: s.total_buy_in,
-    totalCashOut: s.total_cash_out,
-    totalChips: s.total_chips,
-  };
-
-  // 👉 первичный рендер (можно как loading state)
+  hydrateSession(res.body);
   renderSession();
-  renderOperations(); // очистит UI
+  renderOperations();
+  renderActionPlayerOptions();
 
-  // 👉 параллельно грузим данные
   await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
-
-  // 👉 переключаем экран
+  renderActionPlayerOptions();
   setScreen("session");
+  showNotice("");
 }
 
-/**
- * загрузка операций
- */
 export async function loadOperations(sessionId) {
   if (!sessionId) return;
 
   const res = await getSessionOperations(sessionId);
-
   if (!res.ok) {
     console.error("loadOperations failed:", res.text);
+    state.operations = [];
+    renderOperations();
     return;
   }
 
   state.operations = Array.isArray(res.body) ? res.body : [];
-
   renderOperations();
 }
 
-/**
- * рендер сессии (статы)
- */
 export function renderSession() {
-  const s = state.session;
-  if (!s) return;
+  const session = state.session;
+  if (!session) return;
 
+  const subtitle = document.getElementById("workspace-subtitle");
   const chipRate = document.getElementById("stat-chip-rate");
   const buyIn = document.getElementById("stat-buy-in");
   const cashOut = document.getElementById("stat-cash-out");
+  const totalChips = document.getElementById("stat-total-chips");
+  const finishButton = document.getElementById("finish-session-btn");
 
-  if (chipRate) chipRate.textContent = formatNumber(s.chipRate);
-  if (buyIn) buyIn.textContent = formatNumber(s.totalBuyIn);
-  if (cashOut) cashOut.textContent = formatNumber(s.totalCashOut);
+  if (subtitle) {
+    subtitle.textContent = `${formatDate(session.createdAt)} • ${session.status}`;
+  }
+  if (chipRate) chipRate.textContent = formatNumber(session.chipRate);
+  if (buyIn) buyIn.textContent = formatNumber(session.totalBuyIn);
+  if (cashOut) cashOut.textContent = formatNumber(session.totalCashOut);
+  if (totalChips) totalChips.textContent = formatNumber(session.totalChips);
+  if (finishButton) finishButton.disabled = session.status !== "active";
 }
 
-/**
- * рендер операций
- */
 export function renderOperations() {
   const wrap = document.getElementById("operations-wrap");
-  if (!wrap) return;
+  const count = document.getElementById("session-operations-count");
+  if (!wrap || !count) return;
+
+  count.textContent = String(state.operations.length);
 
   if (!state.operations.length) {
-    wrap.innerHTML = "<div>No operations</div>";
+    wrap.innerHTML = '<div class="empty-inline">No operations yet</div>';
     return;
   }
 
+  const reversedTargets = new Set(
+    state.operations
+      .filter((operation) => operation.type === "reversal" && operation.reference_id)
+      .map((operation) => operation.reference_id),
+  );
+
   wrap.innerHTML = state.operations
-    .map(
-      (op) => `
+    .map((operation) => {
+      const playerName = findPlayerName(operation.player_id);
+      const reversible =
+        state.session?.status === "active" &&
+        operation.type !== "reversal" &&
+        !reversedTargets.has(operation.id);
+
+      return `
         <div class="operation-row">
-          <span>${op.type}</span>
-          <span>${formatNumber(op.chips)}</span>
+          <div class="row-main">
+            <div class="row-title">
+              <span class="operation-type ${escapeHtml(operation.type)}">${escapeHtml(operation.type)}</span>
+              ${escapeHtml(playerName)}
+            </div>
+            <div class="inline-stats">
+              <span>Chips: ${formatNumber(operation.chips)}</span>
+              <span>${escapeHtml(formatDate(operation.created_at))}</span>
+            </div>
+          </div>
+          ${
+            reversible
+              ? `<button type="button" class="secondary" data-reverse-operation="${escapeHtml(operation.id)}">Reverse</button>`
+              : '<span class="muted">-</span>'
+          }
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
+
+  wrap.querySelectorAll("[data-reverse-operation]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const operationId = button.getAttribute("data-reverse-operation");
+      if (!operationId) return;
+      await confirmReverse(operationId);
+    });
+  });
 }
 
-/**
- * переключение экранов
- */
-function setScreen(name) {
-  document
-    .getElementById("screen-lobby")
-    ?.classList.toggle("active", name === "lobby");
+export function renderActionPlayerOptions() {
+  const select = document.getElementById("action-player-select");
+  if (!select) return;
 
-  document
-    .getElementById("screen-session")
-    ?.classList.toggle("active", name === "session");
+  const current = select.value;
+  const options = [
+    '<option value="">Select player</option>',
+    ...state.players.map((player) => {
+      const id = player.player_id || player.id;
+      const name = player.player_name || player.name || id;
+      return `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`;
+    }),
+  ];
 
-  document
-    .getElementById("screen-player")
-    ?.classList.toggle("active", name === "player");
+  select.innerHTML = options.join("");
+  const exists = state.players.some((player) => {
+    const id = player.player_id || player.id;
+    return id === current;
+  });
+  select.value = exists ? current : "";
 }
 
 export function initSessionActions() {
-  document.addEventListener("click", async (e) => {
-    const target = e.target.closest("button");
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
 
-    if (!target) return;
-
-    if (target.id === "buy-in-btn") {
-      await handleBuyIn();
-    }
-
-    if (target.id === "cash-out-btn") {
-      await handleCashOut();
+    switch (button.id) {
+      case "buy-in-btn":
+        await confirmBuyIn();
+        break;
+      case "cash-out-btn":
+        await confirmCashOut();
+        break;
+      case "session-add-existing-player-btn":
+        await confirmAddExistingPlayer();
+        break;
+      case "session-add-new-player-btn":
+        await confirmAddNewPlayer();
+        break;
+      case "finish-session-btn":
+        await confirmFinishSession();
+        break;
+      case "session-back-home-btn":
+        setScreen("lobby");
+        showNotice("");
+        break;
+      case "player-back-home-btn":
+        setScreen("lobby");
+        showNotice("");
+        break;
+      case "player-back-session-btn":
+        if (state.activeSessionId) {
+          setScreen("session");
+        } else {
+          setScreen("lobby");
+        }
+        showNotice("");
+        break;
+      default:
+        break;
     }
   });
 }
 
-async function handleBuyIn() {
-  const playerId = document.getElementById("action-player-id").value;
-  const chips = Number(document.getElementById("action-chips").value);
+async function confirmBuyIn() {
+  const playerId = document.getElementById("action-player-select")?.value;
+  const chips = Number(document.getElementById("action-chips")?.value);
 
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    console.error("invalid input");
+    showNotice("Select a player and enter a valid chip amount.", "error");
     return;
   }
+
+  const playerName = findPlayerName(playerId);
+  const values = await openModal({
+    title: "Confirm Buy In",
+    description: `Add ${formatNumber(chips)} chips for ${playerName}?`,
+    confirmText: "Confirm Buy In",
+  });
+  if (!values) return;
 
   const res = await buyIn({
     sessionId: state.activeSessionId,
     playerId,
     chips,
   });
-
   if (!res.ok) {
-    console.error("buyIn failed:", res.text);
+    showNotice(describeError(res, "Failed to apply buy in"), "error");
     return;
   }
 
-  await refreshSession();
-
+  await refreshSessionData();
   document.getElementById("action-chips").value = "";
+  showNotice(`Buy in recorded for ${playerName}.`, "success");
 }
 
-async function handleCashOut() {
-  const playerId = document.getElementById("action-player-id").value;
-  const chips = Number(document.getElementById("action-chips").value);
+async function confirmCashOut() {
+  const playerId = document.getElementById("action-player-select")?.value;
+  const chips = Number(document.getElementById("action-chips")?.value);
 
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    console.error("invalid input");
+    showNotice("Select a player and enter a valid chip amount.", "error");
     return;
   }
+
+  const playerName = findPlayerName(playerId);
+  const values = await openModal({
+    title: "Confirm Cash Out",
+    description: `Cash out ${formatNumber(chips)} chips for ${playerName}?`,
+    confirmText: "Confirm Cash Out",
+  });
+  if (!values) return;
 
   const res = await cashOut({
     sessionId: state.activeSessionId,
     playerId,
     chips,
   });
-
   if (!res.ok) {
-    console.error("cashOut failed:", res.text);
+    showNotice(describeError(res, "Failed to apply cash out"), "error");
     return;
   }
 
-  await refreshSession();
+  await refreshSessionData();
+  document.getElementById("action-chips").value = "";
+  showNotice(`Cash out recorded for ${playerName}.`, "success");
 }
 
-async function refreshSession() {
+async function confirmAddExistingPlayer() {
+  await loadPlayersOverview();
+
+  const currentIds = new Set(
+    state.players.map((player) => player.player_id || player.id),
+  );
+  const availablePlayers = state.overviewPlayers.filter(
+    (player) => !currentIds.has(player.player_id),
+  );
+
+  if (!availablePlayers.length) {
+    showNotice("No available players to add. Create a new player instead.", "info");
+    return;
+  }
+
+  const values = await openModal({
+    title: "Add Player to Session",
+    description:
+      "The player will appear in the session after the first buy in. This matches the current backend flow.",
+    confirmText: "Add to Session",
+    fields: [
+      {
+        name: "player_id",
+        label: "Player",
+        type: "select",
+        options: availablePlayers.map((player) => ({
+          value: player.player_id,
+          label: player.player_name || player.player_id,
+        })),
+      },
+      {
+        name: "chips",
+        label: "Initial Buy In",
+        type: "number",
+        min: "1",
+        placeholder: "Chips",
+      },
+    ],
+  });
+  if (!values) return;
+
+  const chips = Number(values.chips);
+  if (!values.player_id || !Number.isFinite(chips) || chips <= 0) {
+    showNotice("Choose a player and enter a valid initial buy in.", "error");
+    return;
+  }
+
+  const res = await buyIn({
+    sessionId: state.activeSessionId,
+    playerId: values.player_id,
+    chips,
+  });
+  if (!res.ok) {
+    showNotice(describeError(res, "Failed to add player to session"), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice(`Player ${findPlayerName(values.player_id)} added to session.`, "success");
+}
+
+async function confirmAddNewPlayer() {
+  const values = await openModal({
+    title: "Create New Player",
+    description:
+      "A new player is created in the global player list and immediately added to this session through the first buy in.",
+    confirmText: "Create and Add",
+    fields: [
+      {
+        name: "name",
+        label: "Player Name",
+        type: "text",
+        placeholder: "Enter player name",
+      },
+      {
+        name: "chips",
+        label: "Initial Buy In",
+        type: "number",
+        min: "1",
+        placeholder: "Chips",
+      },
+    ],
+  });
+  if (!values) return;
+
+  const name = (values.name || "").trim();
+  const chips = Number(values.chips);
+  if (!name || !Number.isFinite(chips) || chips <= 0) {
+    showNotice("Enter player name and a valid initial buy in.", "error");
+    return;
+  }
+
+  const createRes = await createPlayer(name);
+  if (!createRes.ok || !createRes.body?.player_id) {
+    showNotice(describeError(createRes, "Failed to create player"), "error");
+    return;
+  }
+
+  const buyInRes = await buyIn({
+    sessionId: state.activeSessionId,
+    playerId: createRes.body.player_id,
+    chips,
+  });
+  if (!buyInRes.ok) {
+    showNotice(describeError(buyInRes, "Player created, but add to session failed"), "error");
+    return;
+  }
+
+  await Promise.all([refreshSessionData(), loadPlayersOverview()]);
+  showNotice(`Player ${name} created and added to session.`, "success");
+}
+
+async function confirmFinishSession() {
+  if (state.session?.status !== "active") return;
+
+  const values = await openModal({
+    title: "Finish Session",
+    description:
+      "Finish the session now? The backend allows this only when total buy in equals total cash out.",
+    confirmText: "Finish Session",
+  });
+  if (!values) return;
+
+  const res = await finishSession({ sessionId: state.activeSessionId });
+  if (!res.ok) {
+    showNotice(describeError(res, "Failed to finish session"), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice("Session finished.", "success");
+}
+
+async function confirmReverse(operationId) {
+  const operation = state.operations.find((item) => item.id === operationId);
+  if (!operation) return;
+
+  const values = await openModal({
+    title: "Reverse Operation",
+    description: `Reverse ${operation.type} for ${findPlayerName(operation.player_id)} with ${formatNumber(operation.chips)} chips?`,
+    confirmText: "Reverse",
+  });
+  if (!values) return;
+
+  const res = await reverseOperation({ operationId });
+  if (!res.ok) {
+    showNotice(describeError(res, "Failed to reverse operation"), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice("Operation reversed.", "success");
+}
+
+async function refreshSessionData() {
   const id = state.activeSessionId;
   if (!id) return;
 
   const res = await getSession(id);
-  if (!res.ok || !res.body) return;
+  if (!res.ok || !res.body) {
+    showNotice(describeError(res, "Failed to refresh session"), "error");
+    return;
+  }
 
-  const s = res.body;
-
-  state.session = {
-    id: s.session_id,
-    status: s.status,
-    chipRate: s.chip_rate,
-    totalBuyIn: s.total_buy_in,
-    totalCashOut: s.total_cash_out,
-    totalChips: s.total_chips,
-  };
-
+  hydrateSession(res.body);
   renderSession();
 
-  await Promise.all([loadPlayers(id), loadOperations(id)]);
+  await Promise.all([
+    loadPlayers(id),
+    loadOperations(id),
+    loadSessions(),
+    loadPlayersOverview(),
+  ]);
+  renderActionPlayerOptions();
+}
+
+function hydrateSession(raw) {
+  state.session = {
+    id: raw.session_id,
+    status: raw.status,
+    chipRate: raw.chip_rate,
+    createdAt: raw.created_at,
+    totalBuyIn: raw.total_buy_in,
+    totalCashOut: raw.total_cash_out,
+    totalChips: raw.total_chips,
+  };
+}
+
+function findPlayerName(playerId) {
+  const inSession = state.players.find((player) => {
+    const id = player.player_id || player.id;
+    return id === playerId;
+  });
+  if (inSession) {
+    return inSession.player_name || inSession.name || playerId;
+  }
+
+  const overview = state.overviewPlayers.find((player) => player.player_id === playerId);
+  return overview?.player_name || playerId;
 }

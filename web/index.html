@@ -10,36 +10,26 @@
 
     <body>
         <div class="app">
-            <!-- HERO -->
             <section class="hero">
                 <h1>Poker Session Control</h1>
                 <p>Control panel for poker cash games.</p>
             </section>
 
             <main class="layout">
-                <!-- ================= LOBBY ================= -->
+                <div id="page-notice" class="notice" hidden></div>
+
                 <section class="screen active" id="screen-lobby">
                     <div class="grid two">
                         <div class="panel">
                             <h2>Connect to Active Session</h2>
 
-                            <!-- 👇 добавили prevent submit -->
-                            <form
-                                id="connect-session-form"
-                                onsubmit="return false;"
-                            >
+                            <form id="connect-session-form" onsubmit="return false;">
                                 <select id="active-session-select">
-                                    <option value="">
-                                        Latest active session
-                                    </option>
+                                    <option value="">Latest active session</option>
                                 </select>
 
                                 <div class="actions">
-                                    <button
-                                        type="button"
-                                        id="open-workspace-btn"
-                                        class="secondary"
-                                    >
+                                    <button type="button" id="open-workspace-btn" class="secondary">
                                         Open Workspace
                                     </button>
                                 </div>
@@ -49,23 +39,14 @@
                         <div class="panel">
                             <h2>Start a New Session</h2>
 
-                            <!-- 👇 тоже защита -->
-                            <form
-                                id="start-session-form"
-                                onsubmit="return false;"
-                            >
+                            <form id="start-session-form" onsubmit="return false;">
                                 <label>
                                     Chip Rate
-                                    <input
-                                        id="start-chip-rate"
-                                        type="number"
-                                        min="1"
-                                        value="2"
-                                    />
+                                    <input id="start-chip-rate" type="number" min="1" value="2" />
                                 </label>
 
-                                <div class="hint" id="next-session-id-hint">
-                                    Next session ID: -
+                                <div class="hint">
+                                    New sessions are created as active and become visible in the list below.
                                 </div>
 
                                 <div class="actions">
@@ -76,20 +57,58 @@
                     </div>
 
                     <div class="panel">
-                        <h3>Sessions</h3>
-                        <div id="overview-sessions-wrap"></div>
+                        <details class="disclosure" id="overview-sessions-panel">
+                            <summary>
+                                <span>Sessions</span>
+                                <span class="summary-count" id="overview-sessions-count">0</span>
+                            </summary>
+                            <div class="disclosure-body" id="overview-sessions-wrap"></div>
+                        </details>
                     </div>
 
-                    <div class="panel">
-                        <h3>Players</h3>
-                        <div id="overview-players-wrap"></div>
+                    <div class="grid two">
+                        <div class="panel">
+                            <details class="disclosure" id="overview-players-panel">
+                                <summary>
+                                    <span>Players</span>
+                                    <span class="summary-count" id="overview-players-count">0</span>
+                                </summary>
+                                <div class="disclosure-body" id="overview-players-wrap"></div>
+                            </details>
+                        </div>
+
+                        <div class="panel">
+                            <h3>Add New Player</h3>
+                            <form id="create-player-form" onsubmit="return false;">
+                                <label>
+                                    Player Name
+                                    <input id="create-player-name" type="text" placeholder="Enter player name" />
+                                </label>
+
+                                <div class="actions">
+                                    <button type="submit">Create Player</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </section>
 
-                <!-- ================= SESSION ================= -->
                 <section class="screen" id="screen-session">
                     <div class="panel">
-                        <h2 id="workspace-title">Session</h2>
+                        <div class="toolbar">
+                            <div>
+                                <h2 id="workspace-title">Session</h2>
+                                <div id="workspace-subtitle" class="muted"></div>
+                            </div>
+                            <div class="actions">
+                                <button type="button" class="secondary" id="session-back-home-btn">
+                                    Back to Home
+                                </button>
+                                <button type="button" class="warn" id="finish-session-btn">
+                                    Finish Session
+                                </button>
+                            </div>
+                        </div>
 
                         <div class="stats">
                             <div class="stat">
@@ -106,6 +125,20 @@
                                 <div class="stat-label">Total Cash Out</div>
                                 <div id="stat-cash-out">-</div>
                             </div>
+
+                            <div class="stat">
+                                <div class="stat-label">On Table</div>
+                                <div id="stat-total-chips">-</div>
+                            </div>
+                        </div>
+
+                        <div class="actions top-gap">
+                            <button type="button" id="session-add-existing-player-btn">
+                                Add Player to Session
+                            </button>
+                            <button type="button" class="secondary" id="session-add-new-player-btn">
+                                Create New Player
+                            </button>
                         </div>
                     </div>
 
@@ -117,37 +150,57 @@
                     <div class="panel">
                         <h3>Actions</h3>
 
-                        <div class="form-row">
-                            <input
-                                id="action-player-id"
-                                placeholder="Player ID"
-                            />
-                            <input
-                                id="action-chips"
-                                type="number"
-                                placeholder="Chips"
-                            />
-                        </div>
+                        <form id="session-operation-form" onsubmit="return false;">
+                            <div class="grid two">
+                                <label>
+                                    Player
+                                    <select id="action-player-select">
+                                        <option value="">Select player</option>
+                                    </select>
+                                </label>
 
-                        <div class="actions">
-                            <button id="buy-in-btn">Buy In</button>
-                            <button id="cash-out-btn" class="secondary">
-                                Cash Out
-                            </button>
-                        </div>
+                                <label>
+                                    Chips
+                                    <input id="action-chips" type="number" min="1" placeholder="Chips" />
+                                </label>
+                            </div>
+
+                            <div class="actions">
+                                <button type="button" id="buy-in-btn">Buy In</button>
+                                <button type="button" id="cash-out-btn" class="secondary">
+                                    Cash Out
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
                     <div class="panel">
-                        <h3>Operations</h3>
-                        <div id="operations-wrap"></div>
+                        <details class="disclosure" id="session-operations-panel">
+                            <summary>
+                                <span>Latest Operations</span>
+                                <span class="summary-count" id="session-operations-count">0</span>
+                            </summary>
+                            <div class="disclosure-body" id="operations-wrap"></div>
+                        </details>
                     </div>
                 </section>
 
-                <!-- ================= PLAYER ================= -->
                 <section class="screen" id="screen-player">
                     <div class="panel">
-                        <h2 id="player-screen-title">Player</h2>
-                        <div id="player-screen-id"></div>
+                        <div class="toolbar">
+                            <div>
+                                <h2 id="player-screen-title">Player</h2>
+                                <div id="player-screen-id" class="muted"></div>
+                            </div>
+                            <div class="actions">
+                                <button type="button" class="secondary" id="player-back-session-btn">
+                                    Back to Session
+                                </button>
+                                <button type="button" class="secondary" id="player-back-home-btn">
+                                    Back to Home
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="panel">
@@ -158,6 +211,8 @@
                 </section>
             </main>
         </div>
+
+        <div id="modal-root" class="modal-root" hidden></div>
 
         <script type="module" src="/static/js/app.js"></script>
     </body>

@@ -72,6 +72,10 @@ export function getSessions() {
   return request("/stats/sessions");
 }
 
+export function getPlayersStats() {
+  return request("/stats/players?limit=200");
+}
+
 export function getPlayers({ limit, offset } = {}) {
   const params = new URLSearchParams();
   if (Number.isFinite(limit)) params.set("limit", String(limit));

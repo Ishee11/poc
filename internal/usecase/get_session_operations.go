@@ -1,6 +1,10 @@
 package usecase
 
-import "time"
+import (
+	"time"
+
+	"github.com/ishee11/poc/internal/entity"
+)
 
 type GetSessionOperationsUseCase struct {
 	sessionReader SessionReader
@@ -69,13 +73,19 @@ func (uc *GetSessionOperationsUseCase) execute(
 	// 4. маппинг
 	result := make([]OperationDTO, 0, len(ops))
 	for _, op := range ops {
+		var referenceID *entity.OperationID
+		if op.ReferenceID() != nil {
+			ref := *op.ReferenceID()
+			referenceID = &ref
+		}
+
 		result = append(result, OperationDTO{
-			ID:        op.ID(),
-			Type:      op.Type(),
-			PlayerID:  op.PlayerID(),
-			Chips:     op.Chips(),
-			CreatedAt: op.CreatedAt().Format(time.RFC3339),
-			// ReferenceID: преобразуй в string если нужно
+			ID:          op.ID(),
+			Type:        op.Type(),
+			PlayerID:    op.PlayerID(),
+			Chips:       op.Chips(),
+			CreatedAt:   op.CreatedAt().Format(time.RFC3339),
+			ReferenceID: referenceID,
 		})
 	}
 

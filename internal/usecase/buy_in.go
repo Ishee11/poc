@@ -47,6 +47,14 @@ func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
 		return entity.ErrInvalidChips
 	}
 
+	exists, err := uc.helper.playerRepo.Exists(tx, cmd.PlayerID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return entity.ErrPlayerNotFound
+	}
+
 	// 3. бизнес-операция
 	if err := session.BuyIn(cmd.Chips); err != nil {
 		return err
