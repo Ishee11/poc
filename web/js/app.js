@@ -46,8 +46,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const res = await startSession({ chipRate });
 
-      const res = await startSession({ chipRate });
-
       if (!res.ok) {
         console.error("startSession failed:", res.text);
         alert("Failed to start session");

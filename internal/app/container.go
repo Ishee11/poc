@@ -29,6 +29,7 @@ func NewContainer(db *DB) *Container {
 	// ===== Generators =====
 	opIDGen := &infra.UUIDOperationIDGenerator{}
 	playerIDGen := &infra.UUIDPlayerIDGenerator{}
+	sessionIDGen := &infra.UUIDSessionIDGenerator{}
 
 	// ===== Helper =====
 	helper := usecase.NewHelper(
@@ -43,10 +44,12 @@ func NewContainer(db *DB) *Container {
 	// ===== UseCases =====
 
 	// write
+
 	startSessionUC := usecase.NewStartSessionUseCase(
 		sessionRepo,
 		sessionRepo,
 		txManager,
+		sessionIDGen,
 	)
 
 	buyInUC := usecase.NewBuyInUseCase(
