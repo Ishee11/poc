@@ -1,7 +1,9 @@
 import { loadSessions } from "./ui/lobby.js";
-import { openSession } from "./ui/session.js";
+import { openSession, initSessionActions } from "./ui/session.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  initSessionActions();
+
   await loadSessions();
 
   const btn = document.getElementById("open-workspace-btn");
@@ -9,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!btn || !select) return;
 
-  btn.onclick = async () => {
+  btn.addEventListener("click", async () => {
     let sessionId = select.value;
 
     if (!sessionId) {
@@ -19,12 +21,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // ❗ ВАЖНО: защита
     if (!sessionId) {
       alert("No session available");
       return;
     }
 
     await openSession(sessionId);
-  };
+  });
 });

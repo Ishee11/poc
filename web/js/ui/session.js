@@ -1,8 +1,14 @@
-import { getSession, getSessionOperations } from "../api.js";
-
-import { state } from "../state.js";
-import { formatNumber } from "../utils.js";
-import { loadPlayers } from "./player.js";
+import {
+  getSession,
+  getSessionOperations,
+  buyIn,
+  cashOut,
+  state,
+  formatNumber,
+  loadPlayers,
+  renderSession,
+  renderOperations,
+} from "../api.js";
 
 /**
  * открыть сессию
@@ -124,4 +130,91 @@ function setScreen(name) {
   document
     .getElementById("screen-player")
     ?.classList.toggle("active", name === "player");
+}
+
+export function initSessionActions() {
+  document.addEventListener("click", async (e) => {
+    const target = e.target.closest("button");
+
+    if (!target) return;
+
+    if (target.id === "buy-in-btn") {
+      await handleBuyIn();
+    }
+
+    if (target.id === "cash-out-btn") {
+      await handleCashOut();
+    }
+  });
+}
+
+async function handleBuyIn() {
+  const playerId = document.getElementById("action-player-id").value;
+  const chips = Number(document.getElementById("action-chips").value);
+
+  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
+    console.error("invalid input");
+    return;
+  }
+
+  const res = await buyIn({
+    sessionId: state.activeSessionId,
+    playerId,
+    chips,
+  });
+
+  if (!res.ok) {
+    console.error("buyIn failed:", res.text);
+    return;
+  }
+
+  await refreshSession();
+
+  document.getElementById("action-chips").value = "";
+}
+
+async function handleCashOut() {
+  const playerId = document.getElementById("action-player-id").value;
+  const chips = Number(document.getElementById("action-chips").value);
+
+  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
+    console.error("invalid input");
+    return;
+  }
+
+  const res = await cashOut({
+    sessionId: state.activeSessionId,
+    playerId,
+    chips,
+  });
+
+  if (!res.ok) {
+    console.error("cashOut failed:", res.text);
+    return;
+  }
+
+  await refreshSession();
+}
+
+async function refreshSession() {
+  const id = state.activeSessionId;
+  if (!id) return;
+
+  const res = await getSession(id);
+  if (!res.ok || !res.body) return;
+
+  const s = res.body;
+
+  state.session = {
+    id: s.session_id,
+    status: s.status,
+    chipRate: s.chip_rate,
+    totalBuyIn: s.total_buy_in,
+    totalCashOut: s.total_cash_out,
+    totalChips: s.total_chips,
+  };
+
+  renderSession();
+
+  await Promise.all([loadPlayers(id), loadOperations(id)]);
 }
