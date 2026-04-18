@@ -13,3 +13,7 @@ ON operations(session_id, created_at DESC);
 -- reference lookup
 CREATE INDEX IF NOT EXISTS idx_operations_reference_id
 ON operations(reference_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_operations_reference_id
+ON operations(reference_id)
+WHERE reference_id IS NOT NULL;

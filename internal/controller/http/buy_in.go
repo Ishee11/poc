@@ -8,13 +8,20 @@ import (
 	"github.com/ishee11/poc/internal/usecase/command"
 )
 
-func (h *Handler) BuyIn(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		RequestID string `json:"request_id"`
-		SessionID string `json:"session_id"`
-		PlayerID  string `json:"player_id"`
-		Chips     int64  `json:"chips"`
-	}
+// BuyIn godoc
+// @Summary Buy-in
+// @Description Add chips to session
+// @Tags operations
+// @Accept json
+// @Produce json
+// @Param request body BuyInRequest true "Buy-in request"
+// @Success 204 "No Content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /operations/buy-in [post]
+func (h *OperationHandler) BuyIn(w http.ResponseWriter, r *http.Request) {
+	var req BuyInRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)

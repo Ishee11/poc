@@ -11,3 +11,9 @@ type UUIDOperationIDGenerator struct{}
 func (g *UUIDOperationIDGenerator) New() entity.OperationID {
 	return entity.OperationID(uuid.NewString())
 }
+
+type UUIDPlayerIDGenerator struct{}
+
+func (g *UUIDPlayerIDGenerator) New() entity.PlayerID {
+	return entity.PlayerID(uuid.New().String())
+}

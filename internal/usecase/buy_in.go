@@ -24,10 +24,6 @@ func NewBuyInUseCase(
 }
 
 func (uc *BuyInUseCase) Execute(cmd command.BuyInCommand) error {
-	if cmd.Chips <= 0 {
-		return entity.ErrInvalidChips
-	}
-
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
@@ -36,19 +32,42 @@ func (uc *BuyInUseCase) Execute(cmd command.BuyInCommand) error {
 }
 
 func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
-	session, err := uc.helper.GetActiveSession(tx, cmd.SessionID)
+	// 1. блокируем сессию
+	session, err := uc.helper.sessionReader.FindByID(tx, cmd.SessionID)
 	if err != nil {
 		return err
 	}
 
+	if session.Status() != entity.StatusActive {
+		return entity.ErrSessionNotActive
+	}
+
+	// 2. валидация
+	if cmd.Chips <= 0 {
+		return entity.ErrInvalidChips
+	}
+
+	// 3. бизнес-операция
 	if err := session.BuyIn(cmd.Chips); err != nil {
 		return err
 	}
 
-	op, err := uc.helper.BuildOperation(cmd.RequestID, cmd.SessionID, entity.OperationBuyIn, cmd.PlayerID, cmd.Chips)
+	// 4. создаём operation
+	op, err := uc.helper.BuildOperation(
+		cmd.RequestID,
+		cmd.SessionID,
+		entity.OperationBuyIn,
+		cmd.PlayerID,
+		cmd.Chips,
+	)
 	if err != nil {
 		return err
 	}
 
-	return uc.helper.Save(tx, op, session)
+	// 5. сохраняем
+	if err := uc.helper.opWriter.Save(tx, op); err != nil {
+		return err
+	}
+
+	return uc.helper.sessionWriter.Save(tx, session)
 }

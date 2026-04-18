@@ -1,17 +1,17 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Using a translation service as an example",
-        "title": "Go Clean Template API",
+        "description": "Poker sessions service",
+        "title": "Poker API",
         "contact": {},
         "version": "1.0"
     },
     "host": "localhost:8080",
-    "basePath": "/v1",
+    "basePath": "/",
     "paths": {
-        "/translation/do-translate": {
+        "/operations/buy-in": {
             "post": {
-                "description": "Translate a text",
+                "description": "Add chips to session",
                 "consumes": [
                     "application/json"
                 ],
@@ -19,46 +19,48 @@
                     "application/json"
                 ],
                 "tags": [
-                    "translation"
+                    "operations"
                 ],
-                "summary": "Translate",
-                "operationId": "do-translate",
+                "summary": "Buy-in",
                 "parameters": [
                     {
-                        "description": "Set up translation",
+                        "description": "Buy-in request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.Translate"
+                            "$ref": "#/definitions/internal_controller_http.BuyInRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.Translation"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/translation/history": {
-            "get": {
-                "description": "Show all translation history",
+        "/operations/cash-out": {
+            "post": {
+                "description": "Withdraw chips from session",
                 "consumes": [
                     "application/json"
                 ],
@@ -66,21 +68,241 @@
                     "application/json"
                 ],
                 "tags": [
-                    "translation"
+                    "operations"
                 ],
-                "summary": "Show history",
-                "operationId": "history",
+                "summary": "Cash out",
+                "parameters": [
+                    {
+                        "description": "Cash-out request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.CashOutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/operations/reverse": {
+            "post": {
+                "description": "Reverses a target operation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "operations"
+                ],
+                "summary": "Reverse operation",
+                "parameters": [
+                    {
+                        "description": "Reverse request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ReverseOperationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/start": {
+            "post": {
+                "description": "Create new poker session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Start session",
+                "parameters": [
+                    {
+                        "description": "start session request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.StartSessionRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.TranslationHistory"
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sessions": {
+            "get": {
+                "description": "Get session by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.GetSessionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sessions/finish": {
+            "post": {
+                "description": "Finish poker session (must be balanced)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Finish session",
+                "parameters": [
+                    {
+                        "description": "Finish session request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.FinishSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
                         }
                     }
                 }
@@ -88,66 +310,126 @@
         }
     },
     "definitions": {
-        "entity.Translation": {
-            "type": "object",
-            "properties": {
-                "destination": {
-                    "type": "string",
-                    "example": "en"
-                },
-                "original": {
-                    "type": "string",
-                    "example": "текст для перевода"
-                },
-                "source": {
-                    "type": "string",
-                    "example": "auto"
-                },
-                "translation": {
-                    "type": "string",
-                    "example": "text for translation"
-                }
-            }
-        },
-        "entity.TranslationHistory": {
-            "type": "object",
-            "properties": {
-                "history": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.Translation"
-                    }
-                }
-            }
-        },
-        "request.Translate": {
-            "type": "object",
-            "required": [
-                "destination",
-                "original",
-                "source"
+        "github_com_ishee11_poc_internal_entity.Status": {
+            "type": "string",
+            "enum": [
+                "active",
+                "finished"
             ],
+            "x-enum-varnames": [
+                "StatusActive",
+                "StatusFinished"
+            ]
+        },
+        "github_com_ishee11_poc_internal_usecase.GetSessionResponse": {
+            "type": "object",
             "properties": {
-                "destination": {
-                    "type": "string",
-                    "example": "en"
+                "chip_rate": {
+                    "type": "integer"
                 },
-                "original": {
-                    "type": "string",
-                    "example": "текст для перевода"
+                "created_at": {
+                    "type": "string"
                 },
-                "source": {
-                    "type": "string",
-                    "example": "auto"
+                "session_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_ishee11_poc_internal_entity.Status"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
+                    "type": "integer"
+                },
+                "total_chips": {
+                    "type": "integer"
                 }
             }
         },
-        "response.Error": {
+        "internal_controller_http.BuyInRequest": {
             "type": "object",
             "properties": {
-                "error": {
+                "chips": {
+                    "type": "integer",
+                    "example": 1000
+                },
+                "player_id": {
                     "type": "string",
-                    "example": "message"
+                    "example": "player-1"
+                },
+                "request_id": {
+                    "type": "string",
+                    "example": "req-123"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "session-1"
+                }
+            }
+        },
+        "internal_controller_http.CashOutRequest": {
+            "type": "object",
+            "properties": {
+                "chips": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "player_id": {
+                    "type": "string",
+                    "example": "player-1"
+                },
+                "request_id": {
+                    "type": "string",
+                    "example": "req-123"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "session-1"
+                }
+            }
+        },
+        "internal_controller_http.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "details": {},
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller_http.FinishSessionRequest": {
+            "type": "object",
+            "properties": {
+                "request_id": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller_http.ReverseOperationRequest": {
+            "type": "object",
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "example": "req-123"
+                },
+                "target_operation_id": {
+                    "type": "string",
+                    "example": "op-456"
+                }
+            }
+        },
+        "internal_controller_http.StartSessionRequest": {
+            "type": "object",
+            "properties": {
+                "chip_rate": {
+                    "type": "integer"
+                },
+                "session_id": {
+                    "type": "string"
                 }
             }
         }

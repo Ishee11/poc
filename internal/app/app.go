@@ -74,6 +74,7 @@ func Run() error {
 	idGen := &infra.UUIDOperationIDGenerator{}
 
 	// ===== UseCases =====
+	playerIDGen := &infra.UUIDPlayerIDGenerator{}
 
 	helper := usecase.NewHelper(
 		sessionRepo,
@@ -81,6 +82,7 @@ func Run() error {
 		playerRepo,
 		opRepo,
 		idGen,
+		playerIDGen,
 	)
 
 	// write
@@ -159,6 +161,7 @@ func Run() error {
 	)
 
 	getSessionPlayersUC := usecase.NewGetSessionPlayersUseCase(
+		projectionRepo,
 		playerRepo,
 		txManager,
 		sessionRepo,

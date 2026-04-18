@@ -7,8 +7,24 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
-func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
+// GetSession godoc
+// @Summary Get session
+// @Description Get session by ID
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} usecase.GetSessionResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /sessions [get]
+func (h *SessionHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("session_id")
+
+	if sessionID == "" {
+		http.Error(w, "session_id is required", http.StatusBadRequest)
+		return
+	}
 
 	res, err := h.getSessionUC.Execute(usecase.GetSessionQuery{
 		SessionID: entity.SessionID(sessionID),
@@ -18,6 +34,5 @@ func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 👇 ВАЖНО: используем тот же метод, что и в других handler'ах
 	writeJSON(w, http.StatusOK, res)
 }

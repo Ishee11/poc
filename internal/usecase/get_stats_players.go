@@ -16,22 +16,7 @@ func NewGetStatsPlayersUseCase(
 }
 
 func (uc *GetStatsPlayersUseCase) Execute(q GetStatsPlayersQuery) ([]PlayerStat, error) {
-	if q.Limit <= 0 {
-		q.Limit = 20
-	}
-
-	var result []PlayerStat
-
-	err := uc.txManager.RunInTx(func(tx Tx) error {
-		var err error
-		result, err = uc.execute(tx, q)
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return uc.execute(nil, q)
 }
 
 func (uc *GetStatsPlayersUseCase) execute(
@@ -39,8 +24,16 @@ func (uc *GetStatsPlayersUseCase) execute(
 	q GetStatsPlayersQuery,
 ) ([]PlayerStat, error) {
 
+	limit := q.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
 	return uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{
-		Limit: q.Limit,
+		Limit: limit,
 		From:  q.From,
 		To:    q.To,
 	})

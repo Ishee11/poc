@@ -23,14 +23,9 @@ func (r *ProjectionRepository) GetSessionAggregates(
 	sessionID entity.SessionID,
 ) (usecase.SessionAggregates, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return usecase.SessionAggregates{}, ErrInvalidTx
-	}
-
 	ctx := context.Background()
 
-	row := pgxTx.QueryRow(ctx, `
+	row := tx.QueryRow(ctx, `
 		SELECT
 			COALESCE(SUM(
 				CASE
@@ -72,14 +67,9 @@ func (r *ProjectionRepository) GetPlayerAggregates(
 	sessionID entity.SessionID,
 ) (map[entity.PlayerID]usecase.PlayerAggregates, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, ErrInvalidTx
-	}
-
 	ctx := context.Background()
 
-	rows, err := pgxTx.Query(ctx, `
+	rows, err := tx.Query(ctx, `
 		SELECT
 			o.player_id,
 			COALESCE(SUM(
@@ -134,14 +124,9 @@ func (r *ProjectionRepository) GetLastOperationType(
 	playerID entity.PlayerID,
 ) (entity.OperationType, bool, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return "", false, ErrInvalidTx
-	}
-
 	ctx := context.Background()
 
-	row := pgxTx.QueryRow(ctx, `
+	row := tx.QueryRow(ctx, `
 		SELECT o.type
 		FROM operations o
 		LEFT JOIN operations rev
@@ -177,14 +162,9 @@ func (r *ProjectionRepository) ListBySession(
 	offset int,
 ) ([]*entity.Operation, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, ErrInvalidTx
-	}
-
 	ctx := context.Background()
 
-	rows, err := pgxTx.Query(ctx, `
+	rows, err := tx.Query(ctx, `
 		SELECT id, session_id, type, player_id, chips, created_at, reference_id, request_id
 		FROM operations
 		WHERE session_id = $1

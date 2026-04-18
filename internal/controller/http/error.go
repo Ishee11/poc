@@ -9,48 +9,53 @@ import (
 )
 
 func writeError(w http.ResponseWriter, err error) {
-	switch e := err.(type) {
-
-	// --- кастомная бизнес-ошибка ---
-	case *entity.SessionNotBalancedError:
-		writeJSON(w, http.StatusBadRequest, map[string]any{
-			"error": "session not balanced",
-			"details": map[string]any{
-				"remaining_chips": e.RemainingChips,
-			},
-		})
+	if err == nil {
 		return
+	}
 
-	// --- обычные ошибки ---
-	case nil:
+	var balancedErr *entity.SessionNotBalancedError
+	if errors.As(err, &balancedErr) {
+		writeErr(w, http.StatusConflict, "session_not_balanced", map[string]any{
+			"remaining_chips": balancedErr.RemainingChips,
+		})
 		return
 	}
 
 	switch {
 	case errors.Is(err, entity.ErrSessionNotFound):
-		writeJSON(w, http.StatusNotFound, map[string]any{
-			"error": err.Error(),
-		})
+		writeErr(w, http.StatusNotFound, "session_not_found", nil)
 
-	case errors.Is(err, entity.ErrInvalidChips),
-		errors.Is(err, entity.ErrInvalidCashOut),
-		errors.Is(err, entity.ErrInvalidOperation),
-		errors.Is(err, entity.ErrInvalidRequestID):
-		writeJSON(w, http.StatusBadRequest, map[string]any{
-			"error": err.Error(),
-		})
+	case errors.Is(err, entity.ErrSessionAlreadyExists):
+		writeErr(w, http.StatusConflict, "session_already_exists", nil)
+
+	case errors.Is(err, entity.ErrInvalidRequestID):
+		writeErr(w, http.StatusBadRequest, "invalid_request_id", nil)
+
+	case errors.Is(err, entity.ErrInvalidChips):
+		writeErr(w, http.StatusBadRequest, "invalid_chips", nil)
+
+	case errors.Is(err, entity.ErrInvalidCashOut):
+		writeErr(w, http.StatusBadRequest, "invalid_cash_out", nil)
+
+	case errors.Is(err, entity.ErrInvalidOperation):
+		writeErr(w, http.StatusBadRequest, "invalid_operation", nil)
 
 	case errors.Is(err, entity.ErrDuplicateRequest):
 		w.WriteHeader(http.StatusOK)
 
 	default:
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"error": err.Error(),
-		})
+		writeErr(w, http.StatusInternalServerError, "internal_error", nil)
 	}
 }
 
 // --- helper ---
+func writeErr(w http.ResponseWriter, status int, code string, details any) {
+	writeJSON(w, status, ErrorResponse{
+		Error:   code,
+		Details: details,
+	})
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

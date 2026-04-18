@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
 )
@@ -20,10 +18,6 @@ func (r *StatsRepository) ListSessions(
 	tx usecase.Tx,
 	filter usecase.SessionStatsFilter,
 ) ([]usecase.SessionStat, error) {
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, ErrInvalidTx
-	}
 
 	ctx := context.Background()
 	limit := filter.Limit
@@ -31,7 +25,7 @@ func (r *StatsRepository) ListSessions(
 		limit = 20
 	}
 
-	rows, err := pgxTx.Query(ctx, `
+	rows, err := tx.Query(ctx, `
 		WITH effective_operations AS (
 			SELECT o.id, o.session_id, o.player_id, o.type, o.chips
 			FROM operations o
@@ -88,10 +82,6 @@ func (r *StatsRepository) ListPlayers(
 	tx usecase.Tx,
 	filter usecase.PlayerStatsFilter,
 ) ([]usecase.PlayerStat, error) {
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, ErrInvalidTx
-	}
 
 	ctx := context.Background()
 	limit := filter.Limit
@@ -99,7 +89,7 @@ func (r *StatsRepository) ListPlayers(
 		limit = 20
 	}
 
-	rows, err := pgxTx.Query(ctx, `
+	rows, err := tx.Query(ctx, `
 		WITH effective_operations AS (
 			SELECT o.id, o.session_id, o.player_id, o.type, o.chips, o.created_at
 			FROM operations o
@@ -160,13 +150,9 @@ func (r *StatsRepository) GetPlayerOverall(
 	playerID entity.PlayerID,
 	filter usecase.PlayerStatsFilter,
 ) (*usecase.PlayerOverallStat, error) {
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, ErrInvalidTx
-	}
 
 	ctx := context.Background()
-	row := pgxTx.QueryRow(ctx, `
+	row := tx.QueryRow(ctx, `
 		WITH effective_operations AS (
 			SELECT o.id, o.session_id, o.player_id, o.type, o.chips, o.created_at
 			FROM operations o
@@ -218,13 +204,9 @@ func (r *StatsRepository) ListPlayerSessions(
 	playerID entity.PlayerID,
 	filter usecase.PlayerStatsFilter,
 ) ([]usecase.PlayerSessionStat, error) {
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, ErrInvalidTx
-	}
 
 	ctx := context.Background()
-	rows, err := pgxTx.Query(ctx, `
+	rows, err := tx.Query(ctx, `
 		WITH effective_operations AS (
 			SELECT o.id, o.session_id, o.player_id, o.type, o.chips, o.created_at
 			FROM operations o

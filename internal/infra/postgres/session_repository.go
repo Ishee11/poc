@@ -25,18 +25,13 @@ func (r *SessionRepository) FindByID(
 	sessionID entity.SessionID,
 ) (*entity.Session, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, errors.New("invalid tx type")
-	}
-
 	ctx := context.Background()
 
-	row := pgxTx.QueryRow(ctx, `
+	row := tx.QueryRow(ctx, `
 		SELECT id, chip_rate, status, created_at, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
-	`, sessionID)
+`, sessionID)
 
 	var (
 		id           string
@@ -85,14 +80,9 @@ func (r *SessionRepository) Save(
 	session *entity.Session,
 ) error {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return errors.New("invalid tx type")
-	}
-
 	ctx := context.Background()
 
-	_, err := pgxTx.Exec(ctx, `
+	_, err := tx.Exec(ctx, `
 		INSERT INTO sessions (
 			id, chip_rate, status, created_at, total_buy_in, total_cash_out
 		)

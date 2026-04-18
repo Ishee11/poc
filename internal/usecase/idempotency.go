@@ -10,6 +10,9 @@ type IdempotencyRepository interface {
 	Save(tx Tx, requestID string) error
 }
 
+// NOTE:
+// Idempotency is best-effort.
+// If execution fails after Save, retry will be skipped.
 func Idempotent(
 	tx Tx,
 	repo IdempotencyRepository,

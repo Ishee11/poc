@@ -10,13 +10,12 @@ import (
 func NewRouter(h *Handler) http.Handler {
 	mux := http.NewServeMux()
 
-	// embed FS
+	// ===== STATIC =====
 	sub, err := fs.Sub(web.FS, ".")
 	if err != nil {
 		panic(err)
 	}
 
-	// ===== STATIC (CSS / JS) =====
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
 
 	// ===== INDEX =====
@@ -31,23 +30,25 @@ func NewRouter(h *Handler) http.Handler {
 	// ===== HEALTH =====
 	mux.HandleFunc("/health", h.Health)
 
-	// ===== WRITE =====
-	mux.HandleFunc("/session/start", h.StartSession)
-	mux.HandleFunc("/session/finish", h.FinishSession)
+	// ===== SESSIONS =====
+	mux.HandleFunc("/sessions/start", h.Session.StartSession)
+	mux.HandleFunc("/sessions/finish", h.Session.FinishSession)
+	mux.HandleFunc("/sessions", h.Session.GetSession)
+	mux.HandleFunc("/sessions/operations", h.Session.GetSessionOperations)
+	mux.HandleFunc("/sessions/players", h.Session.GetSessionPlayers)
 
-	mux.HandleFunc("/buy-in", h.BuyIn)
-	mux.HandleFunc("/cash-out", h.CashOut)
-	mux.HandleFunc("/operation/reverse", h.ReverseOperation)
+	// ===== OPERATIONS =====
+	mux.HandleFunc("/operations/buy-in", h.Operation.BuyIn)
+	mux.HandleFunc("/operations/cash-out", h.Operation.CashOut)
+	mux.HandleFunc("/operations/reverse", h.Operation.ReverseOperation)
 
-	// ===== READ =====
-	mux.HandleFunc("/session", h.GetSession)
-	mux.HandleFunc("/session/operations", h.GetSessionOperations)
-	mux.HandleFunc("/session/results", h.GetSessionResults)
-	mux.HandleFunc("/stats/sessions", h.GetStatsSessions)
-	mux.HandleFunc("/session/players", h.GetSessionPlayers)
+	// ===== PLAYERS =====
+	mux.HandleFunc("/players", h.Player.CreatePlayer)
+	mux.HandleFunc("/players/stats", h.Player.GetPlayerStats)
 
-	mux.HandleFunc("/stats/players", h.GetStatsPlayers)
-	mux.HandleFunc("/stats/player", h.GetPlayerStats)
+	// ===== STATS =====
+	mux.HandleFunc("/stats/sessions", h.Stats.GetStatsSessions)
+	mux.HandleFunc("/stats/players", h.Stats.GetStatsPlayers)
 
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux

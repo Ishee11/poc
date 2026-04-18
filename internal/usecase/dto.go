@@ -1,8 +1,6 @@
 package usecase
 
 import (
-	"time"
-
 	"github.com/ishee11/poc/internal/entity"
 )
 
@@ -11,13 +9,23 @@ type PlayerDTO struct {
 	Name string          `json:"name"`
 }
 
+type SessionPlayerDTO struct {
+	PlayerID entity.PlayerID `json:"player_id"`
+	Name     string          `json:"name"`
+
+	BuyIn   int64 `json:"buy_in"`
+	CashOut int64 `json:"cash_out"`
+
+	InGame bool `json:"in_game"`
+}
+
 type OperationDTO struct {
-	ID          entity.OperationID
-	Type        entity.OperationType
-	PlayerID    entity.PlayerID
-	Chips       int64
-	CreatedAt   time.Time
-	ReferenceID *entity.OperationID
+	ID          entity.OperationID   `json:"id"`
+	Type        entity.OperationType `json:"type"`
+	PlayerID    entity.PlayerID      `json:"player_id"`
+	Chips       int64                `json:"chips"`
+	CreatedAt   string               `json:"created_at"`
+	ReferenceID *entity.OperationID  `json:"reference_id,omitempty"`
 }
 
 type PlayerResultDTO struct {

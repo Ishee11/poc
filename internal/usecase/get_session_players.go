@@ -1,17 +1,20 @@
 package usecase
 
 type GetSessionPlayersUseCase struct {
+	projection    ProjectionRepository
 	playerRepo    PlayerRepository
 	txManager     TxManager
 	sessionReader SessionReader
 }
 
 func NewGetSessionPlayersUseCase(
+	projection ProjectionRepository,
 	playerRepo PlayerRepository,
 	txManager TxManager,
 	sessionReader SessionReader,
 ) *GetSessionPlayersUseCase {
 	return &GetSessionPlayersUseCase{
+		projection:    projection,
 		playerRepo:    playerRepo,
 		txManager:     txManager,
 		sessionReader: sessionReader,
@@ -20,9 +23,9 @@ func NewGetSessionPlayersUseCase(
 
 func (uc *GetSessionPlayersUseCase) Execute(
 	q GetSessionPlayersQuery,
-) ([]PlayerDTO, error) {
+) ([]SessionPlayerDTO, error) {
 
-	var result []PlayerDTO
+	var result []SessionPlayerDTO
 
 	err := uc.txManager.RunInTx(func(tx Tx) error {
 		var err error
@@ -35,18 +38,37 @@ func (uc *GetSessionPlayersUseCase) Execute(
 	}
 
 	return result, nil
+
 }
 
 func (uc *GetSessionPlayersUseCase) execute(
 	tx Tx,
 	q GetSessionPlayersQuery,
-) ([]PlayerDTO, error) {
+) ([]SessionPlayerDTO, error) {
 
-	// 1. проверка session
 	if _, err := uc.sessionReader.FindByID(tx, q.SessionID); err != nil {
 		return nil, err
 	}
 
-	// 2. получаем игроков
-	return uc.playerRepo.ListBySession(tx, q.SessionID)
+	aggs, err := uc.projection.GetPlayerAggregates(tx, q.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]SessionPlayerDTO, 0, len(aggs))
+
+	for playerID, agg := range aggs {
+		inGame := agg.BuyIn > agg.CashOut
+
+		result = append(result, SessionPlayerDTO{
+			PlayerID: playerID,
+			Name:     "", // TODO: через playerRepo.GetByID
+			BuyIn:    agg.BuyIn,
+			CashOut:  agg.CashOut,
+			InGame:   inGame,
+		})
+	}
+
+	return result, nil
+
 }

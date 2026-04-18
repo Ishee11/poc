@@ -2,9 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
-
-	"github.com/jackc/pgx/v5"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
@@ -17,14 +14,10 @@ func NewIdempotencyRepository() *IdempotencyRepository {
 }
 
 func (r *IdempotencyRepository) Save(tx usecase.Tx, requestID string) error {
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return errors.New("invalid tx type")
-	}
 
 	ctx := context.Background()
 
-	cmdTag, err := pgxTx.Exec(ctx, `
+	cmdTag, err := tx.Exec(ctx, `
 		INSERT INTO idempotency_keys (request_id)
 		VALUES ($1)
 		ON CONFLICT (request_id) DO NOTHING

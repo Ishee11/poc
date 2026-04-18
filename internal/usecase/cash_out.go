@@ -7,33 +7,29 @@ import (
 
 type CashOutUseCase struct {
 	helper            *Helper
+	sessionLocker     SessionLocker
 	playerStateReader OperationPlayerStateReader
-	projection        ProjectionRepository
 	txManager         TxManager
 	idempotencyRepo   IdempotencyRepository
 }
 
 func NewCashOutUseCase(
 	helper *Helper,
+	sessionLocker SessionLocker,
 	playerStateReader OperationPlayerStateReader,
-	projection ProjectionRepository,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
 ) *CashOutUseCase {
 	return &CashOutUseCase{
 		helper:            helper,
+		sessionLocker:     sessionLocker,
 		playerStateReader: playerStateReader,
-		projection:        projection,
 		txManager:         txManager,
 		idempotencyRepo:   idempotencyRepo,
 	}
 }
 
 func (uc *CashOutUseCase) Execute(cmd command.CashOutCommand) error {
-	if cmd.Chips <= 0 {
-		return entity.ErrInvalidChips
-	}
-
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
@@ -42,13 +38,26 @@ func (uc *CashOutUseCase) Execute(cmd command.CashOutCommand) error {
 }
 
 func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
-	// 1. session
-	session, err := uc.helper.GetActiveSession(tx, cmd.SessionID)
+	// 1. блокируем сессию
+	session, err := uc.sessionLocker.FindByIDForUpdate(tx, cmd.SessionID)
 	if err != nil {
 		return err
 	}
 
-	// 3. проверка состояния игрока
+	if session.Status() != entity.StatusActive {
+		return entity.ErrSessionNotActive
+	}
+
+	// 2. валидация
+	if cmd.Chips <= 0 {
+		return entity.ErrInvalidChips
+	}
+
+	if cmd.Chips > session.TotalChips() {
+		return entity.ErrInvalidCashOut
+	}
+
+	// 3. состояние игрока
 	state, err := uc.loadPlayerState(tx, cmd.SessionID, cmd.PlayerID)
 	if err != nil {
 		return err
@@ -58,12 +67,12 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		return err
 	}
 
-	// 4. проверка фишек на столе
-	if err := uc.validateTableChips(tx, cmd.SessionID, cmd.Chips); err != nil {
+	// 4. применяем к домену
+	if err := session.CashOut(cmd.Chips); err != nil {
 		return err
 	}
 
-	// 5. создаём операцию
+	// 5. создаём operation
 	op, err := uc.helper.BuildOperation(
 		cmd.RequestID,
 		cmd.SessionID,
@@ -75,13 +84,12 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		return err
 	}
 
-	// 6. применяем к домену
-	if err := session.CashOut(cmd.Chips); err != nil {
+	// 6. сохраняем
+	if err := uc.helper.opWriter.Save(tx, op); err != nil {
 		return err
 	}
 
-	// 7. сохраняем
-	return uc.helper.Save(tx, op, session)
+	return uc.helper.sessionWriter.Save(tx, session)
 }
 
 func (uc *CashOutUseCase) loadPlayerState(
@@ -104,23 +112,4 @@ func (uc *CashOutUseCase) loadPlayerState(
 		lastOpType,
 		found,
 	), nil
-}
-
-func (uc *CashOutUseCase) validateTableChips(
-	tx Tx,
-	sessionID entity.SessionID,
-	chips int64,
-) error {
-
-	aggr, err := uc.projection.GetSessionAggregates(tx, sessionID)
-	if err != nil {
-		return err
-	}
-
-	tableChips := aggr.TotalBuyIn - aggr.TotalCashOut
-	if chips > tableChips {
-		return entity.ErrInvalidCashOut
-	}
-
-	return nil
 }

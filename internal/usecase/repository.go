@@ -24,15 +24,13 @@ type PlayerReader interface {
 }
 
 type PlayerRepository interface {
-	GetOrCreate(
-		tx Tx,
-		sessionID entity.SessionID,
-		name string,
-	) (entity.PlayerID, error)
-	ListBySession(
-		tx Tx,
-		sessionID entity.SessionID,
-	) ([]PlayerDTO, error)
+	Create(tx Tx, player *entity.Player) error
+	Exists(tx Tx, id entity.PlayerID) (bool, error)
+	GetByID(tx Tx, id entity.PlayerID) (*entity.Player, error)
+}
+
+type PlayerIDGenerator interface {
+	New() entity.PlayerID
 }
 
 type OperationIDGenerator interface {

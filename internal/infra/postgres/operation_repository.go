@@ -24,14 +24,9 @@ func (r *OperationRepository) Save(
 	op *entity.Operation,
 ) error {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return errors.New("invalid tx type")
-	}
-
 	ctx := context.Background()
 
-	cmdTag, err := pgxTx.Exec(ctx, `
+	cmdTag, err := tx.Exec(ctx, `
 		INSERT INTO operations (
 			id,
 			request_id,
@@ -74,14 +69,9 @@ func (r *OperationRepository) GetByRequestID(
 	requestID string,
 ) (*entity.Operation, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, errors.New("invalid tx type")
-	}
-
 	ctx := context.Background()
 
-	row := pgxTx.QueryRow(ctx, `
+	row := tx.QueryRow(ctx, `
 		SELECT id, session_id, type, player_id, chips, created_at, reference_id, request_id
 		FROM operations
 		WHERE request_id = $1
@@ -97,14 +87,9 @@ func (r *OperationRepository) GetByID(
 	id entity.OperationID,
 ) (*entity.Operation, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return nil, errors.New("invalid tx type")
-	}
-
 	ctx := context.Background()
 
-	row := pgxTx.QueryRow(ctx, `
+	row := tx.QueryRow(ctx, `
 		SELECT id, session_id, type, player_id, chips, created_at, reference_id, request_id
 		FROM operations
 		WHERE id = $1
@@ -181,16 +166,11 @@ func (r *OperationRepository) ExistsReversal(
 	targetID entity.OperationID,
 ) (bool, error) {
 
-	pgxTx, ok := tx.(pgx.Tx)
-	if !ok {
-		return false, errors.New("invalid tx type")
-	}
-
 	ctx := context.Background()
 
 	var exists bool
 
-	err := pgxTx.QueryRow(ctx, `
+	err := tx.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT 1
 			FROM operations

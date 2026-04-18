@@ -1,5 +1,7 @@
 package usecase
 
+import "github.com/ishee11/poc/internal/entity"
+
 type GetPlayerStatsResponse struct {
 	Player   PlayerOverallStat
 	Sessions []PlayerSessionStat
@@ -21,21 +23,14 @@ func NewGetPlayerStatsUseCase(
 }
 
 func (uc *GetPlayerStatsUseCase) Execute(q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {
-	var result *GetPlayerStatsResponse
-
-	err := uc.txManager.RunInTx(func(tx Tx) error {
-		var err error
-		result, err = uc.execute(tx, q)
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return uc.execute(nil, q)
 }
 
 func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {
+	if q.PlayerID == "" {
+		return nil, entity.ErrInvalidPlayerID
+	}
+
 	filter := PlayerStatsFilter{
 		Limit: 100,
 		From:  q.From,

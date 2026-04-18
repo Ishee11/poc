@@ -1,17 +1,19 @@
 package usecase
 
 import (
+	"strings"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
 )
 
 type Helper struct {
-	sessionReader SessionReader
-	sessionWriter SessionWriter
-	playerRepo    PlayerRepository
-	opWriter      OperationWriter
-	idGen         OperationIDGenerator
+	sessionReader     SessionReader
+	sessionWriter     SessionWriter
+	playerRepo        PlayerRepository
+	opWriter          OperationWriter
+	idGen             OperationIDGenerator
+	playerIDGenerator PlayerIDGenerator
 }
 
 func NewHelper(
@@ -20,13 +22,15 @@ func NewHelper(
 	playerRepo PlayerRepository,
 	opWriter OperationWriter,
 	idGen OperationIDGenerator,
+	playerIDGenerator PlayerIDGenerator,
 ) *Helper {
 	return &Helper{
-		sessionReader: sessionReader,
-		sessionWriter: sessionWriter,
-		playerRepo:    playerRepo,
-		opWriter:      opWriter,
-		idGen:         idGen,
+		sessionReader:     sessionReader,
+		sessionWriter:     sessionWriter,
+		playerRepo:        playerRepo,
+		opWriter:          opWriter,
+		idGen:             idGen,
+		playerIDGenerator: playerIDGenerator,
 	}
 }
 
@@ -43,12 +47,19 @@ func (h *Helper) GetActiveSession(tx Tx, id entity.SessionID) (*entity.Session, 
 	return session, nil
 }
 
-func (h *Helper) GetOrCreatePlayer(
-	tx Tx,
-	sessionID entity.SessionID,
-	playerName string,
-) (entity.PlayerID, error) {
-	return h.playerRepo.GetOrCreate(tx, sessionID, playerName)
+func (h *Helper) BuildPlayer(name string) (*entity.Player, error) {
+	name = strings.TrimSpace(name)
+
+	id := h.playerIDGenerator.New()
+
+	return entity.NewPlayer(id, name)
+}
+
+func (h *Helper) SavePlayer(tx Tx, player *entity.Player) (entity.PlayerID, error) {
+	if err := h.playerRepo.Create(tx, player); err != nil {
+		return "", err
+	}
+	return player.ID(), nil
 }
 
 func (h *Helper) BuildOperation(

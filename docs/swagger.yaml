@@ -1,105 +1,290 @@
-basePath: /v1
+basePath: /
 definitions:
-  entity.Translation:
+  github_com_ishee11_poc_internal_entity.Status:
+    enum:
+    - active
+    - finished
+    type: string
+    x-enum-varnames:
+    - StatusActive
+    - StatusFinished
+  github_com_ishee11_poc_internal_usecase.GetSessionResponse:
     properties:
-      destination:
-        example: en
+      chip_rate:
+        type: integer
+      created_at:
         type: string
-      original:
-        example: текст для перевода
+      session_id:
         type: string
-      source:
-        example: auto
+      status:
+        $ref: '#/definitions/github_com_ishee11_poc_internal_entity.Status'
+      total_buy_in:
+        type: integer
+      total_cash_out:
+        type: integer
+      total_chips:
+        type: integer
+    type: object
+  internal_controller_http.BuyInRequest:
+    properties:
+      chips:
+        example: 1000
+        type: integer
+      player_id:
+        example: player-1
         type: string
-      translation:
-        example: text for translation
+      request_id:
+        example: req-123
+        type: string
+      session_id:
+        example: session-1
         type: string
     type: object
-  entity.TranslationHistory:
+  internal_controller_http.CashOutRequest:
     properties:
-      history:
-        items:
-          $ref: '#/definitions/entity.Translation'
-        type: array
+      chips:
+        example: 500
+        type: integer
+      player_id:
+        example: player-1
+        type: string
+      request_id:
+        example: req-123
+        type: string
+      session_id:
+        example: session-1
+        type: string
     type: object
-  request.Translate:
+  internal_controller_http.ErrorResponse:
     properties:
-      destination:
-        example: en
-        type: string
-      original:
-        example: текст для перевода
-        type: string
-      source:
-        example: auto
-        type: string
-    required:
-    - destination
-    - original
-    - source
-    type: object
-  response.Error:
-    properties:
+      details: {}
       error:
-        example: message
+        type: string
+    type: object
+  internal_controller_http.FinishSessionRequest:
+    properties:
+      request_id:
+        type: string
+      session_id:
+        type: string
+    type: object
+  internal_controller_http.ReverseOperationRequest:
+    properties:
+      request_id:
+        example: req-123
+        type: string
+      target_operation_id:
+        example: op-456
+        type: string
+    type: object
+  internal_controller_http.StartSessionRequest:
+    properties:
+      chip_rate:
+        type: integer
+      session_id:
         type: string
     type: object
 host: localhost:8080
 info:
   contact: {}
-  description: Using a translation service as an example
-  title: Go Clean Template API
+  description: Poker sessions service
+  title: Poker API
   version: "1.0"
 paths:
-  /translation/do-translate:
+  /operations/buy-in:
     post:
       consumes:
       - application/json
-      description: Translate a text
-      operationId: do-translate
+      description: Add chips to session
       parameters:
-      - description: Set up translation
+      - description: Buy-in request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.Translate'
+          $ref: '#/definitions/internal_controller_http.BuyInRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.Translation'
+        "204":
+          description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Error'
-        "500":
-          description: Internal Server Error
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
-            $ref: '#/definitions/response.Error'
-      summary: Translate
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Buy-in
       tags:
-      - translation
-  /translation/history:
-    get:
+      - operations
+  /operations/cash-out:
+    post:
       consumes:
       - application/json
-      description: Show all translation history
-      operationId: history
+      description: Withdraw chips from session
+      parameters:
+      - description: Cash-out request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller_http.CashOutRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Cash out
+      tags:
+      - operations
+  /operations/reverse:
+    post:
+      consumes:
+      - application/json
+      description: Reverses a target operation
+      parameters:
+      - description: Reverse request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller_http.ReverseOperationRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Reverse operation
+      tags:
+      - operations
+  /session/start:
+    post:
+      consumes:
+      - application/json
+      description: Create new poker session
+      parameters:
+      - description: start session request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller_http.StartSessionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.TranslationHistory'
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Error'
-      summary: Show history
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Start session
       tags:
-      - translation
+      - sessions
+  /sessions:
+    get:
+      consumes:
+      - application/json
+      description: Get session by ID
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.GetSessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Get session
+      tags:
+      - sessions
+  /sessions/finish:
+    post:
+      consumes:
+      - application/json
+      description: Finish poker session (must be balanced)
+      parameters:
+      - description: Finish session request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller_http.FinishSessionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+      summary: Finish session
+      tags:
+      - sessions
 swagger: "2.0"

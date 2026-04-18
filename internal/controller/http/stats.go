@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,14 +9,29 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
-func (h *Handler) GetStatsSessions(w http.ResponseWriter, r *http.Request) {
+// GetStatsSessions godoc
+// @Summary Get sessions stats
+// @Description Returns statistics for sessions (aggregated)
+// @Tags stats
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit (default 20)"
+// @Param from query string false "From date (RFC3339 or YYYY-MM-DD)"
+// @Param to query string false "To date (RFC3339 or YYYY-MM-DD)"
+// @Success 200 {array} usecase.SessionStat
+// @Failure 400 {object} ErrorResponse
+// @Router /stats/sessions [get]
+func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		limit = 0
+	}
 
 	res, err := h.getStatsSessionsUC.Execute(usecase.GetStatsSessionsQuery{
 		Limit: limit,
@@ -29,17 +43,32 @@ func (h *Handler) GetStatsSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(res)
+	writeJSON(w, http.StatusOK, res)
 }
 
-func (h *Handler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
+// GetStatsPlayers godoc
+// @Summary Get players stats
+// @Description Returns aggregated statistics for players
+// @Tags stats
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit (default 20)"
+// @Param from query string false "From date (RFC3339 or YYYY-MM-DD)"
+// @Param to query string false "To date (RFC3339 or YYYY-MM-DD)"
+// @Success 200 {array} usecase.PlayerStat
+// @Failure 400 {object} ErrorResponse
+// @Router /stats/players [get]
+func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		limit = 0
+	}
 
 	res, err := h.getStatsPlayersUC.Execute(usecase.GetStatsPlayersQuery{
 		Limit: limit,
@@ -51,10 +80,23 @@ func (h *Handler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(res)
+	writeJSON(w, http.StatusOK, res)
 }
 
-func (h *Handler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
+// GetPlayerStats godoc
+// @Summary Get player stats
+// @Description Returns overall statistics for a specific player
+// @Tags stats
+// @Accept json
+// @Produce json
+// @Param player_id query string true "Player ID"
+// @Param from query string false "From date (RFC3339 or YYYY-MM-DD)"
+// @Param to query string false "To date (RFC3339 or YYYY-MM-DD)"
+// @Success 200 {object} usecase.PlayerOverallStat
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /stats/player [get]
+func (h *PlayerHandler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -77,7 +119,7 @@ func (h *Handler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(res)
+	writeJSON(w, http.StatusOK, res)
 }
 
 func parseDateRange(r *http.Request) (*usecase.DateTimeRangeBound, *usecase.DateTimeRangeBound, error) {

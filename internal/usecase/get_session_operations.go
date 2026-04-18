@@ -1,5 +1,7 @@
 package usecase
 
+import "time"
+
 type GetSessionOperationsUseCase struct {
 	sessionReader SessionReader
 	projection    ProjectionRepository
@@ -42,27 +44,38 @@ func (uc *GetSessionOperationsUseCase) execute(
 	q GetSessionOperationsQuery,
 ) ([]OperationDTO, error) {
 
-	// 1. проверяем session
+	// 1. проверка session (опционально)
 	if _, err := uc.sessionReader.FindByID(tx, q.SessionID); err != nil {
 		return nil, err
 	}
 
-	// 2. читаем операции
-	ops, err := uc.projection.ListBySession(tx, q.SessionID, q.Limit, q.Offset)
+	// 2. нормализация
+	limit := q.Limit
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+
+	offset := q.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	// 3. читаем операции
+	ops, err := uc.projection.ListBySession(tx, q.SessionID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. маппинг
+	// 4. маппинг
 	result := make([]OperationDTO, 0, len(ops))
 	for _, op := range ops {
 		result = append(result, OperationDTO{
-			ID:          op.ID(),
-			Type:        op.Type(),
-			PlayerID:    op.PlayerID(),
-			Chips:       op.Chips(),
-			CreatedAt:   op.CreatedAt(),
-			ReferenceID: op.ReferenceID(),
+			ID:        op.ID(),
+			Type:      op.Type(),
+			PlayerID:  op.PlayerID(),
+			Chips:     op.Chips(),
+			CreatedAt: op.CreatedAt().Format(time.RFC3339),
+			// ReferenceID: преобразуй в string если нужно
 		})
 	}
 

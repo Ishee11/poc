@@ -1,3 +1,9 @@
+// @title Poker API
+// @version 1.0
+// @description Poker sessions service
+
+// @host localhost:8080
+// @BasePath /
 package main
 
 import (

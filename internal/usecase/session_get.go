@@ -50,26 +50,21 @@ func (uc *GetSessionUseCase) Execute(q GetSessionQuery) (*GetSessionResponse, er
 }
 
 func (uc *GetSessionUseCase) execute(tx Tx, q GetSessionQuery) (*GetSessionResponse, error) {
-	// 1. session
 	session, err := uc.sessionReader.FindByID(tx, q.SessionID)
 	if err != nil {
 		return nil, err
 	}
-
-	// 2. агрегаты
-	aggr, err := uc.projection.GetSessionAggregates(tx, q.SessionID)
-	if err != nil {
-		return nil, err
+	if session == nil {
+		return nil, entity.ErrSessionNotFound
 	}
 
-	// 3. response
 	return &GetSessionResponse{
 		SessionID:    session.ID(),
 		Status:       session.Status(),
 		ChipRate:     session.ChipRate().Value(),
 		CreatedAt:    session.CreatedAt().Format(time.RFC3339),
-		TotalBuyIn:   aggr.TotalBuyIn,
-		TotalCashOut: aggr.TotalCashOut,
-		TotalChips:   aggr.TotalBuyIn - aggr.TotalCashOut,
+		TotalBuyIn:   session.TotalBuyIn(),
+		TotalCashOut: session.TotalCashOut(),
+		TotalChips:   session.TotalChips(),
 	}, nil
 }

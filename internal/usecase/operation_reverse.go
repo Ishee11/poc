@@ -1,3 +1,6 @@
+// NOTE:
+// - No DB-level protection for reversal uniqueness (acceptable for single-user scenario)
+// - Idempotency is best-effort (may skip execution after partial failure)
 package usecase
 
 import (
@@ -8,38 +11,35 @@ import (
 )
 
 type ReverseOperationUseCase struct {
-	opWriter OperationWriter
-
+	opWriter        OperationWriter
 	opReader        OperationReader
 	reversalChecker OperationReversalChecker
-
-	sessionReader SessionReader
-	sessionWriter SessionWriter
-
+	sessionWriter   SessionWriter
 	txManager       TxManager
 	idGen           OperationIDGenerator
 	idempotencyRepo IdempotencyRepository
+	sessionLocker   SessionLocker
 }
 
 func NewReverseOperationUseCase(
 	opWriter OperationWriter,
 	opReader OperationReader,
 	reversalChecker OperationReversalChecker,
-	sessionReader SessionReader,
 	sessionWriter SessionWriter,
 	txManager TxManager,
 	idGen OperationIDGenerator,
 	idempotencyRepo IdempotencyRepository,
+	sessionLocker SessionLocker,
 ) *ReverseOperationUseCase {
 	return &ReverseOperationUseCase{
 		opWriter:        opWriter,
 		opReader:        opReader,
 		reversalChecker: reversalChecker,
-		sessionReader:   sessionReader,
 		sessionWriter:   sessionWriter,
 		txManager:       txManager,
 		idGen:           idGen,
 		idempotencyRepo: idempotencyRepo,
+		sessionLocker:   sessionLocker,
 	}
 }
 
@@ -52,7 +52,6 @@ func (uc *ReverseOperationUseCase) Execute(cmd command.ReverseOperationCommand) 
 }
 
 func (uc *ReverseOperationUseCase) execute(tx Tx, cmd command.ReverseOperationCommand) error {
-
 	// 1. target operation
 	target, err := uc.opReader.GetByID(tx, cmd.TargetOperationID)
 	if err != nil {
@@ -62,12 +61,11 @@ func (uc *ReverseOperationUseCase) execute(tx Tx, cmd command.ReverseOperationCo
 		return entity.ErrOperationNotFound
 	}
 
-	// 2. нельзя отменять reversal
 	if target.Type() == entity.OperationReversal {
 		return entity.ErrInvalidOperation
 	}
 
-	// 3. защита от двойного reversal
+	// 2. защита от двойного reversal
 	exists, err := uc.reversalChecker.ExistsReversal(tx, target.ID())
 	if err != nil {
 		return err
@@ -76,17 +74,32 @@ func (uc *ReverseOperationUseCase) execute(tx Tx, cmd command.ReverseOperationCo
 		return entity.ErrOperationAlreadyReversed
 	}
 
-	// 4. session
-	session, err := uc.sessionReader.FindByID(tx, target.SessionID())
+	// 3. блокируем session
+	session, err := uc.sessionLocker.FindByIDForUpdate(tx, target.SessionID())
 	if err != nil {
 		return err
+	}
+	if session == nil {
+		return entity.ErrSessionNotFound
 	}
 
 	if session.Status() != entity.StatusActive {
 		return entity.ErrSessionNotActive
 	}
 
-	// 5. создаём reversal
+	// 4. проверка инварианта (важно!)
+	if target.Type() == entity.OperationBuyIn {
+		if target.Chips() > session.TotalChips() {
+			return entity.ErrInvalidCashOut
+		}
+	}
+
+	// 5. применяем
+	if err := uc.applyReversal(session, target); err != nil {
+		return err
+	}
+
+	// 6. создаём reversal
 	op, err := entity.NewReversalOperation(
 		uc.idGen.New(),
 		cmd.RequestID,
@@ -100,17 +113,11 @@ func (uc *ReverseOperationUseCase) execute(tx Tx, cmd command.ReverseOperationCo
 		return err
 	}
 
-	// 6. сохраняем операцию
+	// 7. сохраняем
 	if err := uc.opWriter.Save(tx, op); err != nil {
 		return err
 	}
 
-	// 7. инверсия домена
-	if err := uc.applyReversal(session, target); err != nil {
-		return err
-	}
-
-	// 8. сохраняем session
 	return uc.sessionWriter.Save(tx, session)
 }
 
