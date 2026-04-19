@@ -40,8 +40,8 @@ const translations = {
     "session.chipRateValue": "1 {currencySymbol} = {chips} chips",
     "session.bigBlind": "BB",
     "session.bigBlindShort": "BB",
-    "session.totalBuyIn": "Total Buy In",
-    "session.totalCashOut": "Total Cash Out",
+    "session.totalBuyIn": "Buy In",
+    "session.totalCashOut": "Cash Out",
     "session.onTable": "Chips on Table",
     "session.totalMoneyIn": "Total Money In",
     "session.addExistingPlayer": "Add Player to Session",
@@ -52,7 +52,7 @@ const translations = {
     "session.buyInHint":
       "Add an existing player through Buy-in or create a new player here.",
     "session.cashOutHint":
-      "After cash-out, the player is considered settled. Make a buy-in to continue.",
+      "After cash-out, the player is considered settled. Make a rebuy to continue.",
     "session.player": "Player",
     "session.selectPlayer": "Select player",
     "session.chips": "Chips",
@@ -249,8 +249,8 @@ const translations = {
     "session.chipRateValue": "1 {currencySymbol} = {chips} фишек",
     "session.bigBlind": "BB",
     "session.bigBlindShort": "BB",
-    "session.totalBuyIn": "Всего внесено",
-    "session.totalCashOut": "Всего выведено",
+    "session.totalBuyIn": "Внесено",
+    "session.totalCashOut": "Выведено",
     "session.onTable": "Фишек на столе",
     "session.totalMoneyIn": "Всего внесено деньгами",
     "session.addExistingPlayer": "Добавить игрока в сессию",
@@ -262,7 +262,7 @@ const translations = {
     "session.buyInHint":
       "Добавьте существующего игрока через Buy-in или создайте нового здесь.",
     "session.cashOutHint":
-      "После кэшаута игрок считается завершившим игру. Для продолжения необходимо сделать байин.",
+      "После кэшаута игрок считается завершившим игру. Для продолжения необходимо сделать ребай.",
     "session.player": "Игрок",
     "session.selectPlayer": "Выберите игрока",
     "session.chips": "Фишки",

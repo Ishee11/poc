@@ -680,8 +680,12 @@ body.debug-mode .debug-only {
 }
 
 .session-status-row {
-    margin-left: auto;
+    flex: 1 1 auto;
     justify-content: flex-end;
+}
+
+.session-status-row .session-status {
+    margin-right: auto;
 }
 
 .session-finished-at {

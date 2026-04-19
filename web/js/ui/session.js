@@ -103,7 +103,7 @@ export function renderSession() {
   const onTable = Number(session.totalChips) || 0;
 
   if (titleDate) {
-    titleDate.textContent = ` · ${formatDate(session.createdAt)}`;
+    titleDate.textContent = ` ${formatDate(session.createdAt)}`;
   }
   if (finishedAt) {
     const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
@@ -272,7 +272,13 @@ function renderPlayerSelect(selectId, players) {
     const id = player.player_id || player.id;
     return id === current;
   });
-  select.value = exists ? current : "";
+  if (exists) {
+    select.value = current;
+  } else if (players.length === 1) {
+    select.value = players[0].player_id || players[0].id || "";
+  } else {
+    select.value = "";
+  }
 }
 
 export function initSessionActions() {
