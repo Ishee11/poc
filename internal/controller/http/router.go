@@ -60,6 +60,7 @@ func NewRouter(h *Handler) http.Handler {
 	// ===== TEMP DEBUG ADMIN =====
 	mux.HandleFunc("/debug/player", h.Debug.DeletePlayer)
 	mux.HandleFunc("/debug/session", h.Debug.DeleteSession)
+	mux.HandleFunc("/debug/session/finish", h.Debug.DeleteSessionFinish)
 
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux

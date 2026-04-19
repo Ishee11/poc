@@ -2,6 +2,7 @@ import {
   buyIn,
   cashOut,
   createPlayer,
+  debugDeleteSessionFinish,
   debugDeleteSession,
   finishSession,
   getSession,
@@ -86,7 +87,9 @@ export function renderSession() {
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
   const debugActions = document.getElementById("session-debug-actions");
+  const debugReopenButton = document.getElementById("debug-reopen-session-btn");
   const playerActions = document.getElementById("session-player-actions");
+  const playerActionsHint = document.getElementById("session-player-actions-hint");
   const actionsPanel = document.getElementById("session-actions-panel");
   const finishActions = document.getElementById("session-finish-actions");
   const isActive = session.status === "active";
@@ -119,9 +122,11 @@ export function renderSession() {
     finishHint.textContent = "";
   }
   if (playerActions) playerActions.hidden = !isActive;
+  if (playerActionsHint) playerActionsHint.hidden = !isActive;
   if (actionsPanel) actionsPanel.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (debugActions) debugActions.hidden = !state.debugMode;
+  if (debugReopenButton) debugReopenButton.hidden = session.status !== "finished";
 }
 
 export function renderOperations() {
@@ -182,13 +187,21 @@ export function renderOperations() {
 }
 
 export function renderActionPlayerOptions() {
-  const select = document.getElementById("action-player-select");
+  renderPlayerSelect("rebuy-player-select", state.players);
+  renderPlayerSelect(
+    "cash-out-player-select",
+    state.players.filter((player) => player.in_game),
+  );
+}
+
+function renderPlayerSelect(selectId, players) {
+  const select = document.getElementById(selectId);
   if (!select) return;
 
   const current = select.value;
   const options = [
     `<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`,
-    ...state.players.map((player) => {
+    ...players.map((player) => {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       return `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`;
@@ -196,7 +209,7 @@ export function renderActionPlayerOptions() {
   ];
 
   select.innerHTML = options.join("");
-  const exists = state.players.some((player) => {
+  const exists = players.some((player) => {
     const id = player.player_id || player.id;
     return id === current;
   });
@@ -227,6 +240,9 @@ export function initSessionActions() {
       case "debug-delete-session-btn":
         await confirmDebugDeleteSession();
         break;
+      case "debug-reopen-session-btn":
+        await confirmDebugDeleteSessionFinish();
+        break;
       case "session-back-home-btn":
         setScreen("lobby");
         pushRoute(routeToHome());
@@ -251,8 +267,8 @@ export function initSessionActions() {
 }
 
 async function confirmBuyIn() {
-  const playerId = document.getElementById("action-player-select")?.value;
-  const chips = Number(document.getElementById("action-chips")?.value);
+  const playerId = document.getElementById("rebuy-player-select")?.value;
+  const chips = Number(document.getElementById("rebuy-chips")?.value);
 
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
     showNotice(t("notice.selectPlayerAndChips"), "error");
@@ -281,13 +297,13 @@ async function confirmBuyIn() {
   }
 
   await refreshSessionData();
-  document.getElementById("action-chips").value = "";
+  document.getElementById("rebuy-chips").value = "";
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
 async function confirmCashOut() {
-  const playerId = document.getElementById("action-player-select")?.value;
-  const chips = Number(document.getElementById("action-chips")?.value);
+  const playerId = document.getElementById("cash-out-player-select")?.value;
+  const chips = Number(document.getElementById("cash-out-chips")?.value);
 
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
     showNotice(t("notice.selectPlayerAndChips"), "error");
@@ -316,7 +332,7 @@ async function confirmCashOut() {
   }
 
   await refreshSessionData();
-  document.getElementById("action-chips").value = "";
+  document.getElementById("cash-out-chips").value = "";
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
@@ -486,6 +502,26 @@ async function confirmDebugDeleteSession() {
   setScreen("lobby");
   pushRoute(routeToHome());
   showNotice(t("notice.sessionDeleted"), "success");
+}
+
+async function confirmDebugDeleteSessionFinish() {
+  if (!state.debugMode || !state.activeSessionId) return;
+
+  const confirmed = await openModal({
+    title: t("modal.deleteFinishTitle"),
+    description: t("modal.deleteFinishDescription"),
+    confirmText: t("debug.deleteFinish"),
+  });
+  if (!confirmed) return;
+
+  const res = await debugDeleteSessionFinish(state.activeSessionId);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedDeleteFinish")), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice(t("notice.finishDeleted"), "success");
 }
 
 async function confirmReverse(operationId) {

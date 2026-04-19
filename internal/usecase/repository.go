@@ -128,4 +128,5 @@ type StatsRepository interface {
 type DebugAdminRepository interface {
 	DeletePlayer(tx Tx, playerID entity.PlayerID) error
 	DeleteSession(tx Tx, sessionID entity.SessionID) error
+	DeleteSessionFinish(tx Tx, sessionID entity.SessionID) error
 }

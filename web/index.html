@@ -169,7 +169,11 @@
                             </div>
                         </div>
 
-                        <div class="actions top-gap" id="session-player-actions">
+                        <p class="hint top-gap" id="session-player-actions-hint" data-i18n="session.buyInHint">
+                            To add a player to the session, make a Buy-in.
+                        </p>
+
+                        <div class="actions" id="session-player-actions">
                             <button type="button" id="session-add-existing-player-btn" data-i18n="session.addExistingPlayer">
                                 Add Player to Session
                             </button>
@@ -179,6 +183,9 @@
                         </div>
 
                         <div class="debug-admin-actions" id="session-debug-actions" hidden>
+                            <button type="button" class="danger" id="debug-reopen-session-btn" data-i18n="debug.deleteFinish">
+                                Delete Finish
+                            </button>
                             <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
                                 Delete Session
                             </button>
@@ -197,25 +204,42 @@
                         </p>
 
                         <form id="session-operation-form" onsubmit="return false;">
-                            <div class="grid two">
-                                <label>
-                                    <span data-i18n="session.player">Player</span>
-                                    <select id="action-player-select">
-                                        <option value="" data-i18n="session.selectPlayer">Select player</option>
-                                    </select>
-                                </label>
+                            <div class="action-panels">
+                                <div class="action-card">
+                                    <h4 data-i18n="session.buyIn">Rebuy</h4>
+                                    <label>
+                                        <span data-i18n="session.player">Player</span>
+                                        <select id="rebuy-player-select">
+                                            <option value="" data-i18n="session.selectPlayer">Select player</option>
+                                        </select>
+                                    </label>
 
-                                <label>
-                                    <span data-i18n="session.chips">Chips</span>
-                                    <input id="action-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
-                                </label>
-                            </div>
+                                    <label>
+                                        <span data-i18n="session.chips">Chips</span>
+                                        <input id="rebuy-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
+                                    </label>
 
-                            <div class="actions">
-                                <button type="button" id="buy-in-btn" data-i18n="session.buyIn">Rebuy</button>
-                                <button type="button" id="cash-out-btn" class="secondary" data-i18n="session.cashOut">
-                                    Cash Out
-                                </button>
+                                    <button type="button" id="buy-in-btn" data-i18n="session.buyIn">Rebuy</button>
+                                </div>
+
+                                <div class="action-card">
+                                    <h4 data-i18n="session.cashOut">Cash Out</h4>
+                                    <label>
+                                        <span data-i18n="session.player">Player</span>
+                                        <select id="cash-out-player-select">
+                                            <option value="" data-i18n="session.selectPlayer">Select player</option>
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        <span data-i18n="session.chips">Chips</span>
+                                        <input id="cash-out-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
+                                    </label>
+
+                                    <button type="button" id="cash-out-btn" class="secondary" data-i18n="session.cashOut">
+                                        Cash Out
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

@@ -142,6 +142,11 @@ func NewContainer(db *DB) *Container {
 		txManager,
 	)
 
+	deleteDebugSessionFinishUC := usecase.NewDeleteDebugSessionFinishUseCase(
+		debugAdminRepo,
+		txManager,
+	)
+
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
 		// session
@@ -168,6 +173,7 @@ func NewContainer(db *DB) *Container {
 		// debug admin
 		deleteDebugPlayerUC,
 		deleteDebugSessionUC,
+		deleteDebugSessionFinishUC,
 	)
 
 	// ===== Router =====

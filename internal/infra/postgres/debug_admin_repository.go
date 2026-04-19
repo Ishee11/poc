@@ -92,6 +92,25 @@ func (r *DebugAdminRepository) DeleteSession(tx usecase.Tx, sessionID entity.Ses
 	return nil
 }
 
+func (r *DebugAdminRepository) DeleteSessionFinish(tx usecase.Tx, sessionID entity.SessionID) error {
+	ctx := context.Background()
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE sessions
+		SET status = 'active'
+		WHERE id = $1
+		  AND status = 'finished'
+	`, sessionID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return entity.ErrSessionNotFound
+	}
+
+	return nil
+}
+
 func recalculateSessionTotals(ctx context.Context, tx usecase.Tx, sessionID entity.SessionID) error {
 	_, err := tx.Exec(ctx, `
 		WITH totals AS (

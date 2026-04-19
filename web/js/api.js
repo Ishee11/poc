@@ -188,3 +188,10 @@ export function debugDeleteSession(sessionId) {
     method: "DELETE",
   });
 }
+
+export function debugDeleteSessionFinish(sessionId) {
+  const params = new URLSearchParams({ session_id: sessionId });
+  return request(`/debug/session/finish?${params.toString()}`, {
+    method: "DELETE",
+  });
+}

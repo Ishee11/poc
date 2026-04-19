@@ -100,6 +100,7 @@ export function setScreen(name) {
     ?.classList.toggle("active", name === "player");
 
   document.body.dataset.screen = name;
+  window.scrollTo({ top: 0, left: 0 });
 }
 
 export function routeToSession(sessionId) {

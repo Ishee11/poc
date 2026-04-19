@@ -83,9 +83,12 @@ export function syncSelect() {
   if (!select) return;
 
   const current = select.value;
+  const activeSessions = state.overviewSessions.filter(
+    (session) => session.status === "active",
+  );
   const options = [
     `<option value="">${escapeHtml(t("lobby.latestActiveSession"))}</option>`,
-    ...state.overviewSessions.map((session) => {
+    ...activeSessions.map((session) => {
       const id = session.session_id || session.id;
       const label = `${formatDate(session.created_at)} (${statusLabel(session.status || "-")})`;
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
@@ -94,7 +97,7 @@ export function syncSelect() {
 
   select.innerHTML = options.join("");
 
-  const currentExists = state.overviewSessions.some((session) => {
+  const currentExists = activeSessions.some((session) => {
     const id = session.session_id || session.id;
     return id === current;
   });
@@ -104,8 +107,12 @@ export function syncSelect() {
     return;
   }
 
-  if (state.overviewSessions[0]) {
-    select.value =
-      state.overviewSessions[0].session_id || state.overviewSessions[0].id;
+  if (activeSessions[0]) {
+    select.value = activeSessions[0].session_id || activeSessions[0].id;
   }
+}
+
+export function firstActiveSessionId() {
+  const session = state.overviewSessions.find((item) => item.status === "active");
+  return session?.session_id || session?.id || "";
 }

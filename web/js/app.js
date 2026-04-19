@@ -1,7 +1,12 @@
 import { createPlayer, startSession } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
-import { loadSessions, renderSessions, syncSelect } from "./ui/lobby.js";
+import {
+  firstActiveSessionId,
+  loadSessions,
+  renderSessions,
+  syncSelect,
+} from "./ui/lobby.js";
 import {
   loadPlayerDetail,
   loadPlayersOverview,
@@ -45,10 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     openButton.addEventListener("click", async () => {
       let sessionId = sessionSelect.value;
       if (!sessionId) {
-        const first = document.querySelector(
-          "#overview-sessions-wrap [data-open-session]",
-        );
-        sessionId = first?.getAttribute("data-open-session") || "";
+        sessionId = firstActiveSessionId();
       }
 
       if (!sessionId) {

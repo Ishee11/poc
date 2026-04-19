@@ -45,3 +45,23 @@ func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	sessionID := r.URL.Query().Get("session_id")
+	if sessionID == "" {
+		http.Error(w, "session_id is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.deleteSessionFinishUC.Execute(entity.SessionID(sessionID)); err != nil {
+		writeError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
