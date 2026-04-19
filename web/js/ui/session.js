@@ -14,8 +14,10 @@ import { operationLabel, statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
 import {
   describeError,
+  currencySymbol,
   escapeHtml,
   formatDate,
+  formatMoney,
   formatNumber,
   openModal,
   pushRoute,
@@ -111,7 +113,9 @@ export function renderSession() {
   if (buyIn) buyIn.textContent = formatNumber(session.totalBuyIn);
   if (cashOut) cashOut.textContent = formatNumber(session.totalCashOut);
   if (totalChips) totalChips.textContent = formatNumber(session.totalChips);
-  if (totalMoney) totalMoney.textContent = formatNumber(totalMoneyIn(session));
+  if (totalMoney) {
+    totalMoney.textContent = formatMoney(totalMoneyIn(session), session.currency);
+  }
   if (status) {
     status.innerHTML = `
       <span>${escapeHtml(statusLabel(session.status))}</span>
@@ -698,10 +702,6 @@ function hydrateSession(raw) {
     totalCashOut: raw.total_cash_out,
     totalChips: raw.total_chips,
   };
-}
-
-function currencySymbol() {
-  return "₽";
 }
 
 function findPlayerName(playerId) {
