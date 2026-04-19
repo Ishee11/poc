@@ -28,7 +28,7 @@ func (r *SessionRepository) FindByID(
 	ctx := context.Background()
 
 	row := tx.QueryRow(ctx, `
-		SELECT id, chip_rate, status, created_at, total_buy_in, total_cash_out
+		SELECT id, chip_rate, big_blind, status, created_at, finished_at, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
 `, sessionID)
@@ -36,8 +36,10 @@ func (r *SessionRepository) FindByID(
 	var (
 		id           string
 		chipRate     int64
+		bigBlind     int64
 		status       string
 		createdAt    time.Time
+		finishedAt   *time.Time
 		totalBuyIn   int64
 		totalCashOut int64
 	)
@@ -45,8 +47,10 @@ func (r *SessionRepository) FindByID(
 	err := row.Scan(
 		&id,
 		&chipRate,
+		&bigBlind,
 		&status,
 		&createdAt,
+		&finishedAt,
 		&totalBuyIn,
 		&totalCashOut,
 	)
@@ -66,8 +70,10 @@ func (r *SessionRepository) FindByID(
 	return entity.RestoreSession(
 		entity.SessionID(id),
 		rate,
+		bigBlind,
 		entity.Status(status),
 		createdAt,
+		finishedAt,
 		totalBuyIn,
 		totalCashOut,
 	), nil
@@ -84,18 +90,21 @@ func (r *SessionRepository) Save(
 
 	_, err := tx.Exec(ctx, `
 		INSERT INTO sessions (
-			id, chip_rate, status, created_at, total_buy_in, total_cash_out
+			id, chip_rate, big_blind, status, created_at, finished_at, total_buy_in, total_cash_out
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (id) DO UPDATE SET
 			status = EXCLUDED.status,
+			finished_at = EXCLUDED.finished_at,
 			total_buy_in = EXCLUDED.total_buy_in,
 			total_cash_out = EXCLUDED.total_cash_out
 	`,
 		session.ID(),
 		session.ChipRate().Value(),
+		session.BigBlind(),
 		session.Status(),
 		session.CreatedAt(),
+		session.FinishedAt(),
 		session.TotalBuyIn(),
 		session.TotalCashOut(),
 	)
@@ -111,7 +120,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 	row := tx.QueryRow(
 		context.Background(),
 		`
-		SELECT id, chip_rate, status, created_at, total_buy_in, total_cash_out
+		SELECT id, chip_rate, big_blind, status, created_at, finished_at, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
 		FOR UPDATE
@@ -122,8 +131,10 @@ func (r *SessionRepository) FindByIDForUpdate(
 	var (
 		sessionID    entity.SessionID
 		chipRate     int64
+		bigBlind     int64
 		status       entity.Status
 		createdAt    time.Time
+		finishedAt   *time.Time
 		totalBuyIn   int64
 		totalCashOut int64
 	)
@@ -131,8 +142,10 @@ func (r *SessionRepository) FindByIDForUpdate(
 	err := row.Scan(
 		&sessionID,
 		&chipRate,
+		&bigBlind,
 		&status,
 		&createdAt,
+		&finishedAt,
 		&totalBuyIn,
 		&totalCashOut,
 	)
@@ -152,8 +165,10 @@ func (r *SessionRepository) FindByIDForUpdate(
 	return entity.RestoreSession(
 		sessionID,
 		rate,
+		bigBlind,
 		status,
 		createdAt,
+		finishedAt,
 		totalBuyIn,
 		totalCashOut,
 	), nil

@@ -50,6 +50,7 @@ export function renderSessions() {
             <div class="row-title">${escapeHtml(formatDate(session.created_at))}</div>
             <div class="inline-stats">
               <span>${escapeHtml(statusLabel(session.status || "-"))}</span>
+              <span>${escapeHtml(t("session.bigBlind"))}: ${formatNumber(session.big_blind)}</span>
               <span>${escapeHtml(t("common.players"))}: ${formatNumber(session.player_count)}</span>
               <span>${escapeHtml(t("common.buyIn"))}: ${formatNumber(session.total_buy_in)}</span>
             </div>
@@ -90,7 +91,7 @@ export function syncSelect() {
     `<option value="">${escapeHtml(t("lobby.latestActiveSession"))}</option>`,
     ...activeSessions.map((session) => {
       const id = session.session_id || session.id;
-      const label = `${formatDate(session.created_at)} (${statusLabel(session.status || "-")})`;
+      const label = `${formatDate(session.created_at)} (${statusLabel(session.status || "-")}, BB ${formatNumber(session.big_blind)})`;
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
     }),
   ];

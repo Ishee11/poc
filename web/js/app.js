@@ -64,24 +64,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const startForm = document.getElementById("start-session-form");
   const chipInput = document.getElementById("start-chip-rate");
-  if (startForm && chipInput) {
+  const bigBlindInput = document.getElementById("start-big-blind");
+  if (startForm && chipInput && bigBlindInput) {
     startForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const chipRate = Number(chipInput.value);
+      const bigBlind = Number(bigBlindInput.value);
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
         showNotice(t("notice.validChipRate"), "error");
+        return;
+      }
+      if (!Number.isFinite(bigBlind) || bigBlind <= 0) {
+        showNotice(t("notice.validBigBlind"), "error");
         return;
       }
 
       const confirmed = await openModal({
         title: t("modal.startTitle"),
-        description: t("modal.startDescription", { chipRate }),
+        description: t("modal.startDescription", { chipRate, bigBlind }),
         confirmText: t("lobby.startSession"),
       });
       if (!confirmed) return;
 
-      const res = await startSession({ chipRate });
+      const res = await startSession({ chipRate, bigBlind });
       if (!res.ok || !res.body?.session_id) {
         showNotice(describeError(res, t("error.failedStartSession")), "error");
         return;

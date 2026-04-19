@@ -17,6 +17,7 @@ const translations = {
     "lobby.openWorkspace": "Open Workspace",
     "lobby.startTitle": "Start a New Session",
     "lobby.chipRate": "Rate (1 ruble for N chips)",
+    "lobby.bigBlind": "Big Blind",
     "lobby.startHint":
       "New sessions are created as active and become visible in the list below.",
     "lobby.startSession": "Start Session",
@@ -37,6 +38,7 @@ const translations = {
     "session.finish": "Finish Session",
     "session.chipRate": "Rate",
     "session.chipRateValue": "1 ₽ = {chips} chips",
+    "session.bigBlind": "Big Blind",
     "session.totalBuyIn": "Total Buy In",
     "session.totalCashOut": "Total Cash Out",
     "session.onTable": "On Table",
@@ -103,6 +105,7 @@ const translations = {
     "operation.finish": "Finish Session",
     "notice.noSession": "No session available to open.",
     "notice.validChipRate": "Enter a valid rate.",
+    "notice.validBigBlind": "Enter a valid big blind.",
     "notice.sessionStarted": "Session started.",
     "notice.enterPlayerName": "Enter player name.",
     "notice.playerCreated": "Player {name} created.",
@@ -125,7 +128,8 @@ const translations = {
     "hint.finishBlocked":
       "Cannot finish session yet: cash out or reverse operations until ON TABLE becomes 0.",
     "modal.startTitle": "Start Session",
-    "modal.startDescription": "Start a new session with rate 1 ₽ = {chipRate} chips?",
+    "modal.startDescription":
+      "Start a new session with rate 1 ₽ = {chipRate} chips and big blind {bigBlind}?",
     "modal.createPlayerTitle": "Create Player",
     "modal.createPlayerDescription": "Create player \"{name}\"?",
     "modal.confirmBuyInTitle": "Confirm Buy In",
@@ -200,6 +204,7 @@ const translations = {
     "lobby.openWorkspace": "Открыть сессию",
     "lobby.startTitle": "Начать новую сессию",
     "lobby.chipRate": "Курс (1 рубль за N фишек)",
+    "lobby.bigBlind": "Большой блайнд",
     "lobby.startHint":
       "Новые сессии создаются активными и появляются в списке ниже.",
     "lobby.startSession": "Начать сессию",
@@ -220,6 +225,7 @@ const translations = {
     "session.finish": "Завершить сессию",
     "session.chipRate": "Курс",
     "session.chipRateValue": "1 ₽ = {chips} фишек",
+    "session.bigBlind": "Большой блайнд",
     "session.totalBuyIn": "Всего внесено",
     "session.totalCashOut": "Всего выведено",
     "session.onTable": "На столе",
@@ -286,6 +292,7 @@ const translations = {
     "operation.finish": "Завершение сессии",
     "notice.noSession": "Нет сессии для открытия.",
     "notice.validChipRate": "Введите корректный курс.",
+    "notice.validBigBlind": "Введите корректный большой блайнд.",
     "notice.sessionStarted": "Сессия начата.",
     "notice.enterPlayerName": "Введите имя игрока.",
     "notice.playerCreated": "Игрок {name} создан.",
@@ -307,7 +314,8 @@ const translations = {
     "hint.finishBlocked":
       "Сессию пока нельзя завершить: сделайте кэш-аут или отмените операции, пока НА СТОЛЕ не станет 0.",
     "modal.startTitle": "Начать сессию",
-    "modal.startDescription": "Начать новую сессию с курсом 1 ₽ = {chipRate} фишек?",
+    "modal.startDescription":
+      "Начать новую сессию с курсом 1 ₽ = {chipRate} фишек и большим блайндом {bigBlind}?",
     "modal.createPlayerTitle": "Создать игрока",
     "modal.createPlayerDescription": "Создать игрока «{name}»?",
     "modal.confirmBuyInTitle": "Подтвердить бай-ин",

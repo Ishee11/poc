@@ -113,7 +113,8 @@ func (r *DebugAdminRepository) DeleteSessionFinish(tx usecase.Tx, sessionID enti
 
 	tag, err := tx.Exec(ctx, `
 		UPDATE sessions
-		SET status = 'active'
+		SET status = 'active',
+			finished_at = NULL
 		WHERE id = $1
 		  AND status = 'finished'
 	`, sessionID)

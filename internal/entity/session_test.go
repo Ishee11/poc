@@ -16,7 +16,7 @@ func mustRate(t *testing.T) valueobject.ChipRate {
 }
 
 func newSession(t *testing.T) *Session {
-	return NewSession("s1", mustRate(t), time.Now())
+	return NewSession("s1", mustRate(t), 2, time.Now())
 }
 
 func TestSession_BuyIn(t *testing.T) {
@@ -132,7 +132,7 @@ func TestSession_Finish(t *testing.T) {
 			s := newSession(t)
 			s.status = tc.status
 
-			err := s.Finish()
+			err := s.Finish(time.Now())
 
 			if tc.wantErr {
 				if err == nil {
@@ -203,7 +203,7 @@ func TestSession_Flow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := s.Finish(); err != nil {
+	if err := s.Finish(time.Now()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -221,7 +221,7 @@ func TestSession_AfterFinish_Operations(t *testing.T) {
 	if err := s.CashOut(1000); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Finish(); err != nil {
+	if err := s.Finish(time.Now()); err != nil {
 		t.Fatal(err)
 	}
 

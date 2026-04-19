@@ -77,6 +77,7 @@ export function renderSession() {
 
   const subtitle = document.getElementById("workspace-subtitle");
   const chipRate = document.getElementById("stat-chip-rate");
+  const bigBlind = document.getElementById("stat-big-blind");
   const buyIn = document.getElementById("stat-buy-in");
   const cashOut = document.getElementById("stat-cash-out");
   const totalChips = document.getElementById("stat-total-chips");
@@ -102,12 +103,20 @@ export function renderSession() {
       chips: formatNumber(session.chipRate),
     });
   }
+  if (bigBlind) bigBlind.textContent = formatNumber(session.bigBlind);
   if (buyIn) buyIn.textContent = formatNumber(session.totalBuyIn);
   if (cashOut) cashOut.textContent = formatNumber(session.totalCashOut);
   if (totalChips) totalChips.textContent = formatNumber(session.totalChips);
   if (totalMoney) totalMoney.textContent = formatNumber(totalMoneyIn(session));
   if (status) {
-    status.textContent = statusLabel(session.status);
+    status.innerHTML = `
+      <span>${escapeHtml(statusLabel(session.status))}</span>
+      ${
+        state.debugMode && session.status === "finished"
+          ? `<button type="button" class="secondary status-debug-action" id="debug-reopen-session-btn">${escapeHtml(t("debug.deleteFinish"))}</button>`
+          : ""
+      }
+    `;
     status.className = `session-status ${session.status}`;
   }
   if (totalChipsCard) {
@@ -125,6 +134,12 @@ export function renderSession() {
   if (actionsPanel) actionsPanel.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
+
+  document
+    .getElementById("debug-reopen-session-btn")
+    ?.addEventListener("click", async () => {
+      await confirmDebugDeleteSessionFinish();
+    });
 }
 
 export function renderOperations() {
@@ -132,7 +147,7 @@ export function renderOperations() {
   const count = document.getElementById("session-operations-count");
   if (!wrap || !count) return;
 
-  const showFinishOperation = state.debugMode && state.session?.status === "finished";
+  const showFinishOperation = state.session?.status === "finished";
   count.textContent = String(state.operations.length + (showFinishOperation ? 1 : 0));
 
   if (!state.operations.length && !showFinishOperation) {
@@ -186,10 +201,10 @@ export function renderOperations() {
             </div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.status"))}: ${escapeHtml(statusLabel("finished"))}</span>
-              <span>${escapeHtml(formatDate(state.session.createdAt))}</span>
+              <span>${escapeHtml(formatDate(state.session.finishedAt || state.session.createdAt))}</span>
             </div>
           </div>
-          <button type="button" class="secondary" data-debug-delete-finish>${escapeHtml(t("debug.deleteFinish"))}</button>
+          <span class="muted">-</span>
         </div>
       `
     : "";
@@ -202,10 +217,6 @@ export function renderOperations() {
       if (!operationId) return;
       await confirmReverse(operationId);
     });
-  });
-
-  wrap.querySelector("[data-debug-delete-finish]")?.addEventListener("click", async () => {
-    await confirmDebugDeleteSessionFinish();
   });
 }
 
@@ -596,7 +607,9 @@ function hydrateSession(raw) {
     id: raw.session_id,
     status: raw.status,
     chipRate: raw.chip_rate,
+    bigBlind: raw.big_blind,
     createdAt: raw.created_at,
+    finishedAt: raw.finished_at,
     totalBuyIn: raw.total_buy_in,
     totalCashOut: raw.total_cash_out,
     totalChips: raw.total_chips,

@@ -71,12 +71,13 @@ function rid() {
 
 // ===== sessions =====
 
-export function startSession({ sessionId, chipRate }) {
+export function startSession({ sessionId, chipRate, bigBlind }) {
   return request("/sessions/start", {
     method: "POST",
     body: JSON.stringify({
       // session_id: sessionId,
       chip_rate: chipRate,
+      big_blind: bigBlind,
     }),
   });
 }

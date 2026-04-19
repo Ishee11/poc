@@ -10,7 +10,9 @@ type GetSessionResponse struct {
 	SessionID    entity.SessionID `json:"session_id"`
 	Status       entity.Status    `json:"status"`
 	ChipRate     int64            `json:"chip_rate"`
+	BigBlind     int64            `json:"big_blind"`
 	CreatedAt    string           `json:"created_at"`
+	FinishedAt   *string          `json:"finished_at,omitempty"`
 	TotalBuyIn   int64            `json:"total_buy_in"`
 	TotalCashOut int64            `json:"total_cash_out"`
 	TotalChips   int64            `json:"total_chips"`
@@ -58,11 +60,19 @@ func (uc *GetSessionUseCase) execute(tx Tx, q GetSessionQuery) (*GetSessionRespo
 		return nil, entity.ErrSessionNotFound
 	}
 
+	var finishedAt *string
+	if session.FinishedAt() != nil {
+		formatted := session.FinishedAt().Format(time.RFC3339)
+		finishedAt = &formatted
+	}
+
 	return &GetSessionResponse{
 		SessionID:    session.ID(),
 		Status:       session.Status(),
 		ChipRate:     session.ChipRate().Value(),
+		BigBlind:     session.BigBlind(),
 		CreatedAt:    session.CreatedAt().Format(time.RFC3339),
+		FinishedAt:   finishedAt,
 		TotalBuyIn:   session.TotalBuyIn(),
 		TotalCashOut: session.TotalCashOut(),
 		TotalChips:   session.TotalChips(),

@@ -302,7 +302,7 @@ func addPlayer(t *testing.T, store *fakeStore, id entity.PlayerID, name string) 
 
 func addSession(t *testing.T, store *fakeStore, id entity.SessionID, status entity.Status, buyIn int64, cashOut int64) {
 	t.Helper()
-	store.sessions[id] = entity.RestoreSession(id, mustChipRate(t, 2), status, time.Now(), buyIn, cashOut)
+	store.sessions[id] = entity.RestoreSession(id, mustChipRate(t, 2), 2, status, time.Now(), nil, buyIn, cashOut)
 }
 
 func newHelperForStore(store *fakeStore, opGen OperationIDGenerator, playerGen PlayerIDGenerator) *Helper {
@@ -371,7 +371,7 @@ func TestStartSessionUseCase(t *testing.T) {
 		sequenceSessionIDGen{next: "s1"},
 	)
 
-	id, err := uc.Execute(command.StartSessionCommand{ChipRate: 2})
+	id, err := uc.Execute(command.StartSessionCommand{ChipRate: 2, BigBlind: 2})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -382,7 +382,10 @@ func TestStartSessionUseCase(t *testing.T) {
 		t.Fatalf("session was not saved with chip rate")
 	}
 
-	if _, err := uc.Execute(command.StartSessionCommand{ChipRate: 0}); !errors.Is(err, valueobject.ErrInvalidChips) {
+	if _, err := uc.Execute(command.StartSessionCommand{ChipRate: 0, BigBlind: 2}); !errors.Is(err, valueobject.ErrInvalidChips) {
+		t.Fatalf("expected invalid chips, got %v", err)
+	}
+	if _, err := uc.Execute(command.StartSessionCommand{ChipRate: 2, BigBlind: 0}); !errors.Is(err, valueobject.ErrInvalidChips) {
 		t.Fatalf("expected invalid chips, got %v", err)
 	}
 }
@@ -556,7 +559,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 
 func TestGetSessionPlayersUseCase(t *testing.T) {
 	store := newFakeStore()
-	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), entity.StatusFinished, time.Now(), 100, 40)
+	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), 2, entity.StatusFinished, time.Now(), nil, 100, 40)
 	addPlayer(t, store, "p1", "Alice")
 	buyInOp, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
 	if err != nil {

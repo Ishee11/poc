@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"time"
+
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
@@ -62,7 +64,7 @@ func (uc *FinishSessionUseCase) execute(tx Tx, cmd command.FinishSessionCommand)
 		}
 	}
 
-	if err := session.Finish(); err != nil {
+	if err := session.Finish(time.Now()); err != nil {
 		return err
 	}
 

@@ -44,7 +44,9 @@ func (r *StatsRepository) ListSessions(
 			s.id,
 			s.status,
 			s.chip_rate,
+			s.big_blind,
 			s.created_at,
+			s.finished_at,
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
 			COUNT(DISTINCT eo.player_id)
@@ -52,7 +54,7 @@ func (r *StatsRepository) ListSessions(
 		LEFT JOIN effective_operations eo ON eo.session_id = s.id
 		WHERE ($1::timestamp IS NULL OR s.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR s.created_at < $2::timestamp)
-		GROUP BY s.id, s.status, s.chip_rate, s.created_at
+		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
 		LIMIT $3
 	`, boundTime(filter.From), boundTime(filter.To), limit)
@@ -64,12 +66,15 @@ func (r *StatsRepository) ListSessions(
 	result := make([]usecase.SessionStat, 0)
 	for rows.Next() {
 		var createdAt time.Time
+		var finishedAt *time.Time
 		var session usecase.SessionStat
 		if err := rows.Scan(
 			&session.SessionID,
 			&session.Status,
 			&session.ChipRate,
+			&session.BigBlind,
 			&createdAt,
+			&finishedAt,
 			&session.TotalBuyIn,
 			&session.TotalCashOut,
 			&session.PlayerCount,
@@ -77,6 +82,10 @@ func (r *StatsRepository) ListSessions(
 			return nil, err
 		}
 		session.CreatedAt = createdAt.Format(time.RFC3339)
+		if finishedAt != nil {
+			formatted := finishedAt.Format(time.RFC3339)
+			session.FinishedAt = &formatted
+		}
 		result = append(result, session)
 	}
 
@@ -231,7 +240,9 @@ func (r *StatsRepository) ListPlayerSessions(
 			s.id,
 			s.status,
 			s.chip_rate,
+			s.big_blind,
 			s.created_at,
+			s.finished_at,
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
 			MAX(eo.created_at)
@@ -240,7 +251,7 @@ func (r *StatsRepository) ListPlayerSessions(
 		WHERE eo.player_id = $1
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
-		GROUP BY s.id, s.status, s.chip_rate, s.created_at
+		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.created_at, s.finished_at
 		ORDER BY MAX(eo.created_at) DESC, s.created_at DESC
 		LIMIT $4
 		`, playerID, boundTime(filter.From), boundTime(filter.To), filterLimit(filter.Limit, 100))
@@ -253,12 +264,15 @@ func (r *StatsRepository) ListPlayerSessions(
 	for rows.Next() {
 		var stat usecase.PlayerSessionStat
 		var sessionCreatedAt time.Time
+		var sessionFinishedAt *time.Time
 		var lastActivity *time.Time
 		if err := rows.Scan(
 			&stat.SessionID,
 			&stat.Status,
 			&stat.ChipRate,
+			&stat.BigBlind,
 			&sessionCreatedAt,
+			&sessionFinishedAt,
 			&stat.BuyInChips,
 			&stat.CashOutChips,
 			&lastActivity,
@@ -267,6 +281,10 @@ func (r *StatsRepository) ListPlayerSessions(
 		}
 
 		stat.SessionCreatedAt = sessionCreatedAt.Format(time.RFC3339)
+		if sessionFinishedAt != nil {
+			formatted := sessionFinishedAt.Format(time.RFC3339)
+			stat.SessionFinishedAt = &formatted
+		}
 		stat.ProfitChips = stat.CashOutChips - stat.BuyInChips
 		if stat.ChipRate > 0 {
 			stat.ProfitMoney = stat.ProfitChips / stat.ChipRate

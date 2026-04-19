@@ -31,6 +31,7 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.startSessionUC.Execute(command.StartSessionCommand{
 		ChipRate: req.ChipRate,
+		BigBlind: req.BigBlind,
 	})
 
 	if err != nil {

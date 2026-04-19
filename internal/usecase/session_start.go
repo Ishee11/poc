@@ -54,10 +54,13 @@ func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) (
 	if err != nil {
 		return "", err
 	}
+	if cmd.BigBlind <= 0 {
+		return "", valueobject.ErrInvalidChips
+	}
 
 	id := uc.idGenerator.New()
 
-	session := entity.NewSession(id, rate, time.Now())
+	session := entity.NewSession(id, rate, cmd.BigBlind, time.Now())
 
 	if err := uc.sessionWriter.Save(tx, session); err != nil {
 		return "", err

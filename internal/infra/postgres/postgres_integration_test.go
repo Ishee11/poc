@@ -104,7 +104,7 @@ func saveTestSession(t *testing.T, tx usecase.Tx, id entity.SessionID, status en
 	if err != nil {
 		t.Fatal(err)
 	}
-	session := entity.RestoreSession(id, rate, status, time.Now().Add(-time.Hour), 0, 0)
+	session := entity.RestoreSession(id, rate, 2, status, time.Now().Add(-time.Hour), nil, 0, 0)
 	if err := NewSessionRepository().Save(tx, session); err != nil {
 		t.Fatal(err)
 	}

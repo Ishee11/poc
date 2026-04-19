@@ -107,15 +107,17 @@ type DateTimeRangeBound struct {
 }
 
 type PlayerSessionStat struct {
-	SessionID        entity.SessionID `json:"session_id"`
-	Status           entity.Status    `json:"status"`
-	ChipRate         int64            `json:"chip_rate"`
-	SessionCreatedAt string           `json:"session_created_at"`
-	LastActivityAt   *string          `json:"last_activity_at"`
-	BuyInChips       int64            `json:"buy_in_chips"`
-	CashOutChips     int64            `json:"cash_out_chips"`
-	ProfitChips      int64            `json:"profit_chips"`
-	ProfitMoney      int64            `json:"profit_money"`
+	SessionID         entity.SessionID `json:"session_id"`
+	Status            entity.Status    `json:"status"`
+	ChipRate          int64            `json:"chip_rate"`
+	BigBlind          int64            `json:"big_blind"`
+	SessionCreatedAt  string           `json:"session_created_at"`
+	SessionFinishedAt *string          `json:"session_finished_at,omitempty"`
+	LastActivityAt    *string          `json:"last_activity_at"`
+	BuyInChips        int64            `json:"buy_in_chips"`
+	CashOutChips      int64            `json:"cash_out_chips"`
+	ProfitChips       int64            `json:"profit_chips"`
+	ProfitMoney       int64            `json:"profit_money"`
 }
 
 type StatsRepository interface {

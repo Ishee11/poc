@@ -15,20 +15,23 @@ const (
 )
 
 type Session struct {
-	id        SessionID
-	chipRate  valueobject.ChipRate
-	status    Status
-	createdAt time.Time
+	id         SessionID
+	chipRate   valueobject.ChipRate
+	bigBlind   int64
+	status     Status
+	createdAt  time.Time
+	finishedAt *time.Time
 
 	// cached aggregates, derived from operations (source of truth)
 	totalBuyInCache   int64
 	totalCashOutCache int64
 }
 
-func NewSession(id SessionID, chipRate valueobject.ChipRate, createdAt time.Time) *Session {
+func NewSession(id SessionID, chipRate valueobject.ChipRate, bigBlind int64, createdAt time.Time) *Session {
 	return &Session{
 		id:                id,
 		chipRate:          chipRate,
+		bigBlind:          bigBlind,
 		status:            StatusActive,
 		createdAt:         createdAt,
 		totalBuyInCache:   0,
@@ -39,16 +42,20 @@ func NewSession(id SessionID, chipRate valueobject.ChipRate, createdAt time.Time
 func RestoreSession(
 	id SessionID,
 	chipRate valueobject.ChipRate,
+	bigBlind int64,
 	status Status,
 	createdAt time.Time,
+	finishedAt *time.Time,
 	totalBuyIn int64,
 	totalCashOut int64,
 ) *Session {
 	return &Session{
 		id:                id,
 		chipRate:          chipRate,
+		bigBlind:          bigBlind,
 		status:            status,
 		createdAt:         createdAt,
+		finishedAt:        finishedAt,
 		totalBuyInCache:   totalBuyIn,
 		totalCashOutCache: totalCashOut,
 	}
@@ -56,6 +63,7 @@ func RestoreSession(
 
 func (s *Session) ID() SessionID                  { return s.id }
 func (s *Session) ChipRate() valueobject.ChipRate { return s.chipRate }
+func (s *Session) BigBlind() int64                { return s.bigBlind }
 func (s *Session) Status() Status                 { return s.status }
 func (s *Session) TotalBuyIn() int64              { return s.totalBuyInCache }
 func (s *Session) TotalCashOut() int64            { return s.totalCashOutCache }
@@ -89,16 +97,21 @@ func (s *Session) CashOut(chips int64) error {
 	return nil
 }
 
-func (s *Session) Finish() error {
+func (s *Session) Finish(finishedAt time.Time) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
 	}
 
 	s.status = StatusFinished
+	s.finishedAt = &finishedAt
 
 	return nil
 }
 
 func (s *Session) CreatedAt() time.Time {
 	return s.createdAt
+}
+
+func (s *Session) FinishedAt() *time.Time {
+	return s.finishedAt
 }

@@ -583,6 +583,13 @@ body.debug-mode .debug-only {
     font-size: 1.15rem;
 }
 
+.session-status .status-debug-action {
+    padding: 5px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    text-transform: none;
+}
+
 .clickable-row {
     cursor: pointer;
     border-radius: 14px;

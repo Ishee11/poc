@@ -4,6 +4,7 @@ import "github.com/ishee11/poc/internal/entity"
 
 type StartSessionRequest struct {
 	ChipRate int64 `json:"chip_rate"`
+	BigBlind int64 `json:"big_blind"`
 }
 
 type FinishSessionRequest struct {
