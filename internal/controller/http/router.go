@@ -67,8 +67,8 @@ func NewRouter(h *Handler) http.Handler {
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux
 	handler = CORSMiddleware(handler)
-	handler = RequestIDMiddleware(handler)
 	handler = LoggingMiddleware(handler)
+	handler = RequestIDMiddleware(handler)
 
 	return handler
 }

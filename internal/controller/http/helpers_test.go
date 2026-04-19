@@ -1,10 +1,13 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -87,5 +90,61 @@ func TestParseDateRange(t *testing.T) {
 	badReq := httptest.NewRequest(http.MethodGet, "/stats/sessions?from=bad-date", nil)
 	if _, _, err := parseDateRange(badReq); err == nil {
 		t.Fatal("expected error for bad date")
+	}
+}
+
+func TestRequestIDIsAvailableToLoggingMiddleware(t *testing.T) {
+	var logs bytes.Buffer
+	originalOutput := log.Writer()
+	originalFlags := log.Flags()
+	log.SetOutput(&logs)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(originalOutput)
+		log.SetFlags(originalFlags)
+	})
+
+	handler := RequestIDMiddleware(LoggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	req := httptest.NewRequest(http.MethodGet, "/stats/player", nil)
+	req.Header.Set("X-Request-ID", "req-from-header")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if got := rec.Header().Get("X-Request-ID"); got != "req-from-header" {
+		t.Fatalf("expected response request id %q, got %q", "req-from-header", got)
+	}
+	if got := logs.String(); !strings.Contains(got, "request_id=req-from-header") {
+		t.Fatalf("expected request id in log, got %q", got)
+	}
+}
+
+func TestRequestIDMiddlewareGeneratesIDForLogging(t *testing.T) {
+	var logs bytes.Buffer
+	originalOutput := log.Writer()
+	originalFlags := log.Flags()
+	log.SetOutput(&logs)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(originalOutput)
+		log.SetFlags(originalFlags)
+	})
+
+	handler := RequestIDMiddleware(LoggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	req := httptest.NewRequest(http.MethodGet, "/stats/player", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	reqID := rec.Header().Get("X-Request-ID")
+	if reqID == "" {
+		t.Fatal("expected generated response request id")
+	}
+	if got := logs.String(); !strings.Contains(got, "request_id="+reqID) {
+		t.Fatalf("expected generated request id in log, got %q", got)
 	}
 }
