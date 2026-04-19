@@ -72,6 +72,7 @@ export async function loadOperations(sessionId) {
 
   state.operations = Array.isArray(res.body) ? res.body : [];
   renderOperations();
+  applyDefaultRebuyChips();
 }
 
 export function renderSession() {
@@ -247,6 +248,7 @@ export function renderActionPlayerOptions() {
     "cash-out-player-select",
     state.players.filter((player) => player.in_game),
   );
+  applyDefaultRebuyChips();
 }
 
 function renderPlayerSelect(selectId, players) {
@@ -325,6 +327,12 @@ export function initSessionActions() {
         break;
     }
   });
+
+  document.addEventListener("change", (event) => {
+    if (event.target?.id === "rebuy-player-select") {
+      applyDefaultRebuyChips({ overwrite: true });
+    }
+  });
 }
 
 function focusSessionAction(controlId) {
@@ -335,6 +343,40 @@ function focusSessionAction(controlId) {
   window.setTimeout(() => {
     document.getElementById(controlId)?.focus();
   }, 220);
+}
+
+function applyDefaultRebuyChips({ overwrite = false } = {}) {
+  const input = document.getElementById("rebuy-chips");
+  if (!input) return;
+  if (!overwrite && input.value !== "") return;
+
+  const chips = lastBuyInChipsForRebuy(
+    document.getElementById("rebuy-player-select")?.value || "",
+  );
+  if (chips > 0) {
+    input.value = String(chips);
+  }
+}
+
+function lastBuyInChipsForRebuy(playerId) {
+  const reversedTargets = new Set(
+    state.operations
+      .filter((operation) => operation.type === "reversal" && operation.reference_id)
+      .map((operation) => operation.reference_id),
+  );
+
+  const buyIns = state.operations.filter(
+    (operation) =>
+      operation.type === "buy_in" &&
+      !reversedTargets.has(operation.id) &&
+      Number(operation.chips) > 0,
+  );
+
+  const playerBuyIn = buyIns.find((operation) => operation.player_id === playerId);
+  if (playerBuyIn) return Number(playerBuyIn.chips);
+
+  const sessionBuyIn = buyIns[0];
+  return sessionBuyIn ? Number(sessionBuyIn.chips) : 0;
 }
 
 async function confirmBuyIn() {
@@ -368,7 +410,7 @@ async function confirmBuyIn() {
   }
 
   await refreshSessionData();
-  document.getElementById("rebuy-chips").value = "";
+  applyDefaultRebuyChips({ overwrite: true });
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
