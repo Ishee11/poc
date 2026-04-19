@@ -197,15 +197,13 @@
                         </form>
                     </div>
 
-                    <div class="panel">
-                        <details class="disclosure" id="session-operations-panel">
-                            <summary>
-                                <span data-i18n="session.latestOperations">Latest Operations</span>
-                                <span class="summary-count" id="session-operations-count">0</span>
-                            </summary>
-                            <div class="disclosure-body" id="operations-wrap"></div>
-                        </details>
-                    </div>
+                    <details class="panel panel-disclosure" id="session-operations-panel">
+                        <summary class="panel-title-row">
+                            <h3 data-i18n="session.latestOperations">Latest Operations</h3>
+                            <span class="summary-count" id="session-operations-count">0</span>
+                        </summary>
+                        <div id="operations-wrap"></div>
+                    </details>
 
                     <div class="panel debug-admin-actions" id="session-delete-debug-panel" hidden>
                         <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
