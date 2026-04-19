@@ -128,16 +128,18 @@
                     <div class="panel">
                         <div class="toolbar">
                             <div>
-                                <h2 id="workspace-title" data-i18n="session.title">Session</h2>
+                                <h2 id="workspace-title" class="session-heading">
+                                    <span data-i18n="session.title">Session</span>
+                                    <span id="workspace-title-date" class="session-heading-date"></span>
+                                </h2>
                                 <div class="title-row">
-                                    <div id="workspace-subtitle" class="muted"></div>
                                     <span id="workspace-status" class="session-status">-</span>
+                                    <div class="actions compact-actions" id="session-finish-actions">
+                                        <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
+                                            Finish Session
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="actions" id="session-finish-actions">
-                                <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
-                                    Finish Session
-                                </button>
                             </div>
                         </div>
 

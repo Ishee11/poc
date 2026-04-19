@@ -615,6 +615,28 @@ body.debug-mode .debug-only {
     align-items: center;
 }
 
+.session-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0;
+}
+
+.session-heading-date {
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.88em;
+    font-weight: 500;
+}
+
+.compact-actions {
+    gap: 8px;
+}
+
+.compact-actions button {
+    min-height: 40px;
+}
+
 .session-status {
     display: inline-flex;
     align-items: center;

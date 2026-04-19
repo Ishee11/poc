@@ -80,7 +80,7 @@ export function renderSession() {
   const session = state.session;
   if (!session) return;
 
-  const subtitle = document.getElementById("workspace-subtitle");
+  const titleDate = document.getElementById("workspace-title-date");
   const chipRate = document.getElementById("stat-chip-rate");
   const chipRateCard = document.getElementById("stat-chip-rate-card");
   const bigBlind = document.getElementById("stat-big-blind");
@@ -103,8 +103,8 @@ export function renderSession() {
   const isActive = session.status === "active";
   const onTable = Number(session.totalChips) || 0;
 
-  if (subtitle) {
-    subtitle.textContent = formatDate(session.createdAt);
+  if (titleDate) {
+    titleDate.textContent = ` · ${formatDate(session.createdAt)}`;
   }
   if (chipRate) {
     chipRate.textContent = t("session.chipRateValue", {
