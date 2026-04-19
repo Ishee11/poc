@@ -227,6 +227,21 @@ body:not([data-screen="player"]) .nav-player-only {
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.session-balance-stat {
+    margin-bottom: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+}
+
+.session-balance-stat .stat-label {
+    font-size: 0.82rem;
+}
+
+.session-balance-stat #stat-total-chips {
+    font-size: 2rem;
+    font-weight: 900;
+}
+
 .rate-currency-row {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(92px, 1fr);
@@ -1074,6 +1089,16 @@ pre {
     .stats,
     .card-meta {
         grid-template-columns: 1fr;
+    }
+
+    .session-balance-stat {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .session-balance-stat #stat-total-chips {
+        font-size: 1.8rem;
     }
 
     .action-panels {
