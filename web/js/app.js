@@ -1,5 +1,5 @@
 import { createPlayer, startSession } from "./api.js";
-import { getLanguage, initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
+import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
 import {
   firstActiveSessionId,
@@ -65,22 +65,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const startForm = document.getElementById("start-session-form");
   const chipInput = document.getElementById("start-chip-rate");
   const bigBlindInput = document.getElementById("start-big-blind");
-  const currencyInput = document.getElementById("start-currency");
-  if (currencyInput) {
-    currencyInput.value = defaultCurrency();
-    renderStartChipRateLabel();
-    currencyInput.addEventListener("change", () => {
-      currencyInput.dataset.userChanged = "true";
-      renderStartChipRateLabel();
-    });
-  }
-  if (startForm && chipInput && bigBlindInput && currencyInput) {
+  renderStartChipRateLabel();
+  if (startForm && chipInput && bigBlindInput) {
     startForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const chipRate = Number(chipInput.value);
       const bigBlind = Number(bigBlindInput.value);
-      const currency = currencyInput.value || defaultCurrency();
+      const currency = defaultCurrency();
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
         showNotice(t("notice.validChipRate"), "error");
         return;
@@ -95,7 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         description: t("modal.startDescription", {
           chipRate,
           bigBlind,
-          currencySymbol: currencySymbol(currency),
+          currencySymbol: currencySymbol(),
         }),
         confirmText: t("lobby.startSession"),
       });
@@ -155,10 +147,6 @@ function initLanguageSelect() {
 }
 
 function renderCurrentLanguage() {
-  const currencyInput = document.getElementById("start-currency");
-  if (currencyInput && !currencyInput.dataset.userChanged) {
-    currencyInput.value = defaultCurrency();
-  }
   renderStartChipRateLabel();
   renderSessions();
   syncSelect();
@@ -177,20 +165,19 @@ function renderCurrentLanguage() {
 }
 
 function defaultCurrency() {
-  return getLanguage() === "ru" ? "RUB" : "USD";
+  return "RUB";
 }
 
-function currencySymbol(currency) {
-  return currency === "USD" ? "$" : "₽";
+function currencySymbol() {
+  return "₽";
 }
 
 function renderStartChipRateLabel() {
   const label = document.getElementById("start-chip-rate-label");
-  const currencyInput = document.getElementById("start-currency");
   if (!label) return;
 
   label.textContent = t("lobby.chipRate", {
-    currencySymbol: currencySymbol(currencyInput?.value || defaultCurrency()),
+    currencySymbol: currencySymbol(),
   });
 }
 

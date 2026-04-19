@@ -582,16 +582,6 @@ async function confirmDebugUpdateSessionConfig() {
         value: state.session.chipRate,
       },
       {
-        name: "currency",
-        label: t("lobby.currency"),
-        type: "select",
-        value: state.session.currency || "RUB",
-        options: [
-          { value: "RUB", label: "₽" },
-          { value: "USD", label: "$" },
-        ],
-      },
-      {
         name: "big_blind",
         label: t("session.bigBlind"),
         type: "number",
@@ -604,7 +594,7 @@ async function confirmDebugUpdateSessionConfig() {
 
   const chipRate = Number(values.chip_rate);
   const bigBlind = Number(values.big_blind);
-  const currency = values.currency === "USD" ? "USD" : "RUB";
+  const currency = "RUB";
   if (!Number.isFinite(chipRate) || chipRate <= 0) {
     showNotice(t("notice.validChipRate"), "error");
     return;
@@ -710,8 +700,8 @@ function hydrateSession(raw) {
   };
 }
 
-function currencySymbol(currency) {
-  return currency === "USD" ? "$" : "₽";
+function currencySymbol() {
+  return "₽";
 }
 
 function findPlayerName(playerId) {

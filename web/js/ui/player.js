@@ -84,7 +84,7 @@ export function renderPlayersOverview() {
             <div class="row-title">${escapeHtml(player.player_name || id)}</div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
-              <span>${escapeHtml(t("common.profit"))}: ${formatNumber(player.profit_money)}</span>
+              <span>${escapeHtml(t("common.profit"))}: ${formatMoney(player.profit_money, "RUB")}</span>
             </div>
           </div>
         </div>
@@ -446,13 +446,14 @@ function normalizePlayerDetail(raw) {
 }
 
 function renderCurrencyStats(stats) {
-  if (!stats.length) {
+  const rubStats = stats.filter((stat) => (stat.currency || "RUB") === "RUB");
+  if (!rubStats.length) {
     return "";
   }
 
   return `
     <div class="stats player-stats">
-      ${stats.map(renderCurrencyStatCards).join("")}
+      ${rubStats.map(renderCurrencyStatCards).join("")}
     </div>
   `;
 }
@@ -520,7 +521,7 @@ function formatMoney(value, currency) {
 }
 
 function currencySymbol(currency) {
-  return currency === "USD" ? "$" : "₽";
+  return "₽";
 }
 
 function roundMetric(value) {
