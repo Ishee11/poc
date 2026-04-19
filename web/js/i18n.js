@@ -52,7 +52,7 @@ const translations = {
     "session.buyInHint":
       "Add an existing player through Buy-in or create a new player here.",
     "session.cashOutHint":
-      "Only players currently in game can cash out. Cash-out is full: withdraw all chips, not a part.",
+      "After cash-out, the player is considered settled. Make a buy-in to continue.",
     "session.player": "Player",
     "session.selectPlayer": "Select player",
     "session.chips": "Chips",
@@ -262,7 +262,7 @@ const translations = {
     "session.buyInHint":
       "Добавьте существующего игрока через Buy-in или создайте нового здесь.",
     "session.cashOutHint":
-      "Cash-out доступен только игрокам, которые сейчас в игре. Cash-out полный: вывести можно только все фишки, не часть.",
+      "После кэшаута игрок считается завершившим игру. Для продолжения необходимо сделать байин.",
     "session.player": "Игрок",
     "session.selectPlayer": "Выберите игрока",
     "session.chips": "Фишки",

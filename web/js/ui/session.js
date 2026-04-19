@@ -95,7 +95,6 @@ export function renderSession() {
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
   const debugDeletePanel = document.getElementById("session-delete-debug-panel");
-  const mobileActions = document.getElementById("mobile-session-actions");
   const playerActions = document.getElementById("session-player-actions");
   const playerActionsHint = document.getElementById("session-player-actions-hint");
   const actionsPanel = document.getElementById("session-actions-panel");
@@ -158,7 +157,6 @@ export function renderSession() {
   if (actionsPanel) actionsPanel.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
-  if (mobileActions) mobileActions.hidden = !isActive;
 
   document
     .getElementById("debug-reopen-session-btn")
@@ -299,12 +297,6 @@ export function initSessionActions() {
         await confirmAddNewPlayer();
         break;
       case "finish-session-btn":
-        await confirmFinishSession();
-        break;
-      case "mobile-cash-out-shortcut":
-        focusSessionAction("cash-out-player-select");
-        break;
-      case "mobile-finish-session-btn":
         await confirmFinishSession();
         break;
       case "debug-delete-session-btn":
