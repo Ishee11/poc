@@ -262,10 +262,28 @@ body:not([data-screen="player"]) .nav-player-only {
 }
 
 .stat-label {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
     color: var(--muted);
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+}
+
+.stat-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 999px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 0.68rem;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: help;
 }
 
 .stat-value {

@@ -215,23 +215,43 @@ export function renderPlayerDetail() {
       </div>
       <div class="stats player-stats">
         <div class="stat">
-          <div class="stat-label">${escapeHtml(t("player.sessions"))}</div>
+          ${statLabel("player.sessions", "player.hint.sessions")}
           <div>${formatNumber(player.sessions_count)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">${escapeHtml(t("player.totalBuyIn"))}</div>
+          ${statLabel("player.totalBuyIn", "player.hint.totalBuyIn")}
           <div>${formatNumber(player.total_buy_in)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">${escapeHtml(t("player.totalCashOut"))}</div>
+          ${statLabel("player.totalCashOut", "player.hint.totalCashOut")}
           <div>${formatNumber(player.total_cash_out)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">${escapeHtml(t("player.profitMoney"))}</div>
+          ${statLabel("player.totalBuyInMoney", "player.hint.totalBuyInMoney")}
+          <div>${formatNumber(player.total_buy_in_money)}</div>
+        </div>
+        <div class="stat">
+          ${statLabel("player.totalCashOutMoney", "player.hint.totalCashOutMoney")}
+          <div>${formatNumber(player.total_cash_out_money)}</div>
+        </div>
+        <div class="stat">
+          ${statLabel("player.pnl", "player.hint.pnl")}
           <div class="${Number(player.profit_money) >= 0 ? "profit-positive" : "profit-negative"}">${formatNumber(player.profit_money)}</div>
         </div>
         <div class="stat">
-          <div class="stat-label">${escapeHtml(t("player.winRate"))}</div>
+          ${statLabel("player.avgProfitPerSession", "player.hint.avgProfitPerSession")}
+          <div class="${Number(player.avg_profit_per_session) >= 0 ? "profit-positive" : "profit-negative"}">${formatNumber(roundMetric(player.avg_profit_per_session))}</div>
+        </div>
+        <div class="stat">
+          ${statLabel("player.roi", "player.hint.roi")}
+          <div class="${Number(player.roi_percent) >= 0 ? "profit-positive" : "profit-negative"}">${formatPercent(player.roi_percent)}</div>
+        </div>
+        <div class="stat">
+          ${statLabel("player.avgBuyInPerSession", "player.hint.avgBuyInPerSession")}
+          <div>${formatNumber(roundMetric(player.avg_buy_in_per_session))}</div>
+        </div>
+        <div class="stat">
+          ${statLabel("player.winRate", "player.hint.winRate")}
           <div>${escapeHtml(formatWinRate(sessions))}</div>
         </div>
       </div>
@@ -422,6 +442,25 @@ function normalizePlayerDetail(raw) {
     player: raw.player || raw.Player || null,
     sessions: raw.sessions || raw.Sessions || [],
   };
+}
+
+function statLabel(labelKey, hintKey) {
+  const hint = t(hintKey);
+  return `
+    <div class="stat-label">
+      <span>${escapeHtml(t(labelKey))}</span>
+      <span class="stat-help" title="${escapeHtml(hint)}" aria-label="${escapeHtml(hint)}">?</span>
+    </div>
+  `;
+}
+
+function formatPercent(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${formatNumber(roundMetric(number))}%` : "-";
+}
+
+function roundMetric(value) {
+  return Math.round(value * 100) / 100;
 }
 
 function periodSummary() {

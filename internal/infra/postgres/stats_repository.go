@@ -184,6 +184,8 @@ func (r *StatsRepository) GetPlayerOverall(
 			COUNT(DISTINCT eo.session_id),
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
 				- COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
 			MAX(eo.created_at)
@@ -204,6 +206,8 @@ func (r *StatsRepository) GetPlayerOverall(
 		&stat.SessionsCount,
 		&stat.TotalBuyIn,
 		&stat.TotalCashOut,
+		&stat.TotalBuyInMoney,
+		&stat.TotalCashOutMoney,
 		&stat.ProfitMoney,
 		&lastActivity,
 	); err != nil {
@@ -211,6 +215,13 @@ func (r *StatsRepository) GetPlayerOverall(
 	}
 
 	stat.ProfitChips = stat.TotalCashOut - stat.TotalBuyIn
+	if stat.SessionsCount > 0 {
+		stat.AvgProfitPerSession = float64(stat.ProfitMoney) / float64(stat.SessionsCount)
+		stat.AvgBuyInPerSession = float64(stat.TotalBuyInMoney) / float64(stat.SessionsCount)
+	}
+	if stat.TotalBuyInMoney > 0 {
+		stat.ROIPercent = float64(stat.ProfitMoney) / float64(stat.TotalBuyInMoney) * 100
+	}
 	if lastActivity != nil {
 		formatted := lastActivity.Format(time.RFC3339)
 		stat.LastActivityAt = &formatted

@@ -265,6 +265,12 @@ func TestStatsRepository_Integration(t *testing.T) {
 		if player.PlayerName != "Alice" || player.ProfitChips != -60 || player.ProfitMoney != -30 {
 			t.Fatalf("unexpected player overall: %+v", player)
 		}
+		if player.TotalBuyInMoney != 50 || player.TotalCashOutMoney != 20 {
+			t.Fatalf("unexpected player money totals: %+v", player)
+		}
+		if player.AvgProfitPerSession != -30 || player.ROIPercent != -60 || player.AvgBuyInPerSession != 50 {
+			t.Fatalf("unexpected player performance metrics: %+v", player)
+		}
 
 		playerSessions, err := repo.ListPlayerSessions(tx, "p1", usecase.PlayerStatsFilter{Limit: 10})
 		if err != nil {
