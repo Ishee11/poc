@@ -143,7 +143,7 @@ export function renderPlayers() {
             <div class="inline-stats">
               <span>${escapeHtml(t("common.buyIn"))}: ${formatNumber(player.buy_in)}</span>
               <span>${escapeHtml(t("common.cashOut"))}: ${formatNumber(player.cash_out)}</span>
-              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatNumber(profitMoney)}</span>
+              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, state.session?.currency)}</span>
               <span>${player.in_game ? escapeHtml(t("common.inGame")) : escapeHtml(t("common.settled"))}</span>
             </div>
           </div>
@@ -485,6 +485,14 @@ function statLabel(labelKey, hintKey) {
 function formatPercent(value) {
   const number = Number(value);
   return Number.isFinite(number) ? `${formatNumber(roundMetric(number))}%` : "-";
+}
+
+function formatMoney(value, currency) {
+  return `${formatNumber(value)} ${currencySymbol(currency)}`;
+}
+
+function currencySymbol(currency) {
+  return currency === "USD" ? "$" : "₽";
 }
 
 function roundMetric(value) {
