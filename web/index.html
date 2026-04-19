@@ -34,8 +34,8 @@
                 <div id="page-notice" class="notice" hidden></div>
 
                 <section class="screen active" id="screen-lobby">
-                    <div class="grid two">
-                        <div class="panel">
+                    <div class="grid lobby-primary">
+                        <div class="panel lobby-connect-panel">
                             <h2 data-i18n="lobby.connectTitle">Connect to Active Session</h2>
 
                             <form id="connect-session-form" onsubmit="return false;">
@@ -51,44 +51,28 @@
                             </form>
                         </div>
 
-                        <div class="grid panel-grid">
-                            <div class="panel">
-                                <h2 data-i18n="lobby.startTitle">Start a New Session</h2>
+                        <div class="panel lobby-start-panel">
+                            <h2 data-i18n="lobby.startTitle">Start a New Session</h2>
 
-                                <form id="start-session-form" onsubmit="return false;">
-                                    <label>
-                                        <span id="start-chip-rate-label">Rate</span>
-                                        <input id="start-chip-rate" type="number" min="1" />
-                                    </label>
+                            <form id="start-session-form" onsubmit="return false;">
+                                <label>
+                                    <span id="start-chip-rate-label">Rate</span>
+                                    <input id="start-chip-rate" type="number" min="1" />
+                                </label>
 
-                                    <label>
-                                        <span data-i18n="lobby.bigBlind">BB (Big Blind)</span>
-                                        <input id="start-big-blind" type="number" min="1" />
-                                    </label>
+                                <label>
+                                    <span data-i18n="lobby.bigBlind">BB (Big Blind)</span>
+                                    <input id="start-big-blind" type="number" min="1" />
+                                </label>
 
-                                    <div class="hint" data-i18n="lobby.startHint">
-                                        New sessions are created as active and become visible in the list below.
-                                    </div>
+                                <div class="hint" data-i18n="lobby.startHint">
+                                    New sessions are created as active and become visible in the list below.
+                                </div>
 
-                                    <div class="actions">
-                                        <button type="submit" data-i18n="lobby.startSession">Start Session</button>
-                                    </div>
-                                </form>
-                            </div>
-
-                            <div class="panel">
-                                <h3 data-i18n="lobby.addPlayerTitle">Add New Player</h3>
-                                <form id="create-player-form" onsubmit="return false;">
-                                    <label>
-                                        <span data-i18n="lobby.playerName">Player Name</span>
-                                        <input id="create-player-name" type="text" placeholder="Enter player name" data-i18n-placeholder="lobby.playerNamePlaceholder" />
-                                    </label>
-
-                                    <div class="actions">
-                                        <button type="submit" data-i18n="lobby.createPlayer">Create Player</button>
-                                    </div>
-                                </form>
-                            </div>
+                                <div class="actions">
+                                    <button type="submit" data-i18n="lobby.startSession">Start Session</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
@@ -110,6 +94,20 @@
                             </summary>
                             <div class="disclosure-body" id="overview-players-wrap"></div>
                         </details>
+                    </div>
+
+                    <div class="panel">
+                        <h3 data-i18n="lobby.addPlayerTitle">Add New Player</h3>
+                        <form id="create-player-form" onsubmit="return false;">
+                            <label>
+                                <span data-i18n="lobby.playerName">Player Name</span>
+                                <input id="create-player-name" type="text" placeholder="Enter player name" data-i18n-placeholder="lobby.playerNamePlaceholder" />
+                            </label>
+
+                            <div class="actions">
+                                <button type="submit" data-i18n="lobby.createPlayer">Create Player</button>
+                            </div>
+                        </form>
                     </div>
 
                     <div class="panel language-panel">

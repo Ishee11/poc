@@ -178,6 +178,29 @@ body:not([data-screen="player"]) .nav-player-only {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.lobby-primary {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    align-items: stretch;
+}
+
+.lobby-connect-panel,
+.lobby-start-panel {
+    display: grid;
+    align-content: start;
+}
+
+.lobby-connect-panel {
+    border-color: rgba(88, 208, 167, 0.3);
+    background:
+        linear-gradient(180deg, rgba(88, 208, 167, 0.08), rgba(255, 255, 255, 0.02)),
+        var(--panel);
+}
+
+.lobby-connect-panel form {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+}
+
 .grid.three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1000,6 +1023,7 @@ pre {
 
 @media (max-width: 1180px) {
     .grid.two,
+    .lobby-primary,
     .grid.three,
     .stats,
     .action-panels,
@@ -1074,6 +1098,10 @@ pre {
     .actions {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .lobby-connect-panel form {
+        grid-template-columns: 1fr;
     }
 
     .language-panel {
