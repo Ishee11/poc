@@ -217,7 +217,7 @@ func (r *StatsRepository) GetPlayerOverall(
 	stat.ProfitChips = stat.TotalCashOut - stat.TotalBuyIn
 	if stat.SessionsCount > 0 {
 		stat.AvgProfitPerSession = float64(stat.ProfitMoney) / float64(stat.SessionsCount)
-		stat.AvgBuyInPerSession = float64(stat.TotalBuyInMoney) / float64(stat.SessionsCount)
+		stat.AvgBuyInPerSession = float64(stat.TotalBuyIn) / float64(stat.SessionsCount)
 	}
 	if stat.TotalBuyInMoney > 0 {
 		stat.ROIPercent = float64(stat.ProfitMoney) / float64(stat.TotalBuyInMoney) * 100

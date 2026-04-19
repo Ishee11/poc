@@ -142,6 +142,7 @@ export function openModal({
   fields = [],
   confirmText = t("common.confirm"),
   cancelText = t("common.cancel"),
+  showCancel = true,
 }) {
   const root = document.getElementById("modal-root");
   if (!root) {
@@ -190,7 +191,11 @@ export function openModal({
       <form id="modal-form">
         ${fieldMarkup}
         <div class="modal-actions">
-          <button type="button" class="secondary" id="modal-cancel-btn">${escapeHtml(cancelText)}</button>
+          ${
+            showCancel
+              ? `<button type="button" class="secondary" id="modal-cancel-btn">${escapeHtml(cancelText)}</button>`
+              : ""
+          }
           <button type="submit" id="modal-confirm-btn">${escapeHtml(confirmText)}</button>
         </div>
       </form>

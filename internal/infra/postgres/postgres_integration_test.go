@@ -268,7 +268,7 @@ func TestStatsRepository_Integration(t *testing.T) {
 		if player.TotalBuyInMoney != 50 || player.TotalCashOutMoney != 20 {
 			t.Fatalf("unexpected player money totals: %+v", player)
 		}
-		if player.AvgProfitPerSession != -30 || player.ROIPercent != -60 || player.AvgBuyInPerSession != 50 {
+		if player.AvgProfitPerSession != -30 || player.ROIPercent != -60 || player.AvgBuyInPerSession != 100 {
 			t.Fatalf("unexpected player performance metrics: %+v", player)
 		}
 

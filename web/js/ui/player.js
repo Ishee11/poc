@@ -449,7 +449,8 @@ function bindStatHelp(container) {
       await openModal({
         title: button.getAttribute("data-stat-title") || "",
         description: button.getAttribute("data-stat-help") || "",
-        confirmText: t("common.confirm"),
+        confirmText: t("common.close"),
+        showCancel: false,
       });
     });
   });
