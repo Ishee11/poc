@@ -902,6 +902,18 @@ pre {
     font-weight: 600;
 }
 
+.mobile-session-cards {
+    display: none;
+}
+
+.mobile-player-session-card {
+    padding: 12px;
+}
+
+.mobile-player-session-card .card-header strong {
+    white-space: nowrap;
+}
+
 .summary-grid {
     display: grid;
     gap: 12px;
@@ -1210,6 +1222,11 @@ pre {
         min-width: 0;
         padding: 10px 8px;
         font-size: 0.9rem;
+    }
+
+    .mobile-session-cards {
+        display: grid;
+        gap: 10px;
     }
 
     th span {

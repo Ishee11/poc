@@ -230,7 +230,8 @@ export function renderPlayerDetail() {
         </div>
       </div>
       ${renderCurrencyStats(player.money_by_currency || [])}
-      <div class="table-wrap">
+      ${renderPlayerSessionCards(sessions)}
+      <div class="table-wrap desktop-only">
         <table>
           <thead>
             <tr>
@@ -290,6 +291,50 @@ export function renderPlayerDetail() {
 
   bindOpenSessionRows(wrap);
   bindStatHelp(wrap);
+}
+
+function renderPlayerSessionCards(sessions) {
+  if (!sessions.length) {
+    return `<div class="mobile-only empty-inline">${escapeHtml(t("common.noSessions"))}</div>`;
+  }
+
+  return `
+    <div class="mobile-only mobile-session-cards">
+      ${sessions
+        .map(
+          (session) => `
+            <div class="card-item mobile-player-session-card clickable-row" data-open-session="${escapeHtml(session.session_id)}" tabindex="0" role="button">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">${escapeHtml(formatDate(session.session_created_at))}</div>
+                  <div class="row-meta">${escapeHtml(statusLabel(session.status))}</div>
+                </div>
+                <strong class="${Number(session.profit_money) >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(session.profit_money, session.currency)}</strong>
+              </div>
+              <div class="card-meta">
+                <div class="card-meta-item">
+                  <span>${escapeHtml(t("table.buyIn"))}</span>
+                  <strong>${formatNumber(session.buy_in_chips)}</strong>
+                </div>
+                <div class="card-meta-item">
+                  <span>${escapeHtml(t("table.cashOut"))}</span>
+                  <strong>${formatNumber(session.cash_out_chips)}</strong>
+                </div>
+                <div class="card-meta-item">
+                  <span>${escapeHtml(t("table.profitChips"))}</span>
+                  <strong>${formatNumber(session.profit_chips)}</strong>
+                </div>
+                <div class="card-meta-item">
+                  <span>${escapeHtml(t("table.lastActivity"))}</span>
+                  <strong>${escapeHtml(formatDate(session.last_activity_at))}</strong>
+                </div>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function renderPlayerHeaderDebugActions(player) {
