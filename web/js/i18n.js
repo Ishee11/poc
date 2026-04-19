@@ -46,13 +46,14 @@ const translations = {
     "session.totalCashOut": "Total Cash Out",
     "session.onTable": "Chips on Table",
     "session.totalMoneyIn": "Total Money In",
-    "session.addExistingPlayer": "Buy-in",
+    "session.addExistingPlayer": "Add Player to Session",
     "session.createNewPlayer": "Create New Player",
     "session.players": "Players",
     "session.actions": "Actions",
     "session.actionsHint":
-      "You can choose only players already added to this session.",
-    "session.buyInHint": "To add a player to the session, make a Buy-in.",
+      "Fast rebuy is available only for players already added to this session.",
+    "session.buyInHint":
+      "Add an existing player through Buy-in or create a new player here.",
     "session.cashOutHint":
       "Only players currently in game can cash out. Cash-out is full: withdraw all chips, not a part.",
     "session.player": "Player",
@@ -137,6 +138,8 @@ const translations = {
     "notice.choosePlayerAndBuyIn":
       "Choose a player and enter a valid initial buy in.",
     "notice.playerAdded": "Player {name} added to session.",
+    "notice.playerAlreadyCashedOut":
+      "This player already cashed out. Add them again through Buy-in if needed.",
     "notice.enterPlayerAndBuyIn":
       "Enter player name and a valid initial buy in.",
     "notice.playerCreatedAndAdded": "Player {name} created and added to session.",
@@ -255,13 +258,14 @@ const translations = {
     "session.totalCashOut": "Всего выведено",
     "session.onTable": "Фишек на столе",
     "session.totalMoneyIn": "Всего внесено деньгами",
-    "session.addExistingPlayer": "Buy-in",
-    "session.createNewPlayer": "Создать нового игрока",
+    "session.addExistingPlayer": "Добавить игрока в сессию",
+    "session.createNewPlayer": "Новый игрок",
     "session.players": "Игроки",
     "session.actions": "Действия",
     "session.actionsHint":
-      "Выбрать можно только игроков, которые уже добавлены в эту сессию.",
-    "session.buyInHint": "Чтобы добавить игрока в сессию, сделайте Buy-in.",
+      "Быстрый Rebuy доступен только игрокам, которые уже добавлены в эту сессию.",
+    "session.buyInHint":
+      "Добавьте существующего игрока через Buy-in или создайте нового здесь.",
     "session.cashOutHint":
       "Cash-out доступен только игрокам, которые сейчас в игре. Cash-out полный: вывести можно только все фишки, не часть.",
     "session.player": "Игрок",
@@ -345,6 +349,8 @@ const translations = {
     "notice.choosePlayerAndBuyIn":
       "Выберите игрока и введите корректный начальный бай-ин.",
     "notice.playerAdded": "Игрок {name} добавлен в сессию.",
+    "notice.playerAlreadyCashedOut":
+      "Этот игрок уже сделал кэш-аут. Если нужно, добавьте его заново через Buy-in.",
     "notice.enterPlayerAndBuyIn":
       "Введите имя игрока и корректный начальный бай-ин.",
     "notice.playerCreatedAndAdded": "Игрок {name} создан и добавлен в сессию.",

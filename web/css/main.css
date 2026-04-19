@@ -589,6 +589,12 @@ body.debug-mode .debug-only {
     font-weight: 700;
 }
 
+.row-action {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 8px 12px;
+}
+
 .row-meta {
     color: var(--muted);
     font-size: 0.88rem;

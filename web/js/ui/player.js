@@ -125,6 +125,8 @@ export function renderPlayers() {
   const wrap = document.getElementById("players-wrap");
   if (!wrap) return;
 
+  const canUseSessionActions = state.session?.status === "active";
+
   if (!state.players.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
     return;
@@ -135,6 +137,7 @@ export function renderPlayers() {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
+      const canRebuy = canUseSessionActions && player.in_game && canRebuyPlayer(id);
 
       return `
         <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
@@ -147,6 +150,11 @@ export function renderPlayers() {
               <span>${player.in_game ? escapeHtml(t("common.inGame")) : escapeHtml(t("common.settled"))}</span>
             </div>
           </div>
+          ${
+            canRebuy
+              ? `<button type="button" class="rebuy-action row-action" data-session-rebuy-player="${escapeHtml(id)}">${escapeHtml(t("session.buyIn"))}</button>`
+              : ""
+          }
         </div>
       `;
     })
@@ -431,7 +439,8 @@ async function confirmDebugDeletePlayer(player) {
 
 function bindOpenPlayerButtons(container) {
   container.querySelectorAll("[data-open-player]").forEach((row) => {
-    row.addEventListener("click", async () => {
+    row.addEventListener("click", async (event) => {
+      if (event.target.closest("button")) return;
       const playerId = row.getAttribute("data-open-player");
       if (!playerId) return;
       await loadPlayerDetail(playerId);
@@ -444,6 +453,26 @@ function bindOpenPlayerButtons(container) {
       await loadPlayerDetail(playerId);
     });
   });
+}
+
+function canRebuyPlayer(playerId) {
+  const latest = latestEffectivePlayerOperation(playerId);
+  return !latest || latest.type !== "cash_out";
+}
+
+function latestEffectivePlayerOperation(playerId) {
+  const reversedTargets = new Set(
+    state.operations
+      .filter((operation) => operation.type === "reversal" && operation.reference_id)
+      .map((operation) => operation.reference_id),
+  );
+
+  return state.operations.find(
+    (operation) =>
+      operation.player_id === playerId &&
+      operation.type !== "reversal" &&
+      !reversedTargets.has(operation.id),
+  );
 }
 
 function bindOpenSessionRows(container) {

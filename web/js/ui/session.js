@@ -28,7 +28,7 @@ import {
   showNotice,
 } from "../utils.js";
 import { loadSessions } from "./lobby.js";
-import { loadPlayers, loadPlayersOverview } from "./player.js";
+import { loadPlayers, loadPlayersOverview, renderPlayers } from "./player.js";
 
 export async function openSession(sessionId, { replace = false } = {}) {
   if (!sessionId) return;
@@ -72,6 +72,7 @@ export async function loadOperations(sessionId) {
 
   state.operations = Array.isArray(res.body) ? res.body : [];
   renderOperations();
+  renderPlayers();
   applyDefaultRebuyChips();
 }
 
@@ -278,6 +279,12 @@ export function initSessionActions() {
     const button = event.target.closest("button");
     if (!button) return;
 
+    const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
+    if (rebuyPlayerId) {
+      await confirmPlayerRebuy(rebuyPlayerId);
+      return;
+    }
+
     switch (button.id) {
       case "buy-in-btn":
         await confirmBuyIn();
@@ -412,6 +419,75 @@ async function confirmBuyIn() {
   await refreshSessionData();
   applyDefaultRebuyChips({ overwrite: true });
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
+}
+
+async function confirmPlayerRebuy(playerId) {
+  const player = state.players.find((item) => (item.player_id || item.id) === playerId);
+  if (!playerId || !player?.in_game || !canRebuyPlayer(playerId)) {
+    showNotice(t("notice.playerAlreadyCashedOut"), "error");
+    return;
+  }
+
+  const playerName = findPlayerName(playerId);
+  const chips = lastBuyInChipsForRebuy(playerId);
+  const values = await openModal({
+    title: t("modal.confirmBuyInTitle"),
+    description: t("modal.confirmBuyInDescription", {
+      chips: formatNumber(chips),
+      name: playerName,
+    }),
+    confirmText: t("session.buyIn"),
+    fields: [
+      {
+        name: "chips",
+        label: t("session.chips"),
+        type: "number",
+        min: "1",
+        value: chips > 0 ? String(chips) : "",
+        placeholder: t("session.chips"),
+      },
+    ],
+  });
+  if (!values) return;
+
+  const nextChips = Number(values.chips);
+  if (!Number.isFinite(nextChips) || nextChips <= 0) {
+    showNotice(t("notice.selectPlayerAndChips"), "error");
+    return;
+  }
+
+  const res = await buyIn({
+    sessionId: state.activeSessionId,
+    playerId,
+    chips: nextChips,
+  });
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedBuyIn")), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
+}
+
+function canRebuyPlayer(playerId) {
+  const latest = latestEffectivePlayerOperation(playerId);
+  return !latest || latest.type !== "cash_out";
+}
+
+function latestEffectivePlayerOperation(playerId) {
+  const reversedTargets = new Set(
+    state.operations
+      .filter((operation) => operation.type === "reversal" && operation.reference_id)
+      .map((operation) => operation.reference_id),
+  );
+
+  return state.operations.find(
+    (operation) =>
+      operation.player_id === playerId &&
+      operation.type !== "reversal" &&
+      !reversedTargets.has(operation.id),
+  );
 }
 
 async function confirmCashOut() {
