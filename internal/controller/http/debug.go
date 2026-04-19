@@ -33,6 +33,32 @@ func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	sessionID := r.URL.Query().Get("session_id")
+	if sessionID == "" {
+		http.Error(w, "session_id is required", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateSessionConfigRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.updateSessionConfigUC.Execute(entity.SessionID(sessionID), req.ChipRate, req.BigBlind); err != nil {
+		writeError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		w.WriteHeader(http.StatusMethodNotAllowed)

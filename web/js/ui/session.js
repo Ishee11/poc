@@ -4,6 +4,7 @@ import {
   createPlayer,
   debugDeleteSessionFinish,
   debugDeleteSession,
+  debugUpdateSessionConfig,
   finishSession,
   getSession,
   getSessionOperations,
@@ -77,7 +78,9 @@ export function renderSession() {
 
   const subtitle = document.getElementById("workspace-subtitle");
   const chipRate = document.getElementById("stat-chip-rate");
+  const chipRateCard = document.getElementById("stat-chip-rate-card");
   const bigBlind = document.getElementById("stat-big-blind");
+  const bigBlindCard = document.getElementById("stat-big-blind-card");
   const buyIn = document.getElementById("stat-buy-in");
   const cashOut = document.getElementById("stat-cash-out");
   const totalChips = document.getElementById("stat-total-chips");
@@ -120,9 +123,17 @@ export function renderSession() {
     status.className = `session-status ${session.status}`;
   }
   if (totalChipsCard) {
+    totalChipsCard.classList.add("on-table-emphasis");
     totalChipsCard.classList.toggle("on-table-warning", isActive && onTable > 0);
     totalChipsCard.classList.toggle("on-table-clear", isActive && onTable === 0);
   }
+  [chipRateCard, bigBlindCard].forEach((card) => {
+    if (!card) return;
+    card.classList.toggle("debug-editable-stat", state.debugMode);
+    card.setAttribute("tabindex", state.debugMode ? "0" : "-1");
+    card.setAttribute("role", state.debugMode ? "button" : "presentation");
+    card.setAttribute("title", state.debugMode ? t("debug.editSessionConfig") : "");
+  });
   if (finishButton) finishButton.disabled = !isActive;
   if (finishActions) finishActions.hidden = !isActive;
   if (finishHint) {
@@ -140,6 +151,9 @@ export function renderSession() {
     ?.addEventListener("click", async () => {
       await confirmDebugDeleteSessionFinish();
     });
+
+  bindDebugSessionConfigEditor(chipRateCard);
+  bindDebugSessionConfigEditor(bigBlindCard);
 }
 
 export function renderOperations() {
@@ -533,6 +547,72 @@ async function confirmDebugDeleteSession() {
   setScreen("lobby");
   pushRoute(routeToHome());
   showNotice(t("notice.sessionDeleted"), "success");
+}
+
+function bindDebugSessionConfigEditor(card) {
+  if (!card) return;
+  const freshCard = card.cloneNode(true);
+  card.replaceWith(freshCard);
+  if (!state.debugMode) return;
+
+  const openEditor = async () => {
+    await confirmDebugUpdateSessionConfig();
+  };
+  freshCard.addEventListener("click", openEditor);
+  freshCard.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    await openEditor();
+  });
+}
+
+async function confirmDebugUpdateSessionConfig() {
+  if (!state.debugMode || !state.activeSessionId || !state.session) return;
+
+  const values = await openModal({
+    title: t("modal.editSessionConfigTitle"),
+    confirmText: t("common.save"),
+    fields: [
+      {
+        name: "chip_rate",
+        label: t("session.chipRate"),
+        type: "number",
+        min: "1",
+        value: state.session.chipRate,
+      },
+      {
+        name: "big_blind",
+        label: t("session.bigBlind"),
+        type: "number",
+        min: "1",
+        value: state.session.bigBlind,
+      },
+    ],
+  });
+  if (!values) return;
+
+  const chipRate = Number(values.chip_rate);
+  const bigBlind = Number(values.big_blind);
+  if (!Number.isFinite(chipRate) || chipRate <= 0) {
+    showNotice(t("notice.validChipRate"), "error");
+    return;
+  }
+  if (!Number.isFinite(bigBlind) || bigBlind <= 0) {
+    showNotice(t("notice.validBigBlind"), "error");
+    return;
+  }
+
+  const res = await debugUpdateSessionConfig(state.activeSessionId, {
+    chipRate,
+    bigBlind,
+  });
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedUpdateSessionConfig")), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice(t("notice.sessionConfigUpdated"), "success");
 }
 
 async function confirmDebugDeleteSessionFinish() {

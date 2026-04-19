@@ -34,6 +34,7 @@ func NewHandler(
 
 	// debug admin
 	renameDebugPlayer *usecase.RenameDebugPlayerUseCase,
+	updateDebugSessionConfig *usecase.UpdateDebugSessionConfigUseCase,
 	deleteDebugPlayer *usecase.DeleteDebugPlayerUseCase,
 	deleteDebugSession *usecase.DeleteDebugSessionUseCase,
 	deleteDebugSessionFinish *usecase.DeleteDebugSessionFinishUseCase,
@@ -63,6 +64,7 @@ func NewHandler(
 		},
 		Debug: &DebugHandler{
 			renamePlayerUC:        renameDebugPlayer,
+			updateSessionConfigUC: updateDebugSessionConfig,
 			deletePlayerUC:        deleteDebugPlayer,
 			deleteSessionUC:       deleteDebugSession,
 			deleteSessionFinishUC: deleteDebugSessionFinish,
@@ -97,6 +99,7 @@ type StatsHandler struct {
 
 type DebugHandler struct {
 	renamePlayerUC        *usecase.RenameDebugPlayerUseCase
+	updateSessionConfigUC *usecase.UpdateDebugSessionConfigUseCase
 	deletePlayerUC        *usecase.DeleteDebugPlayerUseCase
 	deleteSessionUC       *usecase.DeleteDebugSessionUseCase
 	deleteSessionFinishUC *usecase.DeleteDebugSessionFinishUseCase

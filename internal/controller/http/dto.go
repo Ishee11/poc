@@ -45,6 +45,11 @@ type RenamePlayerRequest struct {
 	Name string `json:"name" example:"Alice"`
 }
 
+type UpdateSessionConfigRequest struct {
+	ChipRate int64 `json:"chip_rate"`
+	BigBlind int64 `json:"big_blind"`
+}
+
 type CreatePlayerResponse struct {
 	PlayerID entity.PlayerID `json:"player_id" example:"player-123"`
 }

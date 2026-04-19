@@ -129,6 +129,7 @@ type StatsRepository interface {
 
 type DebugAdminRepository interface {
 	RenamePlayer(tx Tx, playerID entity.PlayerID, name string) error
+	UpdateSessionConfig(tx Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64) error
 	DeletePlayer(tx Tx, playerID entity.PlayerID) error
 	DeleteSession(tx Tx, sessionID entity.SessionID) error
 	DeleteSessionFinish(tx Tx, sessionID entity.SessionID) error

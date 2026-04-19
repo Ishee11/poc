@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/entity/valueobject"
 )
 
 type RenameDebugPlayerUseCase struct {
@@ -29,6 +30,34 @@ func (uc *RenameDebugPlayerUseCase) Execute(playerID entity.PlayerID, name strin
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		return uc.repo.RenamePlayer(tx, playerID, name)
+	})
+}
+
+type UpdateDebugSessionConfigUseCase struct {
+	repo      DebugAdminRepository
+	txManager TxManager
+}
+
+func NewUpdateDebugSessionConfigUseCase(repo DebugAdminRepository, txManager TxManager) *UpdateDebugSessionConfigUseCase {
+	return &UpdateDebugSessionConfigUseCase{
+		repo:      repo,
+		txManager: txManager,
+	}
+}
+
+func (uc *UpdateDebugSessionConfigUseCase) Execute(sessionID entity.SessionID, chipRate int64, bigBlind int64) error {
+	if sessionID == "" {
+		return entity.ErrSessionNotFound
+	}
+	if _, err := valueobject.NewChipRate(chipRate); err != nil {
+		return err
+	}
+	if bigBlind <= 0 {
+		return valueobject.ErrInvalidChips
+	}
+
+	return uc.txManager.RunInTx(func(tx Tx) error {
+		return uc.repo.UpdateSessionConfig(tx, sessionID, chipRate, bigBlind)
 	})
 }
 

@@ -183,6 +183,17 @@ export function debugDeletePlayer(playerId) {
   });
 }
 
+export function debugUpdateSessionConfig(sessionId, { chipRate, bigBlind }) {
+  const params = new URLSearchParams({ session_id: sessionId });
+  return request(`/debug/session/config?${params.toString()}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      chip_rate: chipRate,
+      big_blind: bigBlind,
+    }),
+  });
+}
+
 export function debugRenamePlayer(playerId, name) {
   const params = new URLSearchParams({ player_id: playerId });
   return request(`/debug/player/rename?${params.toString()}`, {

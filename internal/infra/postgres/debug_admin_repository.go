@@ -29,6 +29,23 @@ func (r *DebugAdminRepository) RenamePlayer(tx usecase.Tx, playerID entity.Playe
 	return nil
 }
 
+func (r *DebugAdminRepository) UpdateSessionConfig(tx usecase.Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64) error {
+	tag, err := tx.Exec(context.Background(), `
+		UPDATE sessions
+		SET chip_rate = $2,
+			big_blind = $3
+		WHERE id = $1
+	`, sessionID, chipRate, bigBlind)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return entity.ErrSessionNotFound
+	}
+
+	return nil
+}
+
 func (r *DebugAdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.PlayerID) error {
 	ctx := context.Background()
 

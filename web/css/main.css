@@ -246,6 +246,16 @@ body:not([data-screen="player"]) .nav-player-only {
     background: rgba(255, 208, 122, 0.13);
 }
 
+.stat.on-table-emphasis {
+    border-color: rgba(255, 208, 122, 0.34);
+    background: linear-gradient(135deg, rgba(255, 208, 122, 0.12), rgba(255, 255, 255, 0.035));
+}
+
+.stat.on-table-emphasis #stat-total-chips {
+    font-size: 1.18rem;
+    font-weight: 800;
+}
+
 .stat.on-table-warning #stat-total-chips {
     color: var(--warning);
     font-size: 1.28rem;
@@ -255,6 +265,19 @@ body:not([data-screen="player"]) .nav-player-only {
 .stat.on-table-clear {
     border-color: rgba(88, 208, 167, 0.42);
     background: rgba(88, 208, 167, 0.1);
+}
+
+.debug-editable-stat {
+    cursor: pointer;
+    outline: 1px dashed rgba(127, 240, 202, 0.28);
+    outline-offset: -4px;
+}
+
+.debug-editable-stat:hover,
+.debug-editable-stat:focus-visible {
+    border-color: rgba(127, 240, 202, 0.55);
+    background: rgba(127, 240, 202, 0.08);
+    outline: 2px solid rgba(127, 240, 202, 0.32);
 }
 
 .money-stat {

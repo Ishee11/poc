@@ -61,6 +61,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/debug/player", h.Debug.DeletePlayer)
 	mux.HandleFunc("/debug/player/rename", h.Debug.RenamePlayer)
 	mux.HandleFunc("/debug/session", h.Debug.DeleteSession)
+	mux.HandleFunc("/debug/session/config", h.Debug.UpdateSessionConfig)
 	mux.HandleFunc("/debug/session/finish", h.Debug.DeleteSessionFinish)
 
 	// ===== MIDDLEWARE =====
