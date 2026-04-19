@@ -1,4 +1,4 @@
-import { createPlayer, startSession } from "./api.js";
+import { startSession } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
 import {
@@ -105,36 +105,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  const createPlayerForm = document.getElementById("create-player-form");
-  const createPlayerName = document.getElementById("create-player-name");
-  if (createPlayerForm && createPlayerName) {
-    createPlayerForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      const name = createPlayerName.value.trim();
-      if (!name) {
-        showNotice(t("notice.enterPlayerName"), "error");
-        return;
-      }
-
-      const confirmed = await openModal({
-        title: t("modal.createPlayerTitle"),
-        description: t("modal.createPlayerDescription", { name }),
-        confirmText: t("lobby.createPlayer"),
-      });
-      if (!confirmed) return;
-
-      const res = await createPlayer(name);
-      if (!res.ok) {
-        showNotice(describeError(res, t("error.failedCreatePlayer")), "error");
-        return;
-      }
-
-      createPlayerName.value = "";
-      await loadPlayersOverview();
-      showNotice(t("notice.playerCreated", { name }), "success");
-    });
-  }
 });
 
 function initLanguageSelect() {

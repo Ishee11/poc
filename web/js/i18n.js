@@ -8,7 +8,7 @@ const listeners = new Set();
 const translations = {
   en: {
     "app.title": "Poker Session Control",
-    "app.subtitle": "Control panel for poker cash games.",
+    "app.subtitle": "Control panel for cash games.",
     "nav.page": "Page navigation",
     "nav.backHome": "Back to Home",
     "nav.backSession": "Back to Session",
@@ -18,9 +18,7 @@ const translations = {
     "lobby.startTitle": "Start a New Session",
     "lobby.chipRate": "Rate (1 {currencySymbol} for N chips)",
     "lobby.currency": "Currency",
-    "lobby.bigBlind": "BB (Big Blind)",
-    "lobby.startHint":
-      "New sessions are created as active and become visible in the list below.",
+    "lobby.bigBlind": "BB (big blind size)",
     "lobby.startSession": "Start Session",
     "lobby.addPlayerTitle": "Add New Player",
     "lobby.playerName": "Player Name",
@@ -50,8 +48,7 @@ const translations = {
     "session.createNewPlayer": "Create New Player",
     "session.players": "Players",
     "session.actions": "Actions",
-    "session.actionsHint":
-      "Fast rebuy is available only for players already added to this session.",
+    "session.actionsHint": "Cash-out is available only for players currently in game.",
     "session.buyInHint":
       "Add an existing player through Buy-in or create a new player here.",
     "session.cashOutHint":
@@ -219,8 +216,8 @@ const translations = {
     "error.internal_error": "Server returned an internal error.",
   },
   ru: {
-    "app.title": "Управление покерной сессией",
-    "app.subtitle": "Панель управления покерными кэш-играми.",
+    "app.title": "Poker Session Control",
+    "app.subtitle": "Панель управления кэш-играми.",
     "nav.page": "Навигация по странице",
     "nav.backHome": "На главную",
     "nav.backSession": "К сессии",
@@ -230,9 +227,7 @@ const translations = {
     "lobby.startTitle": "Начать новую сессию",
     "lobby.chipRate": "Курс (1 {currencySymbol} за N фишек)",
     "lobby.currency": "Валюта",
-    "lobby.bigBlind": "BB (Большой блайнд)",
-    "lobby.startHint":
-      "Новые сессии создаются активными и появляются в списке ниже.",
+    "lobby.bigBlind": "BB (размер большого блайнда)",
     "lobby.startSession": "Начать сессию",
     "lobby.addPlayerTitle": "Добавить нового игрока",
     "lobby.playerName": "Имя игрока",
@@ -263,7 +258,7 @@ const translations = {
     "session.players": "Игроки",
     "session.actions": "Действия",
     "session.actionsHint":
-      "Быстрый Rebuy доступен только игрокам, которые уже добавлены в эту сессию.",
+      "Cash-out доступен только игрокам, которые сейчас в игре.",
     "session.buyInHint":
       "Добавьте существующего игрока через Buy-in или создайте нового здесь.",
     "session.cashOutHint":

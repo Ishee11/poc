@@ -61,13 +61,9 @@
                                 </label>
 
                                 <label>
-                                    <span data-i18n="lobby.bigBlind">BB (Big Blind)</span>
+                                    <span data-i18n="lobby.bigBlind">BB (big blind size)</span>
                                     <input id="start-big-blind" type="number" min="1" />
                                 </label>
-
-                                <div class="hint" data-i18n="lobby.startHint">
-                                    New sessions are created as active and become visible in the list below.
-                                </div>
 
                                 <div class="actions">
                                     <button type="submit" data-i18n="lobby.startSession">Start Session</button>
@@ -96,24 +92,7 @@
                         </details>
                     </div>
 
-                    <div class="panel">
-                        <h3 data-i18n="lobby.addPlayerTitle">Add New Player</h3>
-                        <form id="create-player-form" onsubmit="return false;">
-                            <label>
-                                <span data-i18n="lobby.playerName">Player Name</span>
-                                <input id="create-player-name" type="text" placeholder="Enter player name" data-i18n-placeholder="lobby.playerNamePlaceholder" />
-                            </label>
-
-                            <div class="actions">
-                                <button type="submit" data-i18n="lobby.createPlayer">Create Player</button>
-                            </div>
-                        </form>
-                    </div>
-
                     <div class="panel language-panel">
-                        <div>
-                            <h3 data-i18n="language.title">Interface Language</h3>
-                        </div>
                         <label class="language-select-label">
                             <span data-i18n="language.title">Interface Language</span>
                             <select id="language-select">
@@ -126,19 +105,18 @@
 
                 <section class="screen" id="screen-session">
                     <div class="panel">
-                        <div class="toolbar">
-                            <div>
-                                <h2 id="workspace-title" class="session-heading">
-                                    <span data-i18n="session.title">Session</span>
-                                    <span id="workspace-title-date" class="session-heading-date"></span>
-                                </h2>
-                                <div class="title-row">
-                                    <span id="workspace-status" class="session-status">-</span>
-                                    <div class="actions compact-actions" id="session-finish-actions">
-                                        <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
-                                            Finish Session
-                                        </button>
-                                    </div>
+                        <div class="toolbar session-toolbar">
+                            <h2 id="workspace-title" class="session-heading">
+                                <span data-i18n="session.title">Session</span>
+                                <span id="workspace-title-date" class="session-heading-date"></span>
+                            </h2>
+                            <div class="title-row session-status-row">
+                                <span id="workspace-status" class="session-status">-</span>
+                                <span id="workspace-finished-at" class="session-finished-at" hidden></span>
+                                <div class="actions compact-actions" id="session-finish-actions">
+                                    <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
+                                        Finish Session
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -200,28 +178,11 @@
                     <div class="panel" id="session-actions-panel">
                         <h3 data-i18n="session.actions">Actions</h3>
                         <p class="hint" data-i18n="session.actionsHint">
-                            You can choose only players already added to this session.
+                            Cash-out is available only for players currently in game.
                         </p>
 
                         <form id="session-operation-form" onsubmit="return false;">
-                            <div class="action-panels">
-                                <div class="action-card">
-                                    <h4 data-i18n="session.buyIn">Rebuy</h4>
-                                    <label>
-                                        <span data-i18n="session.player">Player</span>
-                                        <select id="rebuy-player-select">
-                                            <option value="" data-i18n="session.selectPlayer">Select player</option>
-                                        </select>
-                                    </label>
-
-                                    <label>
-                                        <span data-i18n="session.chips">Chips</span>
-                                        <input id="rebuy-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
-                                    </label>
-
-                                    <button type="button" id="buy-in-btn" class="rebuy-action" data-i18n="session.buyIn">Rebuy</button>
-                                </div>
-
+                            <div class="action-panels action-panels-single">
                                 <div class="action-card">
                                     <h4 data-i18n="session.cashOut">Cash Out</h4>
                                     <p class="hint" data-i18n="session.cashOutHint">
@@ -264,7 +225,6 @@
                     </div>
 
                     <div class="mobile-session-actions" id="mobile-session-actions" hidden>
-                        <button type="button" id="mobile-buy-in-shortcut" class="rebuy-action" data-i18n="session.buyIn">Rebuy</button>
                         <button type="button" id="mobile-cash-out-shortcut" class="cash-out-action" data-i18n="session.cashOut">Cash-out</button>
                         <button type="button" id="mobile-finish-session-btn" class="warn" data-i18n="session.finish">Finish Session</button>
                     </div>

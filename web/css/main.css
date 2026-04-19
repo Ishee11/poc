@@ -140,22 +140,18 @@ body:not([data-screen="player"]) .nav-player-only {
 
 .language-panel {
     display: flex;
-    justify-content: space-between;
-    gap: 18px;
-    align-items: end;
-}
-
-.language-panel h3 {
-    margin-bottom: 8px;
-}
-
-.language-panel .hint {
-    margin: 0;
-    max-width: 64ch;
+    justify-content: flex-start;
+    gap: 12px;
+    align-items: center;
 }
 
 .language-select-label {
-    min-width: 220px;
+    width: 100%;
+    max-width: 360px;
+    display: grid;
+    grid-template-columns: max-content minmax(140px, 1fr);
+    gap: 12px;
+    align-items: center;
 }
 
 .grid {
@@ -476,6 +472,10 @@ button:disabled {
     gap: 14px;
 }
 
+.action-panels-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .action-card {
     display: grid;
     gap: 12px;
@@ -615,11 +615,16 @@ body.debug-mode .debug-only {
     align-items: center;
 }
 
+.session-toolbar {
+    align-items: flex-start;
+}
+
 .session-heading {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0;
+    margin-bottom: 0;
 }
 
 .session-heading-date {
@@ -635,6 +640,16 @@ body.debug-mode .debug-only {
 
 .compact-actions button {
     min-height: 40px;
+}
+
+.session-status-row {
+    margin-left: auto;
+    justify-content: flex-end;
+}
+
+.session-finished-at {
+    color: var(--muted);
+    font-size: 0.95rem;
 }
 
 .session-status {
@@ -1168,11 +1183,11 @@ pre {
 
     .language-panel {
         align-items: stretch;
-        flex-direction: column;
     }
 
     .language-select-label {
-        min-width: 0;
+        max-width: none;
+        grid-template-columns: max-content minmax(0, 1fr);
     }
 
     .toolbar .actions {
@@ -1237,7 +1252,7 @@ pre {
         left: 8px;
         z-index: 40;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         padding: 8px;
         border: 1px solid var(--line);

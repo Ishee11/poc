@@ -73,7 +73,6 @@ export async function loadOperations(sessionId) {
   state.operations = Array.isArray(res.body) ? res.body : [];
   renderOperations();
   renderPlayers();
-  applyDefaultRebuyChips();
 }
 
 export function renderSession() {
@@ -81,6 +80,7 @@ export function renderSession() {
   if (!session) return;
 
   const titleDate = document.getElementById("workspace-title-date");
+  const finishedAt = document.getElementById("workspace-finished-at");
   const chipRate = document.getElementById("stat-chip-rate");
   const chipRateCard = document.getElementById("stat-chip-rate-card");
   const bigBlind = document.getElementById("stat-big-blind");
@@ -105,6 +105,11 @@ export function renderSession() {
 
   if (titleDate) {
     titleDate.textContent = ` · ${formatDate(session.createdAt)}`;
+  }
+  if (finishedAt) {
+    const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
+    finishedAt.hidden = !hasFinishedAt;
+    finishedAt.textContent = hasFinishedAt ? formatDate(session.finishedAt) : "";
   }
   if (chipRate) {
     chipRate.textContent = t("session.chipRateValue", {
@@ -224,7 +229,7 @@ export function renderOperations() {
             </div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.status"))}: ${escapeHtml(statusLabel("finished"))}</span>
-              <span>${escapeHtml(formatDate(state.session.finishedAt || state.session.createdAt))}</span>
+              <span>${state.session.finishedAt ? escapeHtml(formatDate(state.session.finishedAt)) : "-"}</span>
             </div>
           </div>
           <span class="muted">-</span>
@@ -244,12 +249,10 @@ export function renderOperations() {
 }
 
 export function renderActionPlayerOptions() {
-  renderPlayerSelect("rebuy-player-select", state.players);
   renderPlayerSelect(
     "cash-out-player-select",
     state.players.filter((player) => player.in_game),
   );
-  applyDefaultRebuyChips();
 }
 
 function renderPlayerSelect(selectId, players) {
@@ -286,9 +289,6 @@ export function initSessionActions() {
     }
 
     switch (button.id) {
-      case "buy-in-btn":
-        await confirmBuyIn();
-        break;
       case "cash-out-btn":
         await confirmCashOut();
         break;
@@ -300,9 +300,6 @@ export function initSessionActions() {
         break;
       case "finish-session-btn":
         await confirmFinishSession();
-        break;
-      case "mobile-buy-in-shortcut":
-        focusSessionAction("rebuy-player-select");
         break;
       case "mobile-cash-out-shortcut":
         focusSessionAction("cash-out-player-select");
@@ -334,12 +331,6 @@ export function initSessionActions() {
         break;
     }
   });
-
-  document.addEventListener("change", (event) => {
-    if (event.target?.id === "rebuy-player-select") {
-      applyDefaultRebuyChips({ overwrite: true });
-    }
-  });
 }
 
 function focusSessionAction(controlId) {
@@ -350,19 +341,6 @@ function focusSessionAction(controlId) {
   window.setTimeout(() => {
     document.getElementById(controlId)?.focus();
   }, 220);
-}
-
-function applyDefaultRebuyChips({ overwrite = false } = {}) {
-  const input = document.getElementById("rebuy-chips");
-  if (!input) return;
-  if (!overwrite && input.value !== "") return;
-
-  const chips = lastBuyInChipsForRebuy(
-    document.getElementById("rebuy-player-select")?.value || "",
-  );
-  if (chips > 0) {
-    input.value = String(chips);
-  }
 }
 
 function lastBuyInChipsForRebuy(playerId) {
@@ -384,41 +362,6 @@ function lastBuyInChipsForRebuy(playerId) {
 
   const sessionBuyIn = buyIns[0];
   return sessionBuyIn ? Number(sessionBuyIn.chips) : 0;
-}
-
-async function confirmBuyIn() {
-  const playerId = document.getElementById("rebuy-player-select")?.value;
-  const chips = Number(document.getElementById("rebuy-chips")?.value);
-
-  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
-  const playerName = findPlayerName(playerId);
-  const values = await openModal({
-    title: t("modal.confirmBuyInTitle"),
-    description: t("modal.confirmBuyInDescription", {
-      chips: formatNumber(chips),
-      name: playerName,
-    }),
-    confirmText: t("session.buyIn"),
-  });
-  if (!values) return;
-
-  const res = await buyIn({
-    sessionId: state.activeSessionId,
-    playerId,
-    chips,
-  });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedBuyIn")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  applyDefaultRebuyChips({ overwrite: true });
-  showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
 async function confirmPlayerRebuy(playerId) {
@@ -528,11 +471,13 @@ async function confirmCashOut() {
 async function confirmAddExistingPlayer() {
   await loadPlayersOverview();
 
-  const currentIds = new Set(
-    state.players.map((player) => player.player_id || player.id),
+  const inGameIds = new Set(
+    state.players
+      .filter((player) => player.in_game)
+      .map((player) => player.player_id || player.id),
   );
   const availablePlayers = state.overviewPlayers.filter(
-    (player) => !currentIds.has(player.player_id),
+    (player) => !inGameIds.has(player.player_id),
   );
 
   if (!availablePlayers.length) {
@@ -559,6 +504,7 @@ async function confirmAddExistingPlayer() {
         label: t("modal.initialBuyIn"),
         type: "number",
         min: "1",
+        value: lastBuyInChipsForRebuy("") || "",
         placeholder: t("session.chips"),
       },
     ],
