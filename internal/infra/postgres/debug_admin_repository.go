@@ -13,6 +13,22 @@ func NewDebugAdminRepository() *DebugAdminRepository {
 	return &DebugAdminRepository{}
 }
 
+func (r *DebugAdminRepository) RenamePlayer(tx usecase.Tx, playerID entity.PlayerID, name string) error {
+	tag, err := tx.Exec(context.Background(), `
+		UPDATE players
+		SET name = $2
+		WHERE id = $1
+	`, playerID, name)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return entity.ErrPlayerNotFound
+	}
+
+	return nil
+}
+
 func (r *DebugAdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.PlayerID) error {
 	ctx := context.Background()
 

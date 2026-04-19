@@ -31,7 +31,7 @@ import {
 } from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  state.debugMode = new URLSearchParams(window.location.search).has("debug");
+  syncDebugMode();
   initI18n();
   initSessionActions();
   initLanguageSelect();
@@ -152,7 +152,7 @@ function renderCurrentLanguage() {
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {
-  state.debugMode = new URLSearchParams(window.location.search).has("debug");
+  syncDebugMode();
   const [, section, rawId] = window.location.pathname.split("/");
   const id = rawId ? decodeURIComponent(rawId) : "";
 
@@ -168,4 +168,9 @@ async function openInitialRoute({ fromHistory = false } = {}) {
 
   setScreen("lobby");
   if (!fromHistory) replaceRoute(routeToHome());
+}
+
+function syncDebugMode() {
+  state.debugMode = new URLSearchParams(window.location.search).has("debug");
+  document.body.classList.toggle("debug-mode", state.debugMode);
 }

@@ -182,6 +182,14 @@ export function debugDeletePlayer(playerId) {
   });
 }
 
+export function debugRenamePlayer(playerId, name) {
+  const params = new URLSearchParams({ player_id: playerId });
+  return request(`/debug/player/rename?${params.toString()}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+}
+
 export function debugDeleteSession(sessionId) {
   const params = new URLSearchParams({ session_id: sessionId });
   return request(`/debug/session?${params.toString()}`, {

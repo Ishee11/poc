@@ -86,8 +86,7 @@ export function renderSession() {
   const status = document.getElementById("workspace-status");
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
-  const debugActions = document.getElementById("session-debug-actions");
-  const debugReopenButton = document.getElementById("debug-reopen-session-btn");
+  const debugDeletePanel = document.getElementById("session-delete-debug-panel");
   const playerActions = document.getElementById("session-player-actions");
   const playerActionsHint = document.getElementById("session-player-actions-hint");
   const actionsPanel = document.getElementById("session-actions-panel");
@@ -125,8 +124,7 @@ export function renderSession() {
   if (playerActionsHint) playerActionsHint.hidden = !isActive;
   if (actionsPanel) actionsPanel.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
-  if (debugActions) debugActions.hidden = !state.debugMode;
-  if (debugReopenButton) debugReopenButton.hidden = session.status !== "finished";
+  if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
 }
 
 export function renderOperations() {
@@ -134,9 +132,10 @@ export function renderOperations() {
   const count = document.getElementById("session-operations-count");
   if (!wrap || !count) return;
 
-  count.textContent = String(state.operations.length);
+  const showFinishOperation = state.debugMode && state.session?.status === "finished";
+  count.textContent = String(state.operations.length + (showFinishOperation ? 1 : 0));
 
-  if (!state.operations.length) {
+  if (!state.operations.length && !showFinishOperation) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noOperations"))}</div>`;
     return;
   }
@@ -147,7 +146,7 @@ export function renderOperations() {
       .map((operation) => operation.reference_id),
   );
 
-  wrap.innerHTML = state.operations
+  const operationRows = state.operations
     .map((operation) => {
       const playerName = findPlayerName(operation.player_id);
       const reversible =
@@ -177,12 +176,36 @@ export function renderOperations() {
     })
     .join("");
 
+  const finishRow = showFinishOperation
+    ? `
+        <div class="operation-row">
+          <div class="row-main">
+            <div class="row-title">
+              <span class="operation-type finish">${escapeHtml(operationLabel("finish"))}</span>
+              ${escapeHtml(statusLabel("finished"))}
+            </div>
+            <div class="inline-stats">
+              <span>${escapeHtml(t("common.status"))}: ${escapeHtml(statusLabel("finished"))}</span>
+              <span>${escapeHtml(formatDate(state.session.createdAt))}</span>
+            </div>
+          </div>
+          <button type="button" class="secondary" data-debug-delete-finish>${escapeHtml(t("debug.deleteFinish"))}</button>
+        </div>
+      `
+    : "";
+
+  wrap.innerHTML = operationRows + finishRow;
+
   wrap.querySelectorAll("[data-reverse-operation]").forEach((button) => {
     button.addEventListener("click", async () => {
       const operationId = button.getAttribute("data-reverse-operation");
       if (!operationId) return;
       await confirmReverse(operationId);
     });
+  });
+
+  wrap.querySelector("[data-debug-delete-finish]")?.addEventListener("click", async () => {
+    await confirmDebugDeleteSessionFinish();
   });
 }
 
@@ -239,9 +262,6 @@ export function initSessionActions() {
         break;
       case "debug-delete-session-btn":
         await confirmDebugDeleteSession();
-        break;
-      case "debug-reopen-session-btn":
-        await confirmDebugDeleteSessionFinish();
         break;
       case "session-back-home-btn":
         setScreen("lobby");

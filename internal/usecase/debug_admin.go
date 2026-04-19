@@ -1,6 +1,36 @@
 package usecase
 
-import "github.com/ishee11/poc/internal/entity"
+import (
+	"strings"
+
+	"github.com/ishee11/poc/internal/entity"
+)
+
+type RenameDebugPlayerUseCase struct {
+	repo      DebugAdminRepository
+	txManager TxManager
+}
+
+func NewRenameDebugPlayerUseCase(repo DebugAdminRepository, txManager TxManager) *RenameDebugPlayerUseCase {
+	return &RenameDebugPlayerUseCase{
+		repo:      repo,
+		txManager: txManager,
+	}
+}
+
+func (uc *RenameDebugPlayerUseCase) Execute(playerID entity.PlayerID, name string) error {
+	name = strings.TrimSpace(name)
+	if playerID == "" {
+		return entity.ErrInvalidPlayerID
+	}
+	if name == "" {
+		return entity.ErrInvalidPlayerName
+	}
+
+	return uc.txManager.RunInTx(func(tx Tx) error {
+		return uc.repo.RenamePlayer(tx, playerID, name)
+	})
+}
 
 type DeleteDebugPlayerUseCase struct {
 	repo      DebugAdminRepository

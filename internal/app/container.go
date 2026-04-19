@@ -132,6 +132,11 @@ func NewContainer(db *DB) *Container {
 		sessionRepo,
 	)
 
+	renameDebugPlayerUC := usecase.NewRenameDebugPlayerUseCase(
+		debugAdminRepo,
+		txManager,
+	)
+
 	deleteDebugPlayerUC := usecase.NewDeleteDebugPlayerUseCase(
 		debugAdminRepo,
 		txManager,
@@ -171,6 +176,7 @@ func NewContainer(db *DB) *Container {
 		getStatsPlayersUC,
 
 		// debug admin
+		renameDebugPlayerUC,
 		deleteDebugPlayerUC,
 		deleteDebugSessionUC,
 		deleteDebugSessionFinishUC,

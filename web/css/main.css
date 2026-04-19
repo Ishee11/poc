@@ -361,6 +361,24 @@ button.danger {
     box-shadow: 0 12px 28px rgba(255, 143, 123, 0.2);
 }
 
+button.buy-in-action {
+    color: #082a1f;
+    background: linear-gradient(135deg, #9df4ce, #4fd08f);
+    box-shadow: 0 12px 28px rgba(79, 208, 143, 0.22);
+}
+
+button.rebuy-action {
+    color: #071f36;
+    background: linear-gradient(135deg, #9ed4ff, #5ba9f6);
+    box-shadow: 0 12px 28px rgba(91, 169, 246, 0.22);
+}
+
+button.cash-out-action {
+    color: #3a2106;
+    background: linear-gradient(135deg, #ffe08f, #f6ad55);
+    box-shadow: 0 12px 28px rgba(246, 173, 85, 0.2);
+}
+
 button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
@@ -403,6 +421,52 @@ button:disabled {
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid rgba(255, 143, 123, 0.22);
+}
+
+.period-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.period-summary {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.player-chart {
+    min-height: 180px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.player-chart svg {
+    width: 100%;
+    height: 180px;
+    display: block;
+}
+
+.player-chart polyline {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+}
+
+.player-chart .axis {
+    stroke: rgba(255, 255, 255, 0.14);
+    stroke-width: 1;
+}
+
+.debug-only {
+    display: none;
+}
+
+body.debug-mode .debug-only {
+    display: flex;
 }
 
 .finish-hint {
@@ -599,6 +663,10 @@ th {
 
 .operation-type.reversal {
     color: #ffb8b1;
+}
+
+.operation-type.finish {
+    color: #d8c4ff;
 }
 
 .empty {
@@ -944,6 +1012,15 @@ pre {
     .stats,
     .card-meta {
         grid-template-columns: 1fr;
+    }
+
+    .action-panels {
+        grid-template-columns: 1fr;
+    }
+
+    .period-toolbar {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .filters label,

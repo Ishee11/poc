@@ -1,5 +1,6 @@
 import {
   debugDeletePlayer,
+  debugRenamePlayer,
   getPlayerStats,
   getPlayers,
   getPlayersStats,
@@ -162,6 +163,7 @@ export function renderPlayerDetail() {
   if (!detail || !detail.player) {
     wrap.className = "empty";
     wrap.textContent = t("common.noData");
+    renderPlayerHeaderDebugActions(null);
     renderPlayerDebugActions(null);
     return;
   }
@@ -170,10 +172,15 @@ export function renderPlayerDetail() {
   const sessions = detail.sessions || [];
   const title = document.getElementById("player-screen-title");
   const id = document.getElementById("player-screen-id");
+  const linkedUser = document.getElementById("player-screen-user");
   const playerName = player.player_name || player.name || player.player_id;
 
   if (title) title.textContent = playerName;
   if (id) id.textContent = `ID: ${player.player_id}`;
+  if (linkedUser) {
+    linkedUser.textContent = `${t("player.linkedUser")}: ${t("player.noLinkedUser")}`;
+  }
+  renderPlayerHeaderDebugActions(player);
   renderPlayerDebugActions(player);
 
   const rows = sessions
@@ -198,18 +205,14 @@ export function renderPlayerDetail() {
   wrap.className = "";
   wrap.innerHTML = `
     <div class="panel-stack">
-      <form id="player-period-form" class="filters" onsubmit="return false;">
-        <label>
-          ${escapeHtml(t("player.from"))}
-          <input type="date" id="player-period-from" value="${escapeHtml(state.selectedPlayerFilters.from)}" />
-        </label>
-        <label>
-          ${escapeHtml(t("player.to"))}
-          <input type="date" id="player-period-to" value="${escapeHtml(state.selectedPlayerFilters.to)}" />
-        </label>
-        <button type="submit">${escapeHtml(t("player.applyPeriod"))}</button>
+      <div class="period-toolbar">
+        <div>
+          <div class="stat-label">${escapeHtml(t("player.period"))}</div>
+          <div class="period-summary">${escapeHtml(periodSummary())}</div>
+        </div>
+        <button type="button" id="player-period-select">${escapeHtml(t("player.selectPeriod"))}</button>
         <button type="button" class="secondary" id="player-period-clear">${escapeHtml(t("player.allTime"))}</button>
-      </form>
+      </div>
       <div class="stats player-stats">
         <div class="stat">
           <div class="stat-label">${escapeHtml(t("player.sessions"))}</div>
@@ -227,7 +230,12 @@ export function renderPlayerDetail() {
           <div class="stat-label">${escapeHtml(t("player.profitMoney"))}</div>
           <div class="${Number(player.profit_money) >= 0 ? "profit-positive" : "profit-negative"}">${formatNumber(player.profit_money)}</div>
         </div>
+        <div class="stat">
+          <div class="stat-label">${escapeHtml(t("player.winRate"))}</div>
+          <div>${escapeHtml(formatWinRate(sessions))}</div>
+        </div>
       </div>
+      ${state.debugMode ? renderProfitChart(sessions) : ""}
       <div class="table-wrap">
         <table>
           <thead>
@@ -248,10 +256,30 @@ export function renderPlayerDetail() {
     </div>
   `;
 
-  wrap.querySelector("#player-period-form")?.addEventListener("submit", async () => {
+  wrap.querySelector("#player-period-select")?.addEventListener("click", async () => {
+    const values = await openModal({
+      title: t("player.selectPeriod"),
+      confirmText: t("player.applyPeriod"),
+      fields: [
+        {
+          name: "from",
+          label: t("player.from"),
+          type: "date",
+          value: state.selectedPlayerFilters.from,
+        },
+        {
+          name: "to",
+          label: t("player.to"),
+          type: "date",
+          value: state.selectedPlayerFilters.to,
+        },
+      ],
+    });
+    if (!values) return;
+
     state.selectedPlayerFilters = {
-      from: document.getElementById("player-period-from")?.value || "",
-      to: document.getElementById("player-period-to")?.value || "",
+      from: values.from || "",
+      to: values.to || "",
     };
     await loadPlayerDetail(state.selectedPlayerId, {
       replace: true,
@@ -279,6 +307,21 @@ export function renderPlayerDetail() {
   });
 }
 
+function renderPlayerHeaderDebugActions(player) {
+  const actions = document.getElementById("player-header-debug-actions");
+  if (!actions) return;
+
+  actions.hidden = !state.debugMode || !player;
+  actions.querySelector("#debug-rename-player-btn")?.replaceWith(
+    actions.querySelector("#debug-rename-player-btn").cloneNode(true),
+  );
+  actions
+    .querySelector("#debug-rename-player-btn")
+    ?.addEventListener("click", async () => {
+      await confirmDebugRenamePlayer(player);
+    });
+}
+
 function renderPlayerDebugActions(player) {
   const actions = document.getElementById("player-debug-actions");
   if (!actions) return;
@@ -292,6 +335,43 @@ function renderPlayerDebugActions(player) {
     ?.addEventListener("click", async () => {
       await confirmDebugDeletePlayer(player);
     });
+}
+
+async function confirmDebugRenamePlayer(player) {
+  if (!state.debugMode || !player?.player_id) return;
+
+  const playerName = player.player_name || player.name || player.player_id;
+  const values = await openModal({
+    title: t("modal.renamePlayerTitle"),
+    confirmText: t("debug.renamePlayer"),
+    fields: [
+      {
+        name: "name",
+        label: t("lobby.playerName"),
+        type: "text",
+        value: playerName,
+      },
+    ],
+  });
+  if (!values) return;
+
+  const name = (values.name || "").trim();
+  if (!name) {
+    showNotice(t("notice.enterPlayerName"), "error");
+    return;
+  }
+
+  const res = await debugRenamePlayer(player.player_id, name);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedRenamePlayer")), "error");
+    return;
+  }
+
+  await Promise.all([
+    loadPlayerDetail(player.player_id, { replace: true, preserveFilters: true }),
+    loadPlayersOverview(),
+  ]);
+  showNotice(t("notice.playerRenamed"), "success");
 }
 
 async function confirmDebugDeletePlayer(player) {
@@ -342,4 +422,65 @@ function normalizePlayerDetail(raw) {
     player: raw.player || raw.Player || null,
     sessions: raw.sessions || raw.Sessions || [],
   };
+}
+
+function periodSummary() {
+  const { from, to } = state.selectedPlayerFilters;
+  if (!from && !to) return t("player.allTime");
+  if (from && to) return `${t("player.from")}: ${from} · ${t("player.to")}: ${to}`;
+  if (from) return `${t("player.from")}: ${from}`;
+  return `${t("player.to")}: ${to}`;
+}
+
+function formatWinRate(sessions) {
+  if (!sessions.length) return "0%";
+
+  const winningSessions = sessions.filter(
+    (session) => (Number(session.profit_money) || 0) > 0,
+  ).length;
+  return `${Math.round((winningSessions / sessions.length) * 100)}%`;
+}
+
+function renderProfitChart(sessions) {
+  const points = [...sessions]
+    .sort((a, b) => String(a.session_created_at).localeCompare(String(b.session_created_at)))
+    .map((session) => Number(session.profit_money) || 0)
+    .reduce((acc, profit) => {
+      const previous = acc.length ? acc[acc.length - 1] : 0;
+      acc.push(previous + profit);
+      return acc;
+    }, []);
+
+  if (points.length < 2) {
+    return `
+      <div class="player-chart">
+        <div class="stat-label">${escapeHtml(t("player.profitChart"))}</div>
+        <div class="empty-inline">${escapeHtml(t("player.noChartData"))}</div>
+      </div>
+    `;
+  }
+
+  const width = 640;
+  const height = 180;
+  const padding = 22;
+  const min = Math.min(...points, 0);
+  const max = Math.max(...points, 0);
+  const range = max - min || 1;
+  const step = (width - padding * 2) / (points.length - 1);
+  const coordinates = points.map((value, index) => {
+    const x = padding + index * step;
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const zeroY = height - padding - ((0 - min) / range) * (height - padding * 2);
+
+  return `
+    <div class="player-chart">
+      <div class="stat-label">${escapeHtml(t("player.profitChart"))}</div>
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(t("player.profitChart"))}">
+        <line class="axis" x1="${padding}" y1="${zeroY.toFixed(1)}" x2="${width - padding}" y2="${zeroY.toFixed(1)}"></line>
+        <polyline points="${escapeHtml(coordinates.join(" "))}"></polyline>
+      </svg>
+    </div>
+  `;
 }

@@ -40,6 +40,10 @@ type CreatePlayerRequest struct {
 	Name      string `json:"name" example:"Alice"`
 }
 
+type RenamePlayerRequest struct {
+	Name string `json:"name" example:"Alice"`
+}
+
 type CreatePlayerResponse struct {
 	PlayerID entity.PlayerID `json:"player_id" example:"player-123"`
 }

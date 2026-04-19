@@ -174,7 +174,7 @@
                         </p>
 
                         <div class="actions" id="session-player-actions">
-                            <button type="button" id="session-add-existing-player-btn" data-i18n="session.addExistingPlayer">
+                            <button type="button" id="session-add-existing-player-btn" class="buy-in-action" data-i18n="session.addExistingPlayer">
                                 Add Player to Session
                             </button>
                             <button type="button" class="secondary" id="session-add-new-player-btn" data-i18n="session.createNewPlayer">
@@ -182,14 +182,6 @@
                             </button>
                         </div>
 
-                        <div class="debug-admin-actions" id="session-debug-actions" hidden>
-                            <button type="button" class="danger" id="debug-reopen-session-btn" data-i18n="debug.deleteFinish">
-                                Delete Finish
-                            </button>
-                            <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
-                                Delete Session
-                            </button>
-                        </div>
                     </div>
 
                     <div class="panel">
@@ -219,7 +211,7 @@
                                         <input id="rebuy-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
                                     </label>
 
-                                    <button type="button" id="buy-in-btn" data-i18n="session.buyIn">Rebuy</button>
+                                    <button type="button" id="buy-in-btn" class="rebuy-action" data-i18n="session.buyIn">Rebuy</button>
                                 </div>
 
                                 <div class="action-card">
@@ -236,7 +228,7 @@
                                         <input id="cash-out-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
                                     </label>
 
-                                    <button type="button" id="cash-out-btn" class="secondary" data-i18n="session.cashOut">
+                                    <button type="button" id="cash-out-btn" class="cash-out-action" data-i18n="session.cashOut">
                                         Cash Out
                                     </button>
                                 </div>
@@ -253,6 +245,12 @@
                             <div class="disclosure-body" id="operations-wrap"></div>
                         </details>
                     </div>
+
+                    <div class="panel debug-admin-actions" id="session-delete-debug-panel" hidden>
+                        <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
+                            Delete Session
+                        </button>
+                    </div>
                 </section>
 
                 <section class="screen" id="screen-player">
@@ -260,7 +258,13 @@
                         <div class="toolbar">
                             <div>
                                 <h2 id="player-screen-title" data-i18n="player.title">Player</h2>
-                                <div id="player-screen-id" class="muted"></div>
+                                <div id="player-screen-user" class="muted"></div>
+                                <div id="player-screen-id" class="muted debug-only"></div>
+                            </div>
+                            <div class="actions debug-only" id="player-header-debug-actions" hidden>
+                                <button type="button" class="secondary" id="debug-rename-player-btn" data-i18n="debug.renamePlayer">
+                                    Rename Player
+                                </button>
                             </div>
                         </div>
                     </div>
