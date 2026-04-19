@@ -103,7 +103,7 @@ export function renderSession() {
   const onTable = Number(session.totalChips) || 0;
 
   if (titleDate) {
-    titleDate.textContent = ` ${formatDate(session.createdAt)}`;
+    titleDate.textContent = formatDate(session.createdAt);
   }
   if (finishedAt) {
     const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);

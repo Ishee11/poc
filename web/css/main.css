@@ -660,7 +660,7 @@ body.debug-mode .debug-only {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0;
+    gap: 8px;
     margin-bottom: 0;
 }
 
