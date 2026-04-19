@@ -1025,6 +1025,10 @@ pre {
     display: none;
 }
 
+.mobile-session-actions {
+    display: none;
+}
+
 @media (max-width: 1180px) {
     .grid.two,
     .lobby-primary,
@@ -1045,6 +1049,10 @@ pre {
 @media (max-width: 720px) {
     body {
         font-size: 15px;
+    }
+
+    body[data-screen="session"] {
+        padding-bottom: 82px;
     }
 
     .app-header {
@@ -1180,6 +1188,28 @@ pre {
 
     .mobile-only {
         display: block;
+    }
+
+    .mobile-session-actions {
+        position: fixed;
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-strong);
+        box-shadow: var(--shadow);
+    }
+
+    .mobile-session-actions button {
+        min-width: 0;
+        padding: 10px 8px;
+        font-size: 0.9rem;
     }
 
     th span {
