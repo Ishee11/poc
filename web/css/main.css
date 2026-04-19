@@ -145,6 +145,34 @@ body:not([data-screen="player"]) .nav-player-only {
     margin: 0;
 }
 
+.panel-disclosure {
+    overflow: hidden;
+}
+
+.panel-disclosure summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.panel-disclosure summary::-webkit-details-marker {
+    display: none;
+}
+
+.panel-disclosure summary::after {
+    content: "▼";
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.panel-disclosure:not([open]) summary {
+    margin-bottom: 0;
+}
+
+.panel-disclosure:not([open]) summary::after {
+    transform: rotate(-90deg);
+}
+
 .panel p {
     color: var(--muted);
     line-height: 1.5;

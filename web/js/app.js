@@ -2,6 +2,7 @@ import { startSession } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
 import {
+  applyLatestSessionDefaults,
   firstActiveSessionId,
   loadSessions,
   renderSessions,
@@ -66,6 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const chipInput = document.getElementById("start-chip-rate");
   const bigBlindInput = document.getElementById("start-big-blind");
   renderStartChipRateLabel();
+  applyLatestSessionDefaults();
   if (startForm && chipInput && bigBlindInput) {
     startForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -100,6 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       await Promise.all([loadSessions(), loadPlayersOverview()]);
+      applyLatestSessionDefaults({ force: true });
       await openSession(res.body.session_id);
       showNotice(t("notice.sessionStarted"), "success");
     });

@@ -124,6 +124,25 @@ export function firstActiveSessionId() {
   return session?.session_id || session?.id || "";
 }
 
+export function applyLatestSessionDefaults({ force = false } = {}) {
+  const latest = state.overviewSessions[0];
+  if (!latest) return;
+
+  setDefaultNumberValue("start-chip-rate", latest.chip_rate, { force });
+  setDefaultNumberValue("start-big-blind", latest.big_blind, { force });
+}
+
+function setDefaultNumberValue(inputId, value, { force = false } = {}) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (!force && input.value !== "") return;
+
+  const number = Number(value);
+  if (Number.isFinite(number) && number > 0) {
+    input.value = String(number);
+  }
+}
+
 function formatBuyInSummary(session) {
   const chips = Number(session.total_buy_in);
   const chipRate = Number(session.chip_rate);
