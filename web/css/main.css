@@ -55,12 +55,11 @@ body::before {
     position: relative;
 }
 
-.hero {
-    padding: 20px;
+.app-header {
+    padding: 12px 14px;
     border: 1px solid var(--line);
-    border-radius: calc(var(--radius) + 8px);
+    border-radius: 14px;
     background:
-        linear-gradient(135deg, rgba(88, 208, 167, 0.12), transparent 42%),
         linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.05),
@@ -72,46 +71,29 @@ body::before {
     position: relative;
 }
 
-.hero::after {
-    content: "";
-    position: absolute;
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    background: radial-gradient(
-        circle,
-        rgba(88, 208, 167, 0.18),
-        transparent 70%
-    );
-    right: -80px;
-    top: -90px;
-    filter: blur(10px);
-}
-
-.hero h1 {
+.app-header h1 {
     margin: 0;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(2.2rem, 4vw, 4rem);
+    font-size: 1.45rem;
     font-weight: 700;
-    letter-spacing: -0.04em;
-    max-width: 10ch;
+    letter-spacing: 0;
 }
 
-.hero p {
-    margin: 14px 0 0;
+.app-header p {
+    margin: 4px 0 0;
     max-width: 58ch;
     color: var(--muted);
-    line-height: 1.6;
-    font-size: 1rem;
+    line-height: 1.35;
+    font-size: 0.92rem;
 }
 
-.hero-content {
+.app-header-content {
     position: relative;
     z-index: 1;
     display: flex;
     justify-content: space-between;
-    gap: 18px;
-    align-items: flex-start;
+    gap: 16px;
+    align-items: center;
 }
 
 .top-nav {
@@ -124,25 +106,6 @@ body::before {
 body:not([data-screen="session"]) .nav-session-only,
 body:not([data-screen="player"]) .nav-player-only {
     display: none;
-}
-
-.hero-meta {
-    margin-top: 18px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #dce7f7;
-    font-size: 0.92rem;
 }
 
 .layout {
@@ -1056,12 +1019,13 @@ pre {
         font-size: 15px;
     }
 
-    .hero {
-        padding: 18px 16px;
+    .app-header {
+        padding: 12px;
     }
 
-    .hero-content {
+    .app-header-content {
         flex-direction: column;
+        align-items: stretch;
     }
 
     .top-nav {
@@ -1073,8 +1037,8 @@ pre {
         flex: 1 1 100%;
     }
 
-    .hero h1 {
-        font-size: 2rem;
+    .app-header h1 {
+        font-size: 1.35rem;
         max-width: none;
     }
 
