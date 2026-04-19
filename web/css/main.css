@@ -277,13 +277,22 @@ body:not([data-screen="player"]) .nav-player-only {
     justify-content: center;
     width: 17px;
     height: 17px;
+    min-height: 17px;
+    padding: 0;
     border-radius: 999px;
     color: var(--text);
     background: rgba(255, 255, 255, 0.12);
     font-size: 0.68rem;
+    font-weight: 800;
     letter-spacing: 0;
     text-transform: none;
     cursor: help;
+    box-shadow: none;
+}
+
+.stat-help:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .stat-value {
@@ -622,6 +631,11 @@ body.debug-mode .debug-only {
     background: rgba(255, 255, 255, 0.05);
     transform: translateY(-1px);
     outline: none;
+}
+
+.table-clickable-row {
+    border-radius: 0;
+    padding-inline: 0;
 }
 
 .profit-positive {

@@ -186,7 +186,7 @@ export function renderPlayerDetail() {
   const rows = sessions
     .map(
       (session) => `
-        <tr>
+        <tr class="clickable-row table-clickable-row" data-open-session="${escapeHtml(session.session_id)}" tabindex="0" role="button">
           <td>${escapeHtml(formatDate(session.session_created_at))}</td>
           <td>${escapeHtml(statusLabel(session.status))}</td>
           <td>${formatNumber(session.buy_in_chips)}</td>
@@ -194,9 +194,6 @@ export function renderPlayerDetail() {
           <td>${formatNumber(session.profit_chips)}</td>
           <td>${formatNumber(session.profit_money)}</td>
           <td>${formatDate(session.last_activity_at)}</td>
-          <td>
-            <button type="button" data-open-session="${escapeHtml(session.session_id)}">${escapeHtml(t("common.open"))}</button>
-          </td>
         </tr>
       `,
     )
@@ -250,10 +247,6 @@ export function renderPlayerDetail() {
           ${statLabel("player.avgBuyInPerSession", "player.hint.avgBuyInPerSession")}
           <div>${formatNumber(roundMetric(player.avg_buy_in_per_session))}</div>
         </div>
-        <div class="stat">
-          ${statLabel("player.winRate", "player.hint.winRate")}
-          <div>${escapeHtml(formatWinRate(sessions))}</div>
-        </div>
       </div>
       ${state.debugMode ? renderProfitChart(sessions) : ""}
       <div class="table-wrap">
@@ -267,7 +260,6 @@ export function renderPlayerDetail() {
               <th>${escapeHtml(t("table.profitChips"))}</th>
               <th>${escapeHtml(t("table.profit"))}</th>
               <th>${escapeHtml(t("table.lastActivity"))}</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -315,16 +307,8 @@ export function renderPlayerDetail() {
     });
   });
 
-  wrap.querySelectorAll("[data-open-session]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const sessionId = button.getAttribute("data-open-session");
-      if (!sessionId) return;
-
-      setValue("active-session-select", sessionId);
-      const { openSession } = await import("./session.js");
-      await openSession(sessionId);
-    });
-  });
+  bindOpenSessionRows(wrap);
+  bindStatHelp(wrap);
 }
 
 function renderPlayerHeaderDebugActions(player) {
@@ -436,6 +420,41 @@ function bindOpenPlayerButtons(container) {
   });
 }
 
+function bindOpenSessionRows(container) {
+  container.querySelectorAll("[data-open-session]").forEach((row) => {
+    row.addEventListener("click", async () => {
+      await openSessionFromRow(row);
+    });
+    row.addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      await openSessionFromRow(row);
+    });
+  });
+}
+
+async function openSessionFromRow(row) {
+  const sessionId = row.getAttribute("data-open-session");
+  if (!sessionId) return;
+
+  setValue("active-session-select", sessionId);
+  const { openSession } = await import("./session.js");
+  await openSession(sessionId);
+}
+
+function bindStatHelp(container) {
+  container.querySelectorAll("[data-stat-help]").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await openModal({
+        title: button.getAttribute("data-stat-title") || "",
+        description: button.getAttribute("data-stat-help") || "",
+        confirmText: t("common.confirm"),
+      });
+    });
+  });
+}
+
 function normalizePlayerDetail(raw) {
   if (!raw) return null;
   return {
@@ -446,10 +465,18 @@ function normalizePlayerDetail(raw) {
 
 function statLabel(labelKey, hintKey) {
   const hint = t(hintKey);
+  const label = t(labelKey);
   return `
     <div class="stat-label">
-      <span>${escapeHtml(t(labelKey))}</span>
-      <span class="stat-help" title="${escapeHtml(hint)}" aria-label="${escapeHtml(hint)}">?</span>
+      <span>${escapeHtml(label)}</span>
+      <button
+        type="button"
+        class="stat-help"
+        title="${escapeHtml(hint)}"
+        aria-label="${escapeHtml(hint)}"
+        data-stat-title="${escapeHtml(label)}"
+        data-stat-help="${escapeHtml(hint)}"
+      >?</button>
     </div>
   `;
 }
@@ -469,15 +496,6 @@ function periodSummary() {
   if (from && to) return `${t("player.from")}: ${from} · ${t("player.to")}: ${to}`;
   if (from) return `${t("player.from")}: ${from}`;
   return `${t("player.to")}: ${to}`;
-}
-
-function formatWinRate(sessions) {
-  if (!sessions.length) return "0%";
-
-  const winningSessions = sessions.filter(
-    (session) => (Number(session.profit_money) || 0) > 0,
-  ).length;
-  return `${Math.round((winningSessions / sessions.length) * 100)}%`;
 }
 
 function renderProfitChart(sessions) {
