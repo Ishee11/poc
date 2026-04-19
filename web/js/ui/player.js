@@ -137,17 +137,18 @@ export function renderPlayers() {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
-      const canRebuy = canUseSessionActions && player.in_game && canRebuyPlayer(id);
+      const canRebuy = canUseSessionActions;
+      const statusClass = player.in_game ? "player-status in-game" : "player-status settled";
 
       return `
-        <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
+        <div class="player-row clickable-row ${player.in_game ? "is-in-game" : "is-settled"}" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title">${escapeHtml(name)}</div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.buyIn"))}: ${formatNumber(player.buy_in)}</span>
               <span>${escapeHtml(t("common.cashOut"))}: ${formatNumber(player.cash_out)}</span>
               <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, state.session?.currency)}</span>
-              <span>${player.in_game ? escapeHtml(t("common.inGame")) : escapeHtml(t("common.settled"))}</span>
+              <span class="${statusClass}">${player.in_game ? escapeHtml(t("common.inGame")) : escapeHtml(t("common.settled"))}</span>
             </div>
           </div>
           ${
@@ -453,26 +454,6 @@ function bindOpenPlayerButtons(container) {
       await loadPlayerDetail(playerId);
     });
   });
-}
-
-function canRebuyPlayer(playerId) {
-  const latest = latestEffectivePlayerOperation(playerId);
-  return !latest || latest.type !== "cash_out";
-}
-
-function latestEffectivePlayerOperation(playerId) {
-  const reversedTargets = new Set(
-    state.operations
-      .filter((operation) => operation.type === "reversal" && operation.reference_id)
-      .map((operation) => operation.reference_id),
-  );
-
-  return state.operations.find(
-    (operation) =>
-      operation.player_id === playerId &&
-      operation.type !== "reversal" &&
-      !reversedTargets.has(operation.id),
-  );
 }
 
 function bindOpenSessionRows(container) {

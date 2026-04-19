@@ -358,8 +358,8 @@ function lastBuyInChipsForRebuy(playerId) {
 
 async function confirmPlayerRebuy(playerId) {
   const player = state.players.find((item) => (item.player_id || item.id) === playerId);
-  if (!playerId || !player?.in_game || !canRebuyPlayer(playerId)) {
-    showNotice(t("notice.playerAlreadyCashedOut"), "error");
+  if (!playerId || !player) {
+    showNotice(t("notice.selectPlayerAndChips"), "error");
     return;
   }
 
@@ -403,26 +403,6 @@ async function confirmPlayerRebuy(playerId) {
 
   await refreshSessionData();
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
-}
-
-function canRebuyPlayer(playerId) {
-  const latest = latestEffectivePlayerOperation(playerId);
-  return !latest || latest.type !== "cash_out";
-}
-
-function latestEffectivePlayerOperation(playerId) {
-  const reversedTargets = new Set(
-    state.operations
-      .filter((operation) => operation.type === "reversal" && operation.reference_id)
-      .map((operation) => operation.reference_id),
-  );
-
-  return state.operations.find(
-    (operation) =>
-      operation.player_id === playerId &&
-      operation.type !== "reversal" &&
-      !reversedTargets.has(operation.id),
-  );
 }
 
 async function confirmCashOut() {

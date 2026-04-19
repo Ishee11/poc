@@ -64,7 +64,11 @@ func (uc *GetSessionPlayersUseCase) execute(
 	result := make([]SessionPlayerDTO, 0, len(aggs))
 
 	for playerID, agg := range aggs {
-		inGame := session.Status() == entity.StatusActive && agg.BuyIn > agg.CashOut
+		lastOpType, found, err := uc.projection.GetLastOperationType(tx, q.SessionID, playerID)
+		if err != nil {
+			return nil, err
+		}
+		inGame := session.Status() == entity.StatusActive && found && lastOpType == entity.OperationBuyIn
 		player, err := uc.playerRepo.GetByID(tx, playerID)
 		if err != nil {
 			return nil, err

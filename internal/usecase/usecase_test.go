@@ -594,6 +594,39 @@ func TestGetSessionPlayersUseCase(t *testing.T) {
 	}
 }
 
+func TestGetSessionPlayersUseCase_CashOutSettlesActivePlayer(t *testing.T) {
+	store := newFakeStore()
+	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), 2, entity.CurrencyRUB, entity.StatusActive, time.Now(), nil, 100, 40)
+	addPlayer(t, store, "p1", "Alice")
+	buyInOp, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cashOutOp, err := entity.NewOperation("op2", "req2", "s1", entity.OperationCashOut, "p1", 40, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.saveOperation(t, buyInOp)
+	store.saveOperation(t, cashOutOp)
+
+	uc := NewGetSessionPlayersUseCase(
+		fakeProjectionRepo{store: store},
+		fakePlayerRepo{store: store},
+		fakeTxManager{},
+		fakeSessionRepo{store: store},
+	)
+	players, err := uc.Execute(GetSessionPlayersQuery{SessionID: "s1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(players) != 1 {
+		t.Fatalf("expected one player, got %d", len(players))
+	}
+	if players[0].InGame {
+		t.Fatal("player should be settled after cash-out even when cash-out is lower than buy-in")
+	}
+}
+
 func mustChipRate(t *testing.T, value int64) valueobject.ChipRate {
 	t.Helper()
 	rate, err := valueobject.NewChipRate(value)

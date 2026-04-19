@@ -213,18 +213,26 @@ body:not([data-screen="player"]) .nav-player-only {
 }
 
 .session-balance-stat {
-    margin-bottom: 14px;
-    padding: 16px 18px;
+    margin: 14px 0;
+    padding: 10px 12px;
     border-radius: 8px;
 }
 
 .session-balance-stat .stat-label {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
 }
 
 .session-balance-stat #stat-total-chips {
-    font-size: 2rem;
+    font-size: 1.35rem;
     font-weight: 900;
+}
+
+.session-config-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.session-totals-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .rate-currency-row {
@@ -480,6 +488,10 @@ button:disabled {
     font-family: Georgia, "Times New Roman", serif;
 }
 
+.action-card h3 {
+    margin: 0;
+}
+
 .top-gap {
     margin-top: 14px;
 }
@@ -563,6 +575,20 @@ body.debug-mode .debug-only {
     min-width: 0;
 }
 
+.player-row {
+    border-left: 3px solid transparent;
+    padding-left: 10px;
+}
+
+.player-row.is-in-game {
+    border-left-color: rgba(88, 208, 167, 0.62);
+    background: rgba(88, 208, 167, 0.04);
+}
+
+.player-row.is-settled {
+    border-left-color: rgba(255, 143, 123, 0.38);
+}
+
 .session-row:last-child,
 .player-row:last-child,
 .operation-row:last-child {
@@ -596,6 +622,27 @@ body.debug-mode .debug-only {
     gap: 10px;
     color: var(--muted);
     font-size: 0.88rem;
+}
+
+.player-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.player-status.in-game {
+    color: #a7ead2;
+    background: rgba(88, 208, 167, 0.1);
+    border: 1px solid rgba(88, 208, 167, 0.22);
+}
+
+.player-status.settled {
+    color: #ffbdaf;
+    background: rgba(255, 143, 123, 0.08);
+    border: 1px solid rgba(255, 143, 123, 0.18);
 }
 
 .title-row {
@@ -1084,6 +1131,10 @@ pre {
     .workspace-header {
         flex-direction: column;
     }
+
+    .session-config-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 720px) {
@@ -1124,14 +1175,12 @@ pre {
         grid-template-columns: 1fr;
     }
 
-    .session-balance-stat {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 6px;
+    .session-config-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .session-balance-stat #stat-total-chips {
-        font-size: 1.8rem;
+        font-size: 1.35rem;
     }
 
     .period-toolbar {
