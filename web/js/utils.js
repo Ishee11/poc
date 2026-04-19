@@ -15,6 +15,20 @@ export function formatNumber(v) {
   return Number.isFinite(n) ? n.toLocaleString() : "-";
 }
 
+export function formatMoney(value, currency) {
+  return `${formatNumber(value)} ${currencySymbol(currency)}`;
+}
+
+export function currencySymbol(currency) {
+  switch (String(currency || "RUB").toUpperCase()) {
+    case "USD":
+      return "$";
+    case "RUB":
+    default:
+      return "₽";
+  }
+}
+
 export function formatDate(v, { seconds = false } = {}) {
   if (!v) return "-";
   const d = new Date(v);

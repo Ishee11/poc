@@ -1,7 +1,13 @@
 import { getSessions } from "../api.js";
 import { statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
-import { escapeHtml, formatDate, formatNumber, setValue } from "../utils.js";
+import {
+  escapeHtml,
+  formatDate,
+  formatMoney,
+  formatNumber,
+  setValue,
+} from "../utils.js";
 
 export async function loadSessions() {
   const res = await getSessions();
@@ -52,7 +58,7 @@ export function renderSessions() {
               <span class="status-pill status-${escapeHtml(session.status || "unknown")}">${escapeHtml(statusLabel(session.status || "-"))}</span>
               <span>${escapeHtml(t("session.bigBlindShort"))}: ${formatNumber(session.big_blind)}</span>
               <span>${escapeHtml(t("common.players"))}: ${formatNumber(session.player_count)}</span>
-              <span>${escapeHtml(t("common.totalBuyIn"))}: ${formatNumber(session.total_buy_in)}</span>
+              <span>${escapeHtml(t("common.totalBuyIn"))}: ${escapeHtml(formatBuyInSummary(session))}</span>
             </div>
           </div>
         </div>
@@ -116,4 +122,16 @@ export function syncSelect() {
 export function firstActiveSessionId() {
   const session = state.overviewSessions.find((item) => item.status === "active");
   return session?.session_id || session?.id || "";
+}
+
+function formatBuyInSummary(session) {
+  const chips = Number(session.total_buy_in);
+  const chipRate = Number(session.chip_rate);
+  const chipsText = `${formatNumber(chips)} ${t("common.chips")}`;
+
+  if (!Number.isFinite(chips) || !Number.isFinite(chipRate) || chipRate <= 0) {
+    return chipsText;
+  }
+
+  return `${chipsText} · ${formatMoney(chips / chipRate, session.currency)}`;
 }
