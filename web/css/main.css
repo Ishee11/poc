@@ -1,16 +1,16 @@
 :root {
-    --bg: #07111f;
-    --panel: rgba(8, 23, 42, 0.82);
-    --panel-strong: rgba(10, 29, 52, 0.96);
-    --line: rgba(157, 193, 255, 0.18);
+    --bg: #0b1117;
+    --panel: rgba(15, 24, 34, 0.9);
+    --panel-strong: rgba(17, 28, 39, 0.98);
+    --line: rgba(181, 202, 225, 0.16);
     --text: #edf4ff;
     --muted: #99aec9;
     --accent: #58d0a7;
     --accent-strong: #20a97d;
     --danger: #ff8d7a;
     --warning: #ffd07a;
-    --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
-    --radius: 24px;
+    --shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
+    --radius: 12px;
 }
 
 * {
@@ -23,18 +23,7 @@ body {
     overflow-x: hidden;
     color: var(--text);
     font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-    background:
-        radial-gradient(
-            circle at top left,
-            rgba(38, 107, 214, 0.22),
-            transparent 32%
-        ),
-        radial-gradient(
-            circle at top right,
-            rgba(34, 169, 125, 0.16),
-            transparent 26%
-        ),
-        linear-gradient(160deg, #04101f 0%, #0b1f38 48%, #08111d 100%);
+    background: linear-gradient(160deg, #091018 0%, #10211d 52%, #0b1117 100%);
 }
 
 body::before {
@@ -58,7 +47,7 @@ body::before {
 .app-header {
     padding: 12px 14px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 8px;
     background:
         linear-gradient(
             180deg,
@@ -141,7 +130,7 @@ body:not([data-screen="player"]) .nav-player-only {
 .panel h3 {
     margin: 0 0 14px;
     font-family: Georgia, "Times New Roman", serif;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 .panel p {
@@ -221,7 +210,7 @@ body:not([data-screen="player"]) .nav-player-only {
     align-items: center;
 
     padding: 10px 12px;
-    border-radius: 14px;
+    border-radius: 8px;
 
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -230,7 +219,7 @@ body:not([data-screen="player"]) .nav-player-only {
 .session-balance-stat {
     margin-bottom: 14px;
     padding: 16px 18px;
-    border-radius: 14px;
+    border-radius: 8px;
 }
 
 .session-balance-stat .stat-label {
@@ -281,7 +270,7 @@ body:not([data-screen="player"]) .nav-player-only {
 
 .stat.on-table-emphasis {
     border-color: rgba(255, 208, 122, 0.34);
-    background: linear-gradient(135deg, rgba(255, 208, 122, 0.12), rgba(255, 255, 255, 0.035));
+    background: rgba(255, 208, 122, 0.1);
 }
 
 .stat.on-table-emphasis #stat-total-chips {
@@ -388,7 +377,7 @@ input,
 select,
 button {
     border: 0;
-    border-radius: 14px;
+    border-radius: 8px;
     font: inherit;
 }
 
@@ -418,17 +407,17 @@ button {
     color: #04261b;
     font-weight: 700;
     cursor: pointer;
-    background: linear-gradient(135deg, #7ff0ca, #4bc79d);
+    background: #65d6ad;
     transition:
         transform 0.18s ease,
         box-shadow 0.18s ease,
         opacity 0.18s ease;
-    box-shadow: 0 12px 28px rgba(32, 169, 125, 0.26);
+    box-shadow: 0 8px 18px rgba(32, 169, 125, 0.2);
 }
 
 button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 16px 36px rgba(32, 169, 125, 0.32);
+    box-shadow: 0 10px 22px rgba(32, 169, 125, 0.24);
 }
 
 button.secondary {
@@ -439,32 +428,32 @@ button.secondary {
 
 button.warn {
     color: #381608;
-    background: linear-gradient(135deg, #ffd9a2, #ffb46e);
-    box-shadow: 0 12px 28px rgba(255, 180, 110, 0.18);
+    background: #f3bb78;
+    box-shadow: 0 8px 18px rgba(255, 180, 110, 0.14);
 }
 
 button.danger {
     color: #330f0f;
-    background: linear-gradient(135deg, #ffb6aa, #ff8f7b);
-    box-shadow: 0 12px 28px rgba(255, 143, 123, 0.2);
+    background: #ef9a8c;
+    box-shadow: 0 8px 18px rgba(255, 143, 123, 0.16);
 }
 
 button.buy-in-action {
     color: #082a1f;
-    background: linear-gradient(135deg, #9df4ce, #4fd08f);
-    box-shadow: 0 12px 28px rgba(79, 208, 143, 0.22);
+    background: #68d9a6;
+    box-shadow: 0 8px 18px rgba(79, 208, 143, 0.18);
 }
 
 button.rebuy-action {
     color: #071f36;
-    background: linear-gradient(135deg, #9ed4ff, #5ba9f6);
-    box-shadow: 0 12px 28px rgba(91, 169, 246, 0.22);
+    background: #83bdf1;
+    box-shadow: 0 8px 18px rgba(91, 169, 246, 0.16);
 }
 
 button.cash-out-action {
     color: #3a2106;
-    background: linear-gradient(135deg, #ffe08f, #f6ad55);
-    box-shadow: 0 12px 28px rgba(246, 173, 85, 0.2);
+    background: #efbe70;
+    box-shadow: 0 8px 18px rgba(246, 173, 85, 0.16);
 }
 
 button:disabled {
@@ -491,7 +480,7 @@ button:disabled {
     display: grid;
     gap: 12px;
     padding: 14px;
-    border-radius: 18px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -535,7 +524,7 @@ body.debug-mode .debug-only {
 .finish-hint {
     margin-top: 12px;
     padding: 12px 14px;
-    border-radius: 14px;
+    border-radius: 8px;
     border: 1px solid rgba(255, 208, 122, 0.42);
     color: #ffe2aa;
     background: rgba(255, 208, 122, 0.1);
@@ -648,14 +637,14 @@ body.debug-mode .debug-only {
 
 .session-status .status-debug-action {
     padding: 5px 8px;
-    border-radius: 999px;
+    border-radius: 8px;
     font-size: 0.72rem;
     text-transform: none;
 }
 
 .clickable-row {
     cursor: pointer;
-    border-radius: 14px;
+    border-radius: 8px;
     padding-inline: 10px;
     transition:
         background 0.18s ease,
@@ -746,7 +735,7 @@ th {
 
 .empty {
     padding: 18px;
-    border-radius: 16px;
+    border-radius: 8px;
     text-align: center;
     color: var(--muted);
     background: rgba(255, 255, 255, 0.03);
@@ -755,7 +744,7 @@ th {
 
 .notice {
     padding: 14px 16px;
-    border-radius: 16px;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.04);
     color: var(--text);
@@ -785,7 +774,7 @@ pre {
     padding: 16px;
     max-height: 360px;
     overflow: auto;
-    border-radius: 18px;
+    border-radius: 8px;
     background: rgba(2, 11, 22, 0.84);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: #d4e5ff;
@@ -811,8 +800,8 @@ pre {
 
 .tab-button.active {
     color: #04261b;
-    background: linear-gradient(135deg, #7ff0ca, #4bc79d);
-    box-shadow: 0 12px 28px rgba(32, 169, 125, 0.26);
+    background: #65d6ad;
+    box-shadow: 0 8px 18px rgba(32, 169, 125, 0.2);
 }
 
 .filters {
@@ -861,7 +850,7 @@ pre {
 
 .card-item {
     padding: 12px;
-    border-radius: 18px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     display: grid;
@@ -895,7 +884,7 @@ pre {
     align-items: center;
 
     padding: 8px 10px;
-    border-radius: 12px;
+    border-radius: 8px;
 
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -921,7 +910,7 @@ pre {
 
 .summary-card {
     padding: 14px;
-    border-radius: 16px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -938,7 +927,7 @@ pre {
 
 .disclosure {
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.03);
     overflow: hidden;
 }
@@ -1002,7 +991,7 @@ pre {
 .modal {
     width: min(560px, 100%);
     padding: 18px;
-    border-radius: 22px;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: var(--panel-strong);
     box-shadow: var(--shadow);
@@ -1083,7 +1072,7 @@ pre {
 
     .panel {
         padding: 14px;
-        border-radius: 18px;
+        border-radius: 8px;
     }
 
     .stats,
@@ -1147,7 +1136,7 @@ pre {
     .toolbar .actions button {
         padding: 9px 10px;
         font-size: 1rem;
-        border-radius: 10px;
+        border-radius: 8px;
         white-space: nowrap;
     }
 
