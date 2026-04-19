@@ -3,6 +3,8 @@ package http
 import (
 	"log/slog"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -15,6 +17,10 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(observed, r)
 
 		status := observed.Status()
+		if !shouldLogHTTP(status) {
+			return
+		}
+
 		level := slog.LevelInfo
 		if status >= http.StatusInternalServerError {
 			level = slog.LevelError
@@ -44,4 +50,17 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			attrs...,
 		)
 	})
+}
+
+func shouldLogHTTP(status int) bool {
+	switch strings.ToLower(os.Getenv("HTTP_ACCESS_LOG")) {
+	case "all", "true", "1":
+		return true
+	case "off", "none", "false", "0":
+		return false
+	case "errors", "error", "":
+		return status >= http.StatusBadRequest
+	default:
+		return status >= http.StatusBadRequest
+	}
 }

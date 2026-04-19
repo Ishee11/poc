@@ -96,6 +96,8 @@ func TestParseDateRange(t *testing.T) {
 }
 
 func TestRequestIDIsAvailableToLoggingMiddleware(t *testing.T) {
+	t.Setenv("HTTP_ACCESS_LOG", "all")
+
 	var logs bytes.Buffer
 	originalLogger := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
@@ -121,6 +123,8 @@ func TestRequestIDIsAvailableToLoggingMiddleware(t *testing.T) {
 }
 
 func TestRequestIDMiddlewareGeneratesIDForLogging(t *testing.T) {
+	t.Setenv("HTTP_ACCESS_LOG", "all")
+
 	var logs bytes.Buffer
 	originalLogger := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
@@ -142,6 +146,27 @@ func TestRequestIDMiddlewareGeneratesIDForLogging(t *testing.T) {
 	}
 	if got := logs.String(); !strings.Contains(got, "request_id="+reqID) {
 		t.Fatalf("expected generated request id in log, got %q", got)
+	}
+}
+
+func TestLoggingMiddlewareSkipsSuccessfulRequestsByDefault(t *testing.T) {
+	var logs bytes.Buffer
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+	})
+
+	handler := RequestIDMiddleware(LoggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	req := httptest.NewRequest(http.MethodGet, "/stats/player", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if got := logs.String(); got != "" {
+		t.Fatalf("expected no access log for successful request by default, got %q", got)
 	}
 }
 
