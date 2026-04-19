@@ -133,6 +133,18 @@ body:not([data-screen="player"]) .nav-player-only {
     letter-spacing: 0;
 }
 
+.panel-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.panel-title-row h3 {
+    margin: 0;
+}
+
 .panel p {
     color: var(--muted);
     line-height: 1.5;
