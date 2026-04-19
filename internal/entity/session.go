@@ -8,16 +8,20 @@ import (
 
 type Status string
 type SessionID string
+type Currency string
 
 const (
-	StatusActive   Status = "active"
-	StatusFinished Status = "finished"
+	StatusActive   Status   = "active"
+	StatusFinished Status   = "finished"
+	CurrencyRUB    Currency = "RUB"
+	CurrencyUSD    Currency = "USD"
 )
 
 type Session struct {
 	id         SessionID
 	chipRate   valueobject.ChipRate
 	bigBlind   int64
+	currency   Currency
 	status     Status
 	createdAt  time.Time
 	finishedAt *time.Time
@@ -27,11 +31,12 @@ type Session struct {
 	totalCashOutCache int64
 }
 
-func NewSession(id SessionID, chipRate valueobject.ChipRate, bigBlind int64, createdAt time.Time) *Session {
+func NewSession(id SessionID, chipRate valueobject.ChipRate, bigBlind int64, currency Currency, createdAt time.Time) *Session {
 	return &Session{
 		id:                id,
 		chipRate:          chipRate,
 		bigBlind:          bigBlind,
+		currency:          currency,
 		status:            StatusActive,
 		createdAt:         createdAt,
 		totalBuyInCache:   0,
@@ -43,6 +48,7 @@ func RestoreSession(
 	id SessionID,
 	chipRate valueobject.ChipRate,
 	bigBlind int64,
+	currency Currency,
 	status Status,
 	createdAt time.Time,
 	finishedAt *time.Time,
@@ -53,6 +59,7 @@ func RestoreSession(
 		id:                id,
 		chipRate:          chipRate,
 		bigBlind:          bigBlind,
+		currency:          currency,
 		status:            status,
 		createdAt:         createdAt,
 		finishedAt:        finishedAt,
@@ -64,6 +71,7 @@ func RestoreSession(
 func (s *Session) ID() SessionID                  { return s.id }
 func (s *Session) ChipRate() valueobject.ChipRate { return s.chipRate }
 func (s *Session) BigBlind() int64                { return s.bigBlind }
+func (s *Session) Currency() Currency             { return s.currency }
 func (s *Session) Status() Status                 { return s.status }
 func (s *Session) TotalBuyIn() int64              { return s.totalBuyInCache }
 func (s *Session) TotalCashOut() int64            { return s.totalCashOutCache }

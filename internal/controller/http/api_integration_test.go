@@ -125,6 +125,7 @@ func TestAPIIntegration_SessionLifecycle(t *testing.T) {
 	startSession := requestJSON(t, handler, http.MethodPost, "/sessions/start", map[string]any{
 		"chip_rate": 2,
 		"big_blind": 2,
+		"currency":  "RUB",
 	})
 	if startSession.Code != http.StatusOK {
 		t.Fatalf("start session status=%d body=%s", startSession.Code, startSession.Body.String())
@@ -230,6 +231,7 @@ func TestAPIIntegration_ReverseOperation(t *testing.T) {
 	startSession := requestJSON(t, handler, http.MethodPost, "/sessions/start", map[string]any{
 		"chip_rate": 2,
 		"big_blind": 2,
+		"currency":  "RUB",
 	})
 	var sessionResp struct {
 		SessionID string `json:"session_id"`

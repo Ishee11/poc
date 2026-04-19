@@ -111,6 +111,7 @@ type PlayerSessionStat struct {
 	Status            entity.Status    `json:"status"`
 	ChipRate          int64            `json:"chip_rate"`
 	BigBlind          int64            `json:"big_blind"`
+	Currency          entity.Currency  `json:"currency"`
 	SessionCreatedAt  string           `json:"session_created_at"`
 	SessionFinishedAt *string          `json:"session_finished_at,omitempty"`
 	LastActivityAt    *string          `json:"last_activity_at"`
@@ -129,7 +130,7 @@ type StatsRepository interface {
 
 type DebugAdminRepository interface {
 	RenamePlayer(tx Tx, playerID entity.PlayerID, name string) error
-	UpdateSessionConfig(tx Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64) error
+	UpdateSessionConfig(tx Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error
 	DeletePlayer(tx Tx, playerID entity.PlayerID) error
 	DeleteSession(tx Tx, sessionID entity.SessionID) error
 	DeleteSessionFinish(tx Tx, sessionID entity.SessionID) error

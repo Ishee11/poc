@@ -241,6 +241,38 @@ body:not([data-screen="player"]) .nav-player-only {
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.rate-currency-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(92px, 1fr);
+    gap: 10px;
+    align-items: end;
+}
+
+.rate-currency-row label {
+    min-width: 0;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.status-pill.status-active {
+    color: #a7ead2;
+    background: rgba(88, 208, 167, 0.1);
+    border: 1px solid rgba(88, 208, 167, 0.22);
+}
+
+.status-pill.status-finished {
+    color: #ffbdaf;
+    background: rgba(255, 143, 123, 0.1);
+    border: 1px solid rgba(255, 143, 123, 0.22);
+}
+
 .stat.on-table-warning {
     border-color: rgba(255, 208, 122, 0.62);
     background: rgba(255, 208, 122, 0.13);
@@ -1089,6 +1121,10 @@ pre {
     .filters .compact {
         min-width: 100%;
         max-width: none;
+    }
+
+    .rate-currency-row {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     }
 
     .actions {

@@ -71,13 +71,14 @@ function rid() {
 
 // ===== sessions =====
 
-export function startSession({ sessionId, chipRate, bigBlind }) {
+export function startSession({ sessionId, chipRate, bigBlind, currency }) {
   return request("/sessions/start", {
     method: "POST",
     body: JSON.stringify({
       // session_id: sessionId,
       chip_rate: chipRate,
       big_blind: bigBlind,
+      currency,
     }),
   });
 }
@@ -183,13 +184,14 @@ export function debugDeletePlayer(playerId) {
   });
 }
 
-export function debugUpdateSessionConfig(sessionId, { chipRate, bigBlind }) {
+export function debugUpdateSessionConfig(sessionId, { chipRate, bigBlind, currency }) {
   const params = new URLSearchParams({ session_id: sessionId });
   return request(`/debug/session/config?${params.toString()}`, {
     method: "PATCH",
     body: JSON.stringify({
       chip_rate: chipRate,
       big_blind: bigBlind,
+      currency,
     }),
   });
 }

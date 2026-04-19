@@ -51,7 +51,7 @@ func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := h.updateSessionConfigUC.Execute(entity.SessionID(sessionID), req.ChipRate, req.BigBlind); err != nil {
+	if err := h.updateSessionConfigUC.Execute(entity.SessionID(sessionID), req.ChipRate, req.BigBlind, entity.Currency(req.Currency)); err != nil {
 		writeError(w, err)
 		return
 	}

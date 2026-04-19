@@ -28,7 +28,7 @@ func (r *SessionRepository) FindByID(
 	ctx := context.Background()
 
 	row := tx.QueryRow(ctx, `
-		SELECT id, chip_rate, big_blind, status, created_at, finished_at, total_buy_in, total_cash_out
+		SELECT id, chip_rate, big_blind, currency, status, created_at, finished_at, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
 `, sessionID)
@@ -37,6 +37,7 @@ func (r *SessionRepository) FindByID(
 		id           string
 		chipRate     int64
 		bigBlind     int64
+		currency     entity.Currency
 		status       string
 		createdAt    time.Time
 		finishedAt   *time.Time
@@ -48,6 +49,7 @@ func (r *SessionRepository) FindByID(
 		&id,
 		&chipRate,
 		&bigBlind,
+		&currency,
 		&status,
 		&createdAt,
 		&finishedAt,
@@ -71,6 +73,7 @@ func (r *SessionRepository) FindByID(
 		entity.SessionID(id),
 		rate,
 		bigBlind,
+		currency,
 		entity.Status(status),
 		createdAt,
 		finishedAt,
@@ -90,9 +93,9 @@ func (r *SessionRepository) Save(
 
 	_, err := tx.Exec(ctx, `
 		INSERT INTO sessions (
-			id, chip_rate, big_blind, status, created_at, finished_at, total_buy_in, total_cash_out
+			id, chip_rate, big_blind, currency, status, created_at, finished_at, total_buy_in, total_cash_out
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (id) DO UPDATE SET
 			status = EXCLUDED.status,
 			finished_at = EXCLUDED.finished_at,
@@ -102,6 +105,7 @@ func (r *SessionRepository) Save(
 		session.ID(),
 		session.ChipRate().Value(),
 		session.BigBlind(),
+		session.Currency(),
 		session.Status(),
 		session.CreatedAt(),
 		session.FinishedAt(),
@@ -120,7 +124,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 	row := tx.QueryRow(
 		context.Background(),
 		`
-		SELECT id, chip_rate, big_blind, status, created_at, finished_at, total_buy_in, total_cash_out
+		SELECT id, chip_rate, big_blind, currency, status, created_at, finished_at, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
 		FOR UPDATE
@@ -132,6 +136,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 		sessionID    entity.SessionID
 		chipRate     int64
 		bigBlind     int64
+		currency     entity.Currency
 		status       entity.Status
 		createdAt    time.Time
 		finishedAt   *time.Time
@@ -143,6 +148,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 		&sessionID,
 		&chipRate,
 		&bigBlind,
+		&currency,
 		&status,
 		&createdAt,
 		&finishedAt,
@@ -166,6 +172,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 		sessionID,
 		rate,
 		bigBlind,
+		currency,
 		status,
 		createdAt,
 		finishedAt,

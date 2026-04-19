@@ -11,6 +11,7 @@ type GetSessionResponse struct {
 	Status       entity.Status    `json:"status"`
 	ChipRate     int64            `json:"chip_rate"`
 	BigBlind     int64            `json:"big_blind"`
+	Currency     entity.Currency  `json:"currency"`
 	CreatedAt    string           `json:"created_at"`
 	FinishedAt   *string          `json:"finished_at,omitempty"`
 	TotalBuyIn   int64            `json:"total_buy_in"`
@@ -71,6 +72,7 @@ func (uc *GetSessionUseCase) execute(tx Tx, q GetSessionQuery) (*GetSessionRespo
 		Status:       session.Status(),
 		ChipRate:     session.ChipRate().Value(),
 		BigBlind:     session.BigBlind(),
+		Currency:     session.Currency(),
 		CreatedAt:    session.CreatedAt().Format(time.RFC3339),
 		FinishedAt:   finishedAt,
 		TotalBuyIn:   session.TotalBuyIn(),

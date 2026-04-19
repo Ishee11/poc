@@ -55,6 +55,7 @@ type SessionStat struct {
 	Status       entity.Status    `json:"status"`
 	ChipRate     int64            `json:"chip_rate"`
 	BigBlind     int64            `json:"big_blind"`
+	Currency     entity.Currency  `json:"currency"`
 	CreatedAt    string           `json:"created_at"`
 	FinishedAt   *string          `json:"finished_at,omitempty"`
 	TotalBuyIn   int64            `json:"total_buy_in"`

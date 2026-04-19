@@ -45,7 +45,7 @@ func NewUpdateDebugSessionConfigUseCase(repo DebugAdminRepository, txManager TxM
 	}
 }
 
-func (uc *UpdateDebugSessionConfigUseCase) Execute(sessionID entity.SessionID, chipRate int64, bigBlind int64) error {
+func (uc *UpdateDebugSessionConfigUseCase) Execute(sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error {
 	if sessionID == "" {
 		return entity.ErrSessionNotFound
 	}
@@ -55,9 +55,12 @@ func (uc *UpdateDebugSessionConfigUseCase) Execute(sessionID entity.SessionID, c
 	if bigBlind <= 0 {
 		return valueobject.ErrInvalidChips
 	}
+	if currency != entity.CurrencyRUB && currency != entity.CurrencyUSD {
+		currency = entity.CurrencyRUB
+	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
-		return uc.repo.UpdateSessionConfig(tx, sessionID, chipRate, bigBlind)
+		return uc.repo.UpdateSessionConfig(tx, sessionID, chipRate, bigBlind, currency)
 	})
 }
 

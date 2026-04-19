@@ -45,6 +45,7 @@ func (r *StatsRepository) ListSessions(
 			s.status,
 			s.chip_rate,
 			s.big_blind,
+			s.currency,
 			s.created_at,
 			s.finished_at,
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
@@ -54,7 +55,7 @@ func (r *StatsRepository) ListSessions(
 		LEFT JOIN effective_operations eo ON eo.session_id = s.id
 		WHERE ($1::timestamp IS NULL OR s.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR s.created_at < $2::timestamp)
-		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.created_at, s.finished_at
+		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
 		LIMIT $3
 	`, boundTime(filter.From), boundTime(filter.To), limit)
@@ -73,6 +74,7 @@ func (r *StatsRepository) ListSessions(
 			&session.Status,
 			&session.ChipRate,
 			&session.BigBlind,
+			&session.Currency,
 			&createdAt,
 			&finishedAt,
 			&session.TotalBuyIn,
@@ -252,6 +254,7 @@ func (r *StatsRepository) ListPlayerSessions(
 			s.status,
 			s.chip_rate,
 			s.big_blind,
+			s.currency,
 			s.created_at,
 			s.finished_at,
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
@@ -262,7 +265,7 @@ func (r *StatsRepository) ListPlayerSessions(
 		WHERE eo.player_id = $1
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
-		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.created_at, s.finished_at
+		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY MAX(eo.created_at) DESC, s.created_at DESC
 		LIMIT $4
 		`, playerID, boundTime(filter.From), boundTime(filter.To), filterLimit(filter.Limit, 100))
@@ -282,6 +285,7 @@ func (r *StatsRepository) ListPlayerSessions(
 			&stat.Status,
 			&stat.ChipRate,
 			&stat.BigBlind,
+			&stat.Currency,
 			&sessionCreatedAt,
 			&sessionFinishedAt,
 			&stat.BuyInChips,

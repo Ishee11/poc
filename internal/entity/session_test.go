@@ -16,7 +16,7 @@ func mustRate(t *testing.T) valueobject.ChipRate {
 }
 
 func newSession(t *testing.T) *Session {
-	return NewSession("s1", mustRate(t), 2, time.Now())
+	return NewSession("s1", mustRate(t), 2, CurrencyRUB, time.Now())
 }
 
 func TestSession_BuyIn(t *testing.T) {

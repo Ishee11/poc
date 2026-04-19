@@ -29,13 +29,14 @@ func (r *DebugAdminRepository) RenamePlayer(tx usecase.Tx, playerID entity.Playe
 	return nil
 }
 
-func (r *DebugAdminRepository) UpdateSessionConfig(tx usecase.Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64) error {
+func (r *DebugAdminRepository) UpdateSessionConfig(tx usecase.Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error {
 	tag, err := tx.Exec(context.Background(), `
 		UPDATE sessions
 		SET chip_rate = $2,
-			big_blind = $3
+			big_blind = $3,
+			currency = $4
 		WHERE id = $1
-	`, sessionID, chipRate, bigBlind)
+	`, sessionID, chipRate, bigBlind, currency)
 	if err != nil {
 		return err
 	}

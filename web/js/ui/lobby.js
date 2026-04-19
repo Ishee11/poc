@@ -49,10 +49,10 @@ export function renderSessions() {
           <div class="row-main">
             <div class="row-title">${escapeHtml(formatDate(session.created_at))}</div>
             <div class="inline-stats">
-              <span>${escapeHtml(statusLabel(session.status || "-"))}</span>
-              <span>${escapeHtml(t("session.bigBlind"))}: ${formatNumber(session.big_blind)}</span>
+              <span class="status-pill status-${escapeHtml(session.status || "unknown")}">${escapeHtml(statusLabel(session.status || "-"))}</span>
+              <span>${escapeHtml(t("session.bigBlindShort"))}: ${formatNumber(session.big_blind)}</span>
               <span>${escapeHtml(t("common.players"))}: ${formatNumber(session.player_count)}</span>
-              <span>${escapeHtml(t("common.buyIn"))}: ${formatNumber(session.total_buy_in)}</span>
+              <span>${escapeHtml(t("common.totalBuyIn"))}: ${formatNumber(session.total_buy_in)}</span>
             </div>
           </div>
         </div>

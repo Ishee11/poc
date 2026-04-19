@@ -1,5 +1,5 @@
 import { createPlayer, startSession } from "./api.js";
-import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
+import { getLanguage, initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
 import {
   firstActiveSessionId,
@@ -65,12 +65,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const startForm = document.getElementById("start-session-form");
   const chipInput = document.getElementById("start-chip-rate");
   const bigBlindInput = document.getElementById("start-big-blind");
-  if (startForm && chipInput && bigBlindInput) {
+  const currencyInput = document.getElementById("start-currency");
+  if (currencyInput) {
+    currencyInput.value = defaultCurrency();
+    currencyInput.addEventListener("change", () => {
+      currencyInput.dataset.userChanged = "true";
+    });
+  }
+  if (startForm && chipInput && bigBlindInput && currencyInput) {
     startForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const chipRate = Number(chipInput.value);
       const bigBlind = Number(bigBlindInput.value);
+      const currency = currencyInput.value || defaultCurrency();
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
         showNotice(t("notice.validChipRate"), "error");
         return;
@@ -82,12 +90,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const confirmed = await openModal({
         title: t("modal.startTitle"),
-        description: t("modal.startDescription", { chipRate, bigBlind }),
+        description: t("modal.startDescription", {
+          chipRate,
+          bigBlind,
+          currencySymbol: currencySymbol(currency),
+        }),
         confirmText: t("lobby.startSession"),
       });
       if (!confirmed) return;
 
-      const res = await startSession({ chipRate, bigBlind });
+      const res = await startSession({ chipRate, bigBlind, currency });
       if (!res.ok || !res.body?.session_id) {
         showNotice(describeError(res, t("error.failedStartSession")), "error");
         return;
@@ -141,6 +153,10 @@ function initLanguageSelect() {
 }
 
 function renderCurrentLanguage() {
+  const currencyInput = document.getElementById("start-currency");
+  if (currencyInput && !currencyInput.dataset.userChanged) {
+    currencyInput.value = defaultCurrency();
+  }
   renderSessions();
   syncSelect();
   renderPlayersOverview();
@@ -155,6 +171,14 @@ function renderCurrentLanguage() {
   if (state.selectedPlayerDetail) {
     renderPlayerDetail();
   }
+}
+
+function defaultCurrency() {
+  return getLanguage() === "ru" ? "RUB" : "USD";
+}
+
+function currencySymbol(currency) {
+  return currency === "USD" ? "$" : "₽";
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {

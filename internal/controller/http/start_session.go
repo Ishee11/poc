@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
 
@@ -32,6 +33,7 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	id, err := h.startSessionUC.Execute(command.StartSessionCommand{
 		ChipRate: req.ChipRate,
 		BigBlind: req.BigBlind,
+		Currency: entity.Currency(req.Currency),
 	})
 
 	if err != nil {

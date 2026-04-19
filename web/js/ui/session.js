@@ -103,6 +103,7 @@ export function renderSession() {
   }
   if (chipRate) {
     chipRate.textContent = t("session.chipRateValue", {
+      currencySymbol: currencySymbol(session.currency),
       chips: formatNumber(session.chipRate),
     });
   }
@@ -581,6 +582,16 @@ async function confirmDebugUpdateSessionConfig() {
         value: state.session.chipRate,
       },
       {
+        name: "currency",
+        label: t("lobby.currency"),
+        type: "select",
+        value: state.session.currency || "RUB",
+        options: [
+          { value: "RUB", label: "₽" },
+          { value: "USD", label: "$" },
+        ],
+      },
+      {
         name: "big_blind",
         label: t("session.bigBlind"),
         type: "number",
@@ -593,6 +604,7 @@ async function confirmDebugUpdateSessionConfig() {
 
   const chipRate = Number(values.chip_rate);
   const bigBlind = Number(values.big_blind);
+  const currency = values.currency === "USD" ? "USD" : "RUB";
   if (!Number.isFinite(chipRate) || chipRate <= 0) {
     showNotice(t("notice.validChipRate"), "error");
     return;
@@ -605,6 +617,7 @@ async function confirmDebugUpdateSessionConfig() {
   const res = await debugUpdateSessionConfig(state.activeSessionId, {
     chipRate,
     bigBlind,
+    currency,
   });
   if (!res.ok) {
     showNotice(describeError(res, t("error.failedUpdateSessionConfig")), "error");
@@ -688,12 +701,17 @@ function hydrateSession(raw) {
     status: raw.status,
     chipRate: raw.chip_rate,
     bigBlind: raw.big_blind,
+    currency: raw.currency || "RUB",
     createdAt: raw.created_at,
     finishedAt: raw.finished_at,
     totalBuyIn: raw.total_buy_in,
     totalCashOut: raw.total_cash_out,
     totalChips: raw.total_chips,
   };
+}
+
+function currencySymbol(currency) {
+  return currency === "USD" ? "$" : "₽";
 }
 
 function findPlayerName(playerId) {

@@ -57,10 +57,13 @@ func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) (
 	if cmd.BigBlind <= 0 {
 		return "", valueobject.ErrInvalidChips
 	}
+	if cmd.Currency != entity.CurrencyRUB && cmd.Currency != entity.CurrencyUSD {
+		cmd.Currency = entity.CurrencyRUB
+	}
 
 	id := uc.idGenerator.New()
 
-	session := entity.NewSession(id, rate, cmd.BigBlind, time.Now())
+	session := entity.NewSession(id, rate, cmd.BigBlind, cmd.Currency, time.Now())
 
 	if err := uc.sessionWriter.Save(tx, session); err != nil {
 		return "", err

@@ -3,8 +3,9 @@ package http
 import "github.com/ishee11/poc/internal/entity"
 
 type StartSessionRequest struct {
-	ChipRate int64 `json:"chip_rate"`
-	BigBlind int64 `json:"big_blind"`
+	ChipRate int64  `json:"chip_rate"`
+	BigBlind int64  `json:"big_blind"`
+	Currency string `json:"currency"`
 }
 
 type FinishSessionRequest struct {
@@ -46,8 +47,9 @@ type RenamePlayerRequest struct {
 }
 
 type UpdateSessionConfigRequest struct {
-	ChipRate int64 `json:"chip_rate"`
-	BigBlind int64 `json:"big_blind"`
+	ChipRate int64  `json:"chip_rate"`
+	BigBlind int64  `json:"big_blind"`
+	Currency string `json:"currency"`
 }
 
 type CreatePlayerResponse struct {
