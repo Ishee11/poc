@@ -24,7 +24,7 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 	defer r.Body.Close()
 
 	if r.Header.Get("Content-Type") != "application/json" {
-		http.Error(w, "unsupported content type", http.StatusUnsupportedMediaType)
+		writeErr(w, r, http.StatusUnsupportedMediaType, "unsupported_content_type", nil)
 		return
 	}
 
@@ -33,12 +33,12 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 	var req ReverseOperationRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
 
 	if req.RequestID == "" || req.TargetOperationID == "" {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "invalid_request", nil)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 	})
 
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

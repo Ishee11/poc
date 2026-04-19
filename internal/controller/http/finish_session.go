@@ -30,23 +30,17 @@ func (h *SessionHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
 	var req FinishSessionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "bad_request",
-		})
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
 
 	if req.RequestID == "" {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "request_id_required",
-		})
+		writeErr(w, r, http.StatusBadRequest, "request_id_required", nil)
 		return
 	}
 
 	if req.SessionID == "" {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "session_id_required",
-		})
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
 
@@ -56,7 +50,7 @@ func (h *SessionHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

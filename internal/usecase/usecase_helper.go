@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -52,7 +51,6 @@ func (h *Helper) BuildPlayer(name string) (*entity.Player, error) {
 	name = strings.TrimSpace(name)
 
 	id := h.playerIDGenerator.New()
-	fmt.Println("DEBUG playerID:", id)
 	return entity.NewPlayer(id, name)
 }
 

@@ -24,13 +24,13 @@ func (h *PlayerHandler) CreatePlayer(w http.ResponseWriter, r *http.Request) {
 	var req CreatePlayerRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
 
 	// базовая валидация
 	if req.RequestID == "" || req.Name == "" {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "invalid_request", nil)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (h *PlayerHandler) CreatePlayer(w http.ResponseWriter, r *http.Request) {
 		Name:      req.Name,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

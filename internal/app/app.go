@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/ishee11/poc/pkg/logger"
 )
 
 func Run() error {
@@ -12,6 +14,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
+	logger.Configure(cfg.LogLevel)
 
 	// db
 	db, err := NewDB(ctx, cfg.DatabaseURL)

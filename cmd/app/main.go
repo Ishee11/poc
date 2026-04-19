@@ -6,13 +6,18 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/ishee11/poc/internal/app"
+	"github.com/ishee11/poc/pkg/logger"
 )
 
 func main() {
+	logger.Configure(os.Getenv("LOG_LEVEL"))
+
 	if err := app.Run(); err != nil {
-		log.Fatal(err)
+		slog.Error("app_failed", "err", err)
+		os.Exit(1)
 	}
 }

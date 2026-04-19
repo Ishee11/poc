@@ -14,8 +14,9 @@ type FinishSessionRequest struct {
 }
 
 type ErrorResponse struct {
-	Error   string      `json:"error"`
-	Details interface{} `json:"details,omitempty"`
+	Error     string      `json:"error"`
+	RequestID string      `json:"request_id,omitempty"`
+	Details   interface{} `json:"details,omitempty"`
 }
 
 type ReverseOperationRequest struct {

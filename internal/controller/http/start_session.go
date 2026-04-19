@@ -26,7 +26,7 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	var req StartSessionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
 
@@ -37,7 +37,7 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

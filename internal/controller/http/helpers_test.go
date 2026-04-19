@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,8 +28,9 @@ func TestWriteError(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
-			writeError(rec, tc.err)
+			writeError(rec, req, tc.err)
 
 			if rec.Code != tc.wantStatus {
 				t.Fatalf("expected status %d, got %d", tc.wantStatus, rec.Code)
@@ -53,8 +54,9 @@ func TestWriteError(t *testing.T) {
 }
 
 func TestWriteError_SessionNotBalancedDetails(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
-	writeError(rec, &entity.SessionNotBalancedError{RemainingChips: 150})
+	writeError(rec, req, &entity.SessionNotBalancedError{RemainingChips: 150})
 
 	if rec.Code != http.StatusConflict {
 		t.Fatalf("expected status 409, got %d", rec.Code)
@@ -95,13 +97,10 @@ func TestParseDateRange(t *testing.T) {
 
 func TestRequestIDIsAvailableToLoggingMiddleware(t *testing.T) {
 	var logs bytes.Buffer
-	originalOutput := log.Writer()
-	originalFlags := log.Flags()
-	log.SetOutput(&logs)
-	log.SetFlags(0)
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 	t.Cleanup(func() {
-		log.SetOutput(originalOutput)
-		log.SetFlags(originalFlags)
+		slog.SetDefault(originalLogger)
 	})
 
 	handler := RequestIDMiddleware(LoggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -123,13 +122,10 @@ func TestRequestIDIsAvailableToLoggingMiddleware(t *testing.T) {
 
 func TestRequestIDMiddlewareGeneratesIDForLogging(t *testing.T) {
 	var logs bytes.Buffer
-	originalOutput := log.Writer()
-	originalFlags := log.Flags()
-	log.SetOutput(&logs)
-	log.SetFlags(0)
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 	t.Cleanup(func() {
-		log.SetOutput(originalOutput)
-		log.SetFlags(originalFlags)
+		slog.SetDefault(originalLogger)
 	})
 
 	handler := RequestIDMiddleware(LoggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -146,5 +142,42 @@ func TestRequestIDMiddlewareGeneratesIDForLogging(t *testing.T) {
 	}
 	if got := logs.String(); !strings.Contains(got, "request_id="+reqID) {
 		t.Fatalf("expected generated request id in log, got %q", got)
+	}
+}
+
+func TestRecoveryMiddlewareWritesJSONErrorAndLogsPanic(t *testing.T) {
+	var logs bytes.Buffer
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+	})
+
+	handler := RequestIDMiddleware(LoggingMiddleware(RecoveryMiddleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic("boom")
+	}))))
+
+	req := httptest.NewRequest(http.MethodGet, "/panic", nil)
+	req.Header.Set("X-Request-ID", "req-panic")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rec.Code)
+	}
+
+	var body ErrorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if body.Error != "internal_error" || body.RequestID != "req-panic" {
+		t.Fatalf("unexpected body: %+v", body)
+	}
+
+	gotLogs := logs.String()
+	if !strings.Contains(gotLogs, "panic_recovered") ||
+		!strings.Contains(gotLogs, "request_id=req-panic") ||
+		!strings.Contains(gotLogs, "error_code=internal_error") {
+		t.Fatalf("expected panic and access log fields, got %q", gotLogs)
 	}
 }

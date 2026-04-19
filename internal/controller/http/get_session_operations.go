@@ -24,7 +24,7 @@ import (
 func (h *SessionHandler) GetSessionOperations(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {
-		http.Error(w, "session_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (h *SessionHandler) GetSessionOperations(w http.ResponseWriter, r *http.Req
 		Offset:    offset,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

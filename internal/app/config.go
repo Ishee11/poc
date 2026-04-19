@@ -8,12 +8,14 @@ import (
 type Config struct {
 	DatabaseURL string
 	HTTPPort    string
+	LogLevel    string
 }
 
 func Load() (*Config, error) {
 	cfg := &Config{
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		HTTPPort:    getEnv("HTTP_PORT", "8080"),
+		LogLevel:    getEnv("LOG_LEVEL", "info"),
 	}
 
 	if cfg.DatabaseURL == "" {

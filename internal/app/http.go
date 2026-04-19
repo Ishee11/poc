@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,10 +25,11 @@ func NewHTTPServer(handler http.Handler, port string) *HTTPServer {
 
 func (s *HTTPServer) Start() error {
 	go func() {
-		log.Printf("server started on %s\n", s.srv.Addr)
+		slog.Info("server_started", "addr", s.srv.Addr)
 
 		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen error: %v", err)
+			slog.Error("listen_failed", "err", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -40,7 +41,7 @@ func (s *HTTPServer) WaitForShutdown() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	<-quit
-	log.Println("shutting down server...")
+	slog.Info("server_stopping")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -49,6 +50,6 @@ func (s *HTTPServer) WaitForShutdown() error {
 		return err
 	}
 
-	log.Println("server stopped")
+	slog.Info("server_stopped")
 	return nil
 }

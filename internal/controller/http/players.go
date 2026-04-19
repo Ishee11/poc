@@ -15,7 +15,7 @@ func (h *PlayerHandler) Players(w http.ResponseWriter, r *http.Request) {
 		h.CreatePlayer(w, r)
 	default:
 		w.Header().Set("Allow", "GET, POST")
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 	}
 }
 
@@ -35,7 +35,7 @@ func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 		Offset: offset,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

@@ -24,7 +24,7 @@ import (
 func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "invalid_date_range", map[string]any{"message": err.Error()})
 		return
 	}
 
@@ -39,7 +39,7 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		To:    to,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
@@ -61,7 +61,7 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "invalid_date_range", map[string]any{"message": err.Error()})
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 		To:    to,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
@@ -99,13 +99,13 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 func (h *PlayerHandler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "invalid_date_range", map[string]any{"message": err.Error()})
 		return
 	}
 
 	playerID := r.URL.Query().Get("player_id")
 	if playerID == "" {
-		http.Error(w, "player_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "player_id_required", nil)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *PlayerHandler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
 		To:       to,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

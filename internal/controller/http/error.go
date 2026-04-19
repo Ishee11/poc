@@ -3,71 +3,148 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
 )
 
-func writeError(w http.ResponseWriter, err error) {
+type apiError struct {
+	status  int
+	code    string
+	details any
+}
+
+func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	if err == nil {
 		return
 	}
 
+	apiErr := mapError(err)
+	if apiErr.status >= http.StatusInternalServerError {
+		slog.ErrorContext(
+			r.Context(),
+			"request_error",
+			"request_id", GetRequestID(r.Context()),
+			"error_code", apiErr.code,
+			"err", err,
+		)
+	}
+
+	writeErr(w, r, apiErr.status, apiErr.code, apiErr.details)
+}
+
+func mapError(err error) apiError {
 	var balancedErr *entity.SessionNotBalancedError
 	if errors.As(err, &balancedErr) {
-		writeErr(w, http.StatusConflict, "session_not_balanced", map[string]any{
-			"remaining_chips": balancedErr.RemainingChips,
-		})
-		return
+		return apiError{
+			status: http.StatusConflict,
+			code:   "session_not_balanced",
+			details: map[string]any{
+				"remaining_chips": balancedErr.RemainingChips,
+			},
+		}
 	}
 
 	switch {
 	case errors.Is(err, entity.ErrSessionNotFound):
-		writeErr(w, http.StatusNotFound, "session_not_found", nil)
+		return apiError{status: http.StatusNotFound, code: "session_not_found"}
 
 	case errors.Is(err, entity.ErrSessionAlreadyExists):
-		writeErr(w, http.StatusConflict, "session_already_exists", nil)
+		return apiError{status: http.StatusConflict, code: "session_already_exists"}
 
 	case errors.Is(err, entity.ErrSessionFinished):
-		writeErr(w, http.StatusConflict, "session_finished", nil)
+		return apiError{status: http.StatusConflict, code: "session_finished"}
 
 	case errors.Is(err, entity.ErrSessionNotActive):
-		writeErr(w, http.StatusConflict, "session_not_active", nil)
+		return apiError{status: http.StatusConflict, code: "session_not_active"}
+
+	case errors.Is(err, entity.ErrSessionNotCreated):
+		return apiError{status: http.StatusConflict, code: "session_not_created"}
+
+	case errors.Is(err, entity.ErrSessionNotFinished):
+		return apiError{status: http.StatusConflict, code: "session_not_finished"}
 
 	case errors.Is(err, entity.ErrInvalidRequestID):
-		writeErr(w, http.StatusBadRequest, "invalid_request_id", nil)
+		return apiError{status: http.StatusBadRequest, code: "invalid_request_id"}
 
 	case errors.Is(err, entity.ErrInvalidChips):
-		writeErr(w, http.StatusBadRequest, "invalid_chips", nil)
+		return apiError{status: http.StatusBadRequest, code: "invalid_chips"}
+
+	case errors.Is(err, entity.ErrInvalidChipAmount):
+		return apiError{status: http.StatusBadRequest, code: "invalid_chip_amount"}
 
 	case errors.Is(err, entity.ErrPlayerNotFound):
-		writeErr(w, http.StatusNotFound, "player_not_found", nil)
+		return apiError{status: http.StatusNotFound, code: "player_not_found"}
+
+	case errors.Is(err, entity.ErrPlayerNotInGame):
+		return apiError{status: http.StatusConflict, code: "player_not_in_game"}
+
+	case errors.Is(err, entity.ErrPlayerStillInGame):
+		return apiError{status: http.StatusConflict, code: "player_still_in_game"}
+
+	case errors.Is(err, entity.ErrPlayersStillInGame):
+		return apiError{status: http.StatusConflict, code: "players_still_in_game"}
+
+	case errors.Is(err, entity.ErrInvalidPlayerID):
+		return apiError{status: http.StatusBadRequest, code: "invalid_player_id"}
+
+	case errors.Is(err, entity.ErrInvalidPlayerName):
+		return apiError{status: http.StatusBadRequest, code: "invalid_player_name"}
 
 	case errors.Is(err, entity.ErrInvalidCashOut):
-		writeErr(w, http.StatusBadRequest, "invalid_cash_out", nil)
+		return apiError{status: http.StatusBadRequest, code: "invalid_cash_out"}
 
 	case errors.Is(err, entity.ErrInvalidOperation):
-		writeErr(w, http.StatusBadRequest, "invalid_operation", nil)
+		return apiError{status: http.StatusBadRequest, code: "invalid_operation"}
+
+	case errors.Is(err, entity.ErrInvalidOperationType):
+		return apiError{status: http.StatusBadRequest, code: "invalid_operation_type"}
+
+	case errors.Is(err, entity.ErrInvalidReference):
+		return apiError{status: http.StatusBadRequest, code: "invalid_reference"}
 
 	case errors.Is(err, entity.ErrOperationNotFound):
-		writeErr(w, http.StatusNotFound, "operation_not_found", nil)
+		return apiError{status: http.StatusNotFound, code: "operation_not_found"}
 
 	case errors.Is(err, entity.ErrOperationAlreadyReversed):
-		writeErr(w, http.StatusConflict, "operation_already_reversed", nil)
+		return apiError{status: http.StatusConflict, code: "operation_already_reversed"}
+
+	case errors.Is(err, entity.ErrNotEnoughChipsOnTable):
+		return apiError{status: http.StatusConflict, code: "not_enough_chips_on_table"}
+
+	case errors.Is(err, entity.ErrInsufficientTableChips):
+		return apiError{status: http.StatusConflict, code: "insufficient_table_chips"}
+
+	case errors.Is(err, entity.ErrInvalidMoney):
+		return apiError{status: http.StatusBadRequest, code: "invalid_money"}
+
+	case errors.Is(err, entity.ErrUnbalancedSession):
+		return apiError{status: http.StatusConflict, code: "unbalanced_session"}
+
+	case errors.Is(err, entity.ErrTableNotSettled):
+		return apiError{status: http.StatusConflict, code: "table_not_settled"}
 
 	case errors.Is(err, entity.ErrDuplicateRequest):
-		w.WriteHeader(http.StatusOK)
+		return apiError{status: http.StatusOK, code: "duplicate_request"}
 
 	default:
-		writeErr(w, http.StatusInternalServerError, "internal_error", nil)
+		return apiError{status: http.StatusInternalServerError, code: "internal_error"}
 	}
 }
 
 // --- helper ---
-func writeErr(w http.ResponseWriter, status int, code string, details any) {
+func writeErr(w http.ResponseWriter, r *http.Request, status int, code string, details any) {
+	setResponseErrorCode(w, code)
+	if status == http.StatusOK && details == nil {
+		w.WriteHeader(status)
+		return
+	}
+
 	writeJSON(w, status, ErrorResponse{
-		Error:   code,
-		Details: details,
+		Error:     code,
+		RequestID: GetRequestID(r.Context()),
+		Details:   details,
 	})
 }
 

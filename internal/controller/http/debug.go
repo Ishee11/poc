@@ -9,24 +9,24 @@ import (
 
 func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
 
 	playerID := r.URL.Query().Get("player_id")
 	if playerID == "" {
-		http.Error(w, "player_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "player_id_required", nil)
 		return
 	}
 
 	var req RenamePlayerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
 
 	if err := h.renamePlayerUC.Execute(entity.PlayerID(playerID), req.Name); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
@@ -35,24 +35,24 @@ func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 
 func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
 
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {
-		http.Error(w, "session_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
 
 	var req UpdateSessionConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
 
 	if err := h.updateSessionConfigUC.Execute(entity.SessionID(sessionID), req.ChipRate, req.BigBlind, entity.Currency(req.Currency)); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
@@ -61,18 +61,18 @@ func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Reques
 
 func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
 
 	playerID := r.URL.Query().Get("player_id")
 	if playerID == "" {
-		http.Error(w, "player_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "player_id_required", nil)
 		return
 	}
 
 	if err := h.deletePlayerUC.Execute(entity.PlayerID(playerID)); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
@@ -81,18 +81,18 @@ func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 
 func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
 
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {
-		http.Error(w, "session_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
 
 	if err := h.deleteSessionUC.Execute(entity.SessionID(sessionID)); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
@@ -101,18 +101,18 @@ func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 
 func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
 
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {
-		http.Error(w, "session_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
 
 	if err := h.deleteSessionFinishUC.Execute(entity.SessionID(sessionID)); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 

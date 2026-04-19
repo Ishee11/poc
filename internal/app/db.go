@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -46,14 +46,14 @@ func connectWithRetry(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 		pool, err = pgxpool.New(ctx, dsn)
 		if err == nil {
 			if pingErr := pool.Ping(ctx); pingErr == nil {
-				log.Println("connected to db")
+				slog.Info("db_connected")
 				return pool, nil
 			} else {
 				err = pingErr
 			}
 		}
 
-		log.Println("waiting for db...")
+		slog.Warn("db_connect_retry", "attempt", i+1, "max_attempts", 10, "err", err)
 		time.Sleep(2 * time.Second)
 	}
 
@@ -65,6 +65,6 @@ func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("migrations failed: %w", err)
 	}
 
-	log.Println("migrations applied")
+	slog.Info("db_migrations_applied")
 	return nil
 }

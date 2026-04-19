@@ -22,7 +22,7 @@ func (h *SessionHandler) GetSessionPlayers(w http.ResponseWriter, r *http.Reques
 	sessionID := r.URL.Query().Get("session_id")
 
 	if sessionID == "" {
-		http.Error(w, "session_id is required", http.StatusBadRequest)
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
 
@@ -30,7 +30,7 @@ func (h *SessionHandler) GetSessionPlayers(w http.ResponseWriter, r *http.Reques
 		SessionID: entity.SessionID(sessionID),
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
