@@ -182,21 +182,17 @@ func (r *StatsRepository) GetPlayerOverall(
 			  AND rev.id IS NULL
 		)
 		SELECT
-			COALESCE(MAX(p.name), $1),
+			p.name,
 			COUNT(DISTINCT eo.session_id),
 			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
-				- COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
 			MAX(eo.created_at)
-		FROM effective_operations eo
-		JOIN sessions s ON s.id = eo.session_id
-		LEFT JOIN players p ON p.id = eo.player_id
-		WHERE eo.player_id = $1
+		FROM players p
+		LEFT JOIN effective_operations eo ON eo.player_id = p.id
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
+		WHERE p.id = $1
+		GROUP BY p.id, p.name
 `, playerID, boundTime(filter.From), boundTime(filter.To))
 
 	var stat usecase.PlayerOverallStat
@@ -208,9 +204,6 @@ func (r *StatsRepository) GetPlayerOverall(
 		&stat.SessionsCount,
 		&stat.TotalBuyIn,
 		&stat.TotalCashOut,
-		&stat.TotalBuyInMoney,
-		&stat.TotalCashOutMoney,
-		&stat.ProfitMoney,
 		&lastActivity,
 	); err != nil {
 		return nil, err
@@ -218,18 +211,85 @@ func (r *StatsRepository) GetPlayerOverall(
 
 	stat.ProfitChips = stat.TotalCashOut - stat.TotalBuyIn
 	if stat.SessionsCount > 0 {
-		stat.AvgProfitPerSession = float64(stat.ProfitMoney) / float64(stat.SessionsCount)
 		stat.AvgBuyInPerSession = float64(stat.TotalBuyIn) / float64(stat.SessionsCount)
-	}
-	if stat.TotalBuyInMoney > 0 {
-		stat.ROIPercent = float64(stat.ProfitMoney) / float64(stat.TotalBuyInMoney) * 100
 	}
 	if lastActivity != nil {
 		formatted := lastActivity.Format(time.RFC3339)
 		stat.LastActivityAt = &formatted
 	}
 
+	moneyByCurrency, err := r.getPlayerMoneyByCurrency(tx, playerID, filter)
+	if err != nil {
+		return nil, err
+	}
+	stat.MoneyByCurrency = moneyByCurrency
+	if len(moneyByCurrency) == 1 {
+		stat.TotalBuyInMoney = moneyByCurrency[0].TotalBuyInMoney
+		stat.TotalCashOutMoney = moneyByCurrency[0].TotalCashOutMoney
+		stat.ProfitMoney = moneyByCurrency[0].ProfitMoney
+		stat.AvgProfitPerSession = moneyByCurrency[0].AvgProfitPerSession
+		stat.ROIPercent = moneyByCurrency[0].ROIPercent
+	}
+
 	return &stat, nil
+}
+
+func (r *StatsRepository) getPlayerMoneyByCurrency(
+	tx usecase.Tx,
+	playerID entity.PlayerID,
+	filter usecase.PlayerStatsFilter,
+) ([]usecase.PlayerCurrencyStat, error) {
+	ctx := context.Background()
+	rows, err := tx.Query(ctx, `
+		WITH effective_operations AS (
+			SELECT o.id, o.session_id, o.player_id, o.type, o.chips, o.created_at
+			FROM operations o
+			LEFT JOIN operations rev
+				ON rev.reference_id = o.id
+				AND rev.type = 'reversal'
+			WHERE o.type <> 'reversal'
+			  AND rev.id IS NULL
+		)
+		SELECT
+			s.currency,
+			COUNT(DISTINCT eo.session_id),
+			COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
+		FROM effective_operations eo
+		JOIN sessions s ON s.id = eo.session_id
+		WHERE eo.player_id = $1
+		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
+		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
+		GROUP BY s.currency
+		ORDER BY s.currency
+	`, playerID, boundTime(filter.From), boundTime(filter.To))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]usecase.PlayerCurrencyStat, 0)
+	for rows.Next() {
+		var stat usecase.PlayerCurrencyStat
+		if err := rows.Scan(
+			&stat.Currency,
+			&stat.SessionsCount,
+			&stat.TotalBuyInMoney,
+			&stat.TotalCashOutMoney,
+		); err != nil {
+			return nil, err
+		}
+		stat.ProfitMoney = stat.TotalCashOutMoney - stat.TotalBuyInMoney
+		if stat.SessionsCount > 0 {
+			stat.AvgProfitPerSession = float64(stat.ProfitMoney) / float64(stat.SessionsCount)
+		}
+		if stat.TotalBuyInMoney > 0 {
+			stat.ROIPercent = float64(stat.ProfitMoney) / float64(stat.TotalBuyInMoney) * 100
+		}
+		result = append(result, stat)
+	}
+
+	return result, rows.Err()
 }
 
 func (r *StatsRepository) ListPlayerSessions(

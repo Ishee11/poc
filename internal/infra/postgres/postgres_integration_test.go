@@ -265,6 +265,9 @@ func TestStatsRepository_Integration(t *testing.T) {
 		if player.PlayerName != "Alice" || player.ProfitChips != -60 || player.ProfitMoney != -30 {
 			t.Fatalf("unexpected player overall: %+v", player)
 		}
+		if len(player.MoneyByCurrency) != 1 || player.MoneyByCurrency[0].Currency != entity.CurrencyRUB {
+			t.Fatalf("unexpected player currency stats: %+v", player.MoneyByCurrency)
+		}
 		if player.TotalBuyInMoney != 50 || player.TotalCashOutMoney != 20 {
 			t.Fatalf("unexpected player money totals: %+v", player)
 		}

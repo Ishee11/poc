@@ -178,7 +178,8 @@ export function renderPlayerDetail() {
   if (title) title.textContent = playerName;
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
-    linkedUser.textContent = `${t("player.linkedUser")}: ${t("player.noLinkedUser")}`;
+    linkedUser.textContent = "";
+    linkedUser.hidden = true;
   }
   renderPlayerHeaderDebugActions(player);
   renderPlayerDebugActions(player);
@@ -224,31 +225,11 @@ export function renderPlayerDetail() {
           <div>${formatNumber(player.total_cash_out)}</div>
         </div>
         <div class="stat">
-          ${statLabel("player.totalBuyInMoney", "player.hint.totalBuyInMoney")}
-          <div>${formatNumber(player.total_buy_in_money)}</div>
-        </div>
-        <div class="stat">
-          ${statLabel("player.totalCashOutMoney", "player.hint.totalCashOutMoney")}
-          <div>${formatNumber(player.total_cash_out_money)}</div>
-        </div>
-        <div class="stat">
-          ${statLabel("player.pnl", "player.hint.pnl")}
-          <div class="${Number(player.profit_money) >= 0 ? "profit-positive" : "profit-negative"}">${formatNumber(player.profit_money)}</div>
-        </div>
-        <div class="stat">
-          ${statLabel("player.avgProfitPerSession", "player.hint.avgProfitPerSession")}
-          <div class="${Number(player.avg_profit_per_session) >= 0 ? "profit-positive" : "profit-negative"}">${formatNumber(roundMetric(player.avg_profit_per_session))}</div>
-        </div>
-        <div class="stat">
-          ${statLabel("player.roi", "player.hint.roi")}
-          <div class="${Number(player.roi_percent) >= 0 ? "profit-positive" : "profit-negative"}">${formatPercent(player.roi_percent)}</div>
-        </div>
-        <div class="stat">
           ${statLabel("player.avgBuyInPerSession", "player.hint.avgBuyInPerSession")}
           <div>${formatNumber(roundMetric(player.avg_buy_in_per_session))}</div>
         </div>
       </div>
-      ${state.debugMode ? renderProfitChart(sessions) : ""}
+      ${renderCurrencyStats(player.money_by_currency || [])}
       <div class="table-wrap">
         <table>
           <thead>
@@ -464,6 +445,53 @@ function normalizePlayerDetail(raw) {
   };
 }
 
+function renderCurrencyStats(stats) {
+  if (!stats.length) {
+    return "";
+  }
+
+  return `
+    <div class="stats player-stats">
+      ${stats.map(renderCurrencyStatCards).join("")}
+    </div>
+  `;
+}
+
+function renderCurrencyStatCards(stat) {
+  const currency = stat.currency || "RUB";
+  const symbol = currencySymbol(currency);
+  const profit = Number(stat.profit_money) || 0;
+  const avgProfit = Number(stat.avg_profit_per_session) || 0;
+  const roi = Number(stat.roi_percent) || 0;
+
+  return `
+    <div class="stat currency-stat-heading">
+      <div class="stat-label">${escapeHtml(currency)}</div>
+      <div>${escapeHtml(symbol)}</div>
+    </div>
+    <div class="stat">
+      ${statLabel("player.totalBuyInMoney", "player.hint.totalBuyInMoney")}
+      <div>${formatMoney(stat.total_buy_in_money, currency)}</div>
+    </div>
+    <div class="stat">
+      ${statLabel("player.totalCashOutMoney", "player.hint.totalCashOutMoney")}
+      <div>${formatMoney(stat.total_cash_out_money, currency)}</div>
+    </div>
+    <div class="stat">
+      ${statLabel("player.pnl", "player.hint.pnl")}
+      <div class="${profit >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(profit, currency)}</div>
+    </div>
+    <div class="stat">
+      ${statLabel("player.avgProfitPerSession", "player.hint.avgProfitPerSession")}
+      <div class="${avgProfit >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(roundMetric(avgProfit), currency)}</div>
+    </div>
+    <div class="stat">
+      ${statLabel("player.roi", "player.hint.roi")}
+      <div class="${roi >= 0 ? "profit-positive" : "profit-negative"}">${formatPercent(roi)}</div>
+    </div>
+  `;
+}
+
 function statLabel(labelKey, hintKey) {
   const hint = t(hintKey);
   const label = t(labelKey);
@@ -505,48 +533,4 @@ function periodSummary() {
   if (from && to) return `${t("player.from")}: ${from} · ${t("player.to")}: ${to}`;
   if (from) return `${t("player.from")}: ${from}`;
   return `${t("player.to")}: ${to}`;
-}
-
-function renderProfitChart(sessions) {
-  const points = [...sessions]
-    .sort((a, b) => String(a.session_created_at).localeCompare(String(b.session_created_at)))
-    .map((session) => Number(session.profit_money) || 0)
-    .reduce((acc, profit) => {
-      const previous = acc.length ? acc[acc.length - 1] : 0;
-      acc.push(previous + profit);
-      return acc;
-    }, []);
-
-  if (points.length < 2) {
-    return `
-      <div class="player-chart">
-        <div class="stat-label">${escapeHtml(t("player.profitChart"))}</div>
-        <div class="empty-inline">${escapeHtml(t("player.noChartData"))}</div>
-      </div>
-    `;
-  }
-
-  const width = 640;
-  const height = 180;
-  const padding = 22;
-  const min = Math.min(...points, 0);
-  const max = Math.max(...points, 0);
-  const range = max - min || 1;
-  const step = (width - padding * 2) / (points.length - 1);
-  const coordinates = points.map((value, index) => {
-    const x = padding + index * step;
-    const y = height - padding - ((value - min) / range) * (height - padding * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const zeroY = height - padding - ((0 - min) / range) * (height - padding * 2);
-
-  return `
-    <div class="player-chart">
-      <div class="stat-label">${escapeHtml(t("player.profitChart"))}</div>
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(t("player.profitChart"))}">
-        <line class="axis" x1="${padding}" y1="${zeroY.toFixed(1)}" x2="${width - padding}" y2="${zeroY.toFixed(1)}"></line>
-        <polyline points="${escapeHtml(coordinates.join(" "))}"></polyline>
-      </svg>
-    </div>
-  `;
 }

@@ -64,17 +64,28 @@ type SessionStat struct {
 }
 
 type PlayerOverallStat struct {
-	PlayerID            entity.PlayerID `json:"player_id"`
-	PlayerName          string          `json:"player_name"`
+	PlayerID            entity.PlayerID      `json:"player_id"`
+	PlayerName          string               `json:"player_name"`
+	SessionsCount       int64                `json:"sessions_count"`
+	TotalBuyIn          int64                `json:"total_buy_in"`
+	TotalCashOut        int64                `json:"total_cash_out"`
+	TotalBuyInMoney     int64                `json:"total_buy_in_money"`
+	TotalCashOutMoney   int64                `json:"total_cash_out_money"`
+	ProfitChips         int64                `json:"profit_chips"`
+	ProfitMoney         int64                `json:"profit_money"`
+	AvgProfitPerSession float64              `json:"avg_profit_per_session"`
+	ROIPercent          float64              `json:"roi_percent"`
+	AvgBuyInPerSession  float64              `json:"avg_buy_in_per_session"`
+	LastActivityAt      *string              `json:"last_activity_at"`
+	MoneyByCurrency     []PlayerCurrencyStat `json:"money_by_currency"`
+}
+
+type PlayerCurrencyStat struct {
+	Currency            entity.Currency `json:"currency"`
 	SessionsCount       int64           `json:"sessions_count"`
-	TotalBuyIn          int64           `json:"total_buy_in"`
-	TotalCashOut        int64           `json:"total_cash_out"`
 	TotalBuyInMoney     int64           `json:"total_buy_in_money"`
 	TotalCashOutMoney   int64           `json:"total_cash_out_money"`
-	ProfitChips         int64           `json:"profit_chips"`
 	ProfitMoney         int64           `json:"profit_money"`
 	AvgProfitPerSession float64         `json:"avg_profit_per_session"`
 	ROIPercent          float64         `json:"roi_percent"`
-	AvgBuyInPerSession  float64         `json:"avg_buy_in_per_session"`
-	LastActivityAt      *string         `json:"last_activity_at"`
 }
