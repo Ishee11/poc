@@ -68,8 +68,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currencyInput = document.getElementById("start-currency");
   if (currencyInput) {
     currencyInput.value = defaultCurrency();
+    renderStartChipRateLabel();
     currencyInput.addEventListener("change", () => {
       currencyInput.dataset.userChanged = "true";
+      renderStartChipRateLabel();
     });
   }
   if (startForm && chipInput && bigBlindInput && currencyInput) {
@@ -157,6 +159,7 @@ function renderCurrentLanguage() {
   if (currencyInput && !currencyInput.dataset.userChanged) {
     currencyInput.value = defaultCurrency();
   }
+  renderStartChipRateLabel();
   renderSessions();
   syncSelect();
   renderPlayersOverview();
@@ -179,6 +182,16 @@ function defaultCurrency() {
 
 function currencySymbol(currency) {
   return currency === "USD" ? "$" : "₽";
+}
+
+function renderStartChipRateLabel() {
+  const label = document.getElementById("start-chip-rate-label");
+  const currencyInput = document.getElementById("start-currency");
+  if (!label) return;
+
+  label.textContent = t("lobby.chipRate", {
+    currencySymbol: currencySymbol(currencyInput?.value || defaultCurrency()),
+  });
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {

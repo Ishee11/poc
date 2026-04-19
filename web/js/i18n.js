@@ -16,7 +16,7 @@ const translations = {
     "lobby.latestActiveSession": "Latest active session",
     "lobby.openWorkspace": "Open Workspace",
     "lobby.startTitle": "Start a New Session",
-    "lobby.chipRate": "Rate (1 ruble for N chips)",
+    "lobby.chipRate": "Rate (1 {currencySymbol} for N chips)",
     "lobby.currency": "Currency",
     "lobby.bigBlind": "BB (Big Blind)",
     "lobby.startHint":
@@ -53,6 +53,8 @@ const translations = {
     "session.actionsHint":
       "You can choose only players already added to this session.",
     "session.buyInHint": "To add a player to the session, make a Buy-in.",
+    "session.cashOutHint":
+      "Only players currently in game can cash out. Cash-out is full: withdraw all chips, not a part.",
     "session.player": "Player",
     "session.selectPlayer": "Select player",
     "session.chips": "Chips",
@@ -226,7 +228,7 @@ const translations = {
     "lobby.latestActiveSession": "Последняя активная сессия",
     "lobby.openWorkspace": "Открыть сессию",
     "lobby.startTitle": "Начать новую сессию",
-    "lobby.chipRate": "Курс (1 рубль за N фишек)",
+    "lobby.chipRate": "Курс (1 {currencySymbol} за N фишек)",
     "lobby.currency": "Валюта",
     "lobby.bigBlind": "BB (Большой блайнд)",
     "lobby.startHint":
@@ -263,6 +265,8 @@ const translations = {
     "session.actionsHint":
       "Выбрать можно только игроков, которые уже добавлены в эту сессию.",
     "session.buyInHint": "Чтобы добавить игрока в сессию, сделайте Buy-in.",
+    "session.cashOutHint":
+      "Cash-out доступен только игрокам, которые сейчас в игре. Cash-out полный: вывести можно только все фишки, не часть.",
     "session.player": "Игрок",
     "session.selectPlayer": "Выберите игрока",
     "session.chips": "Фишки",

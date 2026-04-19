@@ -58,8 +58,8 @@
                                 <form id="start-session-form" onsubmit="return false;">
                                     <div class="rate-currency-row">
                                         <label class="rate-input">
-                                            <span data-i18n="lobby.chipRate">Chip Rate</span>
-                                            <input id="start-chip-rate" type="number" min="1" value="2" />
+                                            <span id="start-chip-rate-label">Rate</span>
+                                            <input id="start-chip-rate" type="number" min="1" />
                                         </label>
 
                                         <label class="currency-input">
@@ -73,7 +73,7 @@
 
                                     <label>
                                         <span data-i18n="lobby.bigBlind">BB (Big Blind)</span>
-                                        <input id="start-big-blind" type="number" min="1" value="2" />
+                                        <input id="start-big-blind" type="number" min="1" />
                                     </label>
 
                                     <div class="hint" data-i18n="lobby.startHint">
@@ -236,6 +236,9 @@
 
                                 <div class="action-card">
                                     <h4 data-i18n="session.cashOut">Cash Out</h4>
+                                    <p class="hint" data-i18n="session.cashOutHint">
+                                        Only players currently in game can cash out. Cash-out is full: withdraw all chips, not a part.
+                                    </p>
                                     <label>
                                         <span data-i18n="session.player">Player</span>
                                         <select id="cash-out-player-select">
