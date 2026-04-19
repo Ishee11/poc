@@ -1139,6 +1139,10 @@ pre {
     .session-config-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .session-totals-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 720px) {
@@ -1180,6 +1184,10 @@ pre {
     }
 
     .session-config-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .session-totals-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
