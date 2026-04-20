@@ -32,7 +32,7 @@ jobs:
             docker builder prune -af || true
 
             echo "== Build & start prod containers =="
-            docker compose -p poker-prod -f docker-compose.yml up -d --build --force-recreate
+            docker compose -f docker-compose.yml up -d --build --force-recreate
 
             echo "== Wait for prod postgres =="
             for i in {1..10}; do
