@@ -12,6 +12,9 @@ func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
+	if !h.requireAdmin(w, r) {
+		return
+	}
 
 	playerID := r.URL.Query().Get("player_id")
 	if playerID == "" {
@@ -36,6 +39,9 @@ func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	if !h.requireAdmin(w, r) {
 		return
 	}
 
@@ -64,6 +70,9 @@ func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
+	if !h.requireAdmin(w, r) {
+		return
+	}
 
 	playerID := r.URL.Query().Get("player_id")
 	if playerID == "" {
@@ -82,6 +91,9 @@ func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	if !h.requireAdmin(w, r) {
 		return
 	}
 
@@ -104,6 +116,9 @@ func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Reques
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
 	}
+	if !h.requireAdmin(w, r) {
+		return
+	}
 
 	sessionID := r.URL.Query().Get("session_id")
 	if sessionID == "" {
@@ -117,4 +132,25 @@ func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *DebugHandler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	cookie, err := r.Cookie(h.cookie.Name)
+	if err != nil || cookie.Value == "" {
+		writeError(w, r, entity.ErrUnauthorized)
+		return false
+	}
+
+	principal, err := h.authUC.CurrentUser(cookie.Value)
+	if err != nil {
+		writeError(w, r, err)
+		return false
+	}
+
+	if err := h.authUC.RequireRole(*principal, entity.AuthRoleAdmin); err != nil {
+		writeError(w, r, err)
+		return false
+	}
+
+	return true
 }

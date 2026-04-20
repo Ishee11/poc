@@ -122,15 +122,15 @@ export function setScreen(name) {
 }
 
 export function routeToSession(sessionId) {
-  return withCurrentDebugSearch(`/session/${encodeURIComponent(sessionId)}`);
+  return `/session/${encodeURIComponent(sessionId)}`;
 }
 
 export function routeToPlayer(playerId) {
-  return withCurrentDebugSearch(`/player/${encodeURIComponent(playerId)}`);
+  return `/player/${encodeURIComponent(playerId)}`;
 }
 
 export function routeToAccount() {
-  return withCurrentDebugSearch("/account");
+  return "/account";
 }
 
 export function pushRoute(path) {
@@ -146,12 +146,7 @@ export function replaceRoute(path) {
 }
 
 export function routeToHome() {
-  return withCurrentDebugSearch("/");
-}
-
-function withCurrentDebugSearch(path) {
-  const params = new URLSearchParams(window.location.search);
-  return params.has("debug") ? `${path}?debug` : path;
+  return "/";
 }
 
 function currentPath() {

@@ -55,10 +55,49 @@ func (r *StatsRepository) ListSessions(
 		LEFT JOIN effective_operations eo ON eo.session_id = s.id
 		WHERE ($1::timestamp IS NULL OR s.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR s.created_at < $2::timestamp)
+		  AND (
+			($4::text IS NULL AND NOT EXISTS (
+				SELECT 1
+				FROM effective_operations guest_eo
+				JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
+				WHERE guest_eo.session_id = s.id
+			))
+			OR
+			($4::text IS NULL AND $5::text IS NOT NULL
+				AND NOT EXISTS (
+					SELECT 1
+					FROM user_players selected_guest_up
+					WHERE selected_guest_up.player_id = $5::text
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM effective_operations selected_guest_eo
+					WHERE selected_guest_eo.session_id = s.id
+					  AND selected_guest_eo.player_id = $5::text
+				)
+			)
+			OR
+			($4::text IS NOT NULL AND (
+				NOT EXISTS (
+					SELECT 1
+					FROM effective_operations other_eo
+					JOIN user_players other_up ON other_up.player_id = other_eo.player_id
+					WHERE other_eo.session_id = s.id
+					  AND other_up.user_id <> $4::text
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM effective_operations own_eo
+					JOIN user_players own_up ON own_up.player_id = own_eo.player_id
+					WHERE own_eo.session_id = s.id
+					  AND own_up.user_id = $4::text
+				)
+			))
+		  )
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
 		LIMIT $3
-	`, boundTime(filter.From), boundTime(filter.To), limit)
+	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID))
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +422,22 @@ func boundTime(bound *usecase.DateTimeRangeBound) *time.Time {
 		return nil
 	}
 	return &t
+}
+
+func optionalAuthUserID(id *entity.AuthUserID) *string {
+	if id == nil {
+		return nil
+	}
+	value := string(*id)
+	return &value
+}
+
+func optionalPlayerID(id entity.PlayerID) *string {
+	if id == "" {
+		return nil
+	}
+	value := string(id)
+	return &value
 }
 
 func filterLimit(limit int, fallback int) int {

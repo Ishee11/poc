@@ -61,6 +61,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== PLAYERS =====
 	mux.HandleFunc("/players", h.Player.Players)
+	mux.HandleFunc("/players/unlinked", h.Account.PublicAvailablePlayers)
 	mux.HandleFunc("/players/stats", h.Player.GetPlayerStats)
 	mux.HandleFunc("/stats/player", h.Player.GetPlayerStats)
 

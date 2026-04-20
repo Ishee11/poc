@@ -90,6 +90,8 @@ func NewHandler(
 		Stats: &StatsHandler{
 			getStatsSessionsUC: getStatsSessions,
 			getStatsPlayersUC:  getStatsPlayers,
+			authUC:             authUC,
+			cookie:             authCookie,
 		},
 		Debug: &DebugHandler{
 			renamePlayerUC:        renameDebugPlayer,
@@ -97,6 +99,8 @@ func NewHandler(
 			deletePlayerUC:        deleteDebugPlayer,
 			deleteSessionUC:       deleteDebugSession,
 			deleteSessionFinishUC: deleteDebugSessionFinish,
+			authUC:                authUC,
+			cookie:                authCookie,
 		},
 	}
 }
@@ -136,6 +140,8 @@ type PlayerHandler struct {
 type StatsHandler struct {
 	getStatsSessionsUC *usecase.GetStatsSessionsUseCase
 	getStatsPlayersUC  *usecase.GetStatsPlayersUseCase
+	authUC             *usecase.AuthService
+	cookie             AuthCookieConfig
 }
 
 type DebugHandler struct {
@@ -144,4 +150,6 @@ type DebugHandler struct {
 	deletePlayerUC        *usecase.DeleteDebugPlayerUseCase
 	deleteSessionUC       *usecase.DeleteDebugSessionUseCase
 	deleteSessionFinishUC *usecase.DeleteDebugSessionFinishUseCase
+	authUC                *usecase.AuthService
+	cookie                AuthCookieConfig
 }

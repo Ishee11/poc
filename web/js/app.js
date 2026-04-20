@@ -2,6 +2,7 @@ import {
   getAccount,
   getAccountAvailablePlayers,
   getCurrentUser,
+  getUnlinkedPlayers,
   linkAccountPlayer,
   login,
   logout,
@@ -45,15 +46,16 @@ import {
 } from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  syncDebugMode();
   initI18n();
   initAuth();
   initAccountPanel();
+  initGuestPlayerSelect();
   initSessionActions();
   initLanguageSelect();
   onLanguageChange(renderCurrentLanguage);
 
   await loadCurrentUser();
+  await loadGuestPlayers();
   await Promise.all([loadSessions(), loadPlayersOverview()]);
   await openInitialRoute();
 
@@ -163,6 +165,7 @@ function initAuth() {
       state.authLoginOpen = false;
       form.reset();
       renderAuthPanel();
+      syncDebugMode();
       await loadAccount();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
@@ -182,6 +185,8 @@ function initAuth() {
       state.authLoginOpen = false;
       clearAccount();
       renderAuthPanel();
+      syncDebugMode();
+      await loadGuestPlayers();
       if (window.location.pathname === "/account") {
         setScreen("lobby");
         pushRoute(routeToHome());
@@ -217,6 +222,7 @@ function initAuth() {
       state.authLoginOpen = false;
       form?.reset();
       renderAuthPanel();
+      syncDebugMode();
       await loadAccount();
       showNotice(t("notice.registrationSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
@@ -229,6 +235,7 @@ async function loadCurrentUser() {
   state.authChecked = true;
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAuthPanel();
+  syncDebugMode();
   if (state.authUser) {
     await loadAccount();
   } else {
@@ -242,6 +249,7 @@ function renderAuthPanel() {
   const registerRow = document.getElementById("auth-register-row");
   const userPanel = document.getElementById("auth-user-panel");
   const userName = document.getElementById("auth-user-name");
+  const guestPlayerLabel = document.getElementById("guest-player-label");
 
   if (!form || !showLoginButton || !registerRow || !userPanel || !userName) return;
 
@@ -250,12 +258,62 @@ function renderAuthPanel() {
   form.hidden = Boolean(user) || !state.authLoginOpen;
   registerRow.hidden = Boolean(user) || !state.authLoginOpen;
   userPanel.hidden = !user;
+  if (guestPlayerLabel) guestPlayerLabel.hidden = Boolean(user);
 
   if (user) {
     userName.textContent = `${user.email} · ${user.role}`;
   } else {
     userName.textContent = "-";
   }
+}
+
+function initGuestPlayerSelect() {
+  state.guestPlayerId = loadGuestPlayerId();
+
+  const select = document.getElementById("guest-player-select");
+  if (!select) return;
+
+  select.addEventListener("change", async () => {
+    state.guestPlayerId = select.value;
+    saveGuestPlayerId(state.guestPlayerId);
+    await loadSessions();
+  });
+}
+
+async function loadGuestPlayers() {
+  if (state.authUser) {
+    state.guestPlayers = [];
+    renderGuestPlayerSelect();
+    return;
+  }
+
+  const res = await getUnlinkedPlayers({ limit: 200 });
+  state.guestPlayers = res.ok && Array.isArray(res.body?.players) ? res.body.players : [];
+  const selectedExists = state.guestPlayers.some((player) => {
+    const id = player.player_id || player.id || "";
+    return id === state.guestPlayerId;
+  });
+  if (state.guestPlayerId && !selectedExists) {
+    state.guestPlayerId = "";
+    saveGuestPlayerId("");
+  }
+  renderGuestPlayerSelect();
+}
+
+function renderGuestPlayerSelect() {
+  const select = document.getElementById("guest-player-select");
+  if (!select) return;
+
+  select.innerHTML = `
+    <option value="">${escapeHtml(t("guest.noPlayer"))}</option>
+    ${state.guestPlayers
+      .map((player) => {
+        const id = player.player_id || player.id || "";
+        return `<option value="${escapeHtml(id)}">${escapeHtml(player.name)}</option>`;
+      })
+      .join("")}
+  `;
+  select.value = state.guestPlayerId;
 }
 
 async function openAccount({ replace = false } = {}) {
@@ -430,6 +488,7 @@ function initLanguageSelect() {
 function renderCurrentLanguage() {
   renderAuthPanel();
   renderAccountPanel();
+  renderGuestPlayerSelect();
   renderStartChipRateLabel();
   renderSessions();
   syncSelect();
@@ -465,7 +524,6 @@ function renderStartChipRateLabel() {
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {
-  syncDebugMode();
   const [, section, rawId] = window.location.pathname.split("/");
   const id = rawId ? decodeURIComponent(rawId) : "";
 
@@ -489,6 +547,24 @@ async function openInitialRoute({ fromHistory = false } = {}) {
 }
 
 function syncDebugMode() {
-  state.debugMode = new URLSearchParams(window.location.search).has("debug");
+  state.debugMode = state.authUser?.role === "admin";
   document.body.classList.toggle("debug-mode", state.debugMode);
+}
+
+function loadGuestPlayerId() {
+  try {
+    return localStorage.getItem("poker-guest-player-id") || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveGuestPlayerId(playerId) {
+  try {
+    if (playerId) {
+      localStorage.setItem("poker-guest-player-id", playerId);
+    } else {
+      localStorage.removeItem("poker-guest-player-id");
+    }
+  } catch {}
 }
