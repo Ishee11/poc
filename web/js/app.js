@@ -1,4 +1,4 @@
-import { startSession } from "./api.js";
+import { getCurrentUser, login, logout, startSession } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
 import {
@@ -34,10 +34,12 @@ import {
 document.addEventListener("DOMContentLoaded", async () => {
   syncDebugMode();
   initI18n();
+  initAuth();
   initSessionActions();
   initLanguageSelect();
   onLanguageChange(renderCurrentLanguage);
 
+  await loadCurrentUser();
   await Promise.all([loadSessions(), loadPlayersOverview()]);
   await openInitialRoute();
 
@@ -110,6 +112,77 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 });
 
+function initAuth() {
+  const form = document.getElementById("auth-login-form");
+  const logoutButton = document.getElementById("auth-logout-btn");
+
+  if (form) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById("auth-email")?.value?.trim() || "";
+      const password = document.getElementById("auth-password")?.value || "";
+      if (!email || !password) {
+        showNotice(t("notice.authCredentialsRequired"), "error");
+        return;
+      }
+
+      const res = await login({ email, password });
+      if (!res.ok || !res.body?.user) {
+        showNotice(describeError(res, t("error.loginFailed")), "error");
+        return;
+      }
+
+      state.authUser = res.body.user;
+      state.authChecked = true;
+      form.reset();
+      renderAuthPanel();
+      showNotice(t("notice.loginSuccess"), "success");
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
+    });
+  }
+
+  if (logoutButton) {
+    logoutButton.addEventListener("click", async () => {
+      const res = await logout();
+      if (!res.ok && res.status !== 401) {
+        showNotice(describeError(res, t("error.logoutFailed")), "error");
+        return;
+      }
+
+      state.authUser = null;
+      state.authChecked = true;
+      renderAuthPanel();
+      showNotice(t("notice.logoutSuccess"), "success");
+    });
+  }
+}
+
+async function loadCurrentUser() {
+  const res = await getCurrentUser();
+  state.authChecked = true;
+  state.authUser = res.ok && res.body?.user ? res.body.user : null;
+  renderAuthPanel();
+}
+
+function renderAuthPanel() {
+  const form = document.getElementById("auth-login-form");
+  const userPanel = document.getElementById("auth-user-panel");
+  const userName = document.getElementById("auth-user-name");
+
+  if (!form || !userPanel || !userName) return;
+
+  const user = state.authUser;
+  form.hidden = Boolean(user);
+  userPanel.hidden = !user;
+
+  if (user) {
+    userName.textContent = `${user.email} · ${user.role}`;
+  } else {
+    userName.textContent = "-";
+  }
+}
+
 function initLanguageSelect() {
   const select = document.getElementById("language-select");
   if (!select) return;
@@ -120,6 +193,7 @@ function initLanguageSelect() {
 }
 
 function renderCurrentLanguage() {
+  renderAuthPanel();
   renderStartChipRateLabel();
   renderSessions();
   syncSelect();

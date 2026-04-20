@@ -5,6 +5,7 @@ const API = window.location.origin;
 async function request(path, options = {}) {
   try {
     const res = await fetch(API + path, {
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -34,6 +35,25 @@ async function request(path, options = {}) {
 
 export function apiGet(path) {
   return request(path);
+}
+
+// ===== auth =====
+
+export function login({ email, password }) {
+  return request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function logout() {
+  return request("/auth/logout", {
+    method: "POST",
+  });
+}
+
+export function getCurrentUser() {
+  return request("/auth/me");
 }
 
 // ===== utils =====
