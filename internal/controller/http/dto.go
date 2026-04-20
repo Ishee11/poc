@@ -62,6 +62,11 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type RegisterRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type AuthUserResponse struct {
 	ID    entity.AuthUserID `json:"id"`
 	Email string            `json:"email"`

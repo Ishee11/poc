@@ -9,6 +9,65 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
+// Register godoc
+// @Summary Register
+// @Description Creates a regular user and sets an HttpOnly session cookie.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register request"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /auth/register [post]
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	defer r.Body.Close()
+
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
+		return
+	}
+
+	if err := h.registerUserUC.Execute(usecase.RegisterUserCommand{
+		Email:    req.Email,
+		Password: req.Password,
+	}); err != nil {
+		writeError(w, r, err)
+		return
+	}
+
+	result, err := h.authUC.Login(usecase.LoginCommand{
+		Email:     req.Email,
+		Password:  req.Password,
+		UserAgent: r.UserAgent(),
+		IP:        clientIP(r),
+	})
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+
+	h.setSessionCookie(w, result.Token, result.ExpiresAt)
+	slog.InfoContext(
+		r.Context(),
+		"auth_register_success",
+		"request_id", GetRequestID(r.Context()),
+		"user_id", result.User.UserID,
+		"ip", clientIP(r),
+		"user_agent", r.UserAgent(),
+	)
+
+	writeJSON(w, http.StatusOK, LoginResponse{
+		User:      authUserResponse(result.User),
+		ExpiresAt: result.ExpiresAt.Format(time.RFC3339),
+	})
+}
+
 // Login godoc
 // @Summary Login
 // @Description Authenticates a system user and sets an HttpOnly session cookie.

@@ -27,6 +27,7 @@ type AuthCookieConfig struct {
 func NewHandler(
 	authCookie AuthCookieConfig,
 	authUC *usecase.AuthService,
+	registerUserUC *usecase.RegisterUserUseCase,
 	userPlayerLinksUC *usecase.UserPlayerLinksUseCase,
 
 	// session
@@ -60,8 +61,9 @@ func NewHandler(
 
 	return &Handler{
 		Auth: &AuthHandler{
-			authUC: authUC,
-			cookie: authCookie,
+			authUC:         authUC,
+			registerUserUC: registerUserUC,
+			cookie:         authCookie,
 		},
 		Account: &AccountHandler{
 			authUC:            authUC,
@@ -100,8 +102,9 @@ func NewHandler(
 }
 
 type AuthHandler struct {
-	authUC *usecase.AuthService
-	cookie AuthCookieConfig
+	authUC         *usecase.AuthService
+	registerUserUC *usecase.RegisterUserUseCase
+	cookie         AuthCookieConfig
 }
 
 type AccountHandler struct {

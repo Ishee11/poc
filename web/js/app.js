@@ -5,6 +5,7 @@ import {
   linkAccountPlayer,
   login,
   logout,
+  register,
   startSession,
   unlinkAccountPlayer,
 } from "./api.js";
@@ -183,8 +184,29 @@ function initAuth() {
   }
 
   if (registerButton) {
-    registerButton.addEventListener("click", () => {
-      showNotice(t("notice.registrationPending"), "info");
+    registerButton.addEventListener("click", async () => {
+      const form = document.getElementById("auth-login-form");
+      const email = document.getElementById("auth-email")?.value?.trim() || "";
+      const password = document.getElementById("auth-password")?.value || "";
+      if (!email || !password) {
+        showNotice(t("notice.authCredentialsRequired"), "error");
+        return;
+      }
+
+      const res = await register({ email, password });
+      if (!res.ok || !res.body?.user) {
+        showNotice(describeError(res, t("error.registerFailed")), "error");
+        return;
+      }
+
+      state.authUser = res.body.user;
+      state.authChecked = true;
+      state.authLoginOpen = false;
+      form?.reset();
+      renderAuthPanel();
+      await loadAccount();
+      showNotice(t("notice.registrationSuccess"), "success");
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
   }
 }

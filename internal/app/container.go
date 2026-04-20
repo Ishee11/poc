@@ -183,6 +183,13 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 			MaxFailedAttempts: usecase.DefaultAuthPolicy().MaxFailedAttempts,
 		},
 	)
+	registerUserUC := usecase.NewRegisterUserUseCase(
+		authRepo,
+		txManager,
+		infra.UUIDAuthUserIDGenerator{},
+		passwordHasher,
+		usecase.SystemClock{},
+	)
 	userPlayerLinksUC := usecase.NewUserPlayerLinksUseCase(
 		userPlayerLinkRepo,
 		playerRepo,
@@ -198,6 +205,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 			MaxAge:   cfg.Auth.SessionTTL,
 		},
 		authUC,
+		registerUserUC,
 		userPlayerLinksUC,
 
 		// session

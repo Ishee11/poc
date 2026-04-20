@@ -137,6 +137,15 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrInvalidCredentials):
 		return apiError{status: http.StatusUnauthorized, code: "invalid_credentials"}
 
+	case errors.Is(err, entity.ErrAuthUserAlreadyExists):
+		return apiError{status: http.StatusConflict, code: "user_already_exists"}
+
+	case errors.Is(err, entity.ErrInvalidAuthEmail):
+		return apiError{status: http.StatusBadRequest, code: "invalid_auth_email"}
+
+	case errors.Is(err, entity.ErrPasswordTooShort):
+		return apiError{status: http.StatusBadRequest, code: "password_too_short"}
+
 	case errors.Is(err, entity.ErrUnauthorized):
 		return apiError{status: http.StatusUnauthorized, code: "unauthorized"}
 

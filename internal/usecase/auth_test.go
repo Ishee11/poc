@@ -474,3 +474,77 @@ func TestSeedUserUseCaseRejectsInvalidRole(t *testing.T) {
 		t.Fatalf("expected ErrInvalidAuthRole, got %v", err)
 	}
 }
+
+func TestRegisterUserUseCaseCreatesUser(t *testing.T) {
+	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
+	repo := newFakeAuthRepo()
+	uc := NewRegisterUserUseCase(
+		repo,
+		fakeTxManager{},
+		fakeAuthUserIDGen{next: "user-1"},
+		fakePasswordHasher{hash: "hash"},
+		fakeClock{now: now},
+	)
+
+	err := uc.Execute(RegisterUserCommand{
+		Email:    " user@example.com ",
+		Password: "long-password",
+	})
+	if err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+
+	user, err := repo.FindUserByEmail(testTx{}, "user@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.ID != "user-1" || user.Role != entity.AuthRoleUser || user.PasswordHash != "hash" {
+		t.Fatalf("unexpected registered user: %+v", user)
+	}
+}
+
+func TestRegisterUserUseCaseRejectsExistingEmail(t *testing.T) {
+	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
+	repo := newFakeAuthRepo()
+	existing, err := entity.NewAuthUser("user-1", "user@example.com", "hash", entity.AuthRoleUser, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Save(testTx{}, existing); err != nil {
+		t.Fatal(err)
+	}
+
+	uc := NewRegisterUserUseCase(
+		repo,
+		fakeTxManager{},
+		fakeAuthUserIDGen{next: "user-2"},
+		fakePasswordHasher{hash: "new-hash"},
+		fakeClock{now: now},
+	)
+
+	err = uc.Execute(RegisterUserCommand{
+		Email:    "user@example.com",
+		Password: "long-password",
+	})
+	if !errors.Is(err, entity.ErrAuthUserAlreadyExists) {
+		t.Fatalf("expected ErrAuthUserAlreadyExists, got %v", err)
+	}
+}
+
+func TestRegisterUserUseCaseRejectsShortPassword(t *testing.T) {
+	uc := NewRegisterUserUseCase(
+		newFakeAuthRepo(),
+		fakeTxManager{},
+		fakeAuthUserIDGen{},
+		fakePasswordHasher{},
+		fakeClock{now: time.Now()},
+	)
+
+	err := uc.Execute(RegisterUserCommand{
+		Email:    "user@example.com",
+		Password: "short",
+	})
+	if !errors.Is(err, entity.ErrPasswordTooShort) {
+		t.Fatalf("expected ErrPasswordTooShort, got %v", err)
+	}
+}
