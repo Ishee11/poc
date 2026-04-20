@@ -29,8 +29,15 @@ jobs:
             cd /app-dev
             test -f docker-compose.dev.yml
 
-            echo "== Prune docker build cache =="
-            docker builder prune -af || true
+            echo "== Check docker cache pressure =="
+            available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
+            min_available_kb=$((3 * 1024 * 1024))
+            if [ "$available_kb" -lt "$min_available_kb" ]; then
+              echo "Low disk space: ${available_kb}KB available. Pruning docker build cache."
+              docker builder prune -af || true
+            else
+              echo "Keeping docker build cache: ${available_kb}KB available."
+            fi
 
             echo "== Start dev postgres =="
             docker compose -p poker-dev -f docker-compose.dev.yml up -d db
@@ -50,7 +57,7 @@ jobs:
               | docker exec -i poker-db-dev psql -U poker -d poker
 
             echo "== Build & start dev app =="
-            docker compose -p poker-dev -f docker-compose.dev.yml up -d --build --force-recreate app
+            docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
 
             echo "== Check dev app logs =="
             sleep 3
