@@ -34,10 +34,16 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		limit = 0
 	}
 
-	viewerUserID, err := h.currentStatsViewer(r)
+	viewer, err := h.currentStatsViewer(r)
 	if err != nil {
 		writeError(w, r, err)
 		return
+	}
+	var viewerUserID *entity.AuthUserID
+	viewerIsAdmin := false
+	if viewer != nil {
+		viewerUserID = &viewer.UserID
+		viewerIsAdmin = viewer.Role == entity.AuthRoleAdmin
 	}
 
 	res, err := h.getStatsSessionsUC.Execute(usecase.GetStatsSessionsQuery{
@@ -45,6 +51,7 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		From:          from,
 		To:            to,
 		ViewerUserID:  viewerUserID,
+		ViewerIsAdmin: viewerIsAdmin,
 		GuestPlayerID: entity.PlayerID(r.URL.Query().Get("guest_player_id")),
 	})
 	if err != nil {
@@ -92,7 +99,7 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-func (h *StatsHandler) currentStatsViewer(r *http.Request) (*entity.AuthUserID, error) {
+func (h *StatsHandler) currentStatsViewer(r *http.Request) (*usecase.AuthPrincipal, error) {
 	cookie, err := r.Cookie(h.cookie.Name)
 	if err != nil || cookie.Value == "" {
 		return nil, nil
@@ -106,7 +113,7 @@ func (h *StatsHandler) currentStatsViewer(r *http.Request) (*entity.AuthUserID, 
 		return nil, err
 	}
 
-	return &principal.UserID, nil
+	return principal, nil
 }
 
 // GetPlayerStats godoc

@@ -56,6 +56,8 @@ func (r *StatsRepository) ListSessions(
 		WHERE ($1::timestamp IS NULL OR s.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR s.created_at < $2::timestamp)
 		  AND (
+			$6::boolean
+			OR
 			($4::text IS NULL AND NOT EXISTS (
 				SELECT 1
 				FROM effective_operations guest_eo
@@ -97,7 +99,7 @@ func (r *StatsRepository) ListSessions(
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
 		LIMIT $3
-	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID))
+	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
 	if err != nil {
 		return nil, err
 	}

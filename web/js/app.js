@@ -250,10 +250,12 @@ function renderAuthPanel() {
   const userPanel = document.getElementById("auth-user-panel");
   const userName = document.getElementById("auth-user-name");
   const guestPlayerLabel = document.getElementById("guest-player-label");
+  const authPanel = document.querySelector(".auth-panel");
 
   if (!form || !showLoginButton || !registerRow || !userPanel || !userName) return;
 
   const user = state.authUser;
+  authPanel?.classList.toggle("authenticated", Boolean(user));
   showLoginButton.hidden = Boolean(user) || state.authLoginOpen;
   form.hidden = Boolean(user) || !state.authLoginOpen;
   registerRow.hidden = Boolean(user) || !state.authLoginOpen;

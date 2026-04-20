@@ -95,6 +95,7 @@ type SessionStatsFilter struct {
 	From          *DateTimeRangeBound
 	To            *DateTimeRangeBound
 	ViewerUserID  *entity.AuthUserID
+	ViewerIsAdmin bool
 	GuestPlayerID entity.PlayerID
 }
 

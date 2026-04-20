@@ -44,6 +44,7 @@ func (uc *GetStatsSessionsUseCase) execute(
 		From:          q.From,
 		To:            q.To,
 		ViewerUserID:  q.ViewerUserID,
+		ViewerIsAdmin: q.ViewerIsAdmin,
 		GuestPlayerID: q.GuestPlayerID,
 	})
 }
