@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -33,10 +34,17 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		limit = 0
 	}
 
+	viewerUserID, err := h.currentStatsViewer(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+
 	res, err := h.getStatsSessionsUC.Execute(usecase.GetStatsSessionsQuery{
-		Limit: limit,
-		From:  from,
-		To:    to,
+		Limit:        limit,
+		From:         from,
+		To:           to,
+		ViewerUserID: viewerUserID,
 	})
 	if err != nil {
 		writeError(w, r, err)
@@ -81,6 +89,23 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *StatsHandler) currentStatsViewer(r *http.Request) (*entity.AuthUserID, error) {
+	cookie, err := r.Cookie(h.cookie.Name)
+	if err != nil || cookie.Value == "" {
+		return nil, nil
+	}
+
+	principal, err := h.authUC.CurrentUser(cookie.Value)
+	if err != nil {
+		if errors.Is(err, entity.ErrUnauthorized) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &principal.UserID, nil
 }
 
 // GetPlayerStats godoc

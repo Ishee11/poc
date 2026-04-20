@@ -116,6 +116,7 @@ body::before {
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
+    min-width: 0;
 }
 
 .auth-user-label {
@@ -1354,7 +1355,20 @@ pre {
     }
 
     .auth-user-panel {
+        width: 100%;
         justify-content: space-between;
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .auth-user-panel > div {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .auth-user-panel button {
+        flex: 1 1 calc(50% - 5px);
+        min-width: 0;
     }
 
     .auth-user-label,

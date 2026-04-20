@@ -90,6 +90,8 @@ func NewHandler(
 		Stats: &StatsHandler{
 			getStatsSessionsUC: getStatsSessions,
 			getStatsPlayersUC:  getStatsPlayers,
+			authUC:             authUC,
+			cookie:             authCookie,
 		},
 		Debug: &DebugHandler{
 			renamePlayerUC:        renameDebugPlayer,
@@ -136,6 +138,8 @@ type PlayerHandler struct {
 type StatsHandler struct {
 	getStatsSessionsUC *usecase.GetStatsSessionsUseCase
 	getStatsPlayersUC  *usecase.GetStatsPlayersUseCase
+	authUC             *usecase.AuthService
+	cookie             AuthCookieConfig
 }
 
 type DebugHandler struct {

@@ -40,8 +40,9 @@ func (uc *GetStatsSessionsUseCase) execute(
 ) ([]SessionStat, error) {
 
 	return uc.statsRepo.ListSessions(tx, SessionStatsFilter{
-		Limit: q.Limit,
-		From:  q.From,
-		To:    q.To,
+		Limit:        q.Limit,
+		From:         q.From,
+		To:           q.To,
+		ViewerUserID: q.ViewerUserID,
 	})
 }
