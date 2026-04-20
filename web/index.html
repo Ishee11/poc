@@ -26,6 +26,9 @@
                         <button type="button" class="secondary nav-player-only" id="player-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
+                        <button type="button" class="secondary nav-account-only" id="account-back-home-btn" data-i18n="nav.backHome">
+                            Back to Home
+                        </button>
                     </nav>
                 </div>
             </header>
@@ -112,22 +115,26 @@
                                     <div class="auth-user-label" data-i18n="auth.signedIn">Signed in</div>
                                     <div id="auth-user-name" class="auth-user-name">-</div>
                                 </div>
+                                <button type="button" class="secondary" id="auth-account-btn" data-i18n="account.title">Account</button>
                                 <button type="button" class="secondary" id="auth-logout-btn" data-i18n="auth.logout">Logout</button>
                             </div>
                         </section>
-                        <section class="account-panel" id="account-panel" aria-label="Account" data-i18n-aria-label="account.label" hidden>
-                            <div class="account-header">
-                                <h3 data-i18n="account.title">Account</h3>
-                                <span class="hint" data-i18n="account.hint">Link any free player.</span>
-                            </div>
-                            <div id="account-linked-players" class="account-linked-players"></div>
-                            <form id="account-link-form" class="account-link-form" onsubmit="return false;">
-                                <select id="account-player-select" data-i18n-aria-label="account.selectPlayer">
-                                    <option value="" data-i18n="account.selectPlayer">Select player</option>
-                                </select>
-                                <button type="submit" class="secondary" data-i18n="account.linkPlayer">Link</button>
-                            </form>
-                        </section>
+                    </div>
+                </section>
+
+                <section class="screen" id="screen-account">
+                    <div class="panel account-panel" id="account-panel" aria-label="Account" data-i18n-aria-label="account.label">
+                        <div class="account-header">
+                            <h2 data-i18n="account.title">Account</h2>
+                            <span class="hint" data-i18n="account.hint">Link any free player.</span>
+                        </div>
+                        <div id="account-linked-players" class="account-linked-players"></div>
+                        <form id="account-link-form" class="account-link-form" onsubmit="return false;">
+                            <select id="account-player-select" data-i18n-aria-label="account.selectPlayer">
+                                <option value="" data-i18n="account.selectPlayer">Select player</option>
+                            </select>
+                            <button type="submit" class="secondary" data-i18n="account.linkPlayer">Link</button>
+                        </form>
                     </div>
                 </section>
 
