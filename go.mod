@@ -23,6 +23,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.6
+	golang.org/x/crypto v0.50.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.10
 )
@@ -365,7 +366,6 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.53.0 // indirect

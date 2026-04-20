@@ -13,6 +13,10 @@ type AuthSessionIDGenerator interface {
 	New() entity.AuthSessionID
 }
 
+type AuthUserIDGenerator interface {
+	New() entity.AuthUserID
+}
+
 type LoginAttemptIDGenerator interface {
 	New() entity.LoginAttemptID
 }
@@ -27,6 +31,10 @@ type TokenHasher interface {
 
 type PasswordVerifier interface {
 	VerifyPassword(password string, passwordHash string) bool
+}
+
+type PasswordHasher interface {
+	HashPassword(password string) (string, error)
 }
 
 type Clock interface {

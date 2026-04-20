@@ -23,6 +23,10 @@ func Run() error {
 	}
 	defer db.Close()
 
+	if err := seedAuthAdmin(db, cfg.Auth); err != nil {
+		return err
+	}
+
 	// container (DI)
 	container := NewContainer(db)
 

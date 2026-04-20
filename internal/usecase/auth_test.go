@@ -23,6 +23,15 @@ func (g fakeAuthSessionIDGen) New() entity.AuthSessionID {
 	return g.next
 }
 
+type fakeAuthUserIDGen struct{ next entity.AuthUserID }
+
+func (g fakeAuthUserIDGen) New() entity.AuthUserID {
+	if g.next == "" {
+		return "auth-user-1"
+	}
+	return g.next
+}
+
 type fakeLoginAttemptIDGen struct {
 	next entity.LoginAttemptID
 	n    int
@@ -62,6 +71,21 @@ type fakePasswordVerifier struct{ ok bool }
 
 func (v fakePasswordVerifier) VerifyPassword(_, _ string) bool {
 	return v.ok
+}
+
+type fakePasswordHasher struct {
+	hash string
+	err  error
+}
+
+func (h fakePasswordHasher) HashPassword(_ string) (string, error) {
+	if h.err != nil {
+		return "", h.err
+	}
+	if h.hash == "" {
+		return "password-hash", nil
+	}
+	return h.hash, nil
 }
 
 type fakeAuthRepo struct {
@@ -327,5 +351,104 @@ func TestAuthServiceRequireRole(t *testing.T) {
 	err = service.RequireRole(AuthPrincipal{Role: entity.AuthRoleMember}, entity.AuthRoleAdmin, entity.AuthRoleMember)
 	if err != nil {
 		t.Fatalf("expected allowed role, got %v", err)
+	}
+}
+
+func TestSeedAdminUseCaseCreatesAdmin(t *testing.T) {
+	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
+	repo := newFakeAuthRepo()
+	uc := NewSeedAdminUseCase(
+		repo,
+		fakeTxManager{},
+		fakeAuthUserIDGen{next: "admin-1"},
+		fakePasswordHasher{hash: "hash"},
+		fakeClock{now: now},
+	)
+
+	err := uc.Execute(SeedAdminCommand{
+		Email:    " admin@example.com ",
+		Password: "long-password",
+	})
+	if err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+
+	user, err := repo.FindUserByEmail(testTx{}, "admin@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.ID != "admin-1" || user.Role != entity.AuthRoleAdmin || user.PasswordHash != "hash" {
+		t.Fatalf("unexpected seeded admin: %+v", user)
+	}
+}
+
+func TestSeedAdminUseCaseIsNoopWhenAdminExists(t *testing.T) {
+	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
+	repo := newFakeAuthRepo()
+	existing, err := entity.NewAuthUser("admin-1", "admin@example.com", "old-hash", entity.AuthRoleAdmin, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Save(testTx{}, existing); err != nil {
+		t.Fatal(err)
+	}
+
+	uc := NewSeedAdminUseCase(
+		repo,
+		fakeTxManager{},
+		fakeAuthUserIDGen{next: "admin-2"},
+		fakePasswordHasher{hash: "new-hash"},
+		fakeClock{now: now},
+	)
+
+	err = uc.Execute(SeedAdminCommand{
+		Email:    "admin@example.com",
+		Password: "long-password",
+	})
+	if err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+
+	user, err := repo.FindUserByEmail(testTx{}, "admin@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.ID != "admin-1" || user.PasswordHash != "old-hash" {
+		t.Fatalf("existing admin should not be overwritten: %+v", user)
+	}
+}
+
+func TestSeedAdminUseCaseRejectsShortPassword(t *testing.T) {
+	uc := NewSeedAdminUseCase(
+		newFakeAuthRepo(),
+		fakeTxManager{},
+		fakeAuthUserIDGen{},
+		fakePasswordHasher{},
+		fakeClock{now: time.Now()},
+	)
+
+	err := uc.Execute(SeedAdminCommand{
+		Email:    "admin@example.com",
+		Password: "short",
+	})
+	if !errors.Is(err, entity.ErrPasswordTooShort) {
+		t.Fatalf("expected ErrPasswordTooShort, got %v", err)
+	}
+}
+
+func TestSeedAdminUseCaseRejectsMissingEmail(t *testing.T) {
+	uc := NewSeedAdminUseCase(
+		newFakeAuthRepo(),
+		fakeTxManager{},
+		fakeAuthUserIDGen{},
+		fakePasswordHasher{},
+		fakeClock{now: time.Now()},
+	)
+
+	err := uc.Execute(SeedAdminCommand{
+		Password: "long-password",
+	})
+	if !errors.Is(err, entity.ErrInvalidAuthEmail) {
+		t.Fatalf("expected ErrInvalidAuthEmail, got %v", err)
 	}
 }
