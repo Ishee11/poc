@@ -7,14 +7,15 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
-const minSeedAdminPasswordLength = 12
+const minSeedUserPasswordLength = 12
 
-type SeedAdminCommand struct {
+type SeedUserCommand struct {
 	Email    string
 	Password string
+	Role     entity.AuthRole
 }
 
-type SeedAdminUseCase struct {
+type SeedUserUseCase struct {
 	userRepo  AuthUserRepository
 	txManager TxManager
 	idGen     AuthUserIDGenerator
@@ -22,18 +23,18 @@ type SeedAdminUseCase struct {
 	clock     Clock
 }
 
-func NewSeedAdminUseCase(
+func NewSeedUserUseCase(
 	userRepo AuthUserRepository,
 	txManager TxManager,
 	idGen AuthUserIDGenerator,
 	passwords PasswordHasher,
 	clock Clock,
-) *SeedAdminUseCase {
+) *SeedUserUseCase {
 	if clock == nil {
 		clock = SystemClock{}
 	}
 
-	return &SeedAdminUseCase{
+	return &SeedUserUseCase{
 		userRepo:  userRepo,
 		txManager: txManager,
 		idGen:     idGen,
@@ -42,7 +43,7 @@ func NewSeedAdminUseCase(
 	}
 }
 
-func (uc *SeedAdminUseCase) Execute(cmd SeedAdminCommand) error {
+func (uc *SeedUserUseCase) Execute(cmd SeedUserCommand) error {
 	email := strings.TrimSpace(cmd.Email)
 	if email == "" && cmd.Password == "" {
 		return nil
@@ -50,8 +51,11 @@ func (uc *SeedAdminUseCase) Execute(cmd SeedAdminCommand) error {
 	if email == "" {
 		return entity.ErrInvalidAuthEmail
 	}
-	if len(cmd.Password) < minSeedAdminPasswordLength {
+	if len(cmd.Password) < minSeedUserPasswordLength {
 		return entity.ErrPasswordTooShort
+	}
+	if !cmd.Role.Valid() {
+		return entity.ErrInvalidAuthRole
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
@@ -72,7 +76,7 @@ func (uc *SeedAdminUseCase) Execute(cmd SeedAdminCommand) error {
 			uc.idGen.New(),
 			email,
 			passwordHash,
-			entity.AuthRoleAdmin,
+			cmd.Role,
 			uc.clock.Now(),
 		)
 		if err != nil {

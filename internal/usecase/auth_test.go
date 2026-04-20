@@ -354,35 +354,36 @@ func TestAuthServiceRequireRole(t *testing.T) {
 	}
 }
 
-func TestSeedAdminUseCaseCreatesAdmin(t *testing.T) {
+func TestSeedUserUseCaseCreatesUserWithRole(t *testing.T) {
 	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
 	repo := newFakeAuthRepo()
-	uc := NewSeedAdminUseCase(
+	uc := NewSeedUserUseCase(
 		repo,
 		fakeTxManager{},
-		fakeAuthUserIDGen{next: "admin-1"},
+		fakeAuthUserIDGen{next: "user-1"},
 		fakePasswordHasher{hash: "hash"},
 		fakeClock{now: now},
 	)
 
-	err := uc.Execute(SeedAdminCommand{
-		Email:    " admin@example.com ",
+	err := uc.Execute(SeedUserCommand{
+		Email:    " user@example.com ",
 		Password: "long-password",
+		Role:     entity.AuthRoleUser,
 	})
 	if err != nil {
 		t.Fatalf("Execute returned error: %v", err)
 	}
 
-	user, err := repo.FindUserByEmail(testTx{}, "admin@example.com")
+	user, err := repo.FindUserByEmail(testTx{}, "user@example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if user.ID != "admin-1" || user.Role != entity.AuthRoleAdmin || user.PasswordHash != "hash" {
-		t.Fatalf("unexpected seeded admin: %+v", user)
+	if user.ID != "user-1" || user.Role != entity.AuthRoleUser || user.PasswordHash != "hash" {
+		t.Fatalf("unexpected seeded user: %+v", user)
 	}
 }
 
-func TestSeedAdminUseCaseIsNoopWhenAdminExists(t *testing.T) {
+func TestSeedUserUseCaseIsNoopWhenUserExists(t *testing.T) {
 	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
 	repo := newFakeAuthRepo()
 	existing, err := entity.NewAuthUser("admin-1", "admin@example.com", "old-hash", entity.AuthRoleAdmin, now)
@@ -393,7 +394,7 @@ func TestSeedAdminUseCaseIsNoopWhenAdminExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uc := NewSeedAdminUseCase(
+	uc := NewSeedUserUseCase(
 		repo,
 		fakeTxManager{},
 		fakeAuthUserIDGen{next: "admin-2"},
@@ -401,9 +402,10 @@ func TestSeedAdminUseCaseIsNoopWhenAdminExists(t *testing.T) {
 		fakeClock{now: now},
 	)
 
-	err = uc.Execute(SeedAdminCommand{
+	err = uc.Execute(SeedUserCommand{
 		Email:    "admin@example.com",
 		Password: "long-password",
+		Role:     entity.AuthRoleAdmin,
 	})
 	if err != nil {
 		t.Fatalf("Execute returned error: %v", err)
@@ -414,12 +416,12 @@ func TestSeedAdminUseCaseIsNoopWhenAdminExists(t *testing.T) {
 		t.Fatal(err)
 	}
 	if user.ID != "admin-1" || user.PasswordHash != "old-hash" {
-		t.Fatalf("existing admin should not be overwritten: %+v", user)
+		t.Fatalf("existing user should not be overwritten: %+v", user)
 	}
 }
 
-func TestSeedAdminUseCaseRejectsShortPassword(t *testing.T) {
-	uc := NewSeedAdminUseCase(
+func TestSeedUserUseCaseRejectsShortPassword(t *testing.T) {
+	uc := NewSeedUserUseCase(
 		newFakeAuthRepo(),
 		fakeTxManager{},
 		fakeAuthUserIDGen{},
@@ -427,17 +429,18 @@ func TestSeedAdminUseCaseRejectsShortPassword(t *testing.T) {
 		fakeClock{now: time.Now()},
 	)
 
-	err := uc.Execute(SeedAdminCommand{
+	err := uc.Execute(SeedUserCommand{
 		Email:    "admin@example.com",
 		Password: "short",
+		Role:     entity.AuthRoleAdmin,
 	})
 	if !errors.Is(err, entity.ErrPasswordTooShort) {
 		t.Fatalf("expected ErrPasswordTooShort, got %v", err)
 	}
 }
 
-func TestSeedAdminUseCaseRejectsMissingEmail(t *testing.T) {
-	uc := NewSeedAdminUseCase(
+func TestSeedUserUseCaseRejectsMissingEmail(t *testing.T) {
+	uc := NewSeedUserUseCase(
 		newFakeAuthRepo(),
 		fakeTxManager{},
 		fakeAuthUserIDGen{},
@@ -445,10 +448,29 @@ func TestSeedAdminUseCaseRejectsMissingEmail(t *testing.T) {
 		fakeClock{now: time.Now()},
 	)
 
-	err := uc.Execute(SeedAdminCommand{
+	err := uc.Execute(SeedUserCommand{
 		Password: "long-password",
+		Role:     entity.AuthRoleAdmin,
 	})
 	if !errors.Is(err, entity.ErrInvalidAuthEmail) {
 		t.Fatalf("expected ErrInvalidAuthEmail, got %v", err)
+	}
+}
+
+func TestSeedUserUseCaseRejectsInvalidRole(t *testing.T) {
+	uc := NewSeedUserUseCase(
+		newFakeAuthRepo(),
+		fakeTxManager{},
+		fakeAuthUserIDGen{},
+		fakePasswordHasher{},
+		fakeClock{now: time.Now()},
+	)
+
+	err := uc.Execute(SeedUserCommand{
+		Email:    "admin@example.com",
+		Password: "long-password",
+	})
+	if !errors.Is(err, entity.ErrInvalidAuthRole) {
+		t.Fatalf("expected ErrInvalidAuthRole, got %v", err)
 	}
 }
