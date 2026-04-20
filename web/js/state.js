@@ -2,6 +2,7 @@ export const state = {
   debugMode: false,
   authUser: null,
   authChecked: false,
+  authLoginOpen: false,
 
   activeSessionId: "",
   session: null,
