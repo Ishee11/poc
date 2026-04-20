@@ -148,11 +148,8 @@ body::before {
 }
 
 .account-panel {
-    flex: 1 1 100%;
     display: grid;
     gap: 10px;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
 }
 
 .account-header {
@@ -163,9 +160,8 @@ body::before {
     flex-wrap: wrap;
 }
 
-.account-header h3 {
+.account-header h2 {
     margin: 0;
-    font-size: 1rem;
 }
 
 .account-linked-players {
@@ -221,7 +217,8 @@ body::before {
 }
 
 body:not([data-screen="session"]) .nav-session-only,
-body:not([data-screen="player"]) .nav-player-only {
+body:not([data-screen="player"]) .nav-player-only,
+body:not([data-screen="account"]) .nav-account-only {
     display: none;
 }
 

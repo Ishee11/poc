@@ -316,6 +316,10 @@ export function initSessionActions() {
         setScreen("lobby");
         pushRoute(routeToHome());
         break;
+      case "account-back-home-btn":
+        setScreen("lobby");
+        pushRoute(routeToHome());
+        break;
       case "player-back-session-btn":
         if (state.activeSessionId) {
           setScreen("session");

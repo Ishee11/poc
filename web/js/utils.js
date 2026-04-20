@@ -113,6 +113,10 @@ export function setScreen(name) {
     .getElementById("screen-player")
     ?.classList.toggle("active", name === "player");
 
+  document
+    .getElementById("screen-account")
+    ?.classList.toggle("active", name === "account");
+
   document.body.dataset.screen = name;
   window.scrollTo({ top: 0, left: 0 });
 }
@@ -123,6 +127,10 @@ export function routeToSession(sessionId) {
 
 export function routeToPlayer(playerId) {
   return withCurrentDebugSearch(`/player/${encodeURIComponent(playerId)}`);
+}
+
+export function routeToAccount() {
+  return withCurrentDebugSearch("/account");
 }
 
 export function pushRoute(path) {

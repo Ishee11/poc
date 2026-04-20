@@ -36,7 +36,9 @@ import {
   describeError,
   escapeHtml,
   openModal,
+  pushRoute,
   replaceRoute,
+  routeToAccount,
   routeToHome,
   setScreen,
   showNotice,
@@ -127,6 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 function initAuth() {
   const showLoginButton = document.getElementById("auth-show-login-btn");
   const form = document.getElementById("auth-login-form");
+  const accountButton = document.getElementById("auth-account-btn");
   const logoutButton = document.getElementById("auth-logout-btn");
   const registerButton = document.getElementById("auth-register-btn");
 
@@ -179,7 +182,17 @@ function initAuth() {
       state.authLoginOpen = false;
       clearAccount();
       renderAuthPanel();
+      if (window.location.pathname === "/account") {
+        setScreen("lobby");
+        pushRoute(routeToHome());
+      }
       showNotice(t("notice.logoutSuccess"), "success");
+    });
+  }
+
+  if (accountButton) {
+    accountButton.addEventListener("click", async () => {
+      await openAccount();
     });
   }
 
@@ -242,6 +255,22 @@ function renderAuthPanel() {
     userName.textContent = `${user.email} · ${user.role}`;
   } else {
     userName.textContent = "-";
+  }
+}
+
+async function openAccount({ replace = false } = {}) {
+  setScreen("account");
+  if (replace) {
+    replaceRoute(routeToAccount());
+  } else {
+    pushRoute(routeToAccount());
+  }
+
+  if (state.authUser) {
+    await loadAccount();
+  } else {
+    clearAccount();
+    renderAccountPanel();
   }
 }
 
@@ -344,8 +373,12 @@ function renderAccountPanel() {
   if (!panel || !linked || !select || !form) return;
 
   const user = state.authUser;
-  panel.hidden = !user;
-  if (!user) return;
+  panel.hidden = false;
+  if (!user) {
+    linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loginRequired"))}</div>`;
+    form.hidden = true;
+    return;
+  }
 
   if (state.accountLoading) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;
@@ -443,6 +476,11 @@ async function openInitialRoute({ fromHistory = false } = {}) {
 
   if (section === "player" && id) {
     await loadPlayerDetail(id, { replace: !fromHistory });
+    return;
+  }
+
+  if (section === "account") {
+    await openAccount({ replace: !fromHistory });
     return;
   }
 
