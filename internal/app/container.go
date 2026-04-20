@@ -27,6 +27,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	playerRepo := postgres.NewPlayerRepository()
 	debugAdminRepo := postgres.NewDebugAdminRepository()
 	authRepo := postgres.NewAuthRepository()
+	userPlayerLinkRepo := postgres.NewUserPlayerLinkRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(db.Pool)
@@ -182,6 +183,11 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 			MaxFailedAttempts: usecase.DefaultAuthPolicy().MaxFailedAttempts,
 		},
 	)
+	userPlayerLinksUC := usecase.NewUserPlayerLinksUseCase(
+		userPlayerLinkRepo,
+		playerRepo,
+		txManager,
+	)
 
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
@@ -192,6 +198,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 			MaxAge:   cfg.Auth.SessionTTL,
 		},
 		authUC,
+		userPlayerLinksUC,
 
 		// session
 		startSessionUC,

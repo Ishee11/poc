@@ -76,3 +76,21 @@ type LoginResponse struct {
 type MeResponse struct {
 	User AuthUserResponse `json:"user"`
 }
+
+type AccountResponse struct {
+	User    AuthUserResponse `json:"user"`
+	Players []PlayerDTO      `json:"players"`
+}
+
+type PlayerDTO struct {
+	ID   entity.PlayerID `json:"player_id"`
+	Name string          `json:"name"`
+}
+
+type AccountPlayersResponse struct {
+	Players []PlayerDTO `json:"players"`
+}
+
+type LinkAccountPlayerRequest struct {
+	PlayerID string `json:"player_id"`
+}

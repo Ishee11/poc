@@ -38,6 +38,11 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/auth/logout", h.Auth.Logout)
 	mux.HandleFunc("/auth/me", h.Auth.Me)
 
+	// ===== ACCOUNT =====
+	mux.HandleFunc("/account", h.Account.Account)
+	mux.HandleFunc("/account/players", h.Account.Players)
+	mux.HandleFunc("/account/players/available", h.Account.AvailablePlayers)
+
 	// ===== SWAGGER =====
 	mux.HandleFunc("/swagger/", httpSwagger.Handler())
 

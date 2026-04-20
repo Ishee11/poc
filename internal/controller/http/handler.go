@@ -9,6 +9,7 @@ import (
 
 type Handler struct {
 	Auth      *AuthHandler
+	Account   *AccountHandler
 	Session   *SessionHandler
 	Operation *OperationHandler
 	Player    *PlayerHandler
@@ -26,6 +27,7 @@ type AuthCookieConfig struct {
 func NewHandler(
 	authCookie AuthCookieConfig,
 	authUC *usecase.AuthService,
+	userPlayerLinksUC *usecase.UserPlayerLinksUseCase,
 
 	// session
 	startSession *usecase.StartSessionUseCase,
@@ -61,6 +63,11 @@ func NewHandler(
 			authUC: authUC,
 			cookie: authCookie,
 		},
+		Account: &AccountHandler{
+			authUC:            authUC,
+			userPlayerLinksUC: userPlayerLinksUC,
+			cookie:            authCookie,
+		},
 		Session: &SessionHandler{
 			startSessionUC:      startSession,
 			finishSessionUC:     finishSession,
@@ -95,6 +102,12 @@ func NewHandler(
 type AuthHandler struct {
 	authUC *usecase.AuthService
 	cookie AuthCookieConfig
+}
+
+type AccountHandler struct {
+	authUC            *usecase.AuthService
+	userPlayerLinksUC *usecase.UserPlayerLinksUseCase
+	cookie            AuthCookieConfig
 }
 
 type SessionHandler struct {
