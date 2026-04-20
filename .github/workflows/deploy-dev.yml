@@ -1,8 +1,8 @@
 name: Deploy Dev
 
 on:
-    push:
-      branches: ["dev"]
+  push:
+    branches: ["dev"]
 
 jobs:
   deploy-dev:
@@ -17,12 +17,20 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
+            set -euo pipefail
+
+            echo "== Disk before deploy =="
+            df -h
+            docker system df
 
             echo "== Pull project =="
             rm -rf /app-dev
             git clone -b dev https://github.com/Ishee11/poc.git /app-dev
             cd /app-dev
+            test -f docker-compose.dev.yml
+
+            echo "== Prune docker build cache =="
+            docker builder prune -af || true
 
             echo "== Start dev postgres =="
             docker compose -p poker-dev -f docker-compose.dev.yml up -d db
@@ -47,5 +55,9 @@ jobs:
             echo "== Check dev app logs =="
             sleep 3
             docker logs poker-app-dev --tail=50
+
+            echo "== Disk after deploy =="
+            df -h
+            docker system df
 
             echo "== Done =="

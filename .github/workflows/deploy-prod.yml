@@ -17,12 +17,19 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
+            set -euo pipefail
+
+            echo "== Disk before deploy =="
+            df -h
+            docker system df
 
             echo "== Pull project =="
             rm -rf /app
             git clone -b master https://github.com/Ishee11/poc.git /app
             cd /app
+
+            echo "== Prune docker build cache =="
+            docker builder prune -af || true
 
             echo "== Build & start prod containers =="
             docker compose -p poker-prod -f docker-compose.yml up -d --build --force-recreate
@@ -40,5 +47,9 @@ jobs:
             echo "== Check prod app logs =="
             sleep 3
             docker logs poker-app --tail=50
+
+            echo "== Disk after deploy =="
+            df -h
+            docker system df
 
             echo "== Done =="
