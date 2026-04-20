@@ -28,7 +28,7 @@ func Run() error {
 	}
 
 	// container (DI)
-	container := NewContainer(db)
+	container := NewContainer(db, cfg)
 
 	// http server
 	server := NewHTTPServer(container.Router, cfg.HTTPPort)

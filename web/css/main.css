@@ -85,6 +85,55 @@ body::before {
     align-items: center;
 }
 
+.auth-panel {
+    flex: 0 1 430px;
+    min-width: 260px;
+}
+
+.auth-login-form {
+    display: grid;
+    grid-template-columns: minmax(110px, 1fr) minmax(110px, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.auth-login-form input {
+    min-width: 0;
+    height: 38px;
+}
+
+.auth-login-form button,
+.auth-user-panel button {
+    height: 38px;
+    white-space: nowrap;
+}
+
+.auth-user-panel {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-user-label {
+    color: var(--muted);
+    font-size: 0.74rem;
+    line-height: 1.2;
+    text-align: right;
+}
+
+.auth-user-name {
+    max-width: 240px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .top-nav {
     display: flex;
     flex-wrap: wrap;
@@ -1206,6 +1255,24 @@ pre {
 
     .top-nav button {
         flex: 1 1 100%;
+    }
+
+    .auth-panel {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .auth-login-form {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-user-panel {
+        justify-content: space-between;
+    }
+
+    .auth-user-label,
+    .auth-user-name {
+        text-align: left;
     }
 
     .app-header h1 {

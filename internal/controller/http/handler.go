@@ -1,8 +1,14 @@
 package http
 
-import "github.com/ishee11/poc/internal/usecase"
+import (
+	"net/http"
+	"time"
+
+	"github.com/ishee11/poc/internal/usecase"
+)
 
 type Handler struct {
+	Auth      *AuthHandler
 	Session   *SessionHandler
 	Operation *OperationHandler
 	Player    *PlayerHandler
@@ -10,7 +16,17 @@ type Handler struct {
 	Debug     *DebugHandler
 }
 
+type AuthCookieConfig struct {
+	Name     string
+	Secure   bool
+	SameSite http.SameSite
+	MaxAge   time.Duration
+}
+
 func NewHandler(
+	authCookie AuthCookieConfig,
+	authUC *usecase.AuthService,
+
 	// session
 	startSession *usecase.StartSessionUseCase,
 	finishSession *usecase.FinishSessionUseCase,
@@ -41,6 +57,10 @@ func NewHandler(
 ) *Handler {
 
 	return &Handler{
+		Auth: &AuthHandler{
+			authUC: authUC,
+			cookie: authCookie,
+		},
 		Session: &SessionHandler{
 			startSessionUC:      startSession,
 			finishSessionUC:     finishSession,
@@ -70,6 +90,11 @@ func NewHandler(
 			deleteSessionFinishUC: deleteDebugSessionFinish,
 		},
 	}
+}
+
+type AuthHandler struct {
+	authUC *usecase.AuthService
+	cookie AuthCookieConfig
 }
 
 type SessionHandler struct {

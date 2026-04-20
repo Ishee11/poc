@@ -56,3 +56,23 @@ type UpdateSessionConfigRequest struct {
 type CreatePlayerResponse struct {
 	PlayerID entity.PlayerID `json:"player_id" example:"player-123"`
 }
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthUserResponse struct {
+	ID    entity.AuthUserID `json:"id"`
+	Email string            `json:"email"`
+	Role  entity.AuthRole   `json:"role"`
+}
+
+type LoginResponse struct {
+	User      AuthUserResponse `json:"user"`
+	ExpiresAt string           `json:"expires_at"`
+}
+
+type MeResponse struct {
+	User AuthUserResponse `json:"user"`
+}

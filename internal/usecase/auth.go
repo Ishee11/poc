@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -144,13 +145,14 @@ func NewAuthService(
 func (s *AuthService) Login(cmd LoginCommand) (*LoginResult, error) {
 	var result *LoginResult
 	var authErr error
+	email := strings.TrimSpace(cmd.Email)
 
 	err := s.txManager.RunInTx(func(tx Tx) error {
 		now := s.clock.Now()
 
 		failed, err := s.attemptRepo.CountFailedLoginAttempts(
 			tx,
-			cmd.Email,
+			email,
 			cmd.IP,
 			now.Add(-s.policy.RateLimitWindow),
 		)
@@ -161,11 +163,11 @@ func (s *AuthService) Login(cmd LoginCommand) (*LoginResult, error) {
 			return entity.ErrAuthRateLimited
 		}
 
-		user, err := s.userRepo.FindUserByEmail(tx, cmd.Email)
+		user, err := s.userRepo.FindUserByEmail(tx, email)
 		if err != nil {
 			if errors.Is(err, entity.ErrAuthUserNotFound) {
 				authErr = entity.ErrInvalidCredentials
-				return s.recordLoginAttempt(tx, cmd.Email, cmd.IP, false, now)
+				return s.recordLoginAttempt(tx, email, cmd.IP, false, now)
 			}
 			return err
 		}
@@ -173,7 +175,7 @@ func (s *AuthService) Login(cmd LoginCommand) (*LoginResult, error) {
 		if user.Status != entity.AuthUserStatusActive ||
 			!s.passwords.VerifyPassword(cmd.Password, user.PasswordHash) {
 			authErr = entity.ErrInvalidCredentials
-			return s.recordLoginAttempt(tx, cmd.Email, cmd.IP, false, now)
+			return s.recordLoginAttempt(tx, email, cmd.IP, false, now)
 		}
 
 		token, err := s.tokenGen.NewToken()
@@ -197,7 +199,7 @@ func (s *AuthService) Login(cmd LoginCommand) (*LoginResult, error) {
 		if err := s.userRepo.UpdateLastLoginAt(tx, user.ID, now); err != nil {
 			return err
 		}
-		if err := s.recordLoginAttempt(tx, cmd.Email, cmd.IP, true, now); err != nil {
+		if err := s.recordLoginAttempt(tx, email, cmd.IP, true, now); err != nil {
 			return err
 		}
 
