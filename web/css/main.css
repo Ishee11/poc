@@ -204,7 +204,9 @@ body::before {
 
 .account-link-form select,
 .account-link-form button {
-    height: 40px;
+    min-height: 42px;
+    padding-top: 9px;
+    padding-bottom: 9px;
 }
 
 .account-empty-hint {

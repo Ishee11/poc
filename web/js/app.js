@@ -354,12 +354,15 @@ function renderAccountPanel() {
   } else {
     linked.innerHTML = state.accountPlayers
       .map(
-        (player) => `
+        (player) => {
+          const id = player.player_id || player.id || "";
+          return `
           <div class="account-player-row">
             <span>${escapeHtml(player.name)}</span>
-            <button type="button" class="secondary" data-account-unlink-player="${escapeHtml(player.id)}">${escapeHtml(t("account.unlinkPlayer"))}</button>
+            <button type="button" class="secondary" data-account-unlink-player="${escapeHtml(id)}">${escapeHtml(t("account.unlinkPlayer"))}</button>
           </div>
-        `,
+        `;
+        },
       )
       .join("");
   }
@@ -367,7 +370,10 @@ function renderAccountPanel() {
   select.innerHTML = `
     <option value="">${escapeHtml(t("account.selectPlayer"))}</option>
     ${state.accountAvailablePlayers
-      .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
+      .map((player) => {
+        const id = player.player_id || player.id || "";
+        return `<option value="${escapeHtml(id)}">${escapeHtml(player.name)}</option>`;
+      })
       .join("")}
   `;
   form.hidden = state.accountLoading || state.accountAvailablePlayers.length === 0;
