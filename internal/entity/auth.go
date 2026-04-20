@@ -47,6 +47,10 @@ var (
 	ErrAuthSessionNotFound = errors.New("auth session not found")
 	ErrInvalidAuthRole     = errors.New("invalid auth role")
 	ErrInvalidAuthStatus   = errors.New("invalid auth status")
+	ErrInvalidCredentials  = errors.New("invalid credentials")
+	ErrUnauthorized        = errors.New("unauthorized")
+	ErrForbidden           = errors.New("forbidden")
+	ErrAuthRateLimited     = errors.New("auth rate limited")
 )
 
 type AuthUser struct {
