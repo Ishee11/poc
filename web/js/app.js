@@ -116,6 +116,7 @@ function initAuth() {
   const showLoginButton = document.getElementById("auth-show-login-btn");
   const form = document.getElementById("auth-login-form");
   const logoutButton = document.getElementById("auth-logout-btn");
+  const registerButton = document.getElementById("auth-register-btn");
 
   if (showLoginButton) {
     showLoginButton.addEventListener("click", () => {
@@ -167,6 +168,12 @@ function initAuth() {
       showNotice(t("notice.logoutSuccess"), "success");
     });
   }
+
+  if (registerButton) {
+    registerButton.addEventListener("click", () => {
+      showNotice(t("notice.registrationPending"), "info");
+    });
+  }
 }
 
 async function loadCurrentUser() {
@@ -179,14 +186,16 @@ async function loadCurrentUser() {
 function renderAuthPanel() {
   const form = document.getElementById("auth-login-form");
   const showLoginButton = document.getElementById("auth-show-login-btn");
+  const registerRow = document.getElementById("auth-register-row");
   const userPanel = document.getElementById("auth-user-panel");
   const userName = document.getElementById("auth-user-name");
 
-  if (!form || !showLoginButton || !userPanel || !userName) return;
+  if (!form || !showLoginButton || !registerRow || !userPanel || !userName) return;
 
   const user = state.authUser;
   showLoginButton.hidden = Boolean(user) || state.authLoginOpen;
   form.hidden = Boolean(user) || !state.authLoginOpen;
+  registerRow.hidden = Boolean(user) || !state.authLoginOpen;
   userPanel.hidden = !user;
 
   if (user) {
