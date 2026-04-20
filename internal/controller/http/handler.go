@@ -99,6 +99,8 @@ func NewHandler(
 			deletePlayerUC:        deleteDebugPlayer,
 			deleteSessionUC:       deleteDebugSession,
 			deleteSessionFinishUC: deleteDebugSessionFinish,
+			authUC:                authUC,
+			cookie:                authCookie,
 		},
 	}
 }
@@ -148,4 +150,6 @@ type DebugHandler struct {
 	deletePlayerUC        *usecase.DeleteDebugPlayerUseCase
 	deleteSessionUC       *usecase.DeleteDebugSessionUseCase
 	deleteSessionFinishUC *usecase.DeleteDebugSessionFinishUseCase
+	authUC                *usecase.AuthService
+	cookie                AuthCookieConfig
 }

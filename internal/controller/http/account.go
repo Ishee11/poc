@@ -161,6 +161,26 @@ func (h *AccountHandler) AvailablePlayers(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	h.writeAvailablePlayers(w, r)
+}
+
+// PublicAvailablePlayers godoc
+// @Summary Unlinked players
+// @Description Returns players that are not linked to any user.
+// @Tags players
+// @Produce json
+// @Success 200 {object} AccountPlayersResponse
+// @Router /players/unlinked [get]
+func (h *AccountHandler) PublicAvailablePlayers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+
+	h.writeAvailablePlayers(w, r)
+}
+
+func (h *AccountHandler) writeAvailablePlayers(w http.ResponseWriter, r *http.Request) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
 		limit = 0

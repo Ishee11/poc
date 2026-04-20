@@ -6,6 +6,8 @@ export const state = {
   accountPlayers: [],
   accountAvailablePlayers: [],
   accountLoading: false,
+  guestPlayerId: "",
+  guestPlayers: [],
 
   activeSessionId: "",
   session: null,

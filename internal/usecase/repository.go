@@ -91,10 +91,11 @@ type ProjectionRepository interface {
 }
 
 type SessionStatsFilter struct {
-	Limit        int
-	From         *DateTimeRangeBound
-	To           *DateTimeRangeBound
-	ViewerUserID *entity.AuthUserID
+	Limit         int
+	From          *DateTimeRangeBound
+	To            *DateTimeRangeBound
+	ViewerUserID  *entity.AuthUserID
+	GuestPlayerID entity.PlayerID
 }
 
 type PlayerStatsFilter struct {

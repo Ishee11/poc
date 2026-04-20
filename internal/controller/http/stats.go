@@ -41,10 +41,11 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	res, err := h.getStatsSessionsUC.Execute(usecase.GetStatsSessionsQuery{
-		Limit:        limit,
-		From:         from,
-		To:           to,
-		ViewerUserID: viewerUserID,
+		Limit:         limit,
+		From:          from,
+		To:            to,
+		ViewerUserID:  viewerUserID,
+		GuestPlayerID: entity.PlayerID(r.URL.Query().Get("guest_player_id")),
 	})
 	if err != nil {
 		writeError(w, r, err)

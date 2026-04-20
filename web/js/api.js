@@ -153,8 +153,12 @@ export function getSession(sessionId) {
   return request(`/sessions?session_id=${sessionId}`);
 }
 
-export function getSessions() {
-  return request("/stats/sessions");
+export function getSessions({ guestPlayerId } = {}) {
+  const params = new URLSearchParams();
+  if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/stats/sessions${suffix}`);
 }
 
 export function getPlayersStats() {
@@ -168,6 +172,15 @@ export function getPlayers({ limit, offset } = {}) {
 
   const suffix = params.toString() ? `?${params.toString()}` : "";
   return request(`/players${suffix}`);
+}
+
+export function getUnlinkedPlayers({ limit, offset } = {}) {
+  const params = new URLSearchParams();
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/players/unlinked${suffix}`);
 }
 
 export function getSessionPlayers(sessionId) {

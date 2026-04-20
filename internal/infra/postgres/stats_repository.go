@@ -63,6 +63,20 @@ func (r *StatsRepository) ListSessions(
 				WHERE guest_eo.session_id = s.id
 			))
 			OR
+			($4::text IS NULL AND $5::text IS NOT NULL
+				AND NOT EXISTS (
+					SELECT 1
+					FROM user_players selected_guest_up
+					WHERE selected_guest_up.player_id = $5::text
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM effective_operations selected_guest_eo
+					WHERE selected_guest_eo.session_id = s.id
+					  AND selected_guest_eo.player_id = $5::text
+				)
+			)
+			OR
 			($4::text IS NOT NULL AND (
 				NOT EXISTS (
 					SELECT 1
@@ -83,7 +97,7 @@ func (r *StatsRepository) ListSessions(
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
 		LIMIT $3
-	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID))
+	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID))
 	if err != nil {
 		return nil, err
 	}
@@ -415,6 +429,14 @@ func optionalAuthUserID(id *entity.AuthUserID) *string {
 		return nil
 	}
 	value := string(*id)
+	return &value
+}
+
+func optionalPlayerID(id entity.PlayerID) *string {
+	if id == "" {
+		return nil
+	}
+	value := string(id)
 	return &value
 }
 
