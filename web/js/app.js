@@ -256,6 +256,7 @@ function renderAuthPanel() {
 
   const user = state.authUser;
   authPanel?.classList.toggle("authenticated", Boolean(user));
+  authPanel?.classList.toggle("login-open", !user && state.authLoginOpen);
   showLoginButton.hidden = Boolean(user) || state.authLoginOpen;
   form.hidden = Boolean(user) || !state.authLoginOpen;
   registerRow.hidden = Boolean(user) || !state.authLoginOpen;
