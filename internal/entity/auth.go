@@ -12,14 +12,13 @@ type LoginAttemptID string
 type AuthRole string
 
 const (
-	AuthRoleAdmin  AuthRole = "admin"
-	AuthRoleMember AuthRole = "member"
-	AuthRoleViewer AuthRole = "viewer"
+	AuthRoleAdmin AuthRole = "admin"
+	AuthRoleUser  AuthRole = "user"
 )
 
 func (r AuthRole) Valid() bool {
 	switch r {
-	case AuthRoleAdmin, AuthRoleMember, AuthRoleViewer:
+	case AuthRoleAdmin, AuthRoleUser:
 		return true
 	default:
 		return false
@@ -53,6 +52,8 @@ var (
 	ErrForbidden           = errors.New("forbidden")
 	ErrAuthRateLimited     = errors.New("auth rate limited")
 	ErrPasswordTooShort    = errors.New("password too short")
+	ErrPlayerAlreadyLinked = errors.New("player already linked")
+	ErrUserPlayerNotLinked = errors.New("user player not linked")
 )
 
 type AuthUser struct {

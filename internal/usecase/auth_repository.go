@@ -25,3 +25,12 @@ type LoginAttemptRepository interface {
 	SaveLoginAttempt(tx Tx, attempt *entity.LoginAttempt) error
 	CountFailedLoginAttempts(tx Tx, email string, ip string, since time.Time) (int, error)
 }
+
+type UserPlayerLinkRepository interface {
+	LinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
+	UnlinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
+	ListUserPlayers(tx Tx, userID entity.AuthUserID) ([]PlayerDTO, error)
+	IsPlayerLinked(tx Tx, playerID entity.PlayerID) (bool, error)
+	IsPlayerLinkedToUser(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) (bool, error)
+	ListUnlinkedPlayers(tx Tx, limit int, offset int) ([]PlayerDTO, error)
+}

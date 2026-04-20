@@ -272,7 +272,7 @@ func TestAuthServiceLoginInvalidCredentialsRecordsAttempt(t *testing.T) {
 func TestAuthServiceCurrentUserTouchesSession(t *testing.T) {
 	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
 	repo := newFakeAuthRepo()
-	user, err := entity.NewAuthUser("user-1", "admin@example.com", "hash", entity.AuthRoleMember, now)
+	user, err := entity.NewAuthUser("user-1", "admin@example.com", "hash", entity.AuthRoleUser, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,7 +309,7 @@ func TestAuthServiceCurrentUserTouchesSession(t *testing.T) {
 func TestAuthServiceCurrentUserRevokesExpiredSession(t *testing.T) {
 	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
 	repo := newFakeAuthRepo()
-	user, err := entity.NewAuthUser("user-1", "admin@example.com", "hash", entity.AuthRoleMember, now)
+	user, err := entity.NewAuthUser("user-1", "admin@example.com", "hash", entity.AuthRoleUser, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -343,12 +343,12 @@ func TestAuthServiceCurrentUserRevokesExpiredSession(t *testing.T) {
 func TestAuthServiceRequireRole(t *testing.T) {
 	service := newTestAuthService(newFakeAuthRepo(), time.Now(), fakePasswordVerifier{ok: true})
 
-	err := service.RequireRole(AuthPrincipal{Role: entity.AuthRoleViewer}, entity.AuthRoleAdmin, entity.AuthRoleMember)
+	err := service.RequireRole(AuthPrincipal{Role: entity.AuthRoleUser}, entity.AuthRoleAdmin)
 	if !errors.Is(err, entity.ErrForbidden) {
 		t.Fatalf("expected ErrForbidden, got %v", err)
 	}
 
-	err = service.RequireRole(AuthPrincipal{Role: entity.AuthRoleMember}, entity.AuthRoleAdmin, entity.AuthRoleMember)
+	err = service.RequireRole(AuthPrincipal{Role: entity.AuthRoleUser}, entity.AuthRoleAdmin, entity.AuthRoleUser)
 	if err != nil {
 		t.Fatalf("expected allowed role, got %v", err)
 	}
