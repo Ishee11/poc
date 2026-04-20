@@ -86,8 +86,10 @@ body::before {
 }
 
 .auth-panel {
-    flex: 0 1 430px;
+    flex: 0 1 auto;
     min-width: 260px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .auth-login-form {
@@ -132,6 +134,10 @@ body::before {
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+body:not([data-screen="lobby"]) .auth-panel {
+    display: none;
 }
 
 .top-nav {
@@ -1260,6 +1266,11 @@ pre {
     .auth-panel {
         width: 100%;
         min-width: 0;
+        justify-content: stretch;
+    }
+
+    #auth-show-login-btn {
+        width: 100%;
     }
 
     .auth-login-form {

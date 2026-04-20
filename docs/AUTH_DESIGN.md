@@ -2,8 +2,7 @@
 
 Status: draft.
 
-This document defines the first auth boundary for Poker Session Control. It is a
-specification only; implementation is intentionally out of scope for this step.
+This document defines the auth boundary for Poker Session Control.
 
 ## Goals
 
@@ -25,19 +24,60 @@ specification only; implementation is intentionally out of scope for this step.
 
 Auth users are system accounts. They are not poker players.
 
-Poker players remain business entities in the `players` table. A future version
-may optionally link a system user to a player, but this must not be required for
-basic session control.
+Poker players remain business entities in the `players` table.
+
+A system user may be linked to multiple poker players through a join table:
+
+```text
+user_players
+- user_id
+- player_id
+- created_at
+```
+
+A player may be linked to at most one system user. Users can link players to
+their account from a personal account page only when the player is not already
+linked to another user.
+
+Session visibility is based on linked players:
+- A session is public when none of its participating players is linked to a user.
+- A session is user-visible when the current user's linked player participated
+  in it.
+- A session is hidden from a user or guest when it contains another user's
+  linked player and none of the current user's linked players participated.
 
 ## Roles
 
 | Role | Purpose |
 | --- | --- |
 | `admin` | Full access, including temporary debug/admin endpoints and future user management. |
-| `member` | Operates games: starts and finishes sessions, manages buy-ins, cash-outs, reversals, and players. |
-| `viewer` | Read-only access to sessions, players, operations, and stats. |
+| `user` | Normal authenticated user. Can operate games but cannot use debug/admin endpoints. Visibility is filtered by linked players. |
+| `guest` | Anonymous user. Can operate public games but cannot use debug/admin endpoints. Visibility is filtered to public sessions. |
 
 Authorization is server-side. UI visibility is only a convenience.
+
+## Visibility Rules
+
+Admins see every session, player, operation, and stat.
+
+Authenticated users see:
+- public sessions;
+- sessions where at least one of their linked players participated.
+
+Authenticated users do not see sessions where another user's linked player
+participated unless one of their own linked players also participated.
+
+Guests see only public sessions. A guest cannot see a session that contains any
+player linked to a system user.
+
+The same visibility filter must be applied consistently to:
+- `GET /sessions`;
+- `GET /sessions/players`;
+- `GET /sessions/operations`;
+- `GET /stats/sessions`;
+- `GET /stats/players`;
+- `GET /stats/player`;
+- frontend session and player screens after their SPA shell loads.
 
 ## Route Access Matrix
 
@@ -51,26 +91,30 @@ Authorization is server-side. UI visibility is only a convenience.
 | `GET /swagger/*` | Development only, or `admin` in production |
 | `POST /auth/login` | Public |
 | `POST /auth/logout` | Authenticated |
-| `GET /auth/me` | Authenticated |
-| `GET /sessions` | `viewer`, `member`, `admin` |
-| `GET /sessions/players` | `viewer`, `member`, `admin` |
-| `GET /sessions/operations` | `viewer`, `member`, `admin` |
-| `GET /players` | `viewer`, `member`, `admin` |
-| `GET /players/stats` | `viewer`, `member`, `admin` |
-| `GET /stats/player` | `viewer`, `member`, `admin` |
-| `GET /stats/sessions` | `viewer`, `member`, `admin` |
-| `GET /stats/players` | `viewer`, `member`, `admin` |
-| `POST /sessions/start` | `member`, `admin` |
-| `POST /sessions/finish` | `member`, `admin` |
-| `POST /operations/buy-in` | `member`, `admin` |
-| `POST /operations/cash-out` | `member`, `admin` |
-| `POST /operations/reverse` | `member`, `admin` |
-| `POST /players` | `member`, `admin` |
+| `GET /auth/me` | Public; returns anonymous state when no session exists |
+| `GET /account` | Authenticated user, `admin` |
+| `POST /account/players` | Authenticated user, `admin` |
+| `DELETE /account/players/{id}` | Authenticated user, `admin` |
+| `GET /sessions` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /sessions/players` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /sessions/operations` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /players` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /players/stats` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /stats/player` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /stats/sessions` | `guest`, `user`, `admin`; visibility-filtered |
+| `GET /stats/players` | `guest`, `user`, `admin`; visibility-filtered |
+| `POST /sessions/start` | `guest`, `user`, `admin` |
+| `POST /sessions/finish` | `guest`, `user`, `admin`; visibility-filtered |
+| `POST /operations/buy-in` | `guest`, `user`, `admin`; visibility-filtered |
+| `POST /operations/cash-out` | `guest`, `user`, `admin`; visibility-filtered |
+| `POST /operations/reverse` | `guest`, `user`, `admin`; visibility-filtered |
+| `POST /players` | `guest`, `user`, `admin` |
 | `/debug/*` | `admin` only |
 
 Notes:
 - `GET /session/{id}` and `GET /player/{id}` are frontend routes. They may load
-  the public SPA shell, but API calls from that shell must still require auth.
+  the public SPA shell, but API calls from that shell must apply visibility
+  filtering.
 - Swagger should be disabled or admin-only in production because it exposes the
   write API surface.
 
@@ -123,6 +167,8 @@ Use stable API error codes consistent with the existing error response style.
 | Unknown, expired, or revoked session | `401` | `unauthorized` |
 | Disabled user | `401` | `unauthorized` |
 | Authenticated but role is insufficient | `403` | `forbidden` |
+| Session hidden by visibility rules | `404` | `session_not_found` |
+| Player hidden by visibility rules | `404` | `player_not_found` |
 | Invalid login credentials | `401` | `invalid_credentials` |
 | Login rate limit exceeded | `429` | `rate_limited` |
 
@@ -226,11 +272,13 @@ If HTTPS is added, `APP_ORIGIN` must be changed to the HTTPS origin.
 1. Add database schema for `users`, `auth_sessions`, and `login_attempts`.
 2. Add auth domain/usecase layer and repositories.
 3. Add `/auth/login`, `/auth/logout`, and `/auth/me`.
-4. Add `AuthMiddleware` and `RequireRole`.
-5. Protect API routes according to the route access matrix.
-6. Add login/logout UI and central `401` handling in the frontend.
-7. Add CSRF origin checks for unsafe methods.
-8. Add seed admin flow and runbook documentation.
+4. Add login/logout UI.
+5. Add `user_players` schema and repositories.
+6. Add personal account page for linking unlinked players.
+7. Add server-side visibility filters for sessions, players, operations, and stats.
+8. Add debug/admin route protection.
+9. Add CSRF origin checks for unsafe methods.
+10. Add runbook documentation.
 
 ## References
 
