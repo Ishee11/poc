@@ -1,0 +1,44 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches: ["dev"]
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy to VPS (dev)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            echo "== Pull project =="
+            rm -rf /app-dev
+            git clone -b dev https://github.com/Ishee11/poc.git /app-dev
+            cd /app-dev
+
+            echo "== Build & start dev containers =="
+            docker compose -f docker-compose.dev.yml up -d --build --force-recreate
+
+            echo "== Wait for dev postgres =="
+            for i in {1..10}; do
+              if docker exec poker-db-dev pg_isready -U poker; then
+                echo "Dev postgres is ready"
+                break
+              fi
+              echo "Waiting for dev postgres..."
+              sleep 2
+            done
+
+            echo "== Check dev app logs =="
+            sleep 3
+            docker logs poker-app-dev --tail=50
+
+            echo "== Done =="
