@@ -1,51 +1,51 @@
 name: Deploy Dev
 
-  on:
+on:
     push:
       branches: ["dev"]
 
-  jobs:
-    deploy-dev:
-      runs-on: ubuntu-latest
-      timeout-minutes: 20
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
-      steps:
-        - name: Deploy to VPS (dev)
-          uses: appleboy/ssh-action@v1
-          with:
-            host: ${{ secrets.SERVER_HOST }}
-            username: root
-            key: ${{ secrets.SSH_PRIVATE_KEY }}
-            script: |
-              set -e
+    steps:
+      - name: Deploy to VPS (dev)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
 
-              echo "== Pull project =="
-              rm -rf /app-dev
-              git clone -b dev https://github.com/Ishee11/poc.git /app-dev
-              cd /app-dev
+            echo "== Pull project =="
+            rm -rf /app-dev
+            git clone -b dev https://github.com/Ishee11/poc.git /app-dev
+            cd /app-dev
 
-              echo "== Start dev postgres =="
-              docker compose -p poker-dev -f docker-compose.dev.yml up -d db
+            echo "== Start dev postgres =="
+            docker compose -p poker-dev -f docker-compose.dev.yml up -d db
 
-              echo "== Wait for dev postgres =="
-              for i in {1..20}; do
-                if docker exec poker-db-dev pg_isready -U poker; then
-                  echo "Dev postgres is ready"
-                  break
-                fi
-                echo "Waiting for dev postgres..."
-                sleep 2
-              done
+            echo "== Wait for dev postgres =="
+            for i in {1..20}; do
+              if docker exec poker-db-dev pg_isready -U poker; then
+                echo "Dev postgres is ready"
+                break
+              fi
+              echo "Waiting for dev postgres..."
+              sleep 2
+            done
 
-              echo "== Copy prod database to dev =="
-              docker exec poker-db pg_dump -U poker -d poker --clean --if-exists --no-owner --no-privileges \
-                | docker exec -i poker-db-dev psql -U poker -d poker
+            echo "== Copy prod database to dev =="
+            docker exec poker-db pg_dump -U poker -d poker --clean --if-exists --no-owner --no-privileges \
+              | docker exec -i poker-db-dev psql -U poker -d poker
 
-              echo "== Build & start dev app =="
-              docker compose -p poker-dev -f docker-compose.dev.yml up -d --build --force-recreate app
+            echo "== Build & start dev app =="
+            docker compose -p poker-dev -f docker-compose.dev.yml up -d --build --force-recreate app
 
-              echo "== Check dev app logs =="
-              sleep 3
-              docker logs poker-app-dev --tail=50
+            echo "== Check dev app logs =="
+            sleep 3
+            docker logs poker-app-dev --tail=50
 
-              echo "== Done =="
+            echo "== Done =="
