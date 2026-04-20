@@ -42,18 +42,19 @@ func (s AuthUserStatus) Valid() bool {
 }
 
 var (
-	ErrAuthUserNotFound    = errors.New("auth user not found")
-	ErrAuthSessionNotFound = errors.New("auth session not found")
-	ErrInvalidAuthRole     = errors.New("invalid auth role")
-	ErrInvalidAuthStatus   = errors.New("invalid auth status")
-	ErrInvalidAuthEmail    = errors.New("invalid auth email")
-	ErrInvalidCredentials  = errors.New("invalid credentials")
-	ErrUnauthorized        = errors.New("unauthorized")
-	ErrForbidden           = errors.New("forbidden")
-	ErrAuthRateLimited     = errors.New("auth rate limited")
-	ErrPasswordTooShort    = errors.New("password too short")
-	ErrPlayerAlreadyLinked = errors.New("player already linked")
-	ErrUserPlayerNotLinked = errors.New("user player not linked")
+	ErrAuthUserNotFound      = errors.New("auth user not found")
+	ErrAuthUserAlreadyExists = errors.New("auth user already exists")
+	ErrAuthSessionNotFound   = errors.New("auth session not found")
+	ErrInvalidAuthRole       = errors.New("invalid auth role")
+	ErrInvalidAuthStatus     = errors.New("invalid auth status")
+	ErrInvalidAuthEmail      = errors.New("invalid auth email")
+	ErrInvalidCredentials    = errors.New("invalid credentials")
+	ErrUnauthorized          = errors.New("unauthorized")
+	ErrForbidden             = errors.New("forbidden")
+	ErrAuthRateLimited       = errors.New("auth rate limited")
+	ErrPasswordTooShort      = errors.New("password too short")
+	ErrPlayerAlreadyLinked   = errors.New("player already linked")
+	ErrUserPlayerNotLinked   = errors.New("user player not linked")
 )
 
 type AuthUser struct {

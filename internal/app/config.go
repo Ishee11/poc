@@ -23,6 +23,8 @@ type AuthConfig struct {
 	LoginRateLimit string
 	SeedAdminEmail string
 	SeedAdminPass  string
+	SeedUserEmail  string
+	SeedUserPass   string
 	AppOrigin      string
 }
 
@@ -51,6 +53,8 @@ func Load() (*Config, error) {
 			LoginRateLimit: getEnv("AUTH_LOGIN_RATE_LIMIT", "5/min"),
 			SeedAdminEmail: os.Getenv("AUTH_SEED_ADMIN_EMAIL"),
 			SeedAdminPass:  os.Getenv("AUTH_SEED_ADMIN_PASSWORD"),
+			SeedUserEmail:  os.Getenv("AUTH_SEED_USER_EMAIL"),
+			SeedUserPass:   os.Getenv("AUTH_SEED_USER_PASSWORD"),
 			AppOrigin:      os.Getenv("APP_ORIGIN"),
 		},
 	}

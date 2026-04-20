@@ -7,15 +7,14 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
-const minSeedUserPasswordLength = 12
+const minRegisterPasswordLength = 12
 
-type SeedUserCommand struct {
+type RegisterUserCommand struct {
 	Email    string
 	Password string
-	Role     entity.AuthRole
 }
 
-type SeedUserUseCase struct {
+type RegisterUserUseCase struct {
 	userRepo  AuthUserRepository
 	txManager TxManager
 	idGen     AuthUserIDGenerator
@@ -23,18 +22,18 @@ type SeedUserUseCase struct {
 	clock     Clock
 }
 
-func NewSeedUserUseCase(
+func NewRegisterUserUseCase(
 	userRepo AuthUserRepository,
 	txManager TxManager,
 	idGen AuthUserIDGenerator,
 	passwords PasswordHasher,
 	clock Clock,
-) *SeedUserUseCase {
+) *RegisterUserUseCase {
 	if clock == nil {
 		clock = SystemClock{}
 	}
 
-	return &SeedUserUseCase{
+	return &RegisterUserUseCase{
 		userRepo:  userRepo,
 		txManager: txManager,
 		idGen:     idGen,
@@ -43,25 +42,19 @@ func NewSeedUserUseCase(
 	}
 }
 
-func (uc *SeedUserUseCase) Execute(cmd SeedUserCommand) error {
+func (uc *RegisterUserUseCase) Execute(cmd RegisterUserCommand) error {
 	email := strings.TrimSpace(cmd.Email)
-	if email == "" && cmd.Password == "" {
-		return nil
-	}
 	if email == "" {
 		return entity.ErrInvalidAuthEmail
 	}
-	if len(cmd.Password) < minSeedUserPasswordLength {
+	if len(cmd.Password) < minRegisterPasswordLength {
 		return entity.ErrPasswordTooShort
-	}
-	if !cmd.Role.Valid() {
-		return entity.ErrInvalidAuthRole
 	}
 
 	return uc.txManager.RunInTx(func(tx Tx) error {
 		_, err := uc.userRepo.FindUserByEmail(tx, email)
 		if err == nil {
-			return nil
+			return entity.ErrAuthUserAlreadyExists
 		}
 		if !errors.Is(err, entity.ErrAuthUserNotFound) {
 			return err
@@ -76,7 +69,7 @@ func (uc *SeedUserUseCase) Execute(cmd SeedUserCommand) error {
 			uc.idGen.New(),
 			email,
 			passwordHash,
-			cmd.Role,
+			entity.AuthRoleUser,
 			uc.clock.Now(),
 		)
 		if err != nil {

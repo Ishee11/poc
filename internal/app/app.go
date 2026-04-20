@@ -23,7 +23,7 @@ func Run() error {
 	}
 	defer db.Close()
 
-	if err := seedAuthAdmin(db, cfg.Auth); err != nil {
+	if err := seedAuthUsers(db, cfg.Auth); err != nil {
 		return err
 	}
 

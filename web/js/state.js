@@ -3,6 +3,9 @@ export const state = {
   authUser: null,
   authChecked: false,
   authLoginOpen: false,
+  accountPlayers: [],
+  accountAvailablePlayers: [],
+  accountLoading: false,
 
   activeSessionId: "",
   session: null,

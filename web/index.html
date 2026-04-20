@@ -115,6 +115,19 @@
                                 <button type="button" class="secondary" id="auth-logout-btn" data-i18n="auth.logout">Logout</button>
                             </div>
                         </section>
+                        <section class="account-panel" id="account-panel" aria-label="Account" data-i18n-aria-label="account.label" hidden>
+                            <div class="account-header">
+                                <h3 data-i18n="account.title">Account</h3>
+                                <span class="hint" data-i18n="account.hint">Link players that belong to you.</span>
+                            </div>
+                            <div id="account-linked-players" class="account-linked-players"></div>
+                            <form id="account-link-form" class="account-link-form" onsubmit="return false;">
+                                <select id="account-player-select" data-i18n-aria-label="account.selectPlayer">
+                                    <option value="" data-i18n="account.selectPlayer">Select player</option>
+                                </select>
+                                <button type="submit" class="secondary" data-i18n="account.linkPlayer">Link</button>
+                            </form>
+                        </section>
                     </div>
                 </section>
 

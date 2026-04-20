@@ -147,6 +147,70 @@ body::before {
     font-size: 0.86rem;
 }
 
+.account-panel {
+    flex: 1 1 100%;
+    display: grid;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+
+.account-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+.account-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.account-linked-players {
+    display: grid;
+    gap: 8px;
+}
+
+.account-player-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.account-player-row span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-player-row button {
+    padding: 8px 10px;
+    white-space: nowrap;
+}
+
+.account-link-form {
+    grid-template-columns: minmax(180px, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.account-link-form select,
+.account-link-form button {
+    height: 40px;
+}
+
+.account-empty-hint {
+    margin-top: 2px;
+}
+
 .top-nav {
     display: flex;
     flex-wrap: wrap;
@@ -1297,6 +1361,19 @@ pre {
     .auth-user-label,
     .auth-user-name {
         text-align: left;
+    }
+
+    .account-header {
+        align-items: flex-start;
+    }
+
+    .account-link-form {
+        grid-template-columns: 1fr;
+    }
+
+    .account-player-row {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .app-header h1 {

@@ -46,6 +46,13 @@ export function login({ email, password }) {
   });
 }
 
+export function register({ email, password }) {
+  return request("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
 export function logout() {
   return request("/auth/logout", {
     method: "POST",
@@ -54,6 +61,35 @@ export function logout() {
 
 export function getCurrentUser() {
   return request("/auth/me");
+}
+
+// ===== account =====
+
+export function getAccount() {
+  return request("/account");
+}
+
+export function getAccountAvailablePlayers({ limit, offset } = {}) {
+  const params = new URLSearchParams();
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/account/players/available${suffix}`);
+}
+
+export function linkAccountPlayer(playerId) {
+  return request("/account/players", {
+    method: "POST",
+    body: JSON.stringify({ player_id: playerId }),
+  });
+}
+
+export function unlinkAccountPlayer(playerId) {
+  const params = new URLSearchParams({ player_id: playerId });
+  return request(`/account/players?${params.toString()}`, {
+    method: "DELETE",
+  });
 }
 
 // ===== utils =====

@@ -1,4 +1,14 @@
-import { getCurrentUser, login, logout, startSession } from "./api.js";
+import {
+  getAccount,
+  getAccountAvailablePlayers,
+  getCurrentUser,
+  linkAccountPlayer,
+  login,
+  logout,
+  register,
+  startSession,
+  unlinkAccountPlayer,
+} from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import { state } from "./state.js";
 import {
@@ -24,6 +34,7 @@ import {
 } from "./ui/session.js";
 import {
   describeError,
+  escapeHtml,
   openModal,
   replaceRoute,
   routeToHome,
@@ -35,6 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   syncDebugMode();
   initI18n();
   initAuth();
+  initAccountPanel();
   initSessionActions();
   initLanguageSelect();
   onLanguageChange(renderCurrentLanguage);
@@ -148,6 +160,7 @@ function initAuth() {
       state.authLoginOpen = false;
       form.reset();
       renderAuthPanel();
+      await loadAccount();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -164,14 +177,36 @@ function initAuth() {
       state.authUser = null;
       state.authChecked = true;
       state.authLoginOpen = false;
+      clearAccount();
       renderAuthPanel();
       showNotice(t("notice.logoutSuccess"), "success");
     });
   }
 
   if (registerButton) {
-    registerButton.addEventListener("click", () => {
-      showNotice(t("notice.registrationPending"), "info");
+    registerButton.addEventListener("click", async () => {
+      const form = document.getElementById("auth-login-form");
+      const email = document.getElementById("auth-email")?.value?.trim() || "";
+      const password = document.getElementById("auth-password")?.value || "";
+      if (!email || !password) {
+        showNotice(t("notice.authCredentialsRequired"), "error");
+        return;
+      }
+
+      const res = await register({ email, password });
+      if (!res.ok || !res.body?.user) {
+        showNotice(describeError(res, t("error.registerFailed")), "error");
+        return;
+      }
+
+      state.authUser = res.body.user;
+      state.authChecked = true;
+      state.authLoginOpen = false;
+      form?.reset();
+      renderAuthPanel();
+      await loadAccount();
+      showNotice(t("notice.registrationSuccess"), "success");
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
   }
 }
@@ -181,6 +216,11 @@ async function loadCurrentUser() {
   state.authChecked = true;
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAuthPanel();
+  if (state.authUser) {
+    await loadAccount();
+  } else {
+    clearAccount();
+  }
 }
 
 function renderAuthPanel() {
@@ -205,6 +245,140 @@ function renderAuthPanel() {
   }
 }
 
+function initAccountPanel() {
+  const form = document.getElementById("account-link-form");
+  const linked = document.getElementById("account-linked-players");
+
+  if (form) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const select = document.getElementById("account-player-select");
+      const playerId = select?.value || "";
+      if (!playerId) {
+        showNotice(t("notice.selectAccountPlayer"), "error");
+        return;
+      }
+
+      const res = await linkAccountPlayer(playerId);
+      if (!res.ok) {
+        showNotice(describeError(res, t("error.failedLinkPlayer")), "error");
+        return;
+      }
+
+      showNotice(t("notice.accountPlayerLinked"), "success");
+      await loadAccount();
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
+    });
+  }
+
+  if (linked) {
+    linked.addEventListener("click", async (event) => {
+      if (!(event.target instanceof Element)) return;
+
+      const button = event.target.closest("[data-account-unlink-player]");
+      if (!button) return;
+
+      const playerId = button.dataset.accountUnlinkPlayer;
+      const res = await unlinkAccountPlayer(playerId);
+      if (!res.ok) {
+        showNotice(describeError(res, t("error.failedUnlinkPlayer")), "error");
+        return;
+      }
+
+      showNotice(t("notice.accountPlayerUnlinked"), "success");
+      await loadAccount();
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
+    });
+  }
+}
+
+async function loadAccount() {
+  if (!state.authUser) {
+    clearAccount();
+    return;
+  }
+
+  state.accountLoading = true;
+  renderAccountPanel();
+
+  const [accountRes, availableRes] = await Promise.all([
+    getAccount(),
+    getAccountAvailablePlayers({ limit: 200 }),
+  ]);
+
+  state.accountLoading = false;
+  if (!accountRes.ok) {
+    state.accountPlayers = [];
+    state.accountAvailablePlayers = [];
+    renderAccountPanel();
+    showNotice(describeError(accountRes, t("error.failedLoadAccount")), "error");
+    return;
+  }
+
+  state.accountPlayers = Array.isArray(accountRes.body?.players)
+    ? accountRes.body.players
+    : [];
+  state.accountAvailablePlayers = availableRes.ok && Array.isArray(availableRes.body?.players)
+    ? availableRes.body.players
+    : [];
+  renderAccountPanel();
+
+  if (!availableRes.ok) {
+    showNotice(describeError(availableRes, t("error.failedLoadAvailablePlayers")), "error");
+  }
+}
+
+function clearAccount() {
+  state.accountPlayers = [];
+  state.accountAvailablePlayers = [];
+  state.accountLoading = false;
+  renderAccountPanel();
+}
+
+function renderAccountPanel() {
+  const panel = document.getElementById("account-panel");
+  const linked = document.getElementById("account-linked-players");
+  const select = document.getElementById("account-player-select");
+  const form = document.getElementById("account-link-form");
+  if (!panel || !linked || !select || !form) return;
+
+  const user = state.authUser;
+  panel.hidden = !user;
+  if (!user) return;
+
+  if (state.accountLoading) {
+    linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;
+  } else if (state.accountPlayers.length === 0) {
+    linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.noLinkedPlayers"))}</div>`;
+  } else {
+    linked.innerHTML = state.accountPlayers
+      .map(
+        (player) => `
+          <div class="account-player-row">
+            <span>${escapeHtml(player.name)}</span>
+            <button type="button" class="secondary" data-account-unlink-player="${escapeHtml(player.id)}">${escapeHtml(t("account.unlinkPlayer"))}</button>
+          </div>
+        `,
+      )
+      .join("");
+  }
+
+  select.innerHTML = `
+    <option value="">${escapeHtml(t("account.selectPlayer"))}</option>
+    ${state.accountAvailablePlayers
+      .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
+      .join("")}
+  `;
+  form.hidden = state.accountLoading || state.accountAvailablePlayers.length === 0;
+  if (!state.accountLoading && state.accountAvailablePlayers.length === 0) {
+    linked.insertAdjacentHTML(
+      "beforeend",
+      `<div class="hint account-empty-hint">${escapeHtml(t("account.noAvailablePlayers"))}</div>`,
+    );
+  }
+}
+
 function initLanguageSelect() {
   const select = document.getElementById("language-select");
   if (!select) return;
@@ -216,6 +390,7 @@ function initLanguageSelect() {
 
 function renderCurrentLanguage() {
   renderAuthPanel();
+  renderAccountPanel();
   renderStartChipRateLabel();
   renderSessions();
   syncSelect();
