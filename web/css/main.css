@@ -56,7 +56,7 @@ body::before {
         ),
         var(--panel-strong);
     box-shadow: var(--shadow);
-    overflow: visible;
+    overflow: hidden;
     position: relative;
 }
 
@@ -92,6 +92,7 @@ body::before {
     justify-content: space-between;
     gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
     margin-top: 12px;
 }
 
@@ -112,6 +113,10 @@ body:not([data-screen="lobby"]) .lobby-auth-bar {
     flex: 1 1 420px;
     min-width: 0;
     display: flex;
+    justify-content: flex-end;
+}
+
+.auth-panel.login-open {
     justify-content: flex-end;
 }
 
@@ -1380,23 +1385,23 @@ pre {
         flex: 1 1 100%;
     }
 
+    .auth-panel.login-open {
+        flex: 1 1 100%;
+        justify-content: stretch;
+    }
+
     #auth-show-login-btn {
         width: auto;
     }
 
     .auth-login-form {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: calc(100% + 8px);
-        z-index: 3;
         grid-template-columns: 1fr;
         width: 100%;
         padding: 12px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: var(--panel-strong);
-        box-shadow: var(--shadow);
+        background: rgba(2, 11, 22, 0.36);
+        box-shadow: none;
     }
 
     .auth-register-row {
