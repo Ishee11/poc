@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"time"
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
 	infra "github.com/ishee11/poc/internal/infra"
@@ -14,7 +15,9 @@ type Container struct {
 }
 
 // NewContainer — composition root
-func NewContainer(db *DB) *Container {
+func NewContainer(db *DB, configs ...*Config) *Container {
+	cfg := containerConfig(configs...)
+
 	// ===== Repositories =====
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
@@ -23,6 +26,7 @@ func NewContainer(db *DB) *Container {
 	statsRepo := postgres.NewStatsRepository(db.Pool)
 	playerRepo := postgres.NewPlayerRepository()
 	debugAdminRepo := postgres.NewDebugAdminRepository()
+	authRepo := postgres.NewAuthRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(db.Pool)
@@ -31,6 +35,8 @@ func NewContainer(db *DB) *Container {
 	opIDGen := &infra.UUIDOperationIDGenerator{}
 	playerIDGen := &infra.UUIDPlayerIDGenerator{}
 	sessionIDGen := &infra.UUIDSessionIDGenerator{}
+	authSessionIDGen := infra.UUIDAuthSessionIDGenerator{}
+	loginAttemptIDGen := infra.UUIDLoginAttemptIDGenerator{}
 
 	// ===== Helper =====
 	helper := usecase.NewHelper(
@@ -157,8 +163,36 @@ func NewContainer(db *DB) *Container {
 		txManager,
 	)
 
+	passwordHasher := infra.Argon2IDPasswordHasher{}
+	authUC := usecase.NewAuthService(
+		authRepo,
+		authRepo,
+		authRepo,
+		txManager,
+		authSessionIDGen,
+		loginAttemptIDGen,
+		infra.SecureTokenGenerator{},
+		infra.SHA256TokenHasher{},
+		passwordHasher,
+		usecase.SystemClock{},
+		usecase.AuthPolicy{
+			SessionTTL:        cfg.Auth.SessionTTL,
+			IdleTTL:           cfg.Auth.IdleTTL,
+			RateLimitWindow:   usecase.DefaultAuthPolicy().RateLimitWindow,
+			MaxFailedAttempts: usecase.DefaultAuthPolicy().MaxFailedAttempts,
+		},
+	)
+
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
+		httpcontroller.AuthCookieConfig{
+			Name:     cfg.Auth.CookieName,
+			Secure:   cfg.Auth.CookieSecure,
+			SameSite: sameSite(cfg.Auth.CookieSameSite),
+			MaxAge:   cfg.Auth.SessionTTL,
+		},
+		authUC,
+
 		// session
 		startSessionUC,
 		finishSessionUC,
@@ -193,5 +227,32 @@ func NewContainer(db *DB) *Container {
 
 	return &Container{
 		Router: router,
+	}
+}
+
+func containerConfig(configs ...*Config) *Config {
+	if len(configs) > 0 && configs[0] != nil {
+		return configs[0]
+	}
+
+	return &Config{
+		Auth: AuthConfig{
+			CookieName:     "sid",
+			CookieSecure:   true,
+			CookieSameSite: "Lax",
+			SessionTTL:     12 * time.Hour,
+			IdleTTL:        2 * time.Hour,
+		},
+	}
+}
+
+func sameSite(value string) http.SameSite {
+	switch value {
+	case "Strict":
+		return http.SameSiteStrictMode
+	case "None":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
 	}
 }

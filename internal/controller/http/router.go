@@ -33,6 +33,11 @@ func NewRouter(h *Handler) http.Handler {
 	// ===== HEALTH =====
 	mux.HandleFunc("/health", h.Health)
 
+	// ===== AUTH =====
+	mux.HandleFunc("/auth/login", h.Auth.Login)
+	mux.HandleFunc("/auth/logout", h.Auth.Logout)
+	mux.HandleFunc("/auth/me", h.Auth.Me)
+
 	// ===== SWAGGER =====
 	mux.HandleFunc("/swagger/", httpSwagger.Handler())
 

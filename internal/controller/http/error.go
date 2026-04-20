@@ -128,6 +128,18 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrDuplicateRequest):
 		return apiError{status: http.StatusOK, code: "duplicate_request"}
 
+	case errors.Is(err, entity.ErrInvalidCredentials):
+		return apiError{status: http.StatusUnauthorized, code: "invalid_credentials"}
+
+	case errors.Is(err, entity.ErrUnauthorized):
+		return apiError{status: http.StatusUnauthorized, code: "unauthorized"}
+
+	case errors.Is(err, entity.ErrForbidden):
+		return apiError{status: http.StatusForbidden, code: "forbidden"}
+
+	case errors.Is(err, entity.ErrAuthRateLimited):
+		return apiError{status: http.StatusTooManyRequests, code: "rate_limited"}
+
 	default:
 		return apiError{status: http.StatusInternalServerError, code: "internal_error"}
 	}
