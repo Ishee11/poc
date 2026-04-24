@@ -1,4 +1,5 @@
 export const state = {
+  authUiEnabled: false,
   debugMode: false,
   authUser: null,
   authChecked: false,
@@ -14,6 +15,7 @@ export const state = {
 
   overviewSessions: [],
   overviewPlayers: [],
+  overviewPlayersSort: "last_activity",
 
   players: [],
   operations: [],
