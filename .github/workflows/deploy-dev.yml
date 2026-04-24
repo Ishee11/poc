@@ -28,6 +28,28 @@ jobs:
             git clone -b dev https://github.com/Ishee11/poc.git /app-dev
             cd /app-dev
             test -f docker-compose.dev.yml
+            test -f docker-compose.observability.yml
+            test -f deploy/observability/prometheus/prometheus.yml
+            test -f deploy/observability/prometheus/alerts.yml
+            test -f deploy/observability/alertmanager/alertmanager.yml
+
+            echo "== Write observability env =="
+            printf '%s\n' \
+              "GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}" \
+              "GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
+              "GF_SERVER_DOMAIN=193.238.134.58" \
+              "GF_SERVER_ROOT_URL=http://193.238.134.58:3000" \
+              "GF_AUTH_ANONYMOUS_ENABLED=false" \
+              "GF_USERS_ALLOW_SIGN_UP=false" \
+              "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+              "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" \
+              "TELEGRAM_SEND_RESOLVED=${{ secrets.TELEGRAM_SEND_RESOLVED }}" \
+              > .env.observability
+            chmod 600 .env.observability
+
+            echo "== Validate observability env =="
+            test -s .env.observability
+            grep -E '^(GF_SECURITY_ADMIN_USER|GF_SERVER_ROOT_URL|TELEGRAM_CHAT_ID)=' .env.observability
 
             echo "== Check docker cache pressure =="
             available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
@@ -59,9 +81,15 @@ jobs:
             echo "== Build & start dev app =="
             docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
 
+            echo "== Start observability stack =="
+            docker compose -p poker-obs -f docker-compose.observability.yml up -d
+
             echo "== Check dev app logs =="
             sleep 3
             docker logs poker-app-dev --tail=50
+
+            echo "== Check observability containers =="
+            docker ps --filter name=poker-prometheus --filter name=poker-grafana --filter name=poker-alertmanager
 
             echo "== Disk after deploy =="
             df -h
