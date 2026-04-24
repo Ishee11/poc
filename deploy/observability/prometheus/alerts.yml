@@ -1,0 +1,38 @@
+groups:
+  - name: poker-app-alerts
+    rules:
+      - alert: AppDown
+        expr: up{job="poker-app-dev"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Poker app is down
+          description: Prometheus cannot scrape poker-app-dev for more than 2 minutes.
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Prometheus target is down
+          description: Target {{ $labels.job }} on {{ $labels.instance }} is unavailable for more than 2 minutes.
+
+      - alert: High5xxRate
+        expr: sum(increase(http_requests_total{status=~"5.."}[10m])) >= 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High 5xx rate detected
+          description: The application returned at least 3 server errors in the last 10 minutes.
+
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[10m]))) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: High p95 latency detected
+          description: Overall p95 HTTP latency is above 1 second for more than 10 minutes.

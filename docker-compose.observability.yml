@@ -3,6 +3,8 @@ services:
     image: prom/prometheus:v3.4.2
     container_name: poker-prometheus
     restart: unless-stopped
+    depends_on:
+      - alertmanager
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -11,9 +13,26 @@ services:
       - "127.0.0.1:9090:9090"
     volumes:
       - ./deploy/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: poker-alertmanager
+    restart: unless-stopped
+    env_file:
+      - .env.observability
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --config.expand-env
+      - --storage.path=/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./deploy/observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
 
   grafana:
     image: grafana/grafana:12.0.2
@@ -30,5 +49,6 @@ services:
       - grafana_data:/var/lib/grafana
 
 volumes:
+  alertmanager_data:
   prometheus_data:
   grafana_data:

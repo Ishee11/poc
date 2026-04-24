@@ -61,6 +61,7 @@ docker compose -f docker-compose.observability.yml up -d
 После старта Grafana уже содержит готовый dashboard `Poker App Overview`.
 
 Grafana берет admin credentials и внешний URL из `.env.observability`.
+Alertmanager и Telegram alerting тоже настраиваются через `.env.observability`.
 
 ## Конфигурация
 
