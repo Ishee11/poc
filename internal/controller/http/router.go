@@ -32,6 +32,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== HEALTH =====
 	mux.HandleFunc("/health", h.Health)
+	mux.Handle("/metrics", MetricsHandler())
 
 	// ===== AUTH =====
 	mux.HandleFunc("/auth/register", h.Auth.Register)
@@ -80,6 +81,7 @@ func NewRouter(h *Handler) http.Handler {
 	var handler http.Handler = mux
 	handler = CORSMiddleware(handler)
 	handler = RecoveryMiddleware(handler)
+	handler = MetricsMiddleware(handler)
 	handler = LoggingMiddleware(handler)
 	handler = RequestIDMiddleware(handler)
 
