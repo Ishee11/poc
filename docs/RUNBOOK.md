@@ -28,6 +28,39 @@ curl -sS http://127.0.0.1:8080/health
 docker compose down
 ```
 
+## Метрики И Локальная Grafana
+
+Приложение отдает Prometheus-метрики на:
+
+```text
+/metrics
+```
+
+Локальный observability-стек:
+
+```sh
+docker compose -f docker-compose.observability.yml up -d
+```
+
+По умолчанию Prometheus скрапит dev-приложение на:
+
+```text
+http://host.docker.internal:18080/metrics
+```
+
+Порты локального стека:
+
+- Prometheus: `http://127.0.0.1:9090`
+- Grafana: `http://127.0.0.1:3000`
+
+Логин Grafana по умолчанию:
+
+```text
+admin / admin
+```
+
+Если локальное приложение слушает не `18080`, нужно изменить target в `deploy/observability/prometheus/prometheus.yml`.
+
 ## Конфигурация
 
 Обязательная переменная:
