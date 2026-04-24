@@ -18,6 +18,7 @@ type Handler struct {
 }
 
 type AuthCookieConfig struct {
+	Enabled  bool
 	Name     string
 	Secure   bool
 	SameSite http.SameSite

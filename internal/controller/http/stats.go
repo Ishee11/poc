@@ -100,6 +100,10 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StatsHandler) currentStatsViewer(r *http.Request) (*usecase.AuthPrincipal, error) {
+	if !h.cookie.Enabled {
+		return nil, nil
+	}
+
 	cookie, err := r.Cookie(h.cookie.Name)
 	if err != nil || cookie.Value == "" {
 		return nil, nil

@@ -80,13 +80,14 @@ export function renderPlayersOverview() {
   wrap.innerHTML = state.overviewPlayers
     .map((player) => {
       const id = player.player_id;
+      const profitMoney = Number(player.profit_money) || 0;
       return `
         <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title">${escapeHtml(player.player_name || id)}</div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
-              <span>${escapeHtml(t("common.profit"))}: ${formatMoney(player.profit_money, "RUB")}</span>
+              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, "RUB")}</span>
             </div>
           </div>
         </div>

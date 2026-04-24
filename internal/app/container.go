@@ -199,6 +199,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
 		httpcontroller.AuthCookieConfig{
+			Enabled:  cfg.Auth.Enabled,
 			Name:     cfg.Auth.CookieName,
 			Secure:   cfg.Auth.CookieSecure,
 			SameSite: sameSite(cfg.Auth.CookieSameSite),
