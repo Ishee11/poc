@@ -4,6 +4,7 @@
 
 # Config
 .env
+.env.observability
 
 # Binaries for programs and plugins
 *.exe
