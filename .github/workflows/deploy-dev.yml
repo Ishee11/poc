@@ -2,7 +2,8 @@ name: Deploy Dev
 
 on:
   push:
-    branches: ["dev"]
+    branches:
+      - dev
 
 jobs:
   deploy-dev:
@@ -10,83 +11,98 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Deploy to VPS (dev)
+      - name: Deploy to VPS dev
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-              set -euo pipefail
+            set -euo pipefail
 
-              echo "== Disk before deploy =="
-              df -h
-              docker system df
+            echo "== Disk before deploy =="
+            df -h
+            docker system df || true
 
-              echo "== Pull project =="
-              rm -rf /app-dev
-              git clone -b dev https://github.com/Ishee11/poc.git /app-dev
-              cd /app-dev
-              test -f docker-compose.dev.yml
-              test -f docker-compose.observability.yml
+            echo "== Pull project =="
+            rm -rf /app-dev
+            git clone -b dev https://github.com/Ishee11/poc.git /app-dev
+            cd /app-dev
 
-              echo "== Write observability env =="
-              cat > .env.observability <<EOF
-              GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
-              GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-              GF_SERVER_DOMAIN=193.238.134.58
-              GF_SERVER_ROOT_URL=http://193.238.134.58:3000
-              GF_AUTH_ANONYMOUS_ENABLED=false
-              GF_USERS_ALLOW_SIGN_UP=false
-              TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-              TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
-              TELEGRAM_SEND_RESOLVED=${{ secrets.TELEGRAM_SEND_RESOLVED }}
-              EOF
+            test -f docker-compose.dev.yml
+            test -f docker-compose.observability.yml
 
-              chmod 600 .env.observability
+            echo "== Write observability env =="
+            cat > .env.observability <<EOF
+            GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
+            GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+            GF_SERVER_DOMAIN=193.238.134.58
+            GF_SERVER_ROOT_URL=http://193.238.134.58:3000
+            GF_AUTH_ANONYMOUS_ENABLED=false
+            GF_USERS_ALLOW_SIGN_UP=false
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+            TELEGRAM_SEND_RESOLVED=${{ secrets.TELEGRAM_SEND_RESOLVED }}
+            EOF
 
-              echo "== Check docker cache pressure =="
-              available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
-              min_available_kb=$((3 * 1024 * 1024))
-              if [ "$available_kb" -lt "$min_available_kb" ]; then
-                echo "Low disk space: ${available_kb}KB available. Pruning docker build cache."
-                docker builder prune -af || true
-              else
-                echo "Keeping docker build cache: ${available_kb}KB available."
+            sed -i 's/^[[:space:]]*//' .env.observability
+            chmod 600 .env.observability
+
+            echo "== Check docker cache pressure =="
+            available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
+            min_available_kb=$((3 * 1024 * 1024))
+
+            if [ "$available_kb" -lt "$min_available_kb" ]; then
+              echo "Low disk space: ${available_kb}KB available. Pruning docker build cache."
+              docker builder prune -af || true
+            else
+              echo "Keeping docker build cache: ${available_kb}KB available."
+            fi
+
+            echo "== Start dev postgres =="
+            docker compose -p poker-dev -f docker-compose.dev.yml up -d db
+
+            echo "== Wait for dev postgres =="
+            ready=0
+
+            for i in {1..20}; do
+              if docker exec poker-db-dev pg_isready -U poker; then
+                echo "Dev postgres is ready"
+                ready=1
+                break
               fi
 
-              echo "== Start dev postgres =="
-              docker compose -p poker-dev -f docker-compose.dev.yml up -d db
+              echo "Waiting for dev postgres..."
+              sleep 2
+            done
 
-              echo "== Wait for dev postgres =="
-              for i in {1..20}; do
-                if docker exec poker-db-dev pg_isready -U poker; then
-                  echo "Dev postgres is ready"
-                  break
-                fi
-                echo "Waiting for dev postgres..."
-                sleep 2
-              done
+            if [ "$ready" != "1" ]; then
+              echo "Dev postgres is not ready"
+              docker logs poker-db-dev --tail=100 || true
+              exit 1
+            fi
 
-              echo "== Copy prod database to dev =="
-              docker exec poker-db pg_dump -U poker -d poker --clean --if-exists --no-owner --no-privileges \
-                | docker exec -i poker-db-dev psql -U poker -d poker
+            echo "== Copy prod database to dev =="
+            docker exec poker-db pg_dump -U poker -d poker --clean --if-exists --no-owner --no-privileges \
+              | docker exec -i poker-db-dev psql -U poker -d poker
 
-              echo "== Build & start dev app =="
-              docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
+            echo "== Build and start dev app =="
+            docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
 
-              echo "== Start observability stack =="
-              docker compose -p poker-obs -f docker-compose.observability.yml up -d
+            echo "== Start observability stack =="
+            docker compose -p poker-obs -f docker-compose.observability.yml up -d
 
-              echo "== Check dev app logs =="
-              sleep 3
-              docker logs poker-app-dev --tail=50
+            echo "== Check dev app logs =="
+            sleep 3
+            docker logs poker-app-dev --tail=50 || true
 
-              echo "== Check observability containers =="
-              docker ps --filter name=poker-prometheus --filter name=poker-grafana --filter name=poker-alertmanager
+            echo "== Check observability containers =="
+            docker ps --filter name=poker-prometheus
+            docker ps --filter name=poker-grafana
+            docker ps --filter name=poker-alertmanager
 
-              echo "== Disk after deploy =="
-              df -h
-              docker system df
+            echo "== Disk after deploy =="
+            df -h
+            docker system df || true
 
-              echo "== Done =="
+            echo "== Done =="
