@@ -2,8 +2,7 @@ name: Deploy Dev
 
 on:
   push:
-    branches:
-      - dev
+    branches: ["dev"]
 
 jobs:
   deploy-dev:
@@ -11,7 +10,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Deploy to VPS dev
+      - name: Deploy to VPS (dev)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -31,6 +30,8 @@ jobs:
 
             test -f docker-compose.dev.yml
             test -f docker-compose.observability.yml
+            test -f deploy/observability/alertmanager/alertmanager.yml
+            test -f deploy/observability/prometheus/alerts.yml
 
             echo "== Write observability env =="
             cat > .env.observability <<EOF
@@ -86,7 +87,7 @@ jobs:
             docker exec poker-db pg_dump -U poker -d poker --clean --if-exists --no-owner --no-privileges \
               | docker exec -i poker-db-dev psql -U poker -d poker
 
-            echo "== Build and start dev app =="
+            echo "== Build & start dev app =="
             docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
 
             echo "== Start observability stack =="
