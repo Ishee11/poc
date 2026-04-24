@@ -59,6 +59,12 @@ http://host.docker.internal:18080/metrics
 admin / admin
 ```
 
+После первого старта в Grafana уже будет готовый dashboard:
+
+```text
+Poker / Poker App Overview
+```
+
 Если локальное приложение слушает не `18080`, нужно изменить target в `deploy/observability/prometheus/prometheus.yml`.
 
 ## Конфигурация

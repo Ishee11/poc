@@ -58,6 +58,8 @@ docker compose up --build -d
 docker compose -f docker-compose.observability.yml up -d
 ```
 
+После старта Grafana уже содержит готовый dashboard `Poker App Overview`.
+
 ## Конфигурация
 
 Минимальные переменные окружения:

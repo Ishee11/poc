@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Poker Dashboards
+    orgId: 1
+    folder: Poker
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards/files
