@@ -96,6 +96,11 @@ body::before {
     margin-top: 12px;
 }
 
+body.auth-ui-disabled .lobby-auth-bar,
+body.auth-ui-disabled #screen-account {
+    display: none !important;
+}
+
 body:not([data-screen="lobby"]) .lobby-auth-bar {
     display: none;
 }
@@ -325,6 +330,20 @@ body:not([data-screen="account"]) .nav-account-only {
 
 .panel-disclosure:not([open]) summary::after {
     transform: rotate(-90deg);
+}
+
+.panel-inline-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 12px;
+}
+
+.inline-select-label {
+    display: grid;
+    grid-template-columns: max-content minmax(150px, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-width: min(100%, 320px);
 }
 
 .panel p {
@@ -1451,6 +1470,15 @@ pre {
     .panel {
         padding: 14px;
         border-radius: 8px;
+    }
+
+    .panel-inline-toolbar {
+        justify-content: stretch;
+    }
+
+    .inline-select-label {
+        grid-template-columns: 1fr;
+        min-width: 0;
     }
 
     .stats,

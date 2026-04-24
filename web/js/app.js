@@ -25,6 +25,7 @@ import {
   renderPlayerDetail,
   renderPlayers,
   renderPlayersOverview,
+  sortOverviewPlayers,
 } from "./ui/player.js";
 import {
   initSessionActions,
@@ -47,15 +48,23 @@ import {
 
 document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
-  initAuth();
-  initAccountPanel();
-  initGuestPlayerSelect();
+  applyUiFeatureFlags();
+  initPlayersSort();
+  if (state.authUiEnabled) {
+    initAuth();
+    initAccountPanel();
+    initGuestPlayerSelect();
+  }
   initSessionActions();
   initLanguageSelect();
   onLanguageChange(renderCurrentLanguage);
 
-  await loadCurrentUser();
-  await loadGuestPlayers();
+  if (state.authUiEnabled) {
+    await loadCurrentUser();
+    await loadGuestPlayers();
+  } else {
+    syncDebugMode();
+  }
   await Promise.all([loadSessions(), loadPlayersOverview()]);
   await openInitialRoute();
 
@@ -127,6 +136,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 });
+
+function applyUiFeatureFlags() {
+  document.body.classList.toggle("auth-ui-disabled", !state.authUiEnabled);
+}
 
 function initAuth() {
   const showLoginButton = document.getElementById("auth-show-login-btn");
@@ -244,6 +257,8 @@ async function loadCurrentUser() {
 }
 
 function renderAuthPanel() {
+  if (!state.authUiEnabled) return;
+
   const form = document.getElementById("auth-login-form");
   const showLoginButton = document.getElementById("auth-show-login-btn");
   const registerRow = document.getElementById("auth-register-row");
@@ -284,6 +299,13 @@ function initGuestPlayerSelect() {
 }
 
 async function loadGuestPlayers() {
+  if (!state.authUiEnabled) {
+    state.guestPlayers = [];
+    state.guestPlayerId = "";
+    renderGuestPlayerSelect();
+    return;
+  }
+
   if (state.authUser) {
     state.guestPlayers = [];
     renderGuestPlayerSelect();
@@ -320,6 +342,16 @@ function renderGuestPlayerSelect() {
 }
 
 async function openAccount({ replace = false } = {}) {
+  if (!state.authUiEnabled) {
+    setScreen("lobby");
+    if (replace) {
+      replaceRoute(routeToHome());
+    } else {
+      pushRoute(routeToHome());
+    }
+    return;
+  }
+
   setScreen("account");
   if (replace) {
     replaceRoute(routeToAccount());
@@ -336,6 +368,8 @@ async function openAccount({ replace = false } = {}) {
 }
 
 function initAccountPanel() {
+  if (!state.authUiEnabled) return;
+
   const form = document.getElementById("account-link-form");
   const linked = document.getElementById("account-linked-players");
 
@@ -384,6 +418,11 @@ function initAccountPanel() {
 }
 
 async function loadAccount() {
+  if (!state.authUiEnabled) {
+    clearAccount();
+    return;
+  }
+
   if (!state.authUser) {
     clearAccount();
     return;
@@ -432,6 +471,11 @@ function renderAccountPanel() {
   const select = document.getElementById("account-player-select");
   const form = document.getElementById("account-link-form");
   if (!panel || !linked || !select || !form) return;
+
+  if (!state.authUiEnabled) {
+    panel.hidden = true;
+    return;
+  }
 
   const user = state.authUser;
   panel.hidden = false;
@@ -488,10 +532,24 @@ function initLanguageSelect() {
   });
 }
 
+function initPlayersSort() {
+  const select = document.getElementById("overview-players-sort");
+  if (!select) return;
+
+  select.value = state.overviewPlayersSort;
+  select.addEventListener("change", () => {
+    state.overviewPlayersSort = select.value || "last_activity";
+    sortOverviewPlayers();
+    renderPlayersOverview();
+  });
+}
+
 function renderCurrentLanguage() {
-  renderAuthPanel();
-  renderAccountPanel();
-  renderGuestPlayerSelect();
+  if (state.authUiEnabled) {
+    renderAuthPanel();
+    renderAccountPanel();
+    renderGuestPlayerSelect();
+  }
   renderStartChipRateLabel();
   renderSessions();
   syncSelect();
@@ -541,6 +599,11 @@ async function openInitialRoute({ fromHistory = false } = {}) {
   }
 
   if (section === "account") {
+    if (!state.authUiEnabled) {
+      setScreen("lobby");
+      if (!fromHistory) replaceRoute(routeToHome());
+      return;
+    }
     await openAccount({ replace: !fromHistory });
     return;
   }
