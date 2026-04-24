@@ -40,7 +40,7 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	var viewerUserID *entity.AuthUserID
-	viewerIsAdmin := false
+	viewerIsAdmin := !h.cookie.Enabled
 	if viewer != nil {
 		viewerUserID = &viewer.UserID
 		viewerIsAdmin = viewer.Role == entity.AuthRoleAdmin
