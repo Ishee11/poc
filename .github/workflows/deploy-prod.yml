@@ -7,7 +7,7 @@ on:
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Deploy to VPS (prod)
@@ -16,6 +16,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
           script: |
             set -euo pipefail
 
@@ -24,8 +25,13 @@ jobs:
             docker system df
 
             echo "== Pull project =="
-            rm -rf /app
-            git clone -b master https://github.com/Ishee11/poc.git /app
+            if [ ! -d /app/.git ]; then
+              git clone --depth 1 -b master https://github.com/Ishee11/poc.git /app
+            else
+              git -C /app fetch --depth 1 origin master
+              git -C /app reset --hard origin/master
+              git -C /app clean -fd
+            fi
             cd /app
             test -f docker-compose.observability.yml
             test -f deploy/observability/prometheus/prometheus.prod.yml
@@ -50,8 +56,15 @@ jobs:
               > .env.observability
             chmod 600 .env.observability
 
-            echo "== Prune docker build cache =="
-            docker builder prune -af || true
+            echo "== Check docker cache pressure =="
+            available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
+            min_available_kb=$((3 * 1024 * 1024))
+            if [ "$available_kb" -lt "$min_available_kb" ]; then
+              echo "Low disk space: ${available_kb}KB available. Pruning docker build cache."
+              docker builder prune -af || true
+            else
+              echo "Keeping docker build cache: ${available_kb}KB available."
+            fi
 
             echo "== Build & start prod containers =="
             docker compose -f docker-compose.yml up -d --build --force-recreate
@@ -69,6 +82,16 @@ jobs:
             echo "== Check prod app logs =="
             sleep 3
             docker logs poker-app --tail=50
+
+            echo "== Wait for prod app health =="
+            for i in {1..20}; do
+              if curl -fsS http://127.0.0.1:8080/health >/dev/null; then
+                echo "Prod app is healthy"
+                break
+              fi
+              echo "Waiting for prod app health..."
+              sleep 3
+            done
 
             echo "== Start prod observability stack =="
             docker compose --env-file .env.observability -p poker-prod-obs -f docker-compose.observability.yml up -d
