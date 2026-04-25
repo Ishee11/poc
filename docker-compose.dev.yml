@@ -24,6 +24,15 @@ services:
       DATABASE_URL: postgres://poker:poker@db:5432/poker?sslmode=disable
       LOG_LEVEL: debug
       HTTP_ACCESS_LOG: errors
+      AUTH_ENABLED: "false"
+      AUTH_COOKIE_SECURE: "false"
+      AUTH_SESSION_TTL: 24h
+      AUTH_IDLE_TTL: 8h
+      AUTH_SEED_ADMIN_EMAIL: ${AUTH_SEED_ADMIN_EMAIL:-admin@example.com}
+      AUTH_SEED_ADMIN_PASSWORD: ${AUTH_SEED_ADMIN_PASSWORD:-admin-password-123}
+      AUTH_SEED_USER_EMAIL: ${AUTH_SEED_USER_EMAIL:-user@example.com}
+      AUTH_SEED_USER_PASSWORD: ${AUTH_SEED_USER_PASSWORD:-user-password-123}
+      APP_ORIGIN: http://193.238.134.58:18080
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s

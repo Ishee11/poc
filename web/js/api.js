@@ -5,6 +5,7 @@ const API = window.location.origin;
 async function request(path, options = {}) {
   try {
     const res = await fetch(API + path, {
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -34,6 +35,61 @@ async function request(path, options = {}) {
 
 export function apiGet(path) {
   return request(path);
+}
+
+// ===== auth =====
+
+export function login({ email, password }) {
+  return request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function register({ email, password }) {
+  return request("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function logout() {
+  return request("/auth/logout", {
+    method: "POST",
+  });
+}
+
+export function getCurrentUser() {
+  return request("/auth/me");
+}
+
+// ===== account =====
+
+export function getAccount() {
+  return request("/account");
+}
+
+export function getAccountAvailablePlayers({ limit, offset } = {}) {
+  const params = new URLSearchParams();
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/account/players/available${suffix}`);
+}
+
+export function linkAccountPlayer(playerId) {
+  return request("/account/players", {
+    method: "POST",
+    body: JSON.stringify({ player_id: playerId }),
+  });
+}
+
+export function unlinkAccountPlayer(playerId) {
+  const params = new URLSearchParams({ player_id: playerId });
+  return request(`/account/players?${params.toString()}`, {
+    method: "DELETE",
+  });
 }
 
 // ===== utils =====
@@ -97,8 +153,12 @@ export function getSession(sessionId) {
   return request(`/sessions?session_id=${sessionId}`);
 }
 
-export function getSessions() {
-  return request("/stats/sessions");
+export function getSessions({ guestPlayerId } = {}) {
+  const params = new URLSearchParams();
+  if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/stats/sessions${suffix}`);
 }
 
 export function getPlayersStats() {
@@ -112,6 +172,15 @@ export function getPlayers({ limit, offset } = {}) {
 
   const suffix = params.toString() ? `?${params.toString()}` : "";
   return request(`/players${suffix}`);
+}
+
+export function getUnlinkedPlayers({ limit, offset } = {}) {
+  const params = new URLSearchParams();
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/players/unlinked${suffix}`);
 }
 
 export function getSessionPlayers(sessionId) {

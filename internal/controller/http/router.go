@@ -32,6 +32,18 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== HEALTH =====
 	mux.HandleFunc("/health", h.Health)
+	mux.Handle("/metrics", MetricsHandler())
+
+	// ===== AUTH =====
+	mux.HandleFunc("/auth/register", h.Auth.Register)
+	mux.HandleFunc("/auth/login", h.Auth.Login)
+	mux.HandleFunc("/auth/logout", h.Auth.Logout)
+	mux.HandleFunc("/auth/me", h.Auth.Me)
+
+	// ===== ACCOUNT =====
+	mux.HandleFunc("/account", h.Account.Account)
+	mux.HandleFunc("/account/players", h.Account.Players)
+	mux.HandleFunc("/account/players/available", h.Account.AvailablePlayers)
 
 	// ===== SWAGGER =====
 	mux.HandleFunc("/swagger/", httpSwagger.Handler())
@@ -50,6 +62,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== PLAYERS =====
 	mux.HandleFunc("/players", h.Player.Players)
+	mux.HandleFunc("/players/unlinked", h.Account.PublicAvailablePlayers)
 	mux.HandleFunc("/players/stats", h.Player.GetPlayerStats)
 	mux.HandleFunc("/stats/player", h.Player.GetPlayerStats)
 
@@ -68,6 +81,7 @@ func NewRouter(h *Handler) http.Handler {
 	var handler http.Handler = mux
 	handler = CORSMiddleware(handler)
 	handler = RecoveryMiddleware(handler)
+	handler = MetricsMiddleware(handler)
 	handler = LoggingMiddleware(handler)
 	handler = RequestIDMiddleware(handler)
 
@@ -75,6 +89,7 @@ func NewRouter(h *Handler) http.Handler {
 }
 
 func isClientRoute(path string) bool {
-	return len(path) > len("/session/") && path[:len("/session/")] == "/session/" ||
+	return path == "/account" ||
+		len(path) > len("/session/") && path[:len("/session/")] == "/session/" ||
 		len(path) > len("/player/") && path[:len("/player/")] == "/player/"
 }

@@ -23,8 +23,12 @@ func Run() error {
 	}
 	defer db.Close()
 
+	if err := seedAuthUsers(db, cfg.Auth); err != nil {
+		return err
+	}
+
 	// container (DI)
-	container := NewContainer(db)
+	container := NewContainer(db, cfg)
 
 	// http server
 	server := NewHTTPServer(container.Router, cfg.HTTPPort)

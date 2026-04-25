@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -33,10 +34,25 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		limit = 0
 	}
 
+	viewer, err := h.currentStatsViewer(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var viewerUserID *entity.AuthUserID
+	viewerIsAdmin := !h.cookie.Enabled
+	if viewer != nil {
+		viewerUserID = &viewer.UserID
+		viewerIsAdmin = viewer.Role == entity.AuthRoleAdmin
+	}
+
 	res, err := h.getStatsSessionsUC.Execute(usecase.GetStatsSessionsQuery{
-		Limit: limit,
-		From:  from,
-		To:    to,
+		Limit:         limit,
+		From:          from,
+		To:            to,
+		ViewerUserID:  viewerUserID,
+		ViewerIsAdmin: viewerIsAdmin,
+		GuestPlayerID: entity.PlayerID(r.URL.Query().Get("guest_player_id")),
 	})
 	if err != nil {
 		writeError(w, r, err)
@@ -81,6 +97,27 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *StatsHandler) currentStatsViewer(r *http.Request) (*usecase.AuthPrincipal, error) {
+	if !h.cookie.Enabled {
+		return nil, nil
+	}
+
+	cookie, err := r.Cookie(h.cookie.Name)
+	if err != nil || cookie.Value == "" {
+		return nil, nil
+	}
+
+	principal, err := h.authUC.CurrentUser(cookie.Value)
+	if err != nil {
+		if errors.Is(err, entity.ErrUnauthorized) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return principal, nil
 }
 
 // GetPlayerStats godoc

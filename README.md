@@ -13,6 +13,7 @@
 - Идемпотентность write-операций через `request_id` в JSON body.
 - `X-Request-ID` для трассировки HTTP-запросов.
 - Structured JSON logs через `log/slog`.
+- Prometheus metrics на `/metrics`.
 - Swagger UI на `/swagger/`.
 
 ## Быстрый Старт
@@ -50,6 +51,17 @@ curl -sS http://127.0.0.1:8080/health
 ```sh
 docker compose up --build -d
 ```
+
+Локально поднять Prometheus и Grafana:
+
+```sh
+docker compose -f docker-compose.observability.yml up -d
+```
+
+После старта Grafana уже содержит готовый dashboard `Poker App Overview`.
+
+Grafana берет admin credentials и внешний URL из `.env.observability`.
+Alertmanager и Telegram alerting тоже настраиваются через `.env.observability`.
 
 ## Конфигурация
 

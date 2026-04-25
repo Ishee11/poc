@@ -57,9 +57,11 @@ export async function loadPlayersOverview() {
       player_name: player.name,
       sessions_count: stat?.sessions_count || 0,
       profit_money: stat?.profit_money || 0,
+      last_activity_at: stat?.last_activity_at || null,
     };
   });
 
+  sortOverviewPlayers();
   renderPlayersOverview();
 }
 
@@ -78,13 +80,14 @@ export function renderPlayersOverview() {
   wrap.innerHTML = state.overviewPlayers
     .map((player) => {
       const id = player.player_id;
+      const profitMoney = Number(player.profit_money) || 0;
       return `
         <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title">${escapeHtml(player.player_name || id)}</div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
-              <span>${escapeHtml(t("common.profit"))}: ${formatMoney(player.profit_money, "RUB")}</span>
+              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, "RUB")}</span>
             </div>
           </div>
         </div>
@@ -93,6 +96,58 @@ export function renderPlayersOverview() {
     .join("");
 
   bindOpenPlayerButtons(wrap);
+}
+
+export function sortOverviewPlayers() {
+  const direction = (left, right) => {
+    if (left === right) return 0;
+    return left < right ? 1 : -1;
+  };
+
+  state.overviewPlayers.sort((a, b) => {
+    switch (state.overviewPlayersSort) {
+      case "sessions_count": {
+        const bySessions = direction(
+          Number(a.sessions_count) || 0,
+          Number(b.sessions_count) || 0,
+        );
+        if (bySessions !== 0) return bySessions;
+        break;
+      }
+      case "profit_money": {
+        const byProfit = direction(
+          Number(a.profit_money) || 0,
+          Number(b.profit_money) || 0,
+        );
+        if (byProfit !== 0) return byProfit;
+        break;
+      }
+      case "name": {
+        return String(a.player_name || "").localeCompare(
+          String(b.player_name || ""),
+          undefined,
+          { sensitivity: "base" },
+        );
+      }
+      case "last_activity":
+      default: {
+        const leftTime = Date.parse(a.last_activity_at || "") || 0;
+        const rightTime = Date.parse(b.last_activity_at || "") || 0;
+        const byActivity = direction(leftTime, rightTime);
+        if (byActivity !== 0) return byActivity;
+        break;
+      }
+    }
+
+    const byName = String(a.player_name || "").localeCompare(
+      String(b.player_name || ""),
+      undefined,
+      { sensitivity: "base" },
+    );
+    if (byName !== 0) return byName;
+
+    return String(a.player_id || "").localeCompare(String(b.player_id || ""));
+  });
 }
 
 export async function loadPlayerDetail(

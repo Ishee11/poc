@@ -28,6 +28,68 @@ curl -sS http://127.0.0.1:8080/health
 docker compose down
 ```
 
+## Метрики И Локальная Grafana
+
+Приложение отдает Prometheus-метрики на:
+
+```text
+/metrics
+```
+
+Локальный observability-стек:
+
+```sh
+docker compose -f docker-compose.observability.yml up -d
+```
+
+Grafana читает admin credentials и внешний URL из `.env.observability`.
+Alertmanager читает Telegram-настройки из `.env.observability`.
+
+По умолчанию Prometheus скрапит dev-приложение на:
+
+```text
+http://host.docker.internal:18080/metrics
+```
+
+Порты локального стека:
+
+- Prometheus: `http://127.0.0.1:9090`
+- Alertmanager: `http://127.0.0.1:9093`
+- Grafana: `http://193.238.134.58:3000`
+
+Логин Grafana по умолчанию:
+
+```text
+<значение GF_SECURITY_ADMIN_USER> / <значение GF_SECURITY_ADMIN_PASSWORD>
+```
+
+После первого старта в Grafana уже будет готовый dashboard:
+
+```text
+Poker / Poker App Overview
+```
+
+Если локальное приложение слушает не `18080`, нужно изменить target в `deploy/observability/prometheus/prometheus.yml`.
+
+Если Grafana должна открываться по другому IP или домену, обновить значения в `.env.observability`.
+
+Если пароль содержит символ `$`, в `.env.observability` его нужно писать как `$$`.
+
+Для Telegram-алертов заполнить в `.env.observability`:
+
+```text
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+TELEGRAM_SEND_RESOLVED=true
+```
+
+Базовые алерты:
+
+- `AppDown`
+- `PrometheusTargetDown`
+- `High5xxRate`
+- `HighLatencyP95`
+
 ## Конфигурация
 
 Обязательная переменная:

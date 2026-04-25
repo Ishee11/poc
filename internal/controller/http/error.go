@@ -77,6 +77,12 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrPlayerNotFound):
 		return apiError{status: http.StatusNotFound, code: "player_not_found"}
 
+	case errors.Is(err, entity.ErrPlayerAlreadyLinked):
+		return apiError{status: http.StatusConflict, code: "player_already_linked"}
+
+	case errors.Is(err, entity.ErrUserPlayerNotLinked):
+		return apiError{status: http.StatusNotFound, code: "user_player_not_linked"}
+
 	case errors.Is(err, entity.ErrPlayerNotInGame):
 		return apiError{status: http.StatusConflict, code: "player_not_in_game"}
 
@@ -127,6 +133,27 @@ func mapError(err error) apiError {
 
 	case errors.Is(err, entity.ErrDuplicateRequest):
 		return apiError{status: http.StatusOK, code: "duplicate_request"}
+
+	case errors.Is(err, entity.ErrInvalidCredentials):
+		return apiError{status: http.StatusUnauthorized, code: "invalid_credentials"}
+
+	case errors.Is(err, entity.ErrAuthUserAlreadyExists):
+		return apiError{status: http.StatusConflict, code: "user_already_exists"}
+
+	case errors.Is(err, entity.ErrInvalidAuthEmail):
+		return apiError{status: http.StatusBadRequest, code: "invalid_auth_email"}
+
+	case errors.Is(err, entity.ErrPasswordTooShort):
+		return apiError{status: http.StatusBadRequest, code: "password_too_short"}
+
+	case errors.Is(err, entity.ErrUnauthorized):
+		return apiError{status: http.StatusUnauthorized, code: "unauthorized"}
+
+	case errors.Is(err, entity.ErrForbidden):
+		return apiError{status: http.StatusForbidden, code: "forbidden"}
+
+	case errors.Is(err, entity.ErrAuthRateLimited):
+		return apiError{status: http.StatusTooManyRequests, code: "rate_limited"}
 
 	default:
 		return apiError{status: http.StatusInternalServerError, code: "internal_error"}

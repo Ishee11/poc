@@ -1,8 +1,15 @@
 package http
 
-import "github.com/ishee11/poc/internal/usecase"
+import (
+	"net/http"
+	"time"
+
+	"github.com/ishee11/poc/internal/usecase"
+)
 
 type Handler struct {
+	Auth      *AuthHandler
+	Account   *AccountHandler
 	Session   *SessionHandler
 	Operation *OperationHandler
 	Player    *PlayerHandler
@@ -10,7 +17,20 @@ type Handler struct {
 	Debug     *DebugHandler
 }
 
+type AuthCookieConfig struct {
+	Enabled  bool
+	Name     string
+	Secure   bool
+	SameSite http.SameSite
+	MaxAge   time.Duration
+}
+
 func NewHandler(
+	authCookie AuthCookieConfig,
+	authUC *usecase.AuthService,
+	registerUserUC *usecase.RegisterUserUseCase,
+	userPlayerLinksUC *usecase.UserPlayerLinksUseCase,
+
 	// session
 	startSession *usecase.StartSessionUseCase,
 	finishSession *usecase.FinishSessionUseCase,
@@ -41,6 +61,16 @@ func NewHandler(
 ) *Handler {
 
 	return &Handler{
+		Auth: &AuthHandler{
+			authUC:         authUC,
+			registerUserUC: registerUserUC,
+			cookie:         authCookie,
+		},
+		Account: &AccountHandler{
+			authUC:            authUC,
+			userPlayerLinksUC: userPlayerLinksUC,
+			cookie:            authCookie,
+		},
 		Session: &SessionHandler{
 			startSessionUC:      startSession,
 			finishSessionUC:     finishSession,
@@ -61,6 +91,8 @@ func NewHandler(
 		Stats: &StatsHandler{
 			getStatsSessionsUC: getStatsSessions,
 			getStatsPlayersUC:  getStatsPlayers,
+			authUC:             authUC,
+			cookie:             authCookie,
 		},
 		Debug: &DebugHandler{
 			renamePlayerUC:        renameDebugPlayer,
@@ -68,8 +100,22 @@ func NewHandler(
 			deletePlayerUC:        deleteDebugPlayer,
 			deleteSessionUC:       deleteDebugSession,
 			deleteSessionFinishUC: deleteDebugSessionFinish,
+			authUC:                authUC,
+			cookie:                authCookie,
 		},
 	}
+}
+
+type AuthHandler struct {
+	authUC         *usecase.AuthService
+	registerUserUC *usecase.RegisterUserUseCase
+	cookie         AuthCookieConfig
+}
+
+type AccountHandler struct {
+	authUC            *usecase.AuthService
+	userPlayerLinksUC *usecase.UserPlayerLinksUseCase
+	cookie            AuthCookieConfig
 }
 
 type SessionHandler struct {
@@ -95,6 +141,8 @@ type PlayerHandler struct {
 type StatsHandler struct {
 	getStatsSessionsUC *usecase.GetStatsSessionsUseCase
 	getStatsPlayersUC  *usecase.GetStatsPlayersUseCase
+	authUC             *usecase.AuthService
+	cookie             AuthCookieConfig
 }
 
 type DebugHandler struct {
@@ -103,4 +151,6 @@ type DebugHandler struct {
 	deletePlayerUC        *usecase.DeleteDebugPlayerUseCase
 	deleteSessionUC       *usecase.DeleteDebugSessionUseCase
 	deleteSessionFinishUC *usecase.DeleteDebugSessionFinishUseCase
+	authUC                *usecase.AuthService
+	cookie                AuthCookieConfig
 }
