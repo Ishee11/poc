@@ -84,10 +84,9 @@ jobs:
             done
 
             echo "== Copy prod database to dev =="
+            docker exec poker-db-dev psql -U poker -d poker -v ON_ERROR_STOP=1 -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
             docker exec poker-db pg_dump -U poker -d poker -Fc --no-owner --no-privileges \
               | docker exec -i poker-db-dev pg_restore \
-                  --clean \
-                  --if-exists \
                   --no-owner \
                   --no-privileges \
                   --single-transaction \
