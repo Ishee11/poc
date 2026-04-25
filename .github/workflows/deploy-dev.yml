@@ -24,8 +24,13 @@ jobs:
             docker system df
 
             echo "== Pull project =="
-            rm -rf /app-dev
-            git clone -b dev https://github.com/Ishee11/poc.git /app-dev
+            if [ ! -d /app-dev/.git ]; then
+              git clone --depth 1 -b dev https://github.com/Ishee11/poc.git /app-dev
+            else
+              git -C /app-dev fetch --depth 1 origin dev
+              git -C /app-dev reset --hard origin/dev
+              git -C /app-dev clean -fd
+            fi
             cd /app-dev
             test -f docker-compose.dev.yml
             test -f docker-compose.observability.yml
@@ -79,13 +84,22 @@ jobs:
             done
 
             echo "== Copy prod database to dev =="
-            docker exec poker-db pg_dump -U poker -d poker --clean --if-exists --no-owner --no-privileges \
-              | docker exec -i poker-db-dev psql -U poker -d poker
+            docker exec poker-db pg_dump -U poker -d poker -Fc --no-owner --no-privileges \
+              | docker exec -i poker-db-dev pg_restore \
+                  --clean \
+                  --if-exists \
+                  --no-owner \
+                  --no-privileges \
+                  --single-transaction \
+                  -U poker \
+                  -d poker
 
             echo "== Build & start dev app =="
             docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
 
             echo "== Start observability stack =="
+            docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml down --remove-orphans || true
+            docker compose --env-file .env.observability -p poker-obs -f docker-compose.observability.yml down --remove-orphans || true
             docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml up -d
 
             echo "== Check dev app logs =="
