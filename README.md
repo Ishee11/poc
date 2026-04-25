@@ -62,6 +62,8 @@ docker compose -f docker-compose.observability.yml up -d
 
 Grafana берет admin credentials и внешний URL из `.env.observability`.
 Alertmanager и Telegram alerting тоже настраиваются через `.env.observability`.
+По умолчанию этот стек смотрит на dev-приложение `host.docker.internal:18080`.
+Для prod нужно переключить `PROMETHEUS_CONFIG_FILE=prometheus.prod.yml` и выдать отдельные внешние порты для Grafana и alerting.
 
 ## Конфигурация
 

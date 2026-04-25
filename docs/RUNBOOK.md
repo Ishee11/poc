@@ -51,6 +51,16 @@ Alertmanager читает Telegram-настройки из `.env.observability`.
 http://host.docker.internal:18080/metrics
 ```
 
+Для prod нужно выставить в `.env.observability`:
+
+```text
+PROMETHEUS_CONFIG_FILE=prometheus.prod.yml
+PROMETHEUS_PORT_BIND=127.0.0.1:9091:9090
+ALERTMANAGER_PORT_BIND=127.0.0.1:9094:9093
+GRAFANA_PORT_BIND=3001:3000
+GF_SERVER_ROOT_URL=http://193.238.134.58:3001
+```
+
 Порты локального стека:
 
 - Prometheus: `http://127.0.0.1:9090`
@@ -69,7 +79,7 @@ http://host.docker.internal:18080/metrics
 Poker / Poker App Overview
 ```
 
-Если локальное приложение слушает не `18080`, нужно изменить target в `deploy/observability/prometheus/prometheus.yml`.
+Если target нужно сменить, используйте `PROMETHEUS_CONFIG_FILE` и один из файлов в `deploy/observability/prometheus/`.
 
 Если Grafana должна открываться по другому IP или домену, обновить значения в `.env.observability`.
 
