@@ -5,17 +5,18 @@ WORKDIR /app
 
 # зависимости
 COPY go.mod go.sum ./
-RUN go mod download
-
-# 👇 ВАЖНО: ломаем кеш перед копированием кода
-ARG CACHE_BUST=1
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
 # код
 COPY . .
 
 # билд (static)
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -a -o app ./cmd/app/main.go
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -o app ./cmd/app/main.go
 
 # ========= RUNTIME =========
 FROM gcr.io/distroless/base-debian12
