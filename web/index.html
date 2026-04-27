@@ -153,6 +153,11 @@
                             <h2 data-i18n="blinds.title">Blind Timer</h2>
                             <span class="status-pill status-active" id="blinds-status">Stopped</span>
                         </div>
+                        <div class="blinds-level-flash" id="blinds-level-flash" hidden>
+                            <div class="blinds-level-flash-label" id="blinds-level-flash-label" data-i18n="blinds.levelStarted">Level Started</div>
+                            <div class="blinds-level-flash-level" id="blinds-level-flash-level">-</div>
+                            <div class="blinds-level-flash-blinds" id="blinds-level-flash-blinds">-</div>
+                        </div>
                         <div class="blinds-timer-display" id="blinds-timer">00:00</div>
                         <div class="blinds-scoreboard">
                             <div class="blinds-score-item">
@@ -242,7 +247,6 @@
                                     <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.reset">Reset</button>
                                 </div>
                             </div>
-                            <p class="hint" data-i18n="blinds.resetHint">Reset returns the timer to the first level and stops the clock.</p>
                         </div>
                     </div>
                 </section>

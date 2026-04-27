@@ -34,6 +34,8 @@ let lastCountdownAlertKey = "";
 let audioContext = null;
 let editorOpen = false;
 let audioWarmupDone = false;
+let heroEventHideId = null;
+let heroEventCleanupId = null;
 
 export function initBlindsClock() {
   if (!tickerId) {
@@ -53,13 +55,14 @@ export function initBlindsClock() {
 
   document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState === "visible" && document.body.dataset.screen === "blinds") {
+      void unlockAudio();
       await refreshBlindClock({ silent: true });
     }
   });
 
   document.addEventListener("pointerdown", () => {
     if (document.body.dataset.screen === "blinds") {
-      unlockAudio();
+      void unlockAudio();
     }
   });
 
@@ -82,7 +85,7 @@ export function initBlindsClock() {
     if (!action) return;
 
     if (action === "start" || action === "resume") {
-      unlockAudio();
+      await unlockAudio();
     }
 
     const res =
@@ -93,12 +96,13 @@ export function initBlindsClock() {
           : await resumeBlindClock();
 
     handleMutationResult(res, {
-      successMessage:
+      eventMessage:
         action === "start"
-          ? t("notice.blindsStarted")
+          ? t("blinds.eventStarted")
           : action === "pause"
-            ? t("notice.blindsPaused")
-            : t("notice.blindsResumed"),
+            ? t("blinds.eventPaused")
+            : t("blinds.eventResumed"),
+      eventTone: action === "pause" ? "warning" : "success",
       errorMessage: t("error.internal_error"),
     });
   });
@@ -113,27 +117,28 @@ export function initBlindsClock() {
 
     const res = await resetBlindClock();
     handleMutationResult(res, {
-      successMessage: t("notice.blindsReset"),
+      eventMessage: t("blinds.eventReset"),
+      eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
   });
 
   document.getElementById("blinds-previous-level-btn")?.addEventListener("click", async () => {
-    unlockAudio();
+    await unlockAudio();
     const res = await previousBlindClockLevel();
     handleMutationResult(res, {
-      successMessageFromBody: (body) =>
-        t("notice.blindsLevelMoved", { level: Number(body?.current_level) || 0 }),
+      eventMessage: t("blinds.eventLevelMoved"),
+      eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
   });
 
   document.getElementById("blinds-next-level-btn")?.addEventListener("click", async () => {
-    unlockAudio();
+    await unlockAudio();
     const res = await nextBlindClockLevel();
     handleMutationResult(res, {
-      successMessageFromBody: (body) =>
-        t("notice.blindsLevelMoved", { level: Number(body?.current_level) || 0 }),
+      eventMessage: t("blinds.eventLevelMoved"),
+      eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
   });
@@ -476,10 +481,14 @@ function applyClockState(body, { announceLevelChange = true } = {}) {
     runtimeLevelIndex >= 0 &&
     runtimeLevelIndex !== previousLevel
   ) {
-    showNotice(t("notice.blindsLevelAutoChanged", { level: runtimeLevelIndex + 1 }), "success");
+    showHeroEvent({
+      label: t("blinds.levelStarted"),
+      tone: "success",
+      levelIndex: runtimeLevelIndex,
+    });
     playLevelChangeAlert();
   } else if (previousStatus === "paused" && runtimeStatus === "running") {
-    unlockAudio();
+    void unlockAudio();
   }
 
   lastAlertedLevel = runtimeLevelIndex;
@@ -503,7 +512,11 @@ function tickRuntime() {
   while (remaining <= 0 && levelIndex >= 0 && levelIndex < levels.length - 1) {
     levelIndex += 1;
     remaining += Number(levels[levelIndex].duration_minutes || 0) * 60;
-    showNotice(t("notice.blindsLevelAutoChanged", { level: levelIndex + 1 }), "success");
+    showHeroEvent({
+      label: t("blinds.levelStarted"),
+      tone: "success",
+      levelIndex,
+    });
     playLevelChangeAlert();
   }
 
@@ -511,6 +524,11 @@ function tickRuntime() {
     runtimeStatus = "finished";
     runtimeRemainingSeconds = 0;
     runtimeLevelIndex = levelIndex;
+    showHeroEvent({
+      label: t("blinds.eventFinished"),
+      tone: "warning",
+      levelIndex,
+    });
     playLevelChangeAlert();
     return;
   }
@@ -573,7 +591,15 @@ function formatDuration(totalSeconds) {
 
 function handleMutationResult(
   res,
-  { successMessage = "", successMessageFromBody = null, errorMessage = t("error.internal_error"), onSuccess = null } = {},
+  {
+    successMessage = "",
+    successMessageFromBody = null,
+    eventMessage = "",
+    eventMessageFromBody = null,
+    eventTone = "success",
+    errorMessage = t("error.internal_error"),
+    onSuccess = null,
+  } = {},
 ) {
   if (!res.ok || !res.body) {
     showNotice(describeError(res, errorMessage), "error");
@@ -586,11 +612,23 @@ function handleMutationResult(
   applyClockState(res.body, { announceLevelChange: false });
   renderBlindsClock({ updateEditor: true });
 
-  const message = typeof successMessageFromBody === "function"
+  const eventLabel = typeof eventMessageFromBody === "function"
+    ? eventMessageFromBody(res.body)
+    : eventMessage;
+  if (eventLabel) {
+    showHeroEvent({
+      label: eventLabel,
+      tone: eventTone,
+      levelIndex: runtimeLevelIndex,
+    });
+    return;
+  }
+
+  const noticeMessage = typeof successMessageFromBody === "function"
     ? successMessageFromBody(res.body)
     : successMessage;
-  if (message) {
-    showNotice(message, "success");
+  if (noticeMessage) {
+    showNotice(noticeMessage, "success");
   }
 }
 
@@ -609,15 +647,15 @@ function capitalize(value) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 }
 
-function unlockAudio() {
+async function unlockAudio() {
   try {
     if (!audioContext) {
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
+      if (!Ctx) return false;
       audioContext = new Ctx();
     }
     if (audioContext.state === "suspended" || audioContext.state === "interrupted") {
-      audioContext.resume();
+      await audioContext.resume();
     }
     if (!audioWarmupDone && audioContext.state === "running") {
       const osc = audioContext.createOscillator();
@@ -629,7 +667,10 @@ function unlockAudio() {
       osc.stop(audioContext.currentTime + 0.01);
       audioWarmupDone = true;
     }
-  } catch {}
+    return audioContext.state === "running";
+  } catch {
+    return false;
+  }
 }
 
 function playLevelChangeAlert() {
@@ -656,4 +697,51 @@ function playTone(frequency, durationSeconds, gainValue, type = "sine") {
     osc.start();
     osc.stop(audioContext.currentTime + durationSeconds);
   } catch {}
+}
+
+function showHeroEvent({ label, tone = "success", levelIndex = runtimeLevelIndex } = {}) {
+  const flash = document.getElementById("blinds-level-flash");
+  const flashLabel = document.getElementById("blinds-level-flash-label");
+  const flashLevel = document.getElementById("blinds-level-flash-level");
+  const flashBlinds = document.getElementById("blinds-level-flash-blinds");
+  const hero = document.querySelector(".blinds-hero-panel");
+
+  if (!flash || !flashLabel || !flashLevel || !flashBlinds || !hero) {
+    return;
+  }
+
+  const level = Array.isArray(clockState?.levels) ? clockState.levels[levelIndex] : null;
+  flashLabel.textContent = label || "";
+  flashLevel.textContent =
+    Number.isInteger(levelIndex) && levelIndex >= 0
+      ? t("blinds.levelValue", { level: levelIndex + 1 })
+      : runtimeStatus === "idle"
+        ? t("blinds.statusStopped")
+        : t(`blinds.status${capitalize(runtimeStatus || "idle")}`);
+  flashBlinds.textContent = level
+    ? `${formatNumber(level.small_blind)} / ${formatNumber(level.big_blind)}`
+    : runtimeStatus === "finished"
+      ? t("blinds.statusFinished")
+      : "";
+
+  if (heroEventHideId) window.clearTimeout(heroEventHideId);
+  if (heroEventCleanupId) window.clearTimeout(heroEventCleanupId);
+
+  hero.classList.remove("is-event-active", "is-event-warning");
+  flash.classList.remove("is-visible", "is-warning");
+  flash.hidden = false;
+
+  void flash.offsetWidth;
+
+  hero.classList.add(tone === "warning" ? "is-event-warning" : "is-event-active");
+  flash.classList.add("is-visible");
+  flash.classList.toggle("is-warning", tone === "warning");
+
+  heroEventHideId = window.setTimeout(() => {
+    flash.classList.remove("is-visible");
+    hero.classList.remove("is-event-active", "is-event-warning");
+    heroEventCleanupId = window.setTimeout(() => {
+      flash.hidden = true;
+    }, 260);
+  }, 2200);
 }
