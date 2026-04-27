@@ -455,54 +455,167 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
     background:
         linear-gradient(180deg, rgba(88, 208, 167, 0.08), rgba(255, 255, 255, 0.02)),
         var(--panel);
+    text-align: center;
 }
 
-.blinds-summary-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+.blinds-hero-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    text-align: left;
 }
 
-.blinds-meta-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 12px;
+.blinds-hero-subline {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
 }
 
-.blinds-levels-wrap {
+.blinds-timer-display {
+    margin: 24px 0 16px;
+    font-size: clamp(4rem, 14vw, 8rem);
+    line-height: 0.95;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 28px rgba(88, 208, 167, 0.18);
+}
+
+.blinds-scoreboard {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 18px;
+}
+
+.blinds-score-item {
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.blinds-score-label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.blinds-score-value {
+    margin-top: 8px;
+    font-size: clamp(1.15rem, 3vw, 1.85rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.blinds-score-value-strong {
+    font-size: clamp(1.35rem, 3.8vw, 2.35rem);
+}
+
+.blinds-primary-actions {
+    justify-content: center;
+}
+
+.blinds-primary-actions button {
+    min-width: 140px;
+}
+
+.blinds-workspace-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.7fr);
+    align-items: start;
+}
+
+.blinds-structure-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.blinds-structure-meta strong {
+    color: var(--text);
+    font-size: 0.98rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.blinds-structure-sep {
+    opacity: 0.5;
+}
+
+.blinds-editor-grid {
     display: grid;
     gap: 12px;
     margin-top: 14px;
 }
 
-.blinds-level-row {
+.blinds-level-picker {
+    max-width: 320px;
+}
+
+.blinds-lock-hint {
+    margin: 0;
+}
+
+.blinds-level-form {
     display: grid;
-    grid-template-columns: 100px repeat(3, minmax(0, 1fr)) auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
     gap: 12px;
     align-items: end;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
 }
 
-.blinds-level-row.is-locked {
-    opacity: 0.72;
-    border-color: rgba(255, 255, 255, 0.05);
-}
-
-.blinds-level-number {
-    font-weight: 800;
-    color: var(--text);
-    align-self: center;
-}
-
-.blinds-level-actions {
-    display: flex;
+.blinds-editor-actions {
     align-items: end;
 }
 
-#blinds-timer {
-    font-size: 1.45rem;
-    font-weight: 900;
-    letter-spacing: 0.04em;
+.blinds-tools-panel {
+    background:
+        linear-gradient(180deg, rgba(255, 208, 122, 0.05), rgba(255, 255, 255, 0.02)),
+        var(--panel);
+    position: sticky;
+    top: 14px;
+}
+
+.blinds-tools-stack {
+    display: grid;
+    gap: 14px;
+}
+
+.blinds-tool-group {
+    display: grid;
+    gap: 8px;
+}
+
+.blinds-tool-label {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.blinds-tools-stack button {
+    justify-content: center;
+}
+
+.blinds-secondary-panel {
+    display: grid;
+    gap: 6px;
+    padding-top: 4px;
+    color: var(--muted);
+    background: transparent;
+    border-style: dashed;
+    box-shadow: none;
+    text-align: center;
+}
+
+.blinds-secondary-panel .hint {
+    margin: 0;
+    max-width: 72ch;
+    justify-self: center;
 }
 
 .rate-currency-row {
@@ -1647,16 +1760,27 @@ pre {
         gap: 10px;
     }
 
-    .blinds-summary-stats,
-    .blinds-meta-stats {
+    .blinds-scoreboard,
+    .blinds-workspace-grid {
         grid-template-columns: 1fr;
     }
 
-    .blinds-level-row {
+    .blinds-level-form {
         grid-template-columns: 1fr;
     }
 
-    .blinds-level-actions button {
+    .blinds-hero-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .blinds-structure-meta {
+        flex-wrap: wrap;
+    }
+
+    .blinds-editor-actions button,
+    .blinds-primary-actions button,
+    .blinds-tools-stack button {
         width: 100%;
     }
 

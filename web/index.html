@@ -149,67 +149,97 @@
 
                 <section class="screen" id="screen-blinds">
                     <div class="panel blinds-hero-panel">
-                        <div class="panel-title-row">
+                        <div class="blinds-hero-head">
                             <h2 data-i18n="blinds.title">Blind Timer</h2>
                             <span class="status-pill status-active" id="blinds-status">Stopped</span>
                         </div>
-                        <p data-i18n="blinds.description">
-                            Separate screen for tournament blinds with pause, resume, and editable future levels.
-                        </p>
-                    </div>
-
-                    <div class="stats blinds-summary-stats">
-                        <div class="stat">
-                            <div class="stat-label" data-i18n="blinds.currentLevel">Current Level</div>
-                            <div id="blinds-current-level">-</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-label" data-i18n="blinds.currentBlinds">Current Blinds</div>
-                            <div id="blinds-current-blinds">-</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-label" data-i18n="blinds.nextLevel">Next Level</div>
-                            <div id="blinds-next-blinds">-</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-label" data-i18n="blinds.timeLeft">Time Left</div>
-                            <div id="blinds-timer">00:00</div>
-                        </div>
-                    </div>
-
-                    <div class="panel">
-                        <div class="panel-title-row">
-                            <h3 data-i18n="blinds.controls">Controls</h3>
-                            <div class="actions compact-actions">
-                                <button type="button" id="blinds-start-btn" data-i18n="blinds.start">Start</button>
-                                <button type="button" id="blinds-pause-btn" class="secondary" data-i18n="blinds.pause">Pause</button>
-                                <button type="button" id="blinds-resume-btn" class="secondary" data-i18n="blinds.resume">Resume</button>
-                                <button type="button" id="blinds-reset-btn" class="warn" data-i18n="blinds.reset">Reset</button>
+                        <div class="blinds-hero-subline" data-i18n="blinds.description">Separate screen for tournament blinds with pause, resume, and editable future levels.</div>
+                        <div class="blinds-timer-display" id="blinds-timer">00:00</div>
+                        <div class="blinds-scoreboard">
+                            <div class="blinds-score-item">
+                                <div class="blinds-score-label" data-i18n="blinds.currentLevel">Current Level</div>
+                                <div class="blinds-score-value" id="blinds-current-level">-</div>
+                            </div>
+                            <div class="blinds-score-item">
+                                <div class="blinds-score-label" data-i18n="blinds.currentBlinds">Current Blinds</div>
+                                <div class="blinds-score-value blinds-score-value-strong" id="blinds-current-blinds">-</div>
+                            </div>
+                            <div class="blinds-score-item">
+                                <div class="blinds-score-label" data-i18n="blinds.nextLevel">Next Level</div>
+                                <div class="blinds-score-value" id="blinds-next-blinds">-</div>
                             </div>
                         </div>
-                        <div class="stats blinds-meta-stats">
-                            <div class="stat">
-                                <div class="stat-label" data-i18n="blinds.totalLevels">Total Levels</div>
-                                <div id="blinds-total-levels">0</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-label" data-i18n="blinds.upcomingLevels">Upcoming</div>
-                                <div id="blinds-upcoming-levels">0</div>
-                            </div>
+                        <div class="actions blinds-primary-actions">
+                            <button type="button" id="blinds-start-btn" data-i18n="blinds.start">Start</button>
+                            <button type="button" id="blinds-pause-btn" class="secondary" data-i18n="blinds.pause">Pause</button>
+                            <button type="button" id="blinds-resume-btn" class="secondary" data-i18n="blinds.resume">Resume</button>
                         </div>
                     </div>
 
-                    <div class="panel">
-                        <div class="panel-title-row">
-                            <h3 data-i18n="blinds.structure">Blind Structure</h3>
-                            <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">
-                                Add Level
-                            </button>
+                    <div class="grid blinds-workspace-grid">
+                        <div class="panel">
+                            <div class="panel-title-row">
+                                <h3 data-i18n="blinds.structure">Blind Structure</h3>
+                                <div class="blinds-structure-meta">
+                                    <span data-i18n="blinds.totalLevels">Total Levels</span>
+                                    <strong id="blinds-total-levels">0</strong>
+                                    <span class="blinds-structure-sep">•</span>
+                                    <span data-i18n="blinds.upcomingLevels">Upcoming</span>
+                                    <strong id="blinds-upcoming-levels">0</strong>
+                                </div>
+                            </div>
+                            <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit current or future levels.</p>
+                            <div class="blinds-editor-grid">
+                                <label class="blinds-level-picker">
+                                    <span data-i18n="blinds.selectedLevel">Selected Level</span>
+                                    <select id="blinds-level-select"></select>
+                                </label>
+                                <div id="blinds-level-lock-hint" class="hint blinds-lock-hint" hidden></div>
+                                <form id="blinds-level-form" class="blinds-level-form" onsubmit="return false;">
+                                    <label>
+                                        <span data-i18n="blinds.smallBlind">SB</span>
+                                        <input id="blinds-level-sb" type="number" min="1" />
+                                    </label>
+                                    <label>
+                                        <span data-i18n="blinds.bigBlind">BB</span>
+                                        <input id="blinds-level-bb" type="number" min="1" />
+                                    </label>
+                                    <label>
+                                        <span data-i18n="blinds.duration">Minutes</span>
+                                        <input id="blinds-level-duration" type="number" min="1" />
+                                    </label>
+                                    <div class="actions blinds-editor-actions">
+                                        <button type="button" id="blinds-save-level-btn" data-i18n="common.save">Save</button>
+                                        <button type="button" class="secondary" id="blinds-delete-level-btn" data-i18n="blinds.deleteLevel">Delete</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                        <p class="hint" data-i18n="blinds.editHint">
-                            Completed levels are locked. Pause the timer to edit current or future levels.
-                        </p>
-                        <div id="blinds-levels-wrap" class="blinds-levels-wrap"></div>
+
+                        <div class="panel blinds-tools-panel">
+                            <div class="panel-title-row">
+                                <h3 data-i18n="blinds.controls">Controls</h3>
+                            </div>
+                            <div class="blinds-tools-stack">
+                                <div class="blinds-tool-group">
+                                    <div class="blinds-tool-label" data-i18n="blinds.toolStructure">Structure</div>
+                                    <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">Add Level</button>
+                                </div>
+                                <div class="blinds-tool-group">
+                                    <div class="blinds-tool-label" data-i18n="blinds.toolClock">Clock</div>
+                                    <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.reset">Reset</button>
+                                </div>
+                                <div class="blinds-tool-group">
+                                    <div class="blinds-tool-label" data-i18n="blinds.toolDanger">Danger Zone</div>
+                                    <button type="button" class="danger" id="blinds-delete-all-levels-btn" data-i18n="blinds.deleteAllLevels">Delete All Levels</button>
+                                </div>
+                            </div>
+                            <p class="hint" data-i18n="blinds.resetHint">Reset returns the timer to the first level and stops the clock.</p>
+                        </div>
+                    </div>
+
+                    <div class="panel blinds-secondary-panel">
+                        <p class="hint" data-i18n="blinds.maintenanceHint">Dangerous actions are separated from the live timer so they are harder to hit by mistake.</p>
                     </div>
                 </section>
 
