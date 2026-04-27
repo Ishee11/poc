@@ -34,6 +34,7 @@ import {
   renderOperations,
   renderSession,
 } from "./ui/session.js";
+import { initBlindsClock, openBlindsClock, renderBlindsClock } from "./ui/blinds.js";
 import {
   describeError,
   escapeHtml,
@@ -56,6 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initGuestPlayerSelect();
   }
   initSessionActions();
+  initBlindsClock();
   initLanguageSelect();
   onLanguageChange(renderCurrentLanguage);
 
@@ -565,6 +567,9 @@ function renderCurrentLanguage() {
   if (state.selectedPlayerDetail) {
     renderPlayerDetail();
   }
+  if (document.body.dataset.screen === "blinds") {
+    renderBlindsClock();
+  }
 }
 
 function defaultCurrency() {
@@ -605,6 +610,11 @@ async function openInitialRoute({ fromHistory = false } = {}) {
       return;
     }
     await openAccount({ replace: !fromHistory });
+    return;
+  }
+
+  if (section === "blinds") {
+    openBlindsClock({ replace: !fromHistory });
     return;
   }
 

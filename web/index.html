@@ -29,6 +29,9 @@
                         <button type="button" class="secondary nav-account-only" id="account-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
+                        <button type="button" class="secondary nav-blinds-only" id="blinds-back-home-btn" data-i18n="nav.backHome">
+                            Back to Home
+                        </button>
                     </nav>
                 </div>
                 <div class="lobby-auth-bar">
@@ -77,6 +80,9 @@
                                 <div class="actions">
                                     <button type="button" id="open-workspace-btn" class="secondary" data-i18n="lobby.openWorkspace">
                                         Open Workspace
+                                    </button>
+                                    <button type="button" id="open-blinds-clock-btn" class="secondary" data-i18n="lobby.openBlindsClock">
+                                        Blind Timer
                                     </button>
                                 </div>
                             </form>
@@ -138,6 +144,72 @@
                                 <option value="en">English</option>
                             </select>
                         </label>
+                    </div>
+                </section>
+
+                <section class="screen" id="screen-blinds">
+                    <div class="panel blinds-hero-panel">
+                        <div class="panel-title-row">
+                            <h2 data-i18n="blinds.title">Blind Timer</h2>
+                            <span class="status-pill status-active" id="blinds-status">Stopped</span>
+                        </div>
+                        <p data-i18n="blinds.description">
+                            Separate screen for tournament blinds with pause, resume, and editable future levels.
+                        </p>
+                    </div>
+
+                    <div class="stats blinds-summary-stats">
+                        <div class="stat">
+                            <div class="stat-label" data-i18n="blinds.currentLevel">Current Level</div>
+                            <div id="blinds-current-level">-</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label" data-i18n="blinds.currentBlinds">Current Blinds</div>
+                            <div id="blinds-current-blinds">-</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label" data-i18n="blinds.nextLevel">Next Level</div>
+                            <div id="blinds-next-blinds">-</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label" data-i18n="blinds.timeLeft">Time Left</div>
+                            <div id="blinds-timer">00:00</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-title-row">
+                            <h3 data-i18n="blinds.controls">Controls</h3>
+                            <div class="actions compact-actions">
+                                <button type="button" id="blinds-start-btn" data-i18n="blinds.start">Start</button>
+                                <button type="button" id="blinds-pause-btn" class="secondary" data-i18n="blinds.pause">Pause</button>
+                                <button type="button" id="blinds-resume-btn" class="secondary" data-i18n="blinds.resume">Resume</button>
+                                <button type="button" id="blinds-reset-btn" class="warn" data-i18n="blinds.reset">Reset</button>
+                            </div>
+                        </div>
+                        <div class="stats blinds-meta-stats">
+                            <div class="stat">
+                                <div class="stat-label" data-i18n="blinds.totalLevels">Total Levels</div>
+                                <div id="blinds-total-levels">0</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label" data-i18n="blinds.upcomingLevels">Upcoming</div>
+                                <div id="blinds-upcoming-levels">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-title-row">
+                            <h3 data-i18n="blinds.structure">Blind Structure</h3>
+                            <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">
+                                Add Level
+                            </button>
+                        </div>
+                        <p class="hint" data-i18n="blinds.editHint">
+                            Completed levels are locked. Pause the timer to edit current or future levels.
+                        </p>
+                        <div id="blinds-levels-wrap" class="blinds-levels-wrap"></div>
                     </div>
                 </section>
 

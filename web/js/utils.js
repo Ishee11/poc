@@ -117,6 +117,10 @@ export function setScreen(name) {
     .getElementById("screen-account")
     ?.classList.toggle("active", name === "account");
 
+  document
+    .getElementById("screen-blinds")
+    ?.classList.toggle("active", name === "blinds");
+
   document.body.dataset.screen = name;
   window.scrollTo({ top: 0, left: 0 });
 }
@@ -131,6 +135,10 @@ export function routeToPlayer(playerId) {
 
 export function routeToAccount() {
   return "/account";
+}
+
+export function routeToBlinds() {
+  return "/blinds";
 }
 
 export function pushRoute(path) {
