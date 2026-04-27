@@ -463,11 +463,21 @@ function tickRuntime() {
 function maybePlayCountdownWarning() {
   if (runtimeStatus !== "running" || runtimeLevelIndex < 0) return;
 
-  const warningKey = `${runtimeLevelIndex}:${runtimeRemainingSeconds <= 10 ? "danger" : runtimeRemainingSeconds <= 60 ? "warning" : "clear"}`;
+  const warningKey =
+    runtimeRemainingSeconds <= 10
+      ? `${runtimeLevelIndex}:danger:${runtimeRemainingSeconds}`
+      : runtimeRemainingSeconds <= 60
+        ? `${runtimeLevelIndex}:warning`
+        : `${runtimeLevelIndex}:clear`;
   if (warningKey === lastCountdownAlertKey) return;
   lastCountdownAlertKey = warningKey;
 
-  if (runtimeRemainingSeconds === 60 || runtimeRemainingSeconds === 10) {
+  if (runtimeRemainingSeconds <= 10) {
+    playWarningAlert();
+    return;
+  }
+
+  if (runtimeRemainingSeconds === 60) {
     playWarningAlert();
   }
 }
@@ -543,20 +553,20 @@ function unlockAudio() {
 }
 
 function playLevelChangeAlert() {
-  playTone(880, 0.16, 0.05);
-  window.setTimeout(() => playTone(1174, 0.18, 0.05), 190);
+  playTone(880, 0.2, 0.16, "square");
+  window.setTimeout(() => playTone(1174, 0.22, 0.18, "square"), 180);
 }
 
 function playWarningAlert() {
-  playTone(740, 0.12, 0.04);
+  playTone(1046, 0.14, 0.22, "square");
 }
 
-function playTone(frequency, durationSeconds, gainValue) {
+function playTone(frequency, durationSeconds, gainValue, type = "sine") {
   try {
     if (!audioContext || audioContext.state !== "running") return;
     const osc = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    osc.type = "sine";
+    osc.type = type;
     osc.frequency.value = frequency;
     gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
     gain.gain.exponentialRampToValueAtTime(gainValue, audioContext.currentTime + 0.02);
