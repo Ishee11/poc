@@ -555,6 +555,20 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
     margin-top: 14px;
 }
 
+.blinds-structure-shell,
+.blinds-structure-collapsed {
+    margin-top: 14px;
+}
+
+.blinds-structure-collapsed {
+    display: grid;
+    gap: 12px;
+}
+
+.blinds-structure-panel.is-editing {
+    border-color: rgba(88, 208, 167, 0.34);
+}
+
 .blinds-level-picker {
     max-width: 320px;
 }
@@ -608,6 +622,12 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+}
+
+#blinds-collapsed-summary {
+    margin: 0;
+    color: var(--text);
+    font-weight: 700;
 }
 
 .rate-currency-row {

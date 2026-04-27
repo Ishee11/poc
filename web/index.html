@@ -174,7 +174,7 @@
                     </div>
 
                     <div class="grid blinds-workspace-grid">
-                        <div class="panel">
+                        <div class="panel blinds-structure-panel" id="blinds-structure-panel">
                             <div class="panel-title-row">
                                 <h3 data-i18n="blinds.structure">Blind Structure</h3>
                                 <div class="blinds-structure-meta">
@@ -185,31 +185,40 @@
                                     <strong id="blinds-upcoming-levels">0</strong>
                                 </div>
                             </div>
-                            <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit current or future levels.</p>
-                            <div class="blinds-editor-grid">
+                            <div class="blinds-structure-shell" id="blinds-structure-shell" hidden>
+                                <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit current or future levels.</p>
+                                <div class="blinds-editor-grid">
+                                    <label class="blinds-level-picker">
+                                        <span data-i18n="blinds.selectedLevel">Selected Level</span>
+                                        <select id="blinds-level-select"></select>
+                                    </label>
+                                    <div id="blinds-level-lock-hint" class="hint blinds-lock-hint" hidden></div>
+                                    <form id="blinds-level-form" class="blinds-level-form" onsubmit="return false;">
+                                        <label>
+                                            <span data-i18n="blinds.smallBlind">SB</span>
+                                            <input id="blinds-level-sb" type="number" min="1" />
+                                        </label>
+                                        <label>
+                                            <span data-i18n="blinds.bigBlind">BB</span>
+                                            <input id="blinds-level-bb" type="number" min="1" />
+                                        </label>
+                                        <label>
+                                            <span data-i18n="blinds.duration">Minutes</span>
+                                            <input id="blinds-level-duration" type="number" min="1" />
+                                        </label>
+                                        <div class="actions blinds-editor-actions">
+                                            <button type="button" id="blinds-save-level-btn" data-i18n="common.save">Save</button>
+                                            <button type="button" class="secondary" id="blinds-delete-level-btn" data-i18n="blinds.deleteLevel">Delete</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="blinds-structure-collapsed" id="blinds-structure-collapsed">
                                 <label class="blinds-level-picker">
                                     <span data-i18n="blinds.selectedLevel">Selected Level</span>
-                                    <select id="blinds-level-select"></select>
+                                    <select id="blinds-level-select-collapsed"></select>
                                 </label>
-                                <div id="blinds-level-lock-hint" class="hint blinds-lock-hint" hidden></div>
-                                <form id="blinds-level-form" class="blinds-level-form" onsubmit="return false;">
-                                    <label>
-                                        <span data-i18n="blinds.smallBlind">SB</span>
-                                        <input id="blinds-level-sb" type="number" min="1" />
-                                    </label>
-                                    <label>
-                                        <span data-i18n="blinds.bigBlind">BB</span>
-                                        <input id="blinds-level-bb" type="number" min="1" />
-                                    </label>
-                                    <label>
-                                        <span data-i18n="blinds.duration">Minutes</span>
-                                        <input id="blinds-level-duration" type="number" min="1" />
-                                    </label>
-                                    <div class="actions blinds-editor-actions">
-                                        <button type="button" id="blinds-save-level-btn" data-i18n="common.save">Save</button>
-                                        <button type="button" class="secondary" id="blinds-delete-level-btn" data-i18n="blinds.deleteLevel">Delete</button>
-                                    </div>
-                                </form>
+                                <p class="hint" id="blinds-collapsed-summary">-</p>
                             </div>
                         </div>
 
@@ -220,7 +229,9 @@
                             <div class="blinds-tools-stack">
                                 <div class="blinds-tool-group">
                                     <div class="blinds-tool-label" data-i18n="blinds.toolStructure">Structure</div>
+                                    <button type="button" class="secondary" id="blinds-toggle-editor-btn" data-i18n="blinds.editStructure">Edit Structure</button>
                                     <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">Add Level</button>
+                                    <button type="button" class="danger" id="blinds-delete-all-levels-btn" data-i18n="blinds.deleteAllLevels">Delete All Levels</button>
                                 </div>
                                 <div class="blinds-tool-group">
                                     <div class="blinds-tool-label" data-i18n="blinds.toolClock">Clock</div>
@@ -229,10 +240,6 @@
                                         <button type="button" class="secondary" id="blinds-next-level-btn" data-i18n="blinds.nextLevelAction">Next Level</button>
                                     </div>
                                     <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.reset">Reset</button>
-                                </div>
-                                <div class="blinds-tool-group">
-                                    <div class="blinds-tool-label" data-i18n="blinds.toolDanger">Danger Zone</div>
-                                    <button type="button" class="danger" id="blinds-delete-all-levels-btn" data-i18n="blinds.deleteAllLevels">Delete All Levels</button>
                                 </div>
                             </div>
                             <p class="hint" data-i18n="blinds.resetHint">Reset returns the timer to the first level and stops the clock.</p>

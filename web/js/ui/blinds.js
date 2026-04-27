@@ -32,6 +32,8 @@ let resyncId = null;
 let lastAlertedLevel = null;
 let lastCountdownAlertKey = "";
 let audioContext = null;
+let editorOpen = false;
+let audioWarmupDone = false;
 
 export function initBlindsClock() {
   if (!tickerId) {
@@ -55,6 +57,12 @@ export function initBlindsClock() {
     }
   });
 
+  document.addEventListener("pointerdown", () => {
+    if (document.body.dataset.screen === "blinds") {
+      unlockAudio();
+    }
+  });
+
   document.getElementById("open-blinds-clock-btn")?.addEventListener("click", async () => {
     await openBlindsClock();
   });
@@ -62,6 +70,11 @@ export function initBlindsClock() {
   document.getElementById("blinds-back-home-btn")?.addEventListener("click", () => {
     setScreen("lobby");
     pushRoute("/");
+  });
+
+  document.getElementById("blinds-toggle-editor-btn")?.addEventListener("click", () => {
+    editorOpen = !editorOpen;
+    renderBlindsClock({ updateEditor: true });
   });
 
   document.getElementById("blinds-toggle-btn")?.addEventListener("click", async () => {
@@ -256,6 +269,7 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   const totalLevelsEl = document.getElementById("blinds-total-levels");
   const upcomingLevelsEl = document.getElementById("blinds-upcoming-levels");
   const toggleButton = document.getElementById("blinds-toggle-btn");
+  const toggleEditorButton = document.getElementById("blinds-toggle-editor-btn");
   const prevButton = document.getElementById("blinds-previous-level-btn");
   const nextButton = document.getElementById("blinds-next-level-btn");
 
@@ -310,6 +324,9 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
           : t("blinds.start");
     toggleButton.classList.toggle("secondary", action === "pause");
   }
+  if (toggleEditorButton) {
+    toggleEditorButton.textContent = editorOpen ? t("blinds.closeEditor") : t("blinds.editStructure");
+  }
   if (prevButton) prevButton.disabled = runtimeLevelIndex <= 0 || levels.length === 0;
   if (nextButton) nextButton.disabled = runtimeLevelIndex < 0 || runtimeLevelIndex >= levels.length - 1;
 
@@ -319,6 +336,11 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
 }
 
 function renderLevelEditor() {
+  const structurePanel = document.getElementById("blinds-structure-panel");
+  const shell = document.getElementById("blinds-structure-shell");
+  const collapsedWrap = document.getElementById("blinds-structure-collapsed");
+  const collapsedSelect = document.getElementById("blinds-level-select-collapsed");
+  const collapsedSummary = document.getElementById("blinds-collapsed-summary");
   const select = document.getElementById("blinds-level-select");
   const lockHint = document.getElementById("blinds-level-lock-hint");
   const sbInput = document.getElementById("blinds-level-sb");
@@ -330,6 +352,7 @@ function renderLevelEditor() {
   const deleteAllButton = document.getElementById("blinds-delete-all-levels-btn");
 
   if (
+    !(collapsedSelect instanceof HTMLSelectElement) ||
     !(select instanceof HTMLSelectElement) ||
     !(sbInput instanceof HTMLInputElement) ||
     !(bbInput instanceof HTMLInputElement) ||
@@ -342,8 +365,13 @@ function renderLevelEditor() {
   selectedLevelIndex = clampLevelIndex(selectedLevelIndex, levels.length);
   const selectedLevel = levels[selectedLevelIndex] || null;
   const locked = isSelectedLevelLocked();
+  const canEdit = editorOpen && runtimeStatus !== "running";
 
-  select.innerHTML = levels.length
+  if (structurePanel) structurePanel.classList.toggle("is-editing", editorOpen);
+  if (shell) shell.hidden = !editorOpen;
+  if (collapsedWrap) collapsedWrap.hidden = editorOpen;
+
+  const optionsMarkup = levels.length
     ? levels
         .map((level, index) => {
           const suffix =
@@ -358,22 +386,48 @@ function renderLevelEditor() {
         .join("")
     : `<option value="">${escapeHtml(t("blinds.noLevels"))}</option>`;
 
+  select.innerHTML = optionsMarkup;
+  collapsedSelect.innerHTML = optionsMarkup;
+
   if (levels.length) {
     select.value = String(selectedLevelIndex);
+    collapsedSelect.value = String(selectedLevelIndex);
   }
   select.disabled = levels.length === 0;
+  collapsedSelect.disabled = levels.length === 0;
+
+  collapsedSelect.onchange = (event) => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLSelectElement)) return;
+    selectedLevelIndex = clampLevelIndex(Number(target.value), levels.length);
+    renderBlindsClock({ updateEditor: true });
+  };
 
   sbInput.value = selectedLevel ? String(selectedLevel.small_blind) : "";
   bbInput.value = selectedLevel ? String(selectedLevel.big_blind) : "";
   durationInput.value = selectedLevel ? String(selectedLevel.duration_minutes) : "";
 
-  sbInput.disabled = locked;
-  bbInput.disabled = locked;
-  durationInput.disabled = locked;
-  if (saveButton) saveButton.disabled = locked;
-  if (deleteButton) deleteButton.disabled = locked || levels.length <= 1;
+  sbInput.disabled = locked || !canEdit;
+  bbInput.disabled = locked || !canEdit;
+  durationInput.disabled = locked || !canEdit;
+  if (saveButton) saveButton.disabled = locked || !canEdit;
+  if (deleteButton) deleteButton.disabled = locked || levels.length <= 1 || !canEdit;
   if (deleteAllButton) deleteAllButton.disabled = levels.length === 0 || runtimeStatus !== "idle";
-  if (addButton) addButton.disabled = runtimeStatus === "running";
+  if (addButton) {
+    addButton.disabled = runtimeStatus === "running";
+    addButton.hidden = !editorOpen;
+  }
+  if (deleteAllButton) {
+    deleteAllButton.hidden = !editorOpen;
+  }
+
+  if (collapsedSummary) {
+    if (!selectedLevel) {
+      collapsedSummary.textContent = t("blinds.noLevels");
+    } else {
+      collapsedSummary.textContent = `${t("blinds.levelValue", { level: selectedLevelIndex + 1 })} · ${formatNumber(selectedLevel.small_blind)}/${formatNumber(selectedLevel.big_blind)} · ${selectedLevel.duration_minutes} ${t("blinds.minutesShort")}`;
+    }
+  }
 
   if (lockHint) {
     if (!selectedLevel) {
@@ -562,8 +616,18 @@ function unlockAudio() {
       if (!Ctx) return;
       audioContext = new Ctx();
     }
-    if (audioContext.state === "suspended") {
+    if (audioContext.state === "suspended" || audioContext.state === "interrupted") {
       audioContext.resume();
+    }
+    if (!audioWarmupDone && audioContext.state === "running") {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      gain.gain.value = 0.00001;
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.01);
+      audioWarmupDone = true;
     }
   } catch {}
 }
