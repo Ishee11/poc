@@ -64,28 +64,28 @@ export function initBlindsClock() {
     pushRoute("/");
   });
 
-  document.getElementById("blinds-start-btn")?.addEventListener("click", async () => {
-    unlockAudio();
-    const res = await startBlindClock();
-    handleMutationResult(res, {
-      successMessage: t("notice.blindsStarted"),
-      errorMessage: t("error.internal_error"),
-    });
-  });
+  document.getElementById("blinds-toggle-btn")?.addEventListener("click", async () => {
+    const action = currentToggleAction();
+    if (!action) return;
 
-  document.getElementById("blinds-pause-btn")?.addEventListener("click", async () => {
-    const res = await pauseBlindClock();
-    handleMutationResult(res, {
-      successMessage: t("notice.blindsPaused"),
-      errorMessage: t("error.internal_error"),
-    });
-  });
+    if (action === "start" || action === "resume") {
+      unlockAudio();
+    }
 
-  document.getElementById("blinds-resume-btn")?.addEventListener("click", async () => {
-    unlockAudio();
-    const res = await resumeBlindClock();
+    const res =
+      action === "start"
+        ? await startBlindClock()
+        : action === "pause"
+          ? await pauseBlindClock()
+          : await resumeBlindClock();
+
     handleMutationResult(res, {
-      successMessage: t("notice.blindsResumed"),
+      successMessage:
+        action === "start"
+          ? t("notice.blindsStarted")
+          : action === "pause"
+            ? t("notice.blindsPaused")
+            : t("notice.blindsResumed"),
       errorMessage: t("error.internal_error"),
     });
   });
@@ -255,9 +255,7 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   const statusEl = document.getElementById("blinds-status");
   const totalLevelsEl = document.getElementById("blinds-total-levels");
   const upcomingLevelsEl = document.getElementById("blinds-upcoming-levels");
-  const startButton = document.getElementById("blinds-start-btn");
-  const pauseButton = document.getElementById("blinds-pause-btn");
-  const resumeButton = document.getElementById("blinds-resume-btn");
+  const toggleButton = document.getElementById("blinds-toggle-btn");
   const prevButton = document.getElementById("blinds-previous-level-btn");
   const nextButton = document.getElementById("blinds-next-level-btn");
 
@@ -301,9 +299,17 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
     upcomingLevelsEl.textContent = formatNumber(Math.max(levels.length - runtimeLevelIndex - 1, 0));
   }
 
-  if (startButton) startButton.disabled = status === "running" || levels.length === 0 || status === "finished";
-  if (pauseButton) pauseButton.disabled = status !== "running";
-  if (resumeButton) resumeButton.disabled = status !== "paused";
+  if (toggleButton) {
+    const action = currentToggleAction();
+    toggleButton.disabled = !action;
+    toggleButton.textContent =
+      action === "pause"
+        ? t("blinds.pause")
+        : action === "resume"
+          ? t("blinds.resume")
+          : t("blinds.start");
+    toggleButton.classList.toggle("secondary", action === "pause");
+  }
   if (prevButton) prevButton.disabled = runtimeLevelIndex <= 0 || levels.length === 0;
   if (nextButton) nextButton.disabled = runtimeLevelIndex < 0 || runtimeLevelIndex >= levels.length - 1;
 
@@ -532,6 +538,16 @@ function handleMutationResult(
   if (message) {
     showNotice(message, "success");
   }
+}
+
+function currentToggleAction() {
+  if (!clockState || !Array.isArray(clockState.levels) || clockState.levels.length === 0) {
+    return null;
+  }
+  if (runtimeStatus === "running") return "pause";
+  if (runtimeStatus === "paused") return "resume";
+  if (runtimeStatus === "finished") return null;
+  return "start";
 }
 
 function capitalize(value) {
