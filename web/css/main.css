@@ -1863,9 +1863,53 @@ pre {
         gap: 10px;
     }
 
-    .blinds-scoreboard,
+    .blinds-hero-panel {
+        padding: 12px 12px 14px;
+    }
+
+    .blinds-level-flash {
+        top: 48px;
+        left: 12px;
+        right: 12px;
+        padding: 14px 14px 16px;
+        border-radius: 14px;
+    }
+
+    .blinds-level-flash-level {
+        font-size: clamp(1.35rem, 7vw, 2rem);
+    }
+
+    .blinds-level-flash-blinds {
+        font-size: clamp(0.95rem, 4.6vw, 1.2rem);
+    }
+
     .blinds-workspace-grid {
         grid-template-columns: 1fr;
+    }
+
+    .blinds-scoreboard {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0 0 12px;
+    }
+
+    .blinds-score-item {
+        padding: 10px 8px 11px;
+        border-radius: 10px;
+    }
+
+    .blinds-score-label {
+        font-size: 0.64rem;
+        letter-spacing: 0.04em;
+    }
+
+    .blinds-score-value {
+        margin-top: 6px;
+        font-size: clamp(0.92rem, 3.9vw, 1.12rem);
+    }
+
+    .blinds-score-value-strong {
+        font-size: clamp(1.02rem, 4.5vw, 1.32rem);
     }
 
     .blinds-level-form {
@@ -1873,8 +1917,22 @@ pre {
     }
 
     .blinds-hero-head {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .blinds-hero-head h2 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .blinds-timer-display {
+        margin: 14px 0 10px;
+        font-size: clamp(4.8rem, 25vw, 6.9rem);
+        line-height: 0.88;
+        letter-spacing: 0.03em;
     }
 
     .blinds-structure-meta {
