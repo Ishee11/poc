@@ -101,6 +101,7 @@ func NewRouter(h *Handler) http.Handler {
 func isClientRoute(path string) bool {
 	return path == "/account" ||
 		path == "/blinds" ||
+		path == "/blinds/presentation" ||
 		len(path) > len("/session/") && path[:len("/session/")] == "/session/" ||
 		len(path) > len("/player/") && path[:len("/player/")] == "/player/"
 }

@@ -121,8 +121,18 @@ export function setScreen(name) {
     .getElementById("screen-blinds")
     ?.classList.toggle("active", name === "blinds");
 
+  if (name !== "blinds") {
+    document.body.dataset.blindsMode = "default";
+  } else if (!document.body.dataset.blindsMode) {
+    document.body.dataset.blindsMode = "default";
+  }
+
   document.body.dataset.screen = name;
   window.scrollTo({ top: 0, left: 0 });
+}
+
+export function setBlindsMode(mode = "default") {
+  document.body.dataset.blindsMode = mode === "presentation" ? "presentation" : "default";
 }
 
 export function routeToSession(sessionId) {
@@ -137,8 +147,8 @@ export function routeToAccount() {
   return "/account";
 }
 
-export function routeToBlinds() {
-  return "/blinds";
+export function routeToBlinds(mode = "default") {
+  return mode === "presentation" ? "/blinds/presentation" : "/blinds";
 }
 
 export function pushRoute(path) {

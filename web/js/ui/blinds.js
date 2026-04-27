@@ -17,6 +17,7 @@ import {
   pushRoute,
   replaceRoute,
   routeToBlinds,
+  setBlindsMode,
   setScreen,
   showNotice,
 } from "../utils.js";
@@ -68,6 +69,10 @@ export function initBlindsClock() {
 
   document.getElementById("open-blinds-clock-btn")?.addEventListener("click", async () => {
     await openBlindsClock();
+  });
+
+  document.getElementById("blinds-open-presentation-btn")?.addEventListener("click", async () => {
+    await openBlindsClock({ mode: "presentation" });
   });
 
   document.getElementById("blinds-back-home-btn")?.addEventListener("click", () => {
@@ -254,14 +259,15 @@ export function initBlindsClock() {
   });
 }
 
-export async function openBlindsClock({ replace = false } = {}) {
+export async function openBlindsClock({ replace = false, mode = "default" } = {}) {
   setScreen("blinds");
+  setBlindsMode(mode);
   await refreshBlindClock({ silent: false, announceLevelChange: false });
 
   if (replace) {
-    replaceRoute(routeToBlinds());
+    replaceRoute(routeToBlinds(mode));
   } else {
-    pushRoute(routeToBlinds());
+    pushRoute(routeToBlinds(mode));
   }
 }
 

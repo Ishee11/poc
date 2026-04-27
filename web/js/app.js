@@ -614,7 +614,10 @@ async function openInitialRoute({ fromHistory = false } = {}) {
   }
 
   if (section === "blinds") {
-    openBlindsClock({ replace: !fromHistory });
+    await openBlindsClock({
+      replace: !fromHistory,
+      mode: id === "presentation" ? "presentation" : "default",
+    });
     return;
   }
 

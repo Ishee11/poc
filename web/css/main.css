@@ -257,6 +257,93 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
     display: none;
 }
 
+body[data-screen="blinds"][data-blinds-mode="presentation"] .app {
+    width: 100vw;
+    margin: 0;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .app-header,
+body[data-screen="blinds"][data-blinds-mode="presentation"] #page-notice,
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-workspace-grid {
+    display: none !important;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .layout {
+    margin-top: 0;
+    gap: 0;
+    min-height: 100vh;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] #screen-blinds {
+    min-height: 100vh;
+    gap: 0;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-hero-panel {
+    min-height: 100vh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    display: grid;
+    align-content: center;
+    justify-items: stretch;
+    gap: 18px;
+    padding: max(24px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-hero-head {
+    display: none;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-timer-display {
+    margin: 0;
+    font-size: clamp(5.8rem, 23vw, 10rem);
+    line-height: 0.86;
+    letter-spacing: 0.02em;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-scoreboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    max-width: 780px;
+    width: min(100%, 780px);
+    margin: 0 auto;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-score-item:first-child {
+    display: none;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-score-item {
+    padding: 16px 18px;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-score-label {
+    font-size: 0.76rem;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-score-value {
+    font-size: clamp(1.4rem, 4.6vw, 2.2rem);
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-score-value-strong {
+    font-size: clamp(1.7rem, 5.4vw, 2.8rem);
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-primary-actions {
+    justify-content: center;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-primary-actions button {
+    width: min(100%, 360px);
+    min-height: 62px;
+    font-size: 1.2rem;
+}
+
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash {
+    top: max(16px, env(safe-area-inset-top));
+}
+
 .layout {
     margin-top: 14px;
     display: grid;
@@ -718,6 +805,45 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
     }
     100% {
         transform: scale(1);
+    }
+}
+
+@media (orientation: landscape) {
+    body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-hero-panel {
+        grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.72fr);
+        align-items: center;
+        align-content: center;
+        column-gap: 24px;
+        row-gap: 16px;
+        padding:
+            max(20px, env(safe-area-inset-top))
+            max(24px, env(safe-area-inset-right))
+            max(20px, env(safe-area-inset-bottom))
+            max(24px, env(safe-area-inset-left));
+    }
+
+    body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-timer-display {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        font-size: clamp(5.6rem, 18vw, 10rem);
+        text-align: left;
+    }
+
+    body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-scoreboard {
+        grid-column: 2;
+        grid-row: 1;
+        width: 100%;
+        margin: 0;
+    }
+
+    body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-primary-actions {
+        grid-column: 2;
+        grid-row: 2;
+        justify-content: stretch;
+    }
+
+    body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-primary-actions button {
+        width: 100%;
     }
 }
 
