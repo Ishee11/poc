@@ -28,6 +28,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	debugAdminRepo := postgres.NewDebugAdminRepository()
 	authRepo := postgres.NewAuthRepository()
 	userPlayerLinkRepo := postgres.NewUserPlayerLinkRepository()
+	blindClockRepo := postgres.NewBlindClockRepository()
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(db.Pool)
@@ -36,6 +37,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	opIDGen := &infra.UUIDOperationIDGenerator{}
 	playerIDGen := &infra.UUIDPlayerIDGenerator{}
 	sessionIDGen := &infra.UUIDSessionIDGenerator{}
+	blindClockIDGen := &infra.UUIDBlindClockIDGenerator{}
 	authSessionIDGen := infra.UUIDAuthSessionIDGenerator{}
 	loginAttemptIDGen := infra.UUIDLoginAttemptIDGenerator{}
 
@@ -195,6 +197,11 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		playerRepo,
 		txManager,
 	)
+	blindClockUC := usecase.NewBlindClockService(
+		blindClockRepo,
+		txManager,
+		blindClockIDGen,
+	)
 
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
@@ -220,6 +227,9 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		buyInUC,
 		cashOutUC,
 		reverseOpUC,
+
+		// blinds
+		blindClockUC,
 
 		// player
 		createPlayerUC,

@@ -60,6 +60,16 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/operations/cash-out", h.Operation.CashOut)
 	mux.HandleFunc("/operations/reverse", h.Operation.ReverseOperation)
 
+	// ===== BLINDS CLOCK =====
+	mux.HandleFunc("/blinds-clock", h.Blinds.GetActive)
+	mux.HandleFunc("/blinds-clock/start", h.Blinds.Start)
+	mux.HandleFunc("/blinds-clock/pause", h.Blinds.Pause)
+	mux.HandleFunc("/blinds-clock/resume", h.Blinds.Resume)
+	mux.HandleFunc("/blinds-clock/reset", h.Blinds.Reset)
+	mux.HandleFunc("/blinds-clock/previous", h.Blinds.PreviousLevel)
+	mux.HandleFunc("/blinds-clock/next", h.Blinds.NextLevel)
+	mux.HandleFunc("/blinds-clock/levels", h.Blinds.UpdateLevels)
+
 	// ===== PLAYERS =====
 	mux.HandleFunc("/players", h.Player.Players)
 	mux.HandleFunc("/players/unlinked", h.Account.PublicAvailablePlayers)

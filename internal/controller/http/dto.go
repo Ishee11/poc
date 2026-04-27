@@ -99,3 +99,13 @@ type AccountPlayersResponse struct {
 type LinkAccountPlayerRequest struct {
 	PlayerID string `json:"player_id"`
 }
+
+type UpdateBlindClockLevelsRequest struct {
+	Levels []BlindClockLevelRequest `json:"levels"`
+}
+
+type BlindClockLevelRequest struct {
+	SmallBlind      int64 `json:"small_blind"`
+	BigBlind        int64 `json:"big_blind"`
+	DurationMinutes int64 `json:"duration_minutes"`
+}
