@@ -7,15 +7,17 @@ import {
   replaceRoute,
   routeToBlinds,
   setScreen,
+  showNotice,
 } from "../utils.js";
 
 const STORAGE_KEY = "poker-blinds-clock-v1";
 
 const defaultLevels = () => [
-  { sb: 50, bb: 100, durationMinutes: 15 },
-  { sb: 100, bb: 200, durationMinutes: 15 },
-  { sb: 200, bb: 400, durationMinutes: 15 },
-  { sb: 300, bb: 600, durationMinutes: 15 },
+  { sb: 10, bb: 20, durationMinutes: 30 },
+  { sb: 20, bb: 40, durationMinutes: 30 },
+  { sb: 50, bb: 100, durationMinutes: 30 },
+  { sb: 100, bb: 200, durationMinutes: 30 },
+  { sb: 250, bb: 500, durationMinutes: 30 },
 ];
 
 let blindsState = loadState();
@@ -240,6 +242,7 @@ function startClock() {
   blindsState.lastTickAt = Date.now();
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsStarted"), "success");
 }
 
 function pauseClock() {
@@ -250,6 +253,7 @@ function pauseClock() {
   blindsState.lastTickAt = null;
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsPaused"), "success");
 }
 
 function resumeClock() {
@@ -264,6 +268,7 @@ function resumeClock() {
   blindsState.lastTickAt = Date.now();
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsResumed"), "success");
 }
 
 async function confirmResetClock() {
@@ -288,6 +293,7 @@ function resetClock() {
   selectedLevelIndex = 0;
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsReset"), "success");
 }
 
 function addLevel() {
@@ -302,6 +308,7 @@ function addLevel() {
   selectedLevelIndex = blindsState.levels.length - 1;
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsLevelAdded", { level: selectedLevelIndex + 1 }), "success");
 }
 
 function saveSelectedLevel() {
@@ -328,6 +335,7 @@ function saveSelectedLevel() {
   }
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsLevelSaved", { level: selectedLevelIndex + 1 }), "success");
 }
 
 async function confirmDeleteSelectedLevel() {
@@ -353,6 +361,7 @@ async function confirmDeleteSelectedLevel() {
 }
 
 function deleteSelectedLevel() {
+  const deletedLevelNumber = selectedLevelIndex + 1;
   blindsState.levels.splice(selectedLevelIndex, 1);
   if (blindsState.currentLevelIndex >= blindsState.levels.length) {
     blindsState.currentLevelIndex = Math.max(blindsState.levels.length - 1, 0);
@@ -365,6 +374,7 @@ function deleteSelectedLevel() {
   }
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsLevelDeleted", { level: deletedLevelNumber }), "success");
 }
 
 async function confirmDeleteAllLevels() {
@@ -385,6 +395,7 @@ async function confirmDeleteAllLevels() {
   selectedLevelIndex = 0;
   saveState();
   renderBlindsClock({ updateEditor: true });
+  showNotice(t("notice.blindsAllLevelsDeleted"), "success");
 }
 
 function syncRuntime() {

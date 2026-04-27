@@ -466,13 +466,6 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
     text-align: left;
 }
 
-.blinds-hero-subline {
-    margin-top: 6px;
-    color: var(--muted);
-    font-size: 0.9rem;
-    letter-spacing: 0.01em;
-}
-
 .blinds-timer-display {
     margin: 24px 0 16px;
     font-size: clamp(4rem, 14vw, 8rem);
