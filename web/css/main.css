@@ -305,7 +305,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-presentation
 
 body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-timer-display {
     margin: 0;
-    font-size: clamp(5.8rem, 23vw, 10rem);
+    font-size: clamp(6.8rem, 28vw, 12rem);
     line-height: 0.86;
     letter-spacing: 0.02em;
 }
@@ -837,7 +837,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-timer-display {
         grid-column: 1;
         grid-row: 1 / span 2;
-        font-size: clamp(5.6rem, 18vw, 10rem);
+        font-size: clamp(6.4rem, 20vw, 12rem);
         text-align: left;
     }
 
