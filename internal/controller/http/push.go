@@ -42,3 +42,19 @@ func (h *PushHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
+
+func (h *PushHandler) Test(w http.ResponseWriter, r *http.Request) {
+	result, err := h.service.SendTestToAll()
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":             result.Failed == 0,
+		"subscriptions":  result.Subscriptions,
+		"delivered":      result.Delivered,
+		"failed":         result.Failed,
+		"errors":         result.Errors,
+	})
+}

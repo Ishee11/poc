@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -286,20 +287,26 @@ func (n *BlindClockPushNotifier) deliverEvent(ctx context.Context, event blindCl
 			continue
 		}
 
-		_ = resp.Body.Close()
-
 		if resp.StatusCode == http.StatusGone || resp.StatusCode == http.StatusNotFound {
+			_ = resp.Body.Close()
 			_ = n.pushRepo.DeleteSubscription(subscription.Endpoint)
 			delivered = true
 			continue
 		}
 
 		if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+			_ = resp.Body.Close()
 			delivered = true
 			continue
 		}
 
-		slog.Warn("blind_clock_push_rejected", "endpoint", subscription.Endpoint, "status", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		_ = resp.Body.Close()
+		if len(body) > 0 {
+			slog.Warn("blind_clock_push_rejected", "endpoint", subscription.Endpoint, "status", resp.StatusCode, "body", string(body))
+		} else {
+			slog.Warn("blind_clock_push_rejected", "endpoint", subscription.Endpoint, "status", resp.StatusCode)
+		}
 	}
 
 	if !delivered {

@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -28,6 +29,13 @@ type BlindClockPushService struct {
 	repo   BlindClockPushRepository
 	sender BlindClockPushSender
 	cfg    BlindClockPushConfig
+}
+
+type BlindClockPushTestResult struct {
+	Subscriptions int      `json:"subscriptions"`
+	Delivered     int      `json:"delivered"`
+	Failed        int      `json:"failed"`
+	Errors        []string `json:"errors,omitempty"`
 }
 
 type BlindClockPushSender interface {
@@ -96,4 +104,32 @@ func (s *BlindClockPushService) Unsubscribe(endpoint string) error {
 	}
 
 	return s.repo.DeleteSubscription(strings.TrimSpace(endpoint))
+}
+
+func (s *BlindClockPushService) SendTestToAll() (BlindClockPushTestResult, error) {
+	result := BlindClockPushTestResult{}
+	if !s.cfg.Enabled {
+		return result, entity.ErrPushDisabled
+	}
+	if s.sender == nil {
+		return result, entity.ErrPushDisabled
+	}
+
+	subscriptions, err := s.repo.ListSubscriptions()
+	if err != nil {
+		return result, err
+	}
+
+	result.Subscriptions = len(subscriptions)
+	for _, subscription := range subscriptions {
+		if err := s.sender.SendTest(subscription); err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", subscription.Endpoint, err))
+			continue
+		}
+
+		result.Delivered++
+	}
+
+	return result, nil
 }

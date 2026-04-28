@@ -6,6 +6,7 @@ import {
   previousBlindClockLevel,
   resetBlindClock,
   resumeBlindClock,
+  sendBlindClockPushTest,
   startBlindClock,
   subscribeBlindClockPush,
   unsubscribeBlindClockPush,
@@ -88,6 +89,10 @@ export function initBlindsClock() {
 
   document.getElementById("blinds-push-toggle-btn")?.addEventListener("click", async () => {
     await togglePushSubscription();
+  });
+
+  document.getElementById("blinds-push-test-btn")?.addEventListener("click", async () => {
+    await sendPushTest();
   });
 
   document.getElementById("blinds-back-home-btn")?.addEventListener("click", () => {
@@ -300,6 +305,7 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   const prevButton = document.getElementById("blinds-previous-level-btn");
   const nextButton = document.getElementById("blinds-next-level-btn");
   const pushButton = document.getElementById("blinds-push-toggle-btn");
+  const pushTestButton = document.getElementById("blinds-push-test-btn");
 
   const levels = Array.isArray(clockState?.levels) ? clockState.levels : [];
   const currentLevel = levels[runtimeLevelIndex] || null;
@@ -365,6 +371,10 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
       : pushSubscribed
         ? t("blinds.disableAlerts")
         : t("blinds.enableAlerts");
+  }
+  if (pushTestButton) {
+    pushTestButton.hidden = !pushConfig?.enabled;
+    pushTestButton.disabled = pushBusy || !pushConfig?.enabled || !pushSubscribed;
   }
 
   if (updateEditor) {
@@ -755,6 +765,41 @@ async function togglePushSubscription() {
     showNotice(t("notice.pushEnabled"), "success");
   } catch (error) {
     showNotice(String(error || t("error.internal_error")), "error");
+  } finally {
+    pushBusy = false;
+    renderBlindsClock({ updateEditor: false });
+  }
+}
+
+async function sendPushTest() {
+  if (!pushConfig?.enabled || !pushSubscribed || pushBusy) {
+    return;
+  }
+
+  pushBusy = true;
+  renderBlindsClock({ updateEditor: false });
+
+  try {
+    const res = await sendBlindClockPushTest();
+    if (!res.ok) {
+      showNotice(describeError(res, t("error.internal_error")), "error");
+      return;
+    }
+
+    const delivered = Number(res.body?.delivered) || 0;
+    const failed = Number(res.body?.failed) || 0;
+    if (failed > 0) {
+      const firstError = Array.isArray(res.body?.errors) ? res.body.errors[0] : "";
+      showNotice(
+        firstError
+          ? `${t("blinds.testAlertFailed")} ${firstError}`
+          : t("blinds.testAlertFailed"),
+        "error",
+      );
+      return;
+    }
+
+    showNotice(t("blinds.testAlertSent", { count: delivered }), "success");
   } finally {
     pushBusy = false;
     renderBlindsClock({ updateEditor: false });

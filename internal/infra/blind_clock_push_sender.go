@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
@@ -59,6 +60,10 @@ func (s *BlindClockPushSender) SendTest(subscription entity.BlindClockPushSubscr
 	defer resp.Body.Close()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		if len(body) > 0 {
+			return fmt.Errorf("push test failed with status %d: %s", resp.StatusCode, string(body))
+		}
 		return fmt.Errorf("push test failed with status %d", resp.StatusCode)
 	}
 

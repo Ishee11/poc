@@ -360,3 +360,7 @@ export function subscribeBlindClockPush(subscription, userAgent = "") {
 export function unsubscribeBlindClockPush(endpoint) {
   return apiDelete("/push/subscriptions", { endpoint });
 }
+
+export function sendBlindClockPushTest() {
+  return apiPost("/push/test");
+}
