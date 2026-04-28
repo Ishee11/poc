@@ -82,6 +82,10 @@ export function initBlindsClock() {
     await openBlindsClock({ mode: "presentation" });
   });
 
+  document.getElementById("blinds-exit-presentation-btn")?.addEventListener("click", async () => {
+    await openBlindsClock({ mode: "default" });
+  });
+
   document.getElementById("blinds-push-toggle-btn")?.addEventListener("click", async () => {
     await togglePushSubscription();
   });
@@ -355,7 +359,7 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   if (nextButton) nextButton.disabled = runtimeLevelIndex < 0 || runtimeLevelIndex >= levels.length - 1;
   if (pushButton) {
     pushButton.hidden = !pushConfig?.enabled;
-    pushButton.disabled = pushBusy || !pushSupported;
+    pushButton.disabled = pushBusy || !pushConfig?.enabled;
     pushButton.textContent = !pushConfig?.enabled
       ? t("blinds.alertsUnsupported")
       : pushSubscribed
@@ -700,6 +704,10 @@ async function togglePushSubscription() {
     showNotice(t("notice.pushUnsupported"), "error");
     return;
   }
+  if (isIOS() && !isStandaloneDisplayMode()) {
+    showNotice(t("notice.pushRequiresHomeScreen"), "error");
+    return;
+  }
 
   if (!pushConfig) {
     const configRes = await getPushConfig();
@@ -789,6 +797,16 @@ function supportsWebPush() {
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window;
+}
+
+function isStandaloneDisplayMode() {
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+}
+
+function isIOS() {
+  const ua = window.navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 function base64URLToUint8Array(value) {

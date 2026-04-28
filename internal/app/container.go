@@ -42,6 +42,11 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	blindClockIDGen := &infra.UUIDBlindClockIDGenerator{}
 	authSessionIDGen := infra.UUIDAuthSessionIDGenerator{}
 	loginAttemptIDGen := infra.UUIDLoginAttemptIDGenerator{}
+	blindClockPushSender := infra.NewBlindClockPushSender(
+		cfg.Push.Subject,
+		cfg.Push.PublicKey,
+		cfg.Push.PrivateKey,
+	)
 
 	// ===== Helper =====
 	helper := usecase.NewHelper(
@@ -206,6 +211,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	)
 	pushUC := usecase.NewBlindClockPushService(
 		pushRepo,
+		blindClockPushSender,
 		usecase.BlindClockPushConfig{
 			Enabled:   cfg.Push.Enabled && cfg.Push.Subject != "" && cfg.Push.PublicKey != "" && cfg.Push.PrivateKey != "",
 			PublicKey: cfg.Push.PublicKey,

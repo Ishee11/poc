@@ -25,14 +25,24 @@ type BlindClockPushSubscriptionInput struct {
 }
 
 type BlindClockPushService struct {
-	repo BlindClockPushRepository
-	cfg  BlindClockPushConfig
+	repo   BlindClockPushRepository
+	sender BlindClockPushSender
+	cfg    BlindClockPushConfig
 }
 
-func NewBlindClockPushService(repo BlindClockPushRepository, cfg BlindClockPushConfig) *BlindClockPushService {
+type BlindClockPushSender interface {
+	SendTest(subscription entity.BlindClockPushSubscription) error
+}
+
+func NewBlindClockPushService(
+	repo BlindClockPushRepository,
+	sender BlindClockPushSender,
+	cfg BlindClockPushConfig,
+) *BlindClockPushService {
 	return &BlindClockPushService{
-		repo: repo,
-		cfg:  cfg,
+		repo:   repo,
+		sender: sender,
+		cfg:    cfg,
 	}
 }
 
@@ -58,14 +68,25 @@ func (s *BlindClockPushService) Subscribe(input BlindClockPushSubscriptionInput)
 	}
 
 	now := time.Now()
-	return s.repo.UpsertSubscription(entity.BlindClockPushSubscription{
+	subscription := entity.BlindClockPushSubscription{
 		Endpoint:  strings.TrimSpace(input.Endpoint),
 		KeyAuth:   strings.TrimSpace(input.KeyAuth),
 		KeyP256DH: strings.TrimSpace(input.KeyP256DH),
 		UserAgent: strings.TrimSpace(input.UserAgent),
 		CreatedAt: now,
 		UpdatedAt: now,
-	})
+	}
+
+	if err := s.repo.UpsertSubscription(subscription); err != nil {
+		return err
+	}
+	if s.sender != nil {
+		if err := s.sender.SendTest(subscription); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *BlindClockPushService) Unsubscribe(endpoint string) error {

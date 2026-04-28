@@ -295,6 +295,14 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-hero-head {
     display: none;
 }
 
+body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-presentation-exit-btn {
+    display: inline-flex;
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 3;
+}
+
 body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-timer-display {
     margin: 0;
     font-size: clamp(5.8rem, 23vw, 10rem);
@@ -549,6 +557,10 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
         box-shadow 0.24s ease,
         border-color 0.24s ease,
         background 0.24s ease;
+}
+
+.blinds-presentation-exit-btn {
+    display: none;
 }
 
 .blinds-hero-panel.is-event-active {
