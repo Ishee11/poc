@@ -790,8 +790,9 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .blinds-push-setting {
-    display: flex;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
     gap: 10px;
     font-size: 0.95rem;
     color: var(--text);
@@ -801,12 +802,12 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .blinds-push-setting input {
     margin: 0;
-    flex: 0 0 auto;
+    align-self: start;
 }
 
 .blinds-push-setting span {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .blinds-tool-label {
