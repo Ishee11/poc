@@ -791,14 +791,22 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .blinds-push-setting {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     font-size: 0.95rem;
     color: var(--text);
+    min-width: 0;
+    line-height: 1.35;
 }
 
 .blinds-push-setting input {
     margin: 0;
+    flex: 0 0 auto;
+}
+
+.blinds-push-setting span {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .blinds-tool-label {
