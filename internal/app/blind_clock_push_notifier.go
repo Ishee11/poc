@@ -176,8 +176,9 @@ func (n *BlindClockPushNotifier) collectEvents(
 	current := levels[snapshot.CurrentLevelIndex]
 	levelNumber := snapshot.CurrentLevelIndex + 1
 	var out []blindClockDueEvent
+	window := n.eventWindowSeconds()
 
-	if snapshot.Status == entity.BlindClockStatusRunning && snapshot.RemainingSeconds == current.DurationSeconds {
+	if snapshot.Status == entity.BlindClockStatusRunning && withinEventWindow(snapshot.RemainingSeconds, current.DurationSeconds, window) {
 		out = append(out, blindClockDueEvent{
 			EventKey: fmt.Sprintf("level-start:%s:%d", clockID, levelNumber),
 			Kind:     "level_started",
@@ -193,7 +194,7 @@ func (n *BlindClockPushNotifier) collectEvents(
 
 	if snapshot.Status == entity.BlindClockStatusRunning {
 		for _, warning := range n.warnings {
-			if snapshot.RemainingSeconds != warning {
+			if !withinEventWindow(snapshot.RemainingSeconds, warning, window) {
 				continue
 			}
 
@@ -226,6 +227,30 @@ func (n *BlindClockPushNotifier) collectEvents(
 	}
 
 	return out
+}
+
+func (n *BlindClockPushNotifier) eventWindowSeconds() int64 {
+	window := int64(n.pollInterval / time.Second)
+	if n.pollInterval%time.Second != 0 {
+		window += 1
+	}
+	if window < 3 {
+		window = 3
+	}
+	return window
+}
+
+func withinEventWindow(remaining, target, window int64) bool {
+	if target < 0 || window <= 0 {
+		return false
+	}
+
+	lowerBound := target - window + 1
+	if lowerBound < 0 {
+		lowerBound = 0
+	}
+
+	return remaining <= target && remaining >= lowerBound
 }
 
 func (n *BlindClockPushNotifier) deliverEvent(ctx context.Context, event blindClockDueEvent) error {
