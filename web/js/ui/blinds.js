@@ -1,11 +1,14 @@
 import {
   getBlindClock,
+  getPushConfig,
   nextBlindClockLevel,
   pauseBlindClock,
   previousBlindClockLevel,
   resetBlindClock,
   resumeBlindClock,
   startBlindClock,
+  subscribeBlindClockPush,
+  unsubscribeBlindClockPush,
   updateBlindClockLevels,
 } from "../api.js";
 import { t } from "../i18n.js";
@@ -37,6 +40,10 @@ let editorOpen = false;
 let audioWarmupDone = false;
 let heroEventHideId = null;
 let heroEventCleanupId = null;
+let pushConfig = null;
+let pushBusy = false;
+let pushSubscribed = false;
+let pushSupported = false;
 
 export function initBlindsClock() {
   if (!tickerId) {
@@ -73,6 +80,10 @@ export function initBlindsClock() {
 
   document.getElementById("blinds-open-presentation-btn")?.addEventListener("click", async () => {
     await openBlindsClock({ mode: "presentation" });
+  });
+
+  document.getElementById("blinds-push-toggle-btn")?.addEventListener("click", async () => {
+    await togglePushSubscription();
   });
 
   document.getElementById("blinds-back-home-btn")?.addEventListener("click", () => {
@@ -263,6 +274,7 @@ export async function openBlindsClock({ replace = false, mode = "default" } = {}
   setScreen("blinds");
   setBlindsMode(mode);
   await refreshBlindClock({ silent: false, announceLevelChange: false });
+  await refreshPushState();
 
   if (replace) {
     replaceRoute(routeToBlinds(mode));
@@ -283,6 +295,7 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   const toggleEditorButton = document.getElementById("blinds-toggle-editor-btn");
   const prevButton = document.getElementById("blinds-previous-level-btn");
   const nextButton = document.getElementById("blinds-next-level-btn");
+  const pushButton = document.getElementById("blinds-push-toggle-btn");
 
   const levels = Array.isArray(clockState?.levels) ? clockState.levels : [];
   const currentLevel = levels[runtimeLevelIndex] || null;
@@ -340,6 +353,15 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   }
   if (prevButton) prevButton.disabled = runtimeLevelIndex <= 0 || levels.length === 0;
   if (nextButton) nextButton.disabled = runtimeLevelIndex < 0 || runtimeLevelIndex >= levels.length - 1;
+  if (pushButton) {
+    pushButton.hidden = !pushConfig?.enabled;
+    pushButton.disabled = pushBusy || !pushSupported;
+    pushButton.textContent = !pushConfig?.enabled
+      ? t("blinds.alertsUnsupported")
+      : pushSubscribed
+        ? t("blinds.disableAlerts")
+        : t("blinds.enableAlerts");
+  }
 
   if (updateEditor) {
     renderLevelEditor();
@@ -648,6 +670,89 @@ function currentToggleAction() {
   return "start";
 }
 
+async function refreshPushState() {
+  pushSupported = supportsWebPush();
+
+  const configRes = await getPushConfig();
+  pushConfig = configRes.ok && configRes.body ? configRes.body : { enabled: false };
+
+  if (!pushSupported || !pushConfig.enabled) {
+    pushSubscribed = false;
+    renderBlindsClock({ updateEditor: false });
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    const subscription = await registration.pushManager.getSubscription();
+    pushSubscribed = Boolean(subscription);
+  } catch {
+    pushSubscribed = false;
+  }
+
+  renderBlindsClock({ updateEditor: false });
+}
+
+async function togglePushSubscription() {
+  if (pushBusy) return;
+
+  if (!supportsWebPush()) {
+    showNotice(t("notice.pushUnsupported"), "error");
+    return;
+  }
+
+  if (!pushConfig) {
+    const configRes = await getPushConfig();
+    pushConfig = configRes.ok && configRes.body ? configRes.body : { enabled: false };
+  }
+  if (!pushConfig?.enabled || !pushConfig?.public_key) {
+    showNotice(t("notice.pushUnavailable"), "error");
+    return;
+  }
+
+  pushBusy = true;
+  renderBlindsClock({ updateEditor: false });
+
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+      await unsubscribeBlindClockPush(subscription.endpoint);
+      await subscription.unsubscribe();
+      pushSubscribed = false;
+      showNotice(t("notice.pushDisabled"), "success");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      showNotice(t("notice.pushPermissionDenied"), "error");
+      return;
+    }
+
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: base64URLToUint8Array(pushConfig.public_key),
+    });
+
+    const subscriptionJSON = subscription.toJSON();
+    const res = await subscribeBlindClockPush(subscriptionJSON, navigator.userAgent || "");
+    if (!res.ok) {
+      showNotice(describeError(res, t("error.internal_error")), "error");
+      return;
+    }
+
+    pushSubscribed = true;
+    showNotice(t("notice.pushEnabled"), "success");
+  } catch (error) {
+    showNotice(String(error || t("error.internal_error")), "error");
+  } finally {
+    pushBusy = false;
+    renderBlindsClock({ updateEditor: false });
+  }
+}
+
 function capitalize(value) {
   const str = String(value || "");
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
@@ -677,6 +782,24 @@ async function unlockAudio() {
   } catch {
     return false;
   }
+}
+
+function supportsWebPush() {
+  return typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window;
+}
+
+function base64URLToUint8Array(value) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replaceAll("-", "+").replaceAll("_", "/");
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let idx = 0; idx < raw.length; idx += 1) {
+    out[idx] = raw.charCodeAt(idx);
+  }
+  return out;
 }
 
 function playLevelChangeAlert() {

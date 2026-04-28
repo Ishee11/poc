@@ -13,6 +13,7 @@ type Handler struct {
 	Session   *SessionHandler
 	Operation *OperationHandler
 	Blinds    *BlindClockHandler
+	Push      *PushHandler
 	Player    *PlayerHandler
 	Stats     *StatsHandler
 	Debug     *DebugHandler
@@ -46,6 +47,7 @@ func NewHandler(
 
 	// blinds
 	blindClockUC *usecase.BlindClockService,
+	pushUC *usecase.BlindClockPushService,
 
 	// player
 	createPlayer *usecase.CreatePlayerUseCase,
@@ -89,6 +91,9 @@ func NewHandler(
 		},
 		Blinds: &BlindClockHandler{
 			service: blindClockUC,
+		},
+		Push: &PushHandler{
+			service: pushUC,
 		},
 		Player: &PlayerHandler{
 			createPlayerUC:   createPlayer,
@@ -141,6 +146,10 @@ type OperationHandler struct {
 
 type BlindClockHandler struct {
 	service *usecase.BlindClockService
+}
+
+type PushHandler struct {
+	service *usecase.BlindClockPushService
 }
 
 type PlayerHandler struct {

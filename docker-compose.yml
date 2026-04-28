@@ -34,7 +34,11 @@ services:
       AUTH_SEED_ADMIN_PASSWORD: ${AUTH_SEED_ADMIN_PASSWORD:-}
       AUTH_SEED_USER_EMAIL: ${AUTH_SEED_USER_EMAIL:-}
       AUTH_SEED_USER_PASSWORD: ${AUTH_SEED_USER_PASSWORD:-}
-      APP_ORIGIN: http://193.238.134.58:8080
+      APP_ORIGIN: ${APP_ORIGIN:-https://semenovv.space}
+      PUSH_ENABLED: ${PUSH_ENABLED:-false}
+      PUSH_SUBJECT: ${PUSH_SUBJECT:-}
+      PUSH_VAPID_PUBLIC_KEY: ${PUSH_VAPID_PUBLIC_KEY:-}
+      PUSH_VAPID_PRIVATE_KEY: ${PUSH_VAPID_PRIVATE_KEY:-}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s

@@ -51,6 +51,13 @@ export function apiPut(path, body) {
   });
 }
 
+export function apiDelete(path, body) {
+  return request(path, {
+    method: "DELETE",
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+}
+
 // ===== auth =====
 
 export function login({ email, password }) {
@@ -333,4 +340,23 @@ export function nextBlindClockLevel() {
 
 export function updateBlindClockLevels(levels) {
   return apiPut("/blinds-clock/levels", { levels });
+}
+
+export function getPushConfig() {
+  return apiGet("/push/config");
+}
+
+export function subscribeBlindClockPush(subscription, userAgent = "") {
+  return apiPost("/push/subscriptions", {
+    endpoint: subscription.endpoint,
+    keys: {
+      auth: subscription.keys?.auth || "",
+      p256dh: subscription.keys?.p256dh || "",
+    },
+    user_agent: userAgent,
+  });
+}
+
+export function unsubscribeBlindClockPush(endpoint) {
+  return apiDelete("/push/subscriptions", { endpoint });
 }

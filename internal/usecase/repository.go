@@ -148,3 +148,11 @@ type BlindClockRepository interface {
 	FindLatestForUpdate(tx Tx) (*entity.BlindClock, error)
 	Save(tx Tx, clock *entity.BlindClock) error
 }
+
+type BlindClockPushRepository interface {
+	UpsertSubscription(subscription entity.BlindClockPushSubscription) error
+	DeleteSubscription(endpoint string) error
+	ListSubscriptions() ([]entity.BlindClockPushSubscription, error)
+	HasEvent(eventKey string) (bool, error)
+	SaveEvent(event entity.BlindClockPushEvent) error
+}

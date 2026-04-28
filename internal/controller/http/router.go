@@ -20,6 +20,14 @@ func NewRouter(h *Handler) http.Handler {
 	}
 
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+	mux.HandleFunc("/sw.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		http.ServeFileFS(w, r, sub, "sw.js")
+	})
+	mux.HandleFunc("/manifest.webmanifest", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/manifest+json; charset=utf-8")
+		http.ServeFileFS(w, r, sub, "manifest.webmanifest")
+	})
 
 	// ===== INDEX =====
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +77,19 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/blinds-clock/previous", h.Blinds.PreviousLevel)
 	mux.HandleFunc("/blinds-clock/next", h.Blinds.NextLevel)
 	mux.HandleFunc("/blinds-clock/levels", h.Blinds.UpdateLevels)
+
+	// ===== PUSH =====
+	mux.HandleFunc("/push/config", h.Push.Config)
+	mux.HandleFunc("/push/subscriptions", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.Push.Subscribe(w, r)
+		case http.MethodDelete:
+			h.Push.Unsubscribe(w, r)
+		default:
+			writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		}
+	})
 
 	// ===== PLAYERS =====
 	mux.HandleFunc("/players", h.Player.Players)

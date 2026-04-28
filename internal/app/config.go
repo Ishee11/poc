@@ -11,6 +11,7 @@ type Config struct {
 	HTTPPort    string
 	LogLevel    string
 	Auth        AuthConfig
+	Push        PushConfig
 }
 
 type AuthConfig struct {
@@ -26,6 +27,15 @@ type AuthConfig struct {
 	SeedUserEmail  string
 	SeedUserPass   string
 	AppOrigin      string
+}
+
+type PushConfig struct {
+	Enabled      bool
+	Subject      string
+	PublicKey    string
+	PrivateKey   string
+	Warnings     []int64
+	PollInterval time.Duration
 }
 
 func Load() (*Config, error) {
@@ -57,6 +67,14 @@ func Load() (*Config, error) {
 			SeedUserPass:   os.Getenv("AUTH_SEED_USER_PASSWORD"),
 			AppOrigin:      os.Getenv("APP_ORIGIN"),
 		},
+		Push: PushConfig{
+			Enabled:      getBoolEnv("PUSH_ENABLED", false),
+			Subject:      getEnv("PUSH_SUBJECT", ""),
+			PublicKey:    getEnv("PUSH_VAPID_PUBLIC_KEY", ""),
+			PrivateKey:   getEnv("PUSH_VAPID_PRIVATE_KEY", ""),
+			Warnings:     []int64{60, 10},
+			PollInterval: getDurationOrDefault("PUSH_POLL_INTERVAL", time.Second),
+		},
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -64,6 +82,20 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func getDurationOrDefault(key string, def time.Duration) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return def
+	}
+
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return def
+	}
+
+	return duration
 }
 
 func getBoolEnv(key string, def bool) bool {

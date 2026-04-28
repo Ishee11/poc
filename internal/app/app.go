@@ -7,7 +7,8 @@ import (
 )
 
 func Run() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// config
 	cfg, err := Load()
@@ -29,6 +30,9 @@ func Run() error {
 
 	// container (DI)
 	container := NewContainer(db, cfg)
+	if container.PushNotifier != nil {
+		container.PushNotifier.Start(ctx)
+	}
 
 	// http server
 	server := NewHTTPServer(container.Router, cfg.HTTPPort)

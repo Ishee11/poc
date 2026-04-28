@@ -3,8 +3,12 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#0b1117" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <title>Poker Session Control</title>
 
+        <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="stylesheet" href="/static/css/main.css" />
     </head>
 
@@ -241,6 +245,7 @@
                                 <div class="blinds-tool-group">
                                     <div class="blinds-tool-label" data-i18n="blinds.toolClock">Clock</div>
                                     <button type="button" class="secondary" id="blinds-open-presentation-btn" data-i18n="blinds.presentationMode">Presentation Mode</button>
+                                    <button type="button" class="secondary" id="blinds-push-toggle-btn" data-i18n="blinds.enableAlerts">Enable Lock Alerts</button>
                                     <div class="actions blinds-level-shift-actions">
                                         <button type="button" class="secondary" id="blinds-previous-level-btn" data-i18n="blinds.previousLevel">Previous Level</button>
                                         <button type="button" class="secondary" id="blinds-next-level-btn" data-i18n="blinds.nextLevelAction">Next Level</button>

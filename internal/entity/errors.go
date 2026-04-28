@@ -46,6 +46,9 @@ var (
 	ErrInvalidBlindClockLevel      = errors.New("invalid blind clock level")
 	ErrBlindClockLevelsLocked      = errors.New("blind clock levels locked")
 	ErrBlindClockLevelDeleteDenied = errors.New("blind clock level delete denied")
+
+	ErrPushDisabled            = errors.New("push disabled")
+	ErrInvalidPushSubscription = errors.New("invalid push subscription")
 )
 
 func (e *SessionNotBalancedError) Is(target error) bool {

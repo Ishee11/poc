@@ -149,6 +149,12 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrBlindClockLevelsLocked):
 		return apiError{status: http.StatusConflict, code: "blind_clock_levels_locked"}
 
+	case errors.Is(err, entity.ErrPushDisabled):
+		return apiError{status: http.StatusNotImplemented, code: "push_disabled"}
+
+	case errors.Is(err, entity.ErrInvalidPushSubscription):
+		return apiError{status: http.StatusBadRequest, code: "invalid_push_subscription"}
+
 	case errors.Is(err, entity.ErrUnbalancedSession):
 		return apiError{status: http.StatusConflict, code: "unbalanced_session"}
 

@@ -1,6 +1,9 @@
 package http
 
-import "github.com/ishee11/poc/internal/entity"
+import (
+	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase"
+)
 
 type StartSessionRequest struct {
 	ChipRate int64  `json:"chip_rate"`
@@ -108,4 +111,28 @@ type BlindClockLevelRequest struct {
 	SmallBlind      int64 `json:"small_blind"`
 	BigBlind        int64 `json:"big_blind"`
 	DurationMinutes int64 `json:"duration_minutes"`
+}
+
+type PushSubscribeKeysRequest struct {
+	Auth   string `json:"auth"`
+	P256DH string `json:"p256dh"`
+}
+
+type PushSubscribeRequest struct {
+	Endpoint  string                   `json:"endpoint"`
+	Keys      PushSubscribeKeysRequest `json:"keys"`
+	UserAgent string                   `json:"user_agent"`
+}
+
+func (r PushSubscribeRequest) toInput() usecase.BlindClockPushSubscriptionInput {
+	return usecase.BlindClockPushSubscriptionInput{
+		Endpoint:  r.Endpoint,
+		KeyAuth:   r.Keys.Auth,
+		KeyP256DH: r.Keys.P256DH,
+		UserAgent: r.UserAgent,
+	}
+}
+
+type PushUnsubscribeRequest struct {
+	Endpoint string `json:"endpoint"`
 }

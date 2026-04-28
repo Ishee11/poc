@@ -11,7 +11,8 @@ import (
 )
 
 type Container struct {
-	Router http.Handler
+	Router       http.Handler
+	PushNotifier *BlindClockPushNotifier
 }
 
 // NewContainer — composition root
@@ -29,6 +30,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	authRepo := postgres.NewAuthRepository()
 	userPlayerLinkRepo := postgres.NewUserPlayerLinkRepository()
 	blindClockRepo := postgres.NewBlindClockRepository()
+	pushRepo := postgres.NewBlindClockPushRepository(db.Pool)
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(db.Pool)
@@ -202,6 +204,13 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		txManager,
 		blindClockIDGen,
 	)
+	pushUC := usecase.NewBlindClockPushService(
+		pushRepo,
+		usecase.BlindClockPushConfig{
+			Enabled:   cfg.Push.Enabled && cfg.Push.Subject != "" && cfg.Push.PublicKey != "" && cfg.Push.PrivateKey != "",
+			PublicKey: cfg.Push.PublicKey,
+		},
+	)
 
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
@@ -230,6 +239,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 
 		// blinds
 		blindClockUC,
+		pushUC,
 
 		// player
 		createPlayerUC,
@@ -250,9 +260,11 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 
 	// ===== Router =====
 	router := httpcontroller.NewRouter(handler)
+	pushNotifier := NewBlindClockPushNotifier(db.Pool, blindClockRepo, pushRepo, cfg.Push)
 
 	return &Container{
-		Router: router,
+		Router:       router,
+		PushNotifier: pushNotifier,
 	}
 }
 
