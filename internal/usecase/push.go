@@ -81,9 +81,7 @@ func (s *BlindClockPushService) Subscribe(input BlindClockPushSubscriptionInput)
 		return err
 	}
 	if s.sender != nil {
-		if err := s.sender.SendTest(subscription); err != nil {
-			return err
-		}
+		_ = s.sender.SendTest(subscription)
 	}
 
 	return nil
