@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -69,7 +70,7 @@ func Load() (*Config, error) {
 		},
 		Push: PushConfig{
 			Enabled:      getBoolEnv("PUSH_ENABLED", false),
-			Subject:      getEnv("PUSH_SUBJECT", ""),
+			Subject:      normalizePushSubject(getEnv("PUSH_SUBJECT", "")),
 			PublicKey:    getEnv("PUSH_VAPID_PUBLIC_KEY", ""),
 			PrivateKey:   getEnv("PUSH_VAPID_PRIVATE_KEY", ""),
 			Warnings:     []int64{60, 10},
@@ -128,4 +129,12 @@ func getEnv(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func normalizePushSubject(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(strings.ToLower(value), "mailto:") {
+		return strings.TrimSpace(value[len("mailto:"):])
+	}
+	return value
 }
