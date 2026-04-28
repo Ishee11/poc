@@ -33,8 +33,8 @@ func NewBlindClockPushSender(subject, publicKey, privateKey string) *BlindClockP
 func (s *BlindClockPushSender) SendTest(subscription entity.BlindClockPushSubscription) error {
 	payload, err := json.Marshal(map[string]any{
 		"kind":  "test",
-		"title": "Blind timer alerts enabled",
-		"body":  "This is a test notification from semenovv.space.",
+		"title": "Тест уведомлений",
+		"body":  "Уведомления таймера блайндов работают.",
 		"tag":   "blind-clock-test",
 		"url":   "/blinds/presentation",
 	})

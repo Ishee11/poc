@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -119,7 +120,7 @@ func (n *BlindClockPushNotifier) tick(ctx context.Context) error {
 
 	snapshot := clock.Snapshot(now)
 	levels := clock.Levels()
-	events := n.collectEvents(clock.ID(), snapshot, levels)
+	events := n.collectEvents(clock.ID(), snapshot, levels, clock.StartedAt())
 
 	if err := tx.Commit(ctx); err != nil {
 		return err
@@ -170,6 +171,7 @@ func (n *BlindClockPushNotifier) collectEvents(
 	clockID entity.BlindClockID,
 	snapshot entity.BlindClockSnapshot,
 	levels []entity.BlindClockLevel,
+	startedAt *time.Time,
 ) []blindClockDueEvent {
 	if len(levels) == 0 || snapshot.CurrentLevelIndex < 0 || snapshot.CurrentLevelIndex >= len(levels) {
 		return nil
@@ -177,17 +179,18 @@ func (n *BlindClockPushNotifier) collectEvents(
 
 	current := levels[snapshot.CurrentLevelIndex]
 	levelNumber := snapshot.CurrentLevelIndex + 1
+	runKey := blindClockRunKey(startedAt)
 	var out []blindClockDueEvent
 	window := n.eventWindowSeconds()
 
 	if snapshot.Status == entity.BlindClockStatusRunning && withinEventWindow(snapshot.RemainingSeconds, current.DurationSeconds, window) {
 		out = append(out, blindClockDueEvent{
-			EventKey: fmt.Sprintf("level-start:%s:%d", clockID, levelNumber),
+			EventKey: fmt.Sprintf("level-start:%s:%s:%d", clockID, runKey, levelNumber),
 			Kind:     "level_started",
 			Payload: blindClockPushEventPayload{
 				Kind:  "level_started",
-				Title: fmt.Sprintf("Level %d started", levelNumber),
-				Body:  fmt.Sprintf("Blinds %d / %d", current.SmallBlind, current.BigBlind),
+				Title: fmt.Sprintf("Начался уровень %d", levelNumber),
+				Body:  fmt.Sprintf("Блайнды %d / %d", current.SmallBlind, current.BigBlind),
 				Tag:   fmt.Sprintf("blind-clock-level-%d", levelNumber),
 				URL:   "/blinds/presentation",
 			},
@@ -201,12 +204,12 @@ func (n *BlindClockPushNotifier) collectEvents(
 			}
 
 			out = append(out, blindClockDueEvent{
-				EventKey: fmt.Sprintf("warning:%s:%d:%d", clockID, levelNumber, warning),
+				EventKey: fmt.Sprintf("warning:%s:%s:%d:%d", clockID, runKey, levelNumber, warning),
 				Kind:     "warning",
 				Payload: blindClockPushEventPayload{
 					Kind:  "warning",
-					Title: fmt.Sprintf("%d seconds left", warning),
-					Body:  fmt.Sprintf("Level %d · %d / %d", levelNumber, current.SmallBlind, current.BigBlind),
+					Title: fmt.Sprintf("Через %d секунд новый уровень", warning),
+					Body:  fmt.Sprintf("Уровень %d · %d / %d", levelNumber, current.SmallBlind, current.BigBlind),
 					Tag:   fmt.Sprintf("blind-clock-warning-%d", warning),
 					URL:   "/blinds/presentation",
 				},
@@ -216,12 +219,12 @@ func (n *BlindClockPushNotifier) collectEvents(
 
 	if snapshot.Status == entity.BlindClockStatusFinished {
 		out = append(out, blindClockDueEvent{
-			EventKey: fmt.Sprintf("finished:%s", clockID),
+			EventKey: fmt.Sprintf("finished:%s:%s", clockID, runKey),
 			Kind:     "finished",
 			Payload: blindClockPushEventPayload{
 				Kind:  "finished",
-				Title: "Blind structure finished",
-				Body:  fmt.Sprintf("Last level %d · %d / %d", levelNumber, current.SmallBlind, current.BigBlind),
+				Title: "Структура блайндов завершена",
+				Body:  fmt.Sprintf("Последний уровень %d · %d / %d", levelNumber, current.SmallBlind, current.BigBlind),
 				Tag:   "blind-clock-finished",
 				URL:   "/blinds/presentation",
 			},
@@ -229,6 +232,13 @@ func (n *BlindClockPushNotifier) collectEvents(
 	}
 
 	return out
+}
+
+func blindClockRunKey(startedAt *time.Time) string {
+	if startedAt == nil {
+		return "idle"
+	}
+	return strconv.FormatInt(startedAt.Unix(), 10)
 }
 
 func (n *BlindClockPushNotifier) eventWindowSeconds() int64 {
