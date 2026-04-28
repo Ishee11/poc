@@ -50,6 +50,7 @@ let pushSettings = {
   notifyWarning60: true,
   notifyWarning10: true,
 };
+const PUSH_SETTINGS_STORAGE_KEY = "blindsPushSettings";
 
 export function initBlindsClock() {
   if (!tickerId) {
@@ -401,11 +402,11 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   }
   if (pushWarning60 instanceof HTMLInputElement) {
     pushWarning60.checked = pushSettings.notifyWarning60;
-    pushWarning60.disabled = pushBusy || !pushConfig?.enabled || !pushSubscribed;
+    pushWarning60.disabled = pushBusy || !pushConfig?.enabled;
   }
   if (pushWarning10 instanceof HTMLInputElement) {
     pushWarning10.checked = pushSettings.notifyWarning10;
-    pushWarning10.disabled = pushBusy || !pushConfig?.enabled || !pushSubscribed;
+    pushWarning10.disabled = pushBusy || !pushConfig?.enabled;
   }
 
   if (updateEditor) {
@@ -717,6 +718,7 @@ function currentToggleAction() {
 
 async function refreshPushState() {
   pushSupported = supportsWebPush();
+  pushSettings = loadStoredPushSettings();
 
   const configRes = await getPushConfig();
   pushConfig = configRes.ok && configRes.body ? configRes.body : { enabled: false };
@@ -733,12 +735,9 @@ async function refreshPushState() {
     pushSubscribed = Boolean(subscription);
     if (subscription) {
       await loadPushSettings(subscription.endpoint);
-    } else {
-      pushSettings = { notifyWarning60: true, notifyWarning10: true };
     }
   } catch {
     pushSubscribed = false;
-    pushSettings = { notifyWarning60: true, notifyWarning10: true };
   }
 
   renderBlindsClock({ updateEditor: false });
@@ -776,7 +775,7 @@ async function togglePushSubscription() {
       await unsubscribeBlindClockPush(subscription.endpoint);
       await subscription.unsubscribe();
       pushSubscribed = false;
-      pushSettings = { notifyWarning60: true, notifyWarning10: true };
+      storePushSettings(pushSettings);
       showNotice(t("notice.pushDisabled"), "success");
       return;
     }
@@ -817,7 +816,7 @@ async function togglePushSubscription() {
 async function loadPushSettings(endpoint) {
   const res = await getBlindClockPushStatus(endpoint);
   if (!res.ok || !res.body) {
-    pushSettings = { notifyWarning60: true, notifyWarning10: true };
+    pushSettings = loadStoredPushSettings();
     return;
   }
 
@@ -825,10 +824,11 @@ async function loadPushSettings(endpoint) {
     notifyWarning60: res.body.notify_warning_60 !== false,
     notifyWarning10: res.body.notify_warning_10 !== false,
   };
+  storePushSettings(pushSettings);
 }
 
 async function updatePushSettings(nextSettings) {
-  if (!pushSubscribed || pushBusy) {
+  if (pushBusy) {
     return;
   }
 
@@ -837,14 +837,19 @@ async function updatePushSettings(nextSettings) {
     ...pushSettings,
     ...nextSettings,
   };
+  storePushSettings(pushSettings);
   renderBlindsClock({ updateEditor: false });
+
+  if (!pushSubscribed) {
+    return;
+  }
 
   try {
     const registration = await navigator.serviceWorker.register("/sw.js");
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       pushSubscribed = false;
-      pushSettings = { notifyWarning60: true, notifyWarning10: true };
+      pushSettings = loadStoredPushSettings();
       showNotice(t("notice.pushSubscriptionMissing"), "error");
       return;
     }
@@ -859,6 +864,7 @@ async function updatePushSettings(nextSettings) {
     );
     if (!res.ok) {
       pushSettings = previousSettings;
+      storePushSettings(pushSettings);
       showNotice(describeError(res, t("error.internal_error")), "error");
       return;
     }
@@ -866,6 +872,7 @@ async function updatePushSettings(nextSettings) {
     showNotice(t("notice.pushSettingsSaved"), "success");
   } catch (error) {
     pushSettings = previousSettings;
+    storePushSettings(pushSettings);
     showNotice(String(error || t("error.internal_error")), "error");
   } finally {
     pushBusy = false;
@@ -906,6 +913,35 @@ async function sendPushTest() {
     pushBusy = false;
     renderBlindsClock({ updateEditor: false });
   }
+}
+
+function loadStoredPushSettings() {
+  try {
+    const raw = window.localStorage.getItem(PUSH_SETTINGS_STORAGE_KEY);
+    if (!raw) {
+      return { notifyWarning60: true, notifyWarning10: true };
+    }
+
+    const parsed = JSON.parse(raw);
+    return {
+      notifyWarning60: parsed?.notifyWarning60 !== false,
+      notifyWarning10: parsed?.notifyWarning10 !== false,
+    };
+  } catch {
+    return { notifyWarning60: true, notifyWarning10: true };
+  }
+}
+
+function storePushSettings(settings) {
+  try {
+    window.localStorage.setItem(
+      PUSH_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        notifyWarning60: settings.notifyWarning60 !== false,
+        notifyWarning10: settings.notifyWarning10 !== false,
+      }),
+    );
+  } catch {}
 }
 
 function capitalize(value) {
