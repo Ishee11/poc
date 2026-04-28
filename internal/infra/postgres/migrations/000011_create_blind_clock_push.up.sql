@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS blind_clock_push_subscriptions (
 
 CREATE TABLE IF NOT EXISTS blind_clock_push_events (
     event_key TEXT PRIMARY KEY,
-    clock_id UUID NOT NULL REFERENCES blind_clocks(id) ON DELETE CASCADE,
+    clock_id TEXT NOT NULL REFERENCES blind_clocks(id) ON DELETE CASCADE,
     event_kind TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
