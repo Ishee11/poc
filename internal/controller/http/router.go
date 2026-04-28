@@ -80,6 +80,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== PUSH =====
 	mux.HandleFunc("/push/config", h.Push.Config)
+	mux.HandleFunc("/push/status", h.Push.Status)
 	mux.HandleFunc("/push/test", h.Push.Test)
 	mux.HandleFunc("/push/subscriptions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

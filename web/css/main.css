@@ -784,6 +784,23 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     gap: 8px;
 }
 
+.blinds-push-settings {
+    display: grid;
+    gap: 8px;
+}
+
+.blinds-push-setting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.blinds-push-setting input {
+    margin: 0;
+}
+
 .blinds-tool-label {
     color: var(--muted);
     font-size: 0.75rem;

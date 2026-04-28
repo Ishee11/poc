@@ -1,0 +1,3 @@
+ALTER TABLE blind_clock_push_subscriptions
+    ADD COLUMN IF NOT EXISTS notify_warning_60 BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS notify_warning_10 BOOLEAN NOT NULL DEFAULT TRUE;

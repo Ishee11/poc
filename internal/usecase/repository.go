@@ -152,6 +152,7 @@ type BlindClockRepository interface {
 type BlindClockPushRepository interface {
 	UpsertSubscription(subscription entity.BlindClockPushSubscription) error
 	DeleteSubscription(endpoint string) error
+	GetSubscription(endpoint string) (*entity.BlindClockPushSubscription, error)
 	ListSubscriptions() ([]entity.BlindClockPushSubscription, error)
 	HasEvent(eventKey string) (bool, error)
 	SaveEvent(event entity.BlindClockPushEvent) error

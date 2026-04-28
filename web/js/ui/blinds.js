@@ -1,5 +1,6 @@
 import {
   getBlindClock,
+  getBlindClockPushStatus,
   getPushConfig,
   nextBlindClockLevel,
   pauseBlindClock,
@@ -45,6 +46,10 @@ let pushConfig = null;
 let pushBusy = false;
 let pushSubscribed = false;
 let pushSupported = false;
+let pushSettings = {
+  notifyWarning60: true,
+  notifyWarning10: true,
+};
 
 export function initBlindsClock() {
   if (!tickerId) {
@@ -93,6 +98,18 @@ export function initBlindsClock() {
 
   document.getElementById("blinds-push-test-btn")?.addEventListener("click", async () => {
     await sendPushTest();
+  });
+
+  document.getElementById("blinds-push-warning-60")?.addEventListener("change", async (event) => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+    await updatePushSettings({ notifyWarning60: target.checked });
+  });
+
+  document.getElementById("blinds-push-warning-10")?.addEventListener("change", async (event) => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+    await updatePushSettings({ notifyWarning10: target.checked });
   });
 
   document.getElementById("blinds-back-home-btn")?.addEventListener("click", () => {
@@ -306,6 +323,9 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   const nextButton = document.getElementById("blinds-next-level-btn");
   const pushButton = document.getElementById("blinds-push-toggle-btn");
   const pushTestButton = document.getElementById("blinds-push-test-btn");
+  const pushWarning60 = document.getElementById("blinds-push-warning-60");
+  const pushWarning10 = document.getElementById("blinds-push-warning-10");
+  const pushSettingsWrap = document.getElementById("blinds-push-settings");
 
   const levels = Array.isArray(clockState?.levels) ? clockState.levels : [];
   const currentLevel = levels[runtimeLevelIndex] || null;
@@ -375,6 +395,17 @@ export function renderBlindsClock({ updateEditor = true } = {}) {
   if (pushTestButton) {
     pushTestButton.hidden = !pushConfig?.enabled;
     pushTestButton.disabled = pushBusy || !pushConfig?.enabled || !pushSubscribed;
+  }
+  if (pushSettingsWrap) {
+    pushSettingsWrap.hidden = !pushConfig?.enabled;
+  }
+  if (pushWarning60 instanceof HTMLInputElement) {
+    pushWarning60.checked = pushSettings.notifyWarning60;
+    pushWarning60.disabled = pushBusy || !pushConfig?.enabled || !pushSubscribed;
+  }
+  if (pushWarning10 instanceof HTMLInputElement) {
+    pushWarning10.checked = pushSettings.notifyWarning10;
+    pushWarning10.disabled = pushBusy || !pushConfig?.enabled || !pushSubscribed;
   }
 
   if (updateEditor) {
@@ -700,8 +731,14 @@ async function refreshPushState() {
     const registration = await navigator.serviceWorker.register("/sw.js");
     const subscription = await registration.pushManager.getSubscription();
     pushSubscribed = Boolean(subscription);
+    if (subscription) {
+      await loadPushSettings(subscription.endpoint);
+    } else {
+      pushSettings = { notifyWarning60: true, notifyWarning10: true };
+    }
   } catch {
     pushSubscribed = false;
+    pushSettings = { notifyWarning60: true, notifyWarning10: true };
   }
 
   renderBlindsClock({ updateEditor: false });
@@ -739,6 +776,7 @@ async function togglePushSubscription() {
       await unsubscribeBlindClockPush(subscription.endpoint);
       await subscription.unsubscribe();
       pushSubscribed = false;
+      pushSettings = { notifyWarning60: true, notifyWarning10: true };
       showNotice(t("notice.pushDisabled"), "success");
       return;
     }
@@ -755,15 +793,79 @@ async function togglePushSubscription() {
     });
 
     const subscriptionJSON = subscription.toJSON();
-    const res = await subscribeBlindClockPush(subscriptionJSON, navigator.userAgent || "");
+    const res = await subscribeBlindClockPush(
+      subscriptionJSON,
+      navigator.userAgent || "",
+      pushSettings,
+    );
     if (!res.ok) {
       showNotice(describeError(res, t("error.internal_error")), "error");
       return;
     }
 
     pushSubscribed = true;
+    await loadPushSettings(subscription.endpoint);
     showNotice(t("notice.pushEnabled"), "success");
   } catch (error) {
+    showNotice(String(error || t("error.internal_error")), "error");
+  } finally {
+    pushBusy = false;
+    renderBlindsClock({ updateEditor: false });
+  }
+}
+
+async function loadPushSettings(endpoint) {
+  const res = await getBlindClockPushStatus(endpoint);
+  if (!res.ok || !res.body) {
+    pushSettings = { notifyWarning60: true, notifyWarning10: true };
+    return;
+  }
+
+  pushSettings = {
+    notifyWarning60: res.body.notify_warning_60 !== false,
+    notifyWarning10: res.body.notify_warning_10 !== false,
+  };
+}
+
+async function updatePushSettings(nextSettings) {
+  if (!pushSubscribed || pushBusy) {
+    return;
+  }
+
+  const previousSettings = { ...pushSettings };
+  pushSettings = {
+    ...pushSettings,
+    ...nextSettings,
+  };
+  renderBlindsClock({ updateEditor: false });
+
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      pushSubscribed = false;
+      pushSettings = { notifyWarning60: true, notifyWarning10: true };
+      showNotice(t("notice.pushSubscriptionMissing"), "error");
+      return;
+    }
+
+    pushBusy = true;
+    renderBlindsClock({ updateEditor: false });
+
+    const res = await subscribeBlindClockPush(
+      subscription.toJSON(),
+      navigator.userAgent || "",
+      pushSettings,
+    );
+    if (!res.ok) {
+      pushSettings = previousSettings;
+      showNotice(describeError(res, t("error.internal_error")), "error");
+      return;
+    }
+
+    showNotice(t("notice.pushSettingsSaved"), "success");
+  } catch (error) {
+    pushSettings = previousSettings;
     showNotice(String(error || t("error.internal_error")), "error");
   } finally {
     pushBusy = false;

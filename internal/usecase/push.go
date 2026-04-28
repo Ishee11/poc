@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/ishee11/poc/internal/entity"
 )
 
@@ -18,11 +20,19 @@ type BlindClockPushClientConfig struct {
 	PublicKey string `json:"public_key,omitempty"`
 }
 
+type BlindClockPushSubscriptionStatus struct {
+	Subscribed      bool `json:"subscribed"`
+	NotifyWarning60 bool `json:"notify_warning_60"`
+	NotifyWarning10 bool `json:"notify_warning_10"`
+}
+
 type BlindClockPushSubscriptionInput struct {
-	Endpoint  string `json:"endpoint"`
-	KeyAuth   string `json:"key_auth"`
-	KeyP256DH string `json:"key_p256dh"`
-	UserAgent string `json:"user_agent"`
+	Endpoint        string `json:"endpoint"`
+	KeyAuth         string `json:"key_auth"`
+	KeyP256DH       string `json:"key_p256dh"`
+	UserAgent       string `json:"user_agent"`
+	NotifyWarning60 bool   `json:"notify_warning_60"`
+	NotifyWarning10 bool   `json:"notify_warning_10"`
 }
 
 type BlindClockPushService struct {
@@ -77,12 +87,14 @@ func (s *BlindClockPushService) Subscribe(input BlindClockPushSubscriptionInput)
 
 	now := time.Now()
 	subscription := entity.BlindClockPushSubscription{
-		Endpoint:  strings.TrimSpace(input.Endpoint),
-		KeyAuth:   strings.TrimSpace(input.KeyAuth),
-		KeyP256DH: strings.TrimSpace(input.KeyP256DH),
-		UserAgent: strings.TrimSpace(input.UserAgent),
-		CreatedAt: now,
-		UpdatedAt: now,
+		Endpoint:        strings.TrimSpace(input.Endpoint),
+		KeyAuth:         strings.TrimSpace(input.KeyAuth),
+		KeyP256DH:       strings.TrimSpace(input.KeyP256DH),
+		UserAgent:       strings.TrimSpace(input.UserAgent),
+		NotifyWarning60: input.NotifyWarning60,
+		NotifyWarning10: input.NotifyWarning10,
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 
 	if err := s.repo.UpsertSubscription(subscription); err != nil {
@@ -104,6 +116,34 @@ func (s *BlindClockPushService) Unsubscribe(endpoint string) error {
 	}
 
 	return s.repo.DeleteSubscription(strings.TrimSpace(endpoint))
+}
+
+func (s *BlindClockPushService) GetSubscriptionStatus(endpoint string) (BlindClockPushSubscriptionStatus, error) {
+	status := BlindClockPushSubscriptionStatus{
+		Subscribed:      false,
+		NotifyWarning60: true,
+		NotifyWarning10: true,
+	}
+	if !s.cfg.Enabled {
+		return status, nil
+	}
+	if strings.TrimSpace(endpoint) == "" {
+		return status, entity.ErrInvalidPushSubscription
+	}
+
+	subscription, err := s.repo.GetSubscription(strings.TrimSpace(endpoint))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return status, nil
+		}
+		return status, err
+	}
+
+	return BlindClockPushSubscriptionStatus{
+		Subscribed:      true,
+		NotifyWarning60: subscription.NotifyWarning60,
+		NotifyWarning10: subscription.NotifyWarning10,
+	}, nil
 }
 
 func (s *BlindClockPushService) SendTestToAll() (BlindClockPushTestResult, error) {

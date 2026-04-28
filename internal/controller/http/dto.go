@@ -119,17 +119,21 @@ type PushSubscribeKeysRequest struct {
 }
 
 type PushSubscribeRequest struct {
-	Endpoint  string                   `json:"endpoint"`
-	Keys      PushSubscribeKeysRequest `json:"keys"`
-	UserAgent string                   `json:"user_agent"`
+	Endpoint        string                   `json:"endpoint"`
+	Keys            PushSubscribeKeysRequest `json:"keys"`
+	UserAgent       string                   `json:"user_agent"`
+	NotifyWarning60 bool                     `json:"notify_warning_60"`
+	NotifyWarning10 bool                     `json:"notify_warning_10"`
 }
 
 func (r PushSubscribeRequest) toInput() usecase.BlindClockPushSubscriptionInput {
 	return usecase.BlindClockPushSubscriptionInput{
-		Endpoint:  r.Endpoint,
-		KeyAuth:   r.Keys.Auth,
-		KeyP256DH: r.Keys.P256DH,
-		UserAgent: r.UserAgent,
+		Endpoint:        r.Endpoint,
+		KeyAuth:         r.Keys.Auth,
+		KeyP256DH:       r.Keys.P256DH,
+		UserAgent:       r.UserAgent,
+		NotifyWarning60: r.NotifyWarning60,
+		NotifyWarning10: r.NotifyWarning10,
 	}
 }
 

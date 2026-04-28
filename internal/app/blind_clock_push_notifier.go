@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
@@ -270,6 +271,10 @@ func (n *BlindClockPushNotifier) deliverEvent(ctx context.Context, event blindCl
 
 	delivered := false
 	for _, subscription := range subscriptions {
+		if event.Kind == "warning" && !subscriptionAllowsWarning(subscription, event.EventKey) {
+			continue
+		}
+
 		resp, err := webpush.SendNotificationWithContext(ctx, payload, &webpush.Subscription{
 			Endpoint: subscription.Endpoint,
 			Keys: webpush.Keys{
@@ -314,4 +319,14 @@ func (n *BlindClockPushNotifier) deliverEvent(ctx context.Context, event blindCl
 	}
 
 	return nil
+}
+
+func subscriptionAllowsWarning(subscription entity.BlindClockPushSubscription, eventKey string) bool {
+	if strings.HasSuffix(eventKey, ":60") {
+		return subscription.NotifyWarning60
+	}
+	if strings.HasSuffix(eventKey, ":10") {
+		return subscription.NotifyWarning10
+	}
+	return true
 }

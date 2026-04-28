@@ -346,7 +346,11 @@ export function getPushConfig() {
   return apiGet("/push/config");
 }
 
-export function subscribeBlindClockPush(subscription, userAgent = "") {
+export function getBlindClockPushStatus(endpoint) {
+  return apiGet(`/push/status?endpoint=${encodeURIComponent(endpoint)}`);
+}
+
+export function subscribeBlindClockPush(subscription, userAgent = "", settings = {}) {
   return apiPost("/push/subscriptions", {
     endpoint: subscription.endpoint,
     keys: {
@@ -354,6 +358,8 @@ export function subscribeBlindClockPush(subscription, userAgent = "") {
       p256dh: subscription.keys?.p256dh || "",
     },
     user_agent: userAgent,
+    notify_warning_60: settings.notifyWarning60 ?? true,
+    notify_warning_10: settings.notifyWarning10 ?? true,
   });
 }
 

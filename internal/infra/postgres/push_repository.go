@@ -19,19 +19,23 @@ func NewBlindClockPushRepository(pool *pgxpool.Pool) *BlindClockPushRepository {
 func (r *BlindClockPushRepository) UpsertSubscription(subscription entity.BlindClockPushSubscription) error {
 	_, err := r.pool.Exec(context.Background(), `
 		INSERT INTO blind_clock_push_subscriptions (
-			endpoint, key_auth, key_p256dh, user_agent, created_at, updated_at
+			endpoint, key_auth, key_p256dh, user_agent, notify_warning_60, notify_warning_10, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (endpoint) DO UPDATE SET
 			key_auth = EXCLUDED.key_auth,
 			key_p256dh = EXCLUDED.key_p256dh,
 			user_agent = EXCLUDED.user_agent,
+			notify_warning_60 = EXCLUDED.notify_warning_60,
+			notify_warning_10 = EXCLUDED.notify_warning_10,
 			updated_at = EXCLUDED.updated_at
 	`,
 		subscription.Endpoint,
 		subscription.KeyAuth,
 		subscription.KeyP256DH,
 		subscription.UserAgent,
+		subscription.NotifyWarning60,
+		subscription.NotifyWarning10,
 		subscription.CreatedAt,
 		subscription.UpdatedAt,
 	)
@@ -47,9 +51,33 @@ func (r *BlindClockPushRepository) DeleteSubscription(endpoint string) error {
 	return err
 }
 
+func (r *BlindClockPushRepository) GetSubscription(endpoint string) (*entity.BlindClockPushSubscription, error) {
+	row := r.pool.QueryRow(context.Background(), `
+		SELECT endpoint, key_auth, key_p256dh, user_agent, notify_warning_60, notify_warning_10, created_at, updated_at
+		FROM blind_clock_push_subscriptions
+		WHERE endpoint = $1
+	`, endpoint)
+
+	var item entity.BlindClockPushSubscription
+	if err := row.Scan(
+		&item.Endpoint,
+		&item.KeyAuth,
+		&item.KeyP256DH,
+		&item.UserAgent,
+		&item.NotifyWarning60,
+		&item.NotifyWarning10,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
 func (r *BlindClockPushRepository) ListSubscriptions() ([]entity.BlindClockPushSubscription, error) {
 	rows, err := r.pool.Query(context.Background(), `
-		SELECT endpoint, key_auth, key_p256dh, user_agent, created_at, updated_at
+		SELECT endpoint, key_auth, key_p256dh, user_agent, notify_warning_60, notify_warning_10, created_at, updated_at
 		FROM blind_clock_push_subscriptions
 		ORDER BY updated_at DESC, created_at DESC
 	`)
@@ -66,6 +94,8 @@ func (r *BlindClockPushRepository) ListSubscriptions() ([]entity.BlindClockPushS
 			&item.KeyAuth,
 			&item.KeyP256DH,
 			&item.UserAgent,
+			&item.NotifyWarning60,
+			&item.NotifyWarning10,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		); err != nil {

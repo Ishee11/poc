@@ -9,6 +9,16 @@ func (h *PushHandler) Config(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, h.service.GetClientConfig())
 }
 
+func (h *PushHandler) Status(w http.ResponseWriter, r *http.Request) {
+	status, err := h.service.GetSubscriptionStatus(r.URL.Query().Get("endpoint"))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, status)
+}
+
 func (h *PushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -51,10 +61,10 @@ func (h *PushHandler) Test(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok":             result.Failed == 0,
-		"subscriptions":  result.Subscriptions,
-		"delivered":      result.Delivered,
-		"failed":         result.Failed,
-		"errors":         result.Errors,
+		"ok":            result.Failed == 0,
+		"subscriptions": result.Subscriptions,
+		"delivered":     result.Delivered,
+		"failed":        result.Failed,
+		"errors":        result.Errors,
 	})
 }
