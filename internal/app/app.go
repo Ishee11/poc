@@ -33,6 +33,9 @@ func Run() error {
 	if container.PushNotifier != nil {
 		container.PushNotifier.Start(ctx)
 	}
+	if container.OutboxRelay != nil {
+		container.OutboxRelay.Start(ctx)
+	}
 
 	// http server
 	server := NewHTTPServer(container.Router, cfg.HTTPPort)

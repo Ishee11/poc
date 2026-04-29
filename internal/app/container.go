@@ -6,6 +6,7 @@ import (
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
 	infra "github.com/ishee11/poc/internal/infra"
+	kafkainfra "github.com/ishee11/poc/internal/infra/kafka"
 	postgres "github.com/ishee11/poc/internal/infra/postgres"
 	usecase "github.com/ishee11/poc/internal/usecase"
 )
@@ -13,6 +14,7 @@ import (
 type Container struct {
 	Router       http.Handler
 	PushNotifier *BlindClockPushNotifier
+	OutboxRelay  *OutboxRelayRunner
 }
 
 // NewContainer — composition root
@@ -223,6 +225,18 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		},
 	)
 
+	var outboxRelay *OutboxRelayRunner
+	if cfg.Kafka.Enabled && len(cfg.Kafka.Brokers) > 0 && cfg.Kafka.OutboxTopic != "" {
+		kafkaPublisher := kafkainfra.NewOutboxPublisher(cfg.Kafka.Brokers, cfg.Kafka.OutboxTopic)
+		relay := usecase.NewOutboxRelay(
+			outboxRepo,
+			txManager,
+			kafkaPublisher,
+			usecase.SystemClock{},
+		)
+		outboxRelay = NewOutboxRelayRunner(relay, cfg.Kafka.OutboxInterval, cfg.Kafka.OutboxBatchSize)
+	}
+
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
 		httpcontroller.AuthCookieConfig{
@@ -276,6 +290,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	return &Container{
 		Router:       router,
 		PushNotifier: pushNotifier,
+		OutboxRelay:  outboxRelay,
 	}
 }
 

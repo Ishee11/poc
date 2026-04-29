@@ -13,6 +13,7 @@ type Config struct {
 	LogLevel    string
 	Auth        AuthConfig
 	Push        PushConfig
+	Kafka       KafkaConfig
 }
 
 type AuthConfig struct {
@@ -37,6 +38,14 @@ type PushConfig struct {
 	PrivateKey   string
 	Warnings     []int64
 	PollInterval time.Duration
+}
+
+type KafkaConfig struct {
+	Enabled         bool
+	Brokers         []string
+	OutboxTopic     string
+	OutboxBatchSize int
+	OutboxInterval  time.Duration
 }
 
 func Load() (*Config, error) {
@@ -76,6 +85,13 @@ func Load() (*Config, error) {
 			Warnings:     []int64{60, 10},
 			PollInterval: getDurationOrDefault("PUSH_POLL_INTERVAL", time.Second),
 		},
+		Kafka: KafkaConfig{
+			Enabled:         getBoolEnv("KAFKA_ENABLED", false),
+			Brokers:         getCSVEnv("KAFKA_BROKERS", []string{"127.0.0.1:19092"}),
+			OutboxTopic:     getEnv("KAFKA_OUTBOX_TOPIC", "poker.events"),
+			OutboxBatchSize: getIntEnv("KAFKA_OUTBOX_BATCH_SIZE", 100),
+			OutboxInterval:  getDurationOrDefault("KAFKA_OUTBOX_INTERVAL", time.Second),
+		},
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -83,6 +99,41 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func getCSVEnv(key string, def []string) []string {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return def
+	}
+
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	if len(result) == 0 {
+		return def
+	}
+
+	return result
+}
+
+func getIntEnv(key string, def int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return def
+	}
+
+	var parsed int
+	if _, err := fmt.Sscanf(value, "%d", &parsed); err != nil || parsed <= 0 {
+		return def
+	}
+
+	return parsed
 }
 
 func getDurationOrDefault(key string, def time.Duration) time.Duration {
