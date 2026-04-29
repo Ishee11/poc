@@ -13,6 +13,7 @@ type FinishSessionUseCase struct {
 	sessionWriter   SessionWriter
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
+	outboxWriter    OutboxWriter
 }
 
 func NewFinishSessionUseCase(
@@ -21,6 +22,7 @@ func NewFinishSessionUseCase(
 	sessionWriter SessionWriter,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
+	outboxWriter OutboxWriter,
 ) *FinishSessionUseCase {
 	return &FinishSessionUseCase{
 		projection:      projection,
@@ -28,6 +30,7 @@ func NewFinishSessionUseCase(
 		sessionWriter:   sessionWriter,
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
+		outboxWriter:    outboxWriter,
 	}
 }
 
@@ -64,9 +67,19 @@ func (uc *FinishSessionUseCase) execute(tx Tx, cmd command.FinishSessionCommand)
 		}
 	}
 
-	if err := session.Finish(time.Now()); err != nil {
+	finishedAt := time.Now()
+	if err := session.Finish(finishedAt); err != nil {
 		return err
 	}
 
-	return uc.sessionWriter.Save(tx, session)
+	if err := uc.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewSessionFinishedOutboxEvent(cmd.RequestID, session.ID(), finishedAt)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }

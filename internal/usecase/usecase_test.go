@@ -87,6 +87,15 @@ func (r *fakeIdempotencyRepo) Save(_ Tx, requestID string) error {
 	return nil
 }
 
+type fakeOutboxRepo struct {
+	events []OutboxEvent
+}
+
+func (r *fakeOutboxRepo) Save(_ Tx, event OutboxEvent) error {
+	r.events = append(r.events, event)
+	return nil
+}
+
 type fakeStore struct {
 	sessions map[entity.SessionID]*entity.Session
 	players  map[entity.PlayerID]*entity.Player
@@ -423,7 +432,8 @@ func TestBuyInUseCase(t *testing.T) {
 	addPlayer(t, store, "p1", "Alice")
 
 	helper := newHelperForStore(store, &sequenceOperationIDGen{next: "op1"}, sequencePlayerIDGen{})
-	uc := NewBuyInUseCase(helper, fakeTxManager{}, newFakeIdempotencyRepo())
+	outbox := &fakeOutboxRepo{}
+	uc := NewBuyInUseCase(helper, fakeTxManager{}, newFakeIdempotencyRepo(), outbox)
 
 	err := uc.Execute(command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
 	if err != nil {
@@ -431,6 +441,9 @@ func TestBuyInUseCase(t *testing.T) {
 	}
 	if store.sessions["s1"].TotalBuyIn() != 100 || len(store.ops) != 1 {
 		t.Fatalf("buy in did not update session and save operation")
+	}
+	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationCreated {
+		t.Fatalf("buy in did not save operation.created event")
 	}
 
 	err = uc.Execute(command.BuyInCommand{RequestID: "req2", SessionID: "s1", PlayerID: "missing", Chips: 100})
@@ -450,12 +463,14 @@ func TestCashOutUseCase(t *testing.T) {
 	store.saveOperation(t, buyInOp)
 
 	helper := newHelperForStore(store, &sequenceOperationIDGen{next: "op2"}, sequencePlayerIDGen{})
+	outbox := &fakeOutboxRepo{}
 	uc := NewCashOutUseCase(
 		helper,
 		fakeSessionRepo{store: store},
 		fakeProjectionRepo{store: store},
 		fakeTxManager{},
 		newFakeIdempotencyRepo(),
+		outbox,
 	)
 
 	if err := uc.Execute(command.CashOutCommand{RequestID: "req2", SessionID: "s1", PlayerID: "p1", Chips: 40}); err != nil {
@@ -463,6 +478,9 @@ func TestCashOutUseCase(t *testing.T) {
 	}
 	if store.sessions["s1"].TotalCashOut() != 40 {
 		t.Fatalf("cash out did not update session")
+	}
+	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationCreated {
+		t.Fatalf("cash out did not save operation.created event")
 	}
 
 	err = uc.Execute(command.CashOutCommand{RequestID: "req3", SessionID: "s1", PlayerID: "p1", Chips: 1000})
@@ -475,12 +493,14 @@ func TestFinishSessionUseCase(t *testing.T) {
 	t.Run("balanced session finishes", func(t *testing.T) {
 		store := newFakeStore()
 		addSession(t, store, "s1", entity.StatusActive, 100, 100)
+		outbox := &fakeOutboxRepo{}
 		uc := NewFinishSessionUseCase(
 			fakeProjectionRepo{store: store},
 			fakeSessionRepo{store: store},
 			fakeSessionRepo{store: store},
 			fakeTxManager{},
 			newFakeIdempotencyRepo(),
+			outbox,
 		)
 
 		if err := uc.Execute(command.FinishSessionCommand{RequestID: "req1", SessionID: "s1"}); err != nil {
@@ -488,6 +508,9 @@ func TestFinishSessionUseCase(t *testing.T) {
 		}
 		if store.sessions["s1"].Status() != entity.StatusFinished {
 			t.Fatal("session was not finished")
+		}
+		if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventSessionFinished {
+			t.Fatalf("finish session did not save session.finished event")
 		}
 	})
 
@@ -510,6 +533,7 @@ func TestFinishSessionUseCase(t *testing.T) {
 			fakeSessionRepo{store: store},
 			fakeTxManager{},
 			newFakeIdempotencyRepo(),
+			&fakeOutboxRepo{},
 		)
 
 		err = uc.Execute(command.FinishSessionCommand{RequestID: "req1", SessionID: "s1"})
@@ -533,6 +557,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 	}
 	store.saveOperation(t, target)
 
+	outbox := &fakeOutboxRepo{}
 	uc := NewReverseOperationUseCase(
 		fakeOperationRepo{store: store},
 		fakeOperationRepo{store: store},
@@ -542,6 +567,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 		&sequenceOperationIDGen{next: "op2"},
 		newFakeIdempotencyRepo(),
 		fakeSessionRepo{store: store},
+		outbox,
 	)
 
 	if err := uc.Execute(command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"}); err != nil {
@@ -549,6 +575,9 @@ func TestReverseOperationUseCase(t *testing.T) {
 	}
 	if store.sessions["s1"].TotalChips() != 0 {
 		t.Fatalf("expected reversed buy in to clear table chips, got %d", store.sessions["s1"].TotalChips())
+	}
+	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationReversed {
+		t.Fatalf("reverse operation did not save operation.reversed event")
 	}
 
 	err = uc.Execute(command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})

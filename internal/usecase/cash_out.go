@@ -11,6 +11,7 @@ type CashOutUseCase struct {
 	playerStateReader OperationPlayerStateReader
 	txManager         TxManager
 	idempotencyRepo   IdempotencyRepository
+	outboxWriter      OutboxWriter
 }
 
 func NewCashOutUseCase(
@@ -19,6 +20,7 @@ func NewCashOutUseCase(
 	playerStateReader OperationPlayerStateReader,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
+	outboxWriter OutboxWriter,
 ) *CashOutUseCase {
 	return &CashOutUseCase{
 		helper:            helper,
@@ -26,6 +28,7 @@ func NewCashOutUseCase(
 		playerStateReader: playerStateReader,
 		txManager:         txManager,
 		idempotencyRepo:   idempotencyRepo,
+		outboxWriter:      outboxWriter,
 	}
 }
 
@@ -89,7 +92,16 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		return err
 	}
 
-	return uc.helper.sessionWriter.Save(tx, session)
+	if err := uc.helper.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewOperationCreatedOutboxEvent(op)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }
 
 func (uc *CashOutUseCase) loadPlayerState(

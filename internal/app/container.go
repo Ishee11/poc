@@ -23,6 +23,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
+	outboxRepo := postgres.NewOutboxRepository()
 	idempotencyRepo := postgres.NewIdempotencyRepository()
 	statsRepo := postgres.NewStatsRepository(db.Pool)
 	playerRepo := postgres.NewPlayerRepository()
@@ -73,6 +74,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		helper,
 		txManager,
 		idempotencyRepo,
+		outboxRepo,
 	)
 
 	cashOutUC := usecase.NewCashOutUseCase(
@@ -81,6 +83,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		projectionRepo,
 		txManager,
 		idempotencyRepo,
+		outboxRepo,
 	)
 
 	finishSessionUC := usecase.NewFinishSessionUseCase(
@@ -89,6 +92,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		sessionRepo,
 		txManager,
 		idempotencyRepo,
+		outboxRepo,
 	)
 
 	reverseOpUC := usecase.NewReverseOperationUseCase(
@@ -100,6 +104,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		opIDGen,
 		idempotencyRepo,
 		sessionRepo,
+		outboxRepo,
 	)
 
 	createPlayerUC := usecase.NewCreatePlayerUseCase(

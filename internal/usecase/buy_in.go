@@ -9,17 +9,20 @@ type BuyInUseCase struct {
 	helper          *Helper
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
+	outboxWriter    OutboxWriter
 }
 
 func NewBuyInUseCase(
 	helper *Helper,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
+	outboxWriter OutboxWriter,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
 		helper:          helper,
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
+		outboxWriter:    outboxWriter,
 	}
 }
 
@@ -77,5 +80,14 @@ func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
 		return err
 	}
 
-	return uc.helper.sessionWriter.Save(tx, session)
+	if err := uc.helper.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewOperationCreatedOutboxEvent(op)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }
