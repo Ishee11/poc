@@ -44,6 +44,7 @@ type KafkaConfig struct {
 	Enabled         bool
 	Brokers         []string
 	OutboxTopic     string
+	AuditGroupID    string
 	OutboxBatchSize int
 	OutboxInterval  time.Duration
 }
@@ -89,6 +90,7 @@ func Load() (*Config, error) {
 			Enabled:         getBoolEnv("KAFKA_ENABLED", false),
 			Brokers:         getCSVEnv("KAFKA_BROKERS", []string{"127.0.0.1:19092"}),
 			OutboxTopic:     getEnv("KAFKA_OUTBOX_TOPIC", "poker.events"),
+			AuditGroupID:    getEnv("KAFKA_AUDIT_GROUP_ID", "poker-audit"),
 			OutboxBatchSize: getIntEnv("KAFKA_OUTBOX_BATCH_SIZE", 100),
 			OutboxInterval:  getDurationOrDefault("KAFKA_OUTBOX_INTERVAL", time.Second),
 		},

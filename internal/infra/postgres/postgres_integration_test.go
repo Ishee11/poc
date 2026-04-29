@@ -69,7 +69,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE outbox_events, idempotency_keys, operations, sessions, players
+		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
@@ -276,6 +276,40 @@ func TestOutboxRepository_FetchPendingAndMarkPublished_Integration(t *testing.T)
 			t.Fatalf("published event must not be pending: %+v", events)
 		}
 	})
+}
+
+func TestAuditRepository_Integration(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	repo := NewAuditRepository(pool)
+	event := AuditEvent{
+		EventID:       "evt1",
+		EventType:     "operation.created",
+		AggregateType: "operation",
+		AggregateID:   "op1",
+		Payload:       json.RawMessage(`{"operation_id":"op1"}`),
+		ConsumedAt:    time.Now(),
+	}
+
+	if err := repo.Save(context.Background(), event); err != nil {
+		t.Fatalf("save audit event: %v", err)
+	}
+	if err := repo.Save(context.Background(), event); err != nil {
+		t.Fatalf("duplicate audit event should be ignored: %v", err)
+	}
+
+	var count int
+	if err := pool.QueryRow(context.Background(), `
+		SELECT COUNT(*)
+		FROM audit_events
+		WHERE event_id = $1
+	`, event.EventID).Scan(&count); err != nil {
+		t.Fatalf("count audit events: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected one idempotent audit event, got %d", count)
+	}
 }
 
 func TestProjectionRepository_Integration(t *testing.T) {
