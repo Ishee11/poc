@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"os"
@@ -68,7 +69,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE idempotency_keys, operations, sessions, players
+		TRUNCATE TABLE outbox_events, idempotency_keys, operations, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
@@ -187,6 +188,51 @@ func TestOperationRepository_Integration(t *testing.T) {
 		}
 		if !exists {
 			t.Fatal("expected reversal to exist")
+		}
+	})
+}
+
+func TestOutboxRepository_Integration(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		createdAt := time.Now().UTC().Truncate(time.Microsecond)
+		event := usecase.OutboxEvent{
+			ID:            "evt1",
+			EventType:     "operation.created",
+			AggregateType: "operation",
+			AggregateID:   "op1",
+			Payload:       json.RawMessage(`{"operation_id":"op1","type":"buy_in"}`),
+			CreatedAt:     createdAt,
+		}
+
+		if err := NewOutboxRepository().Save(tx, event); err != nil {
+			t.Fatalf("save outbox event: %v", err)
+		}
+
+		var eventType string
+		var aggregateType string
+		var aggregateID string
+		var payload []byte
+		var publishedAt *time.Time
+		err := tx.QueryRow(context.Background(), `
+			SELECT event_type, aggregate_type, aggregate_id, payload, published_at
+			FROM outbox_events
+			WHERE id = $1
+		`, event.ID).Scan(&eventType, &aggregateType, &aggregateID, &payload, &publishedAt)
+		if err != nil {
+			t.Fatalf("load outbox event: %v", err)
+		}
+
+		if eventType != event.EventType || aggregateType != event.AggregateType || aggregateID != event.AggregateID {
+			t.Fatalf("unexpected event metadata: type=%s aggregate=%s/%s", eventType, aggregateType, aggregateID)
+		}
+		if !json.Valid(payload) {
+			t.Fatalf("payload is not valid JSON: %s", string(payload))
+		}
+		if publishedAt != nil {
+			t.Fatalf("new event must be pending, got published_at=%v", publishedAt)
 		}
 	})
 }
