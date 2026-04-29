@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -25,8 +26,80 @@ type OutboxEvent struct {
 	CreatedAt     time.Time
 }
 
+type OutboxDispatchResult struct {
+	Published int
+	Failed    int
+}
+
 type OutboxWriter interface {
 	Save(tx Tx, event OutboxEvent) error
+}
+
+type OutboxRelayRepository interface {
+	FetchPending(tx Tx, limit int) ([]OutboxEvent, error)
+	MarkPublished(tx Tx, eventID string, publishedAt time.Time) error
+	MarkFailed(tx Tx, eventID string, err error, availableAt time.Time) error
+}
+
+type OutboxPublisher interface {
+	Publish(ctx context.Context, event OutboxEvent) error
+}
+
+type OutboxRelay struct {
+	repo      OutboxRelayRepository
+	txManager TxManager
+	publisher OutboxPublisher
+	clock     Clock
+}
+
+func NewOutboxRelay(
+	repo OutboxRelayRepository,
+	txManager TxManager,
+	publisher OutboxPublisher,
+	clock Clock,
+) *OutboxRelay {
+	return &OutboxRelay{
+		repo:      repo,
+		txManager: txManager,
+		publisher: publisher,
+		clock:     clock,
+	}
+}
+
+func (r *OutboxRelay) DispatchOnce(ctx context.Context, limit int) (OutboxDispatchResult, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+
+	result := OutboxDispatchResult{}
+	err := r.txManager.RunInTx(func(tx Tx) error {
+		events, err := r.repo.FetchPending(tx, limit)
+		if err != nil {
+			return err
+		}
+
+		for _, event := range events {
+			if err := r.publisher.Publish(ctx, event); err != nil {
+				result.Failed++
+				if markErr := r.repo.MarkFailed(tx, event.ID, err, r.clock.Now().Add(time.Minute)); markErr != nil {
+					return markErr
+				}
+				continue
+			}
+
+			result.Published++
+			if err := r.repo.MarkPublished(tx, event.ID, r.clock.Now()); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return OutboxDispatchResult{}, err
+	}
+
+	return result, nil
 }
 
 type operationOutboxPayload struct {

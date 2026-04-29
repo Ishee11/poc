@@ -237,6 +237,47 @@ func TestOutboxRepository_Integration(t *testing.T) {
 	})
 }
 
+func TestOutboxRepository_FetchPendingAndMarkPublished_Integration(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		repo := NewOutboxRepository()
+		event := usecase.OutboxEvent{
+			ID:            "evt1",
+			EventType:     "operation.created",
+			AggregateType: "operation",
+			AggregateID:   "op1",
+			Payload:       json.RawMessage(`{"operation_id":"op1"}`),
+			CreatedAt:     time.Now(),
+		}
+		if err := repo.Save(tx, event); err != nil {
+			t.Fatalf("save outbox event: %v", err)
+		}
+
+		events, err := repo.FetchPending(tx, 10)
+		if err != nil {
+			t.Fatalf("fetch pending: %v", err)
+		}
+		if len(events) != 1 || events[0].ID != event.ID {
+			t.Fatalf("unexpected pending events: %+v", events)
+		}
+
+		publishedAt := time.Now()
+		if err := repo.MarkPublished(tx, event.ID, publishedAt); err != nil {
+			t.Fatalf("mark published: %v", err)
+		}
+
+		events, err = repo.FetchPending(tx, 10)
+		if err != nil {
+			t.Fatalf("fetch pending after publish: %v", err)
+		}
+		if len(events) != 0 {
+			t.Fatalf("published event must not be pending: %+v", events)
+		}
+	})
+}
+
 func TestProjectionRepository_Integration(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)
