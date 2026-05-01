@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -223,7 +224,7 @@ func TestAuthServiceLoginSuccess(t *testing.T) {
 	}
 
 	service := newTestAuthService(repo, now, fakePasswordVerifier{ok: true})
-	result, err := service.Login(LoginCommand{
+	result, err := service.Login(context.Background(), LoginCommand{
 		Email:     "admin@example.com",
 		Password:  "password",
 		UserAgent: "agent",
@@ -255,7 +256,7 @@ func TestAuthServiceLoginInvalidCredentialsRecordsAttempt(t *testing.T) {
 	repo := newFakeAuthRepo()
 
 	service := newTestAuthService(repo, now, fakePasswordVerifier{ok: false})
-	_, err := service.Login(LoginCommand{
+	_, err := service.Login(context.Background(), LoginCommand{
 		Email:    "missing@example.com",
 		Password: "wrong",
 		IP:       "127.0.0.1",
@@ -293,7 +294,7 @@ func TestAuthServiceCurrentUserTouchesSession(t *testing.T) {
 	}
 
 	service := newTestAuthService(repo, now, fakePasswordVerifier{ok: true})
-	principal, err := service.CurrentUser("token-1")
+	principal, err := service.CurrentUser(context.Background(), "token-1")
 	if err != nil {
 		t.Fatalf("CurrentUser returned error: %v", err)
 	}
@@ -330,7 +331,7 @@ func TestAuthServiceCurrentUserRevokesExpiredSession(t *testing.T) {
 	}
 
 	service := newTestAuthService(repo, now, fakePasswordVerifier{ok: true})
-	_, err = service.CurrentUser("token-1")
+	_, err = service.CurrentUser(context.Background(), "token-1")
 
 	if !errors.Is(err, entity.ErrUnauthorized) {
 		t.Fatalf("expected ErrUnauthorized, got %v", err)
@@ -365,7 +366,7 @@ func TestSeedUserUseCaseCreatesUserWithRole(t *testing.T) {
 		fakeClock{now: now},
 	)
 
-	err := uc.Execute(SeedUserCommand{
+	err := uc.Execute(context.Background(), SeedUserCommand{
 		Email:    " user@example.com ",
 		Password: "long-password",
 		Role:     entity.AuthRoleUser,
@@ -402,7 +403,7 @@ func TestSeedUserUseCaseIsNoopWhenUserExists(t *testing.T) {
 		fakeClock{now: now},
 	)
 
-	err = uc.Execute(SeedUserCommand{
+	err = uc.Execute(context.Background(), SeedUserCommand{
 		Email:    "admin@example.com",
 		Password: "long-password",
 		Role:     entity.AuthRoleAdmin,
@@ -429,7 +430,7 @@ func TestSeedUserUseCaseRejectsShortPassword(t *testing.T) {
 		fakeClock{now: time.Now()},
 	)
 
-	err := uc.Execute(SeedUserCommand{
+	err := uc.Execute(context.Background(), SeedUserCommand{
 		Email:    "admin@example.com",
 		Password: "short",
 		Role:     entity.AuthRoleAdmin,
@@ -448,7 +449,7 @@ func TestSeedUserUseCaseRejectsMissingEmail(t *testing.T) {
 		fakeClock{now: time.Now()},
 	)
 
-	err := uc.Execute(SeedUserCommand{
+	err := uc.Execute(context.Background(), SeedUserCommand{
 		Password: "long-password",
 		Role:     entity.AuthRoleAdmin,
 	})
@@ -466,7 +467,7 @@ func TestSeedUserUseCaseRejectsInvalidRole(t *testing.T) {
 		fakeClock{now: time.Now()},
 	)
 
-	err := uc.Execute(SeedUserCommand{
+	err := uc.Execute(context.Background(), SeedUserCommand{
 		Email:    "admin@example.com",
 		Password: "long-password",
 	})
@@ -486,7 +487,7 @@ func TestRegisterUserUseCaseCreatesUser(t *testing.T) {
 		fakeClock{now: now},
 	)
 
-	err := uc.Execute(RegisterUserCommand{
+	err := uc.Execute(context.Background(), RegisterUserCommand{
 		Email:    " user@example.com ",
 		Password: "long-password",
 	})
@@ -522,7 +523,7 @@ func TestRegisterUserUseCaseRejectsExistingEmail(t *testing.T) {
 		fakeClock{now: now},
 	)
 
-	err = uc.Execute(RegisterUserCommand{
+	err = uc.Execute(context.Background(), RegisterUserCommand{
 		Email:    "user@example.com",
 		Password: "long-password",
 	})
@@ -540,7 +541,7 @@ func TestRegisterUserUseCaseRejectsShortPassword(t *testing.T) {
 		fakeClock{now: time.Now()},
 	)
 
-	err := uc.Execute(RegisterUserCommand{
+	err := uc.Execute(context.Background(), RegisterUserCommand{
 		Email:    "user@example.com",
 		Password: "short",
 	})

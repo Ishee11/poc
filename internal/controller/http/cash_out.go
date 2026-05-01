@@ -28,7 +28,7 @@ func (h *OperationHandler) CashOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.cashOutUC.Execute(command.CashOutCommand{
+	err := h.cashOutUC.Execute(r.Context(), command.CashOutCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 		PlayerID:  entity.PlayerID(req.PlayerID),

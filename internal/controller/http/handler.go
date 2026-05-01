@@ -12,6 +12,8 @@ type Handler struct {
 	Account   *AccountHandler
 	Session   *SessionHandler
 	Operation *OperationHandler
+	Blinds    *BlindClockHandler
+	Push      *PushHandler
 	Player    *PlayerHandler
 	Stats     *StatsHandler
 	Debug     *DebugHandler
@@ -42,6 +44,10 @@ func NewHandler(
 	buyIn *usecase.BuyInUseCase,
 	cashOut *usecase.CashOutUseCase,
 	reverse *usecase.ReverseOperationUseCase,
+
+	// blinds
+	blindClockUC *usecase.BlindClockService,
+	pushUC *usecase.BlindClockPushService,
 
 	// player
 	createPlayer *usecase.CreatePlayerUseCase,
@@ -82,6 +88,12 @@ func NewHandler(
 			buyInUC:            buyIn,
 			cashOutUC:          cashOut,
 			reverseOperationUC: reverse,
+		},
+		Blinds: &BlindClockHandler{
+			service: blindClockUC,
+		},
+		Push: &PushHandler{
+			service: pushUC,
 		},
 		Player: &PlayerHandler{
 			createPlayerUC:   createPlayer,
@@ -130,6 +142,14 @@ type OperationHandler struct {
 	buyInUC            *usecase.BuyInUseCase
 	cashOutUC          *usecase.CashOutUseCase
 	reverseOperationUC *usecase.ReverseOperationUseCase
+}
+
+type BlindClockHandler struct {
+	service *usecase.BlindClockService
+}
+
+type PushHandler struct {
+	service *usecase.BlindClockPushService
 }
 
 type PlayerHandler struct {

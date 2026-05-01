@@ -12,18 +12,43 @@ services:
     ports:
       - "127.0.0.1:15432:5432"
 
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: poker-kafka-dev
+    restart: always
+    environment:
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://127.0.0.1:19092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    volumes:
+      - kafka_data_dev:/bitnami/kafka
+    ports:
+      - "127.0.0.1:19092:19092"
+
   app:
     build: .
     container_name: poker-app-dev
     restart: always
     depends_on:
       - db
+      - kafka
     ports:
       - "18080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DATABASE_URL: postgres://poker:poker@db:5432/poker?sslmode=disable
       LOG_LEVEL: debug
       HTTP_ACCESS_LOG: errors
+      OTEL_SERVICE_NAME: poker-app-dev
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-tempo:4318}
+      OTEL_EXPORTER_OTLP_INSECURE: ${OTEL_EXPORTER_OTLP_INSECURE:-true}
       AUTH_ENABLED: "false"
       AUTH_COOKIE_SECURE: "false"
       AUTH_SESSION_TTL: 24h
@@ -32,7 +57,16 @@ services:
       AUTH_SEED_ADMIN_PASSWORD: ${AUTH_SEED_ADMIN_PASSWORD:-admin-password-123}
       AUTH_SEED_USER_EMAIL: ${AUTH_SEED_USER_EMAIL:-user@example.com}
       AUTH_SEED_USER_PASSWORD: ${AUTH_SEED_USER_PASSWORD:-user-password-123}
-      APP_ORIGIN: http://193.238.134.58:18080
+      APP_ORIGIN: ${APP_ORIGIN:-http://193.238.134.58:18080}
+      PUSH_ENABLED: ${PUSH_ENABLED:-false}
+      PUSH_SUBJECT: ${PUSH_SUBJECT:-}
+      PUSH_VAPID_PUBLIC_KEY: ${PUSH_VAPID_PUBLIC_KEY:-}
+      PUSH_VAPID_PRIVATE_KEY: ${PUSH_VAPID_PRIVATE_KEY:-}
+      KAFKA_ENABLED: ${KAFKA_ENABLED:-true}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
+      KAFKA_OUTBOX_TOPIC: ${KAFKA_OUTBOX_TOPIC:-poker.events}
+      KAFKA_OUTBOX_BATCH_SIZE: ${KAFKA_OUTBOX_BATCH_SIZE:-100}
+      KAFKA_OUTBOX_INTERVAL: ${KAFKA_OUTBOX_INTERVAL:-1s}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
@@ -41,3 +75,4 @@ services:
 
 volumes:
   postgres_data_dev:
+  kafka_data_dev:

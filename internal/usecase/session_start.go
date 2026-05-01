@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -29,10 +30,10 @@ func NewStartSessionUseCase(
 	}
 }
 
-func (uc *StartSessionUseCase) Execute(cmd command.StartSessionCommand) (entity.SessionID, error) {
+func (uc *StartSessionUseCase) Execute(ctx context.Context, cmd command.StartSessionCommand) (entity.SessionID, error) {
 	var result entity.SessionID
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		id, err := uc.execute(tx, cmd)
 		if err != nil {
 			return err

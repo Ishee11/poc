@@ -99,52 +99,54 @@ export function renderPlayersOverview() {
 }
 
 export function sortOverviewPlayers() {
-  const direction = (left, right) => {
+  const compareDesc = (left, right) => {
     if (left === right) return 0;
     return left < right ? 1 : -1;
   };
 
-  state.overviewPlayers.sort((a, b) => {
-    switch (state.overviewPlayersSort) {
-      case "sessions_count": {
-        const bySessions = direction(
-          Number(a.sessions_count) || 0,
-          Number(b.sessions_count) || 0,
-        );
-        if (bySessions !== 0) return bySessions;
-        break;
-      }
-      case "profit_money": {
-        const byProfit = direction(
-          Number(a.profit_money) || 0,
-          Number(b.profit_money) || 0,
-        );
-        if (byProfit !== 0) return byProfit;
-        break;
-      }
-      case "name": {
-        return String(a.player_name || "").localeCompare(
-          String(b.player_name || ""),
-          undefined,
-          { sensitivity: "base" },
-        );
-      }
-      case "last_activity":
-      default: {
-        const leftTime = Date.parse(a.last_activity_at || "") || 0;
-        const rightTime = Date.parse(b.last_activity_at || "") || 0;
-        const byActivity = direction(leftTime, rightTime);
-        if (byActivity !== 0) return byActivity;
-        break;
-      }
-    }
-
-    const byName = String(a.player_name || "").localeCompare(
-      String(b.player_name || ""),
+  const compareName = (left, right) =>
+    String(left.player_name || "").localeCompare(
+      String(right.player_name || ""),
       undefined,
       { sensitivity: "base" },
     );
-    if (byName !== 0) return byName;
+
+  const compareByKey = (key, left, right) => {
+    switch (key) {
+      case "sessions_count":
+        return compareDesc(
+          Number(left.sessions_count) || 0,
+          Number(right.sessions_count) || 0,
+        );
+      case "profit_money":
+        return compareDesc(
+          Number(left.profit_money) || 0,
+          Number(right.profit_money) || 0,
+        );
+      case "last_activity":
+        return compareDesc(
+          Date.parse(left.last_activity_at || "") || 0,
+          Date.parse(right.last_activity_at || "") || 0,
+        );
+      case "name":
+        return compareName(left, right);
+      default:
+        return 0;
+    }
+  };
+
+  const sortPriority = [
+    state.overviewPlayersSort || "last_activity",
+    "profit_money",
+    "last_activity",
+    "name",
+  ].filter((key, index, keys) => keys.indexOf(key) === index);
+
+  state.overviewPlayers.sort((a, b) => {
+    for (const key of sortPriority) {
+      const result = compareByKey(key, a, b);
+      if (result !== 0) return result;
+    }
 
     return String(a.player_id || "").localeCompare(String(b.player_id || ""));
   });

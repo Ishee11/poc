@@ -6,12 +6,15 @@ import (
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
 	infra "github.com/ishee11/poc/internal/infra"
+	kafkainfra "github.com/ishee11/poc/internal/infra/kafka"
 	postgres "github.com/ishee11/poc/internal/infra/postgres"
 	usecase "github.com/ishee11/poc/internal/usecase"
 )
 
 type Container struct {
-	Router http.Handler
+	Router       http.Handler
+	PushNotifier *BlindClockPushNotifier
+	OutboxRelay  *OutboxRelayRunner
 }
 
 // NewContainer — composition root
@@ -22,12 +25,15 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
+	outboxRepo := postgres.NewOutboxRepository()
 	idempotencyRepo := postgres.NewIdempotencyRepository()
 	statsRepo := postgres.NewStatsRepository(db.Pool)
 	playerRepo := postgres.NewPlayerRepository()
 	debugAdminRepo := postgres.NewDebugAdminRepository()
 	authRepo := postgres.NewAuthRepository()
 	userPlayerLinkRepo := postgres.NewUserPlayerLinkRepository()
+	blindClockRepo := postgres.NewBlindClockRepository()
+	pushRepo := postgres.NewBlindClockPushRepository(db.Pool)
 
 	// ===== TxManager =====
 	txManager := postgres.NewTxManager(db.Pool)
@@ -36,8 +42,14 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	opIDGen := &infra.UUIDOperationIDGenerator{}
 	playerIDGen := &infra.UUIDPlayerIDGenerator{}
 	sessionIDGen := &infra.UUIDSessionIDGenerator{}
+	blindClockIDGen := &infra.UUIDBlindClockIDGenerator{}
 	authSessionIDGen := infra.UUIDAuthSessionIDGenerator{}
 	loginAttemptIDGen := infra.UUIDLoginAttemptIDGenerator{}
+	blindClockPushSender := infra.NewBlindClockPushSender(
+		cfg.Push.Subject,
+		cfg.Push.PublicKey,
+		cfg.Push.PrivateKey,
+	)
 
 	// ===== Helper =====
 	helper := usecase.NewHelper(
@@ -64,6 +76,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		helper,
 		txManager,
 		idempotencyRepo,
+		outboxRepo,
 	)
 
 	cashOutUC := usecase.NewCashOutUseCase(
@@ -72,6 +85,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		projectionRepo,
 		txManager,
 		idempotencyRepo,
+		outboxRepo,
 	)
 
 	finishSessionUC := usecase.NewFinishSessionUseCase(
@@ -80,6 +94,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		sessionRepo,
 		txManager,
 		idempotencyRepo,
+		outboxRepo,
 	)
 
 	reverseOpUC := usecase.NewReverseOperationUseCase(
@@ -91,6 +106,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		opIDGen,
 		idempotencyRepo,
 		sessionRepo,
+		outboxRepo,
 	)
 
 	createPlayerUC := usecase.NewCreatePlayerUseCase(
@@ -195,6 +211,31 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		playerRepo,
 		txManager,
 	)
+	blindClockUC := usecase.NewBlindClockService(
+		blindClockRepo,
+		txManager,
+		blindClockIDGen,
+	)
+	pushUC := usecase.NewBlindClockPushService(
+		pushRepo,
+		blindClockPushSender,
+		usecase.BlindClockPushConfig{
+			Enabled:   cfg.Push.Enabled && cfg.Push.Subject != "" && cfg.Push.PublicKey != "" && cfg.Push.PrivateKey != "",
+			PublicKey: cfg.Push.PublicKey,
+		},
+	)
+
+	var outboxRelay *OutboxRelayRunner
+	if cfg.Kafka.Enabled && len(cfg.Kafka.Brokers) > 0 && cfg.Kafka.OutboxTopic != "" {
+		kafkaPublisher := kafkainfra.NewOutboxPublisher(cfg.Kafka.Brokers, cfg.Kafka.OutboxTopic)
+		relay := usecase.NewOutboxRelay(
+			outboxRepo,
+			txManager,
+			kafkaPublisher,
+			usecase.SystemClock{},
+		)
+		outboxRelay = NewOutboxRelayRunner(relay, cfg.Kafka.OutboxInterval, cfg.Kafka.OutboxBatchSize)
+	}
 
 	// ===== Handler =====
 	handler := httpcontroller.NewHandler(
@@ -221,6 +262,10 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		cashOutUC,
 		reverseOpUC,
 
+		// blinds
+		blindClockUC,
+		pushUC,
+
 		// player
 		createPlayerUC,
 		getPlayersUC,
@@ -240,9 +285,12 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 
 	// ===== Router =====
 	router := httpcontroller.NewRouter(handler)
+	pushNotifier := NewBlindClockPushNotifier(db.Pool, blindClockRepo, pushRepo, cfg.Push)
 
 	return &Container{
-		Router: router,
+		Router:       router,
+		PushNotifier: pushNotifier,
+		OutboxRelay:  outboxRelay,
 	}
 }
 

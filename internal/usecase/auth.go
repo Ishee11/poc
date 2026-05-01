@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -142,12 +143,12 @@ func NewAuthService(
 	}
 }
 
-func (s *AuthService) Login(cmd LoginCommand) (*LoginResult, error) {
+func (s *AuthService) Login(ctx context.Context, cmd LoginCommand) (*LoginResult, error) {
 	var result *LoginResult
 	var authErr error
 	email := strings.TrimSpace(cmd.Email)
 
-	err := s.txManager.RunInTx(func(tx Tx) error {
+	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
 		now := s.clock.Now()
 
 		failed, err := s.attemptRepo.CountFailedLoginAttempts(
@@ -226,13 +227,13 @@ func (s *AuthService) Login(cmd LoginCommand) (*LoginResult, error) {
 	return result, nil
 }
 
-func (s *AuthService) CurrentUser(rawToken string) (*AuthPrincipal, error) {
+func (s *AuthService) CurrentUser(ctx context.Context, rawToken string) (*AuthPrincipal, error) {
 	if rawToken == "" {
 		return nil, entity.ErrUnauthorized
 	}
 
 	var principal *AuthPrincipal
-	err := s.txManager.RunInTx(func(tx Tx) error {
+	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
 		now := s.clock.Now()
 
 		session, err := s.sessionRepo.FindSessionByTokenHash(tx, s.tokenHasher.HashToken(rawToken))
@@ -281,12 +282,12 @@ func (s *AuthService) CurrentUser(rawToken string) (*AuthPrincipal, error) {
 	return principal, nil
 }
 
-func (s *AuthService) Logout(rawToken string) error {
+func (s *AuthService) Logout(ctx context.Context, rawToken string) error {
 	if rawToken == "" {
 		return nil
 	}
 
-	return s.txManager.RunInTx(func(tx Tx) error {
+	return s.txManager.RunInTx(ctx, func(tx Tx) error {
 		err := s.sessionRepo.RevokeSessionByTokenHash(
 			tx,
 			s.tokenHasher.HashToken(rawToken),

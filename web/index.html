@@ -3,8 +3,12 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#0b1117" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <title>Poker Session Control</title>
 
+        <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="stylesheet" href="/static/css/main.css" />
     </head>
 
@@ -27,6 +31,9 @@
                             Back to Home
                         </button>
                         <button type="button" class="secondary nav-account-only" id="account-back-home-btn" data-i18n="nav.backHome">
+                            Back to Home
+                        </button>
+                        <button type="button" class="secondary nav-blinds-only" id="blinds-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
                     </nav>
@@ -77,6 +84,9 @@
                                 <div class="actions">
                                     <button type="button" id="open-workspace-btn" class="secondary" data-i18n="lobby.openWorkspace">
                                         Open Workspace
+                                    </button>
+                                    <button type="button" id="open-blinds-clock-btn" class="secondary" data-i18n="lobby.openBlindsClock">
+                                        Blind Timer
                                     </button>
                                 </div>
                             </form>
@@ -138,6 +148,126 @@
                                 <option value="en">English</option>
                             </select>
                         </label>
+                    </div>
+                </section>
+
+                <section class="screen" id="screen-blinds">
+                    <div class="panel blinds-hero-panel">
+                        <div class="blinds-hero-head">
+                            <h2 data-i18n="blinds.title">Blind Timer</h2>
+                            <span class="status-pill status-active" id="blinds-status">Stopped</span>
+                        </div>
+                        <button type="button" class="secondary blinds-presentation-exit-btn" id="blinds-exit-presentation-btn" data-i18n="blinds.exitPresentation">
+                            Exit Presentation
+                        </button>
+                        <div class="blinds-level-flash" id="blinds-level-flash" hidden>
+                            <div class="blinds-level-flash-label" id="blinds-level-flash-label" data-i18n="blinds.levelStarted">Level Started</div>
+                            <div class="blinds-level-flash-level" id="blinds-level-flash-level">-</div>
+                            <div class="blinds-level-flash-blinds" id="blinds-level-flash-blinds">-</div>
+                        </div>
+                        <div class="blinds-timer-display" id="blinds-timer">00:00</div>
+                        <div class="blinds-scoreboard">
+                            <div class="blinds-score-item">
+                                <div class="blinds-score-label" data-i18n="blinds.currentLevel">Current Level</div>
+                                <div class="blinds-score-value" id="blinds-current-level">-</div>
+                            </div>
+                            <div class="blinds-score-item">
+                                <div class="blinds-score-label" data-i18n="blinds.currentBlinds">Current Blinds</div>
+                                <div class="blinds-score-value blinds-score-value-strong" id="blinds-current-blinds">-</div>
+                            </div>
+                            <div class="blinds-score-item">
+                                <div class="blinds-score-label" data-i18n="blinds.nextLevel">Next Level</div>
+                                <div class="blinds-score-value" id="blinds-next-blinds">-</div>
+                            </div>
+                        </div>
+                        <div class="actions blinds-primary-actions">
+                            <button type="button" id="blinds-toggle-btn" data-i18n="blinds.start">Start</button>
+                        </div>
+                    </div>
+
+                    <div class="grid blinds-workspace-grid">
+                        <div class="panel blinds-structure-panel" id="blinds-structure-panel">
+                            <div class="panel-title-row">
+                                <h3 data-i18n="blinds.structure">Blind Structure</h3>
+                                <div class="blinds-structure-meta">
+                                    <span data-i18n="blinds.totalLevels">Total Levels</span>
+                                    <strong id="blinds-total-levels">0</strong>
+                                    <span class="blinds-structure-sep">•</span>
+                                    <span data-i18n="blinds.upcomingLevels">Upcoming</span>
+                                    <strong id="blinds-upcoming-levels">0</strong>
+                                </div>
+                            </div>
+                            <div class="blinds-structure-shell" id="blinds-structure-shell" hidden>
+                                <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit current or future levels.</p>
+                                <div class="blinds-editor-grid">
+                                    <label class="blinds-level-picker">
+                                        <span data-i18n="blinds.selectedLevel">Selected Level</span>
+                                        <select id="blinds-level-select"></select>
+                                    </label>
+                                    <div id="blinds-level-lock-hint" class="hint blinds-lock-hint" hidden></div>
+                                    <form id="blinds-level-form" class="blinds-level-form" onsubmit="return false;">
+                                        <label>
+                                            <span data-i18n="blinds.smallBlind">SB</span>
+                                            <input id="blinds-level-sb" type="number" min="1" />
+                                        </label>
+                                        <label>
+                                            <span data-i18n="blinds.bigBlind">BB</span>
+                                            <input id="blinds-level-bb" type="number" min="1" />
+                                        </label>
+                                        <label>
+                                            <span data-i18n="blinds.duration">Minutes</span>
+                                            <input id="blinds-level-duration" type="number" min="1" />
+                                        </label>
+                                        <div class="actions blinds-editor-actions">
+                                            <button type="button" id="blinds-save-level-btn" data-i18n="common.save">Save</button>
+                                            <button type="button" class="secondary" id="blinds-delete-level-btn" data-i18n="blinds.deleteLevel">Delete</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="blinds-structure-collapsed" id="blinds-structure-collapsed">
+                                <label class="blinds-level-picker">
+                                    <span data-i18n="blinds.selectedLevel">Selected Level</span>
+                                    <select id="blinds-level-select-collapsed"></select>
+                                </label>
+                                <p class="hint" id="blinds-collapsed-summary">-</p>
+                            </div>
+                        </div>
+
+                        <div class="panel blinds-tools-panel">
+                            <div class="panel-title-row">
+                                <h3 data-i18n="blinds.controls">Controls</h3>
+                            </div>
+                            <div class="blinds-tools-stack">
+                                <div class="blinds-tool-group">
+                                    <div class="blinds-tool-label" data-i18n="blinds.toolStructure">Structure</div>
+                                    <button type="button" class="secondary" id="blinds-toggle-editor-btn" data-i18n="blinds.editStructure">Edit Structure</button>
+                                    <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">Add Level</button>
+                                    <button type="button" class="danger" id="blinds-delete-all-levels-btn" data-i18n="blinds.deleteAllLevels">Delete All Levels</button>
+                                </div>
+                                <div class="blinds-tool-group">
+                                    <div class="blinds-tool-label" data-i18n="blinds.toolClock">Clock</div>
+                                    <button type="button" class="secondary" id="blinds-open-presentation-btn" data-i18n="blinds.presentationMode">Presentation Mode</button>
+                                    <button type="button" class="secondary" id="blinds-push-toggle-btn" data-i18n="blinds.enableAlerts">Enable Lock Alerts</button>
+                                    <div class="blinds-push-settings" id="blinds-push-settings">
+                                        <label class="blinds-push-setting">
+                                            <input type="checkbox" id="blinds-push-warning-60" checked>
+                                            <span data-i18n="blinds.alert60">Notify at 60 sec</span>
+                                        </label>
+                                        <label class="blinds-push-setting">
+                                            <input type="checkbox" id="blinds-push-warning-10" checked>
+                                            <span data-i18n="blinds.alert10">Notify at 10 sec</span>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="secondary" id="blinds-push-test-btn" data-i18n="blinds.testAlert">Send Test Alert</button>
+                                    <div class="actions blinds-level-shift-actions">
+                                        <button type="button" class="secondary" id="blinds-previous-level-btn" data-i18n="blinds.previousLevel">Previous Level</button>
+                                        <button type="button" class="secondary" id="blinds-next-level-btn" data-i18n="blinds.nextLevelAction">Next Level</button>
+                                    </div>
+                                    <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.reset">Reset</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

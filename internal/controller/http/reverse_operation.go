@@ -42,7 +42,7 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err := h.reverseOperationUC.Execute(command.ReverseOperationCommand{
+	err := h.reverseOperationUC.Execute(r.Context(), command.ReverseOperationCommand{
 		RequestID:         req.RequestID,
 		TargetOperationID: entity.OperationID(req.TargetOperationID),
 	})

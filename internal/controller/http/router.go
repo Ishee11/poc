@@ -20,6 +20,14 @@ func NewRouter(h *Handler) http.Handler {
 	}
 
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+	mux.HandleFunc("/sw.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		http.ServeFileFS(w, r, sub, "sw.js")
+	})
+	mux.HandleFunc("/manifest.webmanifest", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/manifest+json; charset=utf-8")
+		http.ServeFileFS(w, r, sub, "manifest.webmanifest")
+	})
 
 	// ===== INDEX =====
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +68,31 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/operations/cash-out", h.Operation.CashOut)
 	mux.HandleFunc("/operations/reverse", h.Operation.ReverseOperation)
 
+	// ===== BLINDS CLOCK =====
+	mux.HandleFunc("/blinds-clock", h.Blinds.GetActive)
+	mux.HandleFunc("/blinds-clock/start", h.Blinds.Start)
+	mux.HandleFunc("/blinds-clock/pause", h.Blinds.Pause)
+	mux.HandleFunc("/blinds-clock/resume", h.Blinds.Resume)
+	mux.HandleFunc("/blinds-clock/reset", h.Blinds.Reset)
+	mux.HandleFunc("/blinds-clock/previous", h.Blinds.PreviousLevel)
+	mux.HandleFunc("/blinds-clock/next", h.Blinds.NextLevel)
+	mux.HandleFunc("/blinds-clock/levels", h.Blinds.UpdateLevels)
+
+	// ===== PUSH =====
+	mux.HandleFunc("/push/config", h.Push.Config)
+	mux.HandleFunc("/push/status", h.Push.Status)
+	mux.HandleFunc("/push/test", h.Push.Test)
+	mux.HandleFunc("/push/subscriptions", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.Push.Subscribe(w, r)
+		case http.MethodDelete:
+			h.Push.Unsubscribe(w, r)
+		default:
+			writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		}
+	})
+
 	// ===== PLAYERS =====
 	mux.HandleFunc("/players", h.Player.Players)
 	mux.HandleFunc("/players/unlinked", h.Account.PublicAvailablePlayers)
@@ -79,10 +112,12 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux
+	handler = HandlerSpanMiddleware(handler)
 	handler = CORSMiddleware(handler)
 	handler = RecoveryMiddleware(handler)
 	handler = MetricsMiddleware(handler)
 	handler = LoggingMiddleware(handler)
+	handler = TracingMiddleware(handler)
 	handler = RequestIDMiddleware(handler)
 
 	return handler
@@ -90,6 +125,8 @@ func NewRouter(h *Handler) http.Handler {
 
 func isClientRoute(path string) bool {
 	return path == "/account" ||
+		path == "/blinds" ||
+		path == "/blinds/presentation" ||
 		len(path) > len("/session/") && path[:len("/session/")] == "/session/" ||
 		len(path) > len("/player/") && path[:len("/player/")] == "/player/"
 }

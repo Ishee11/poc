@@ -125,6 +125,36 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrInvalidMoney):
 		return apiError{status: http.StatusBadRequest, code: "invalid_money"}
 
+	case errors.Is(err, entity.ErrBlindClockNotFound):
+		return apiError{status: http.StatusNotFound, code: "blind_clock_not_found"}
+
+	case errors.Is(err, entity.ErrBlindClockHasNoLevels):
+		return apiError{status: http.StatusBadRequest, code: "blind_clock_has_no_levels"}
+
+	case errors.Is(err, entity.ErrBlindClockAlreadyRunning):
+		return apiError{status: http.StatusConflict, code: "blind_clock_already_running"}
+
+	case errors.Is(err, entity.ErrBlindClockNotRunning):
+		return apiError{status: http.StatusConflict, code: "blind_clock_not_running"}
+
+	case errors.Is(err, entity.ErrBlindClockNotPaused):
+		return apiError{status: http.StatusConflict, code: "blind_clock_not_paused"}
+
+	case errors.Is(err, entity.ErrBlindClockFinished):
+		return apiError{status: http.StatusConflict, code: "blind_clock_finished"}
+
+	case errors.Is(err, entity.ErrInvalidBlindClockLevel):
+		return apiError{status: http.StatusBadRequest, code: "invalid_blind_clock_level"}
+
+	case errors.Is(err, entity.ErrBlindClockLevelsLocked):
+		return apiError{status: http.StatusConflict, code: "blind_clock_levels_locked"}
+
+	case errors.Is(err, entity.ErrPushDisabled):
+		return apiError{status: http.StatusNotImplemented, code: "push_disabled"}
+
+	case errors.Is(err, entity.ErrInvalidPushSubscription):
+		return apiError{status: http.StatusBadRequest, code: "invalid_push_subscription"}
+
 	case errors.Is(err, entity.ErrUnbalancedSession):
 		return apiError{status: http.StatusConflict, code: "unbalanced_session"}
 

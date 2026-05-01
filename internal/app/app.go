@@ -2,12 +2,14 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/ishee11/poc/pkg/logger"
 )
 
 func Run() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// config
 	cfg, err := Load()
@@ -15,6 +17,15 @@ func Run() error {
 		return err
 	}
 	logger.Configure(cfg.LogLevel)
+	shutdownTracing, err := setupTracing(ctx, cfg.Tracing)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		_ = shutdownTracing(shutdownCtx)
+	}()
 
 	// db
 	db, err := NewDB(ctx, cfg.DatabaseURL)
@@ -29,6 +40,12 @@ func Run() error {
 
 	// container (DI)
 	container := NewContainer(db, cfg)
+	if container.PushNotifier != nil {
+		container.PushNotifier.Start(ctx)
+	}
+	if container.OutboxRelay != nil {
+		container.OutboxRelay.Start(ctx)
+	}
 
 	// http server
 	server := NewHTTPServer(container.Router, cfg.HTTPPort)

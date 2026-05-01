@@ -37,6 +37,27 @@ export function apiGet(path) {
   return request(path);
 }
 
+export function apiPost(path, body) {
+  return request(path, {
+    method: "POST",
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+}
+
+export function apiPut(path, body) {
+  return request(path, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export function apiDelete(path, body) {
+  return request(path, {
+    method: "DELETE",
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+}
+
 // ===== auth =====
 
 export function login({ email, password }) {
@@ -285,4 +306,67 @@ export function debugDeleteSessionFinish(sessionId) {
   return request(`/debug/session/finish?${params.toString()}`, {
     method: "DELETE",
   });
+}
+
+// ===== blinds clock =====
+
+export function getBlindClock() {
+  return request("/blinds-clock");
+}
+
+export function startBlindClock() {
+  return apiPost("/blinds-clock/start");
+}
+
+export function pauseBlindClock() {
+  return apiPost("/blinds-clock/pause");
+}
+
+export function resumeBlindClock() {
+  return apiPost("/blinds-clock/resume");
+}
+
+export function resetBlindClock() {
+  return apiPost("/blinds-clock/reset");
+}
+
+export function previousBlindClockLevel() {
+  return apiPost("/blinds-clock/previous");
+}
+
+export function nextBlindClockLevel() {
+  return apiPost("/blinds-clock/next");
+}
+
+export function updateBlindClockLevels(levels) {
+  return apiPut("/blinds-clock/levels", { levels });
+}
+
+export function getPushConfig() {
+  return apiGet("/push/config");
+}
+
+export function getBlindClockPushStatus(endpoint) {
+  return apiGet(`/push/status?endpoint=${encodeURIComponent(endpoint)}`);
+}
+
+export function subscribeBlindClockPush(subscription, userAgent = "", settings = {}) {
+  return apiPost("/push/subscriptions", {
+    endpoint: subscription.endpoint,
+    keys: {
+      auth: subscription.keys?.auth || "",
+      p256dh: subscription.keys?.p256dh || "",
+    },
+    user_agent: userAgent,
+    notify_warning_60: settings.notifyWarning60 ?? true,
+    notify_warning_10: settings.notifyWarning10 ?? true,
+  });
+}
+
+export function unsubscribeBlindClockPush(endpoint) {
+  return apiDelete("/push/subscriptions", { endpoint });
+}
+
+export function sendBlindClockPushTest() {
+  return apiPost("/push/test");
 }

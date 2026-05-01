@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
@@ -11,6 +12,7 @@ type CashOutUseCase struct {
 	playerStateReader OperationPlayerStateReader
 	txManager         TxManager
 	idempotencyRepo   IdempotencyRepository
+	outboxWriter      OutboxWriter
 }
 
 func NewCashOutUseCase(
@@ -19,6 +21,7 @@ func NewCashOutUseCase(
 	playerStateReader OperationPlayerStateReader,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
+	outboxWriter OutboxWriter,
 ) *CashOutUseCase {
 	return &CashOutUseCase{
 		helper:            helper,
@@ -26,11 +29,12 @@ func NewCashOutUseCase(
 		playerStateReader: playerStateReader,
 		txManager:         txManager,
 		idempotencyRepo:   idempotencyRepo,
+		outboxWriter:      outboxWriter,
 	}
 }
 
-func (uc *CashOutUseCase) Execute(cmd command.CashOutCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *CashOutUseCase) Execute(ctx context.Context, cmd command.CashOutCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})
@@ -89,7 +93,16 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		return err
 	}
 
-	return uc.helper.sessionWriter.Save(tx, session)
+	if err := uc.helper.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewOperationCreatedOutboxEvent(op)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }
 
 func (uc *CashOutUseCase) loadPlayerState(

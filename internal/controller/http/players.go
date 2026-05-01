@@ -30,7 +30,7 @@ func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	res, err := h.getPlayersUC.Execute(usecase.GetPlayersQuery{
+	res, err := h.getPlayersUC.Execute(r.Context(), usecase.GetPlayersQuery{
 		Limit:  limit,
 		Offset: offset,
 	})

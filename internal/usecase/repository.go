@@ -42,6 +42,10 @@ type SessionIDGenerator interface {
 	New() entity.SessionID
 }
 
+type BlindClockIDGenerator interface {
+	New() entity.BlindClockID
+}
+
 type OperationWriter interface {
 	Save(tx Tx, op *entity.Operation) error
 }
@@ -137,4 +141,19 @@ type DebugAdminRepository interface {
 	DeletePlayer(tx Tx, playerID entity.PlayerID) error
 	DeleteSession(tx Tx, sessionID entity.SessionID) error
 	DeleteSessionFinish(tx Tx, sessionID entity.SessionID) error
+}
+
+type BlindClockRepository interface {
+	FindLatest(tx Tx) (*entity.BlindClock, error)
+	FindLatestForUpdate(tx Tx) (*entity.BlindClock, error)
+	Save(tx Tx, clock *entity.BlindClock) error
+}
+
+type BlindClockPushRepository interface {
+	UpsertSubscription(subscription entity.BlindClockPushSubscription) error
+	DeleteSubscription(endpoint string) error
+	GetSubscription(endpoint string) (*entity.BlindClockPushSubscription, error)
+	ListSubscriptions() ([]entity.BlindClockPushSubscription, error)
+	HasEvent(eventKey string) (bool, error)
+	SaveEvent(event entity.BlindClockPushEvent) error
 }

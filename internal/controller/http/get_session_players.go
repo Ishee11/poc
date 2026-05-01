@@ -26,7 +26,7 @@ func (h *SessionHandler) GetSessionPlayers(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	players, err := h.getSessionPlayersUC.Execute(usecase.GetSessionPlayersQuery{
+	players, err := h.getSessionPlayersUC.Execute(r.Context(), usecase.GetSessionPlayersQuery{
 		SessionID: entity.SessionID(sessionID),
 	})
 	if err != nil {

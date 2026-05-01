@@ -1,5 +1,7 @@
 package usecase
 
+import "context"
+
 import "github.com/ishee11/poc/internal/entity"
 
 type GetSessionPlayersUseCase struct {
@@ -23,13 +25,13 @@ func NewGetSessionPlayersUseCase(
 	}
 }
 
-func (uc *GetSessionPlayersUseCase) Execute(
+func (uc *GetSessionPlayersUseCase) Execute(ctx context.Context,
 	q GetSessionPlayersQuery,
 ) ([]SessionPlayerDTO, error) {
 
 	var result []SessionPlayerDTO
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.execute(tx, q)
 		return err

@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -42,7 +43,7 @@ func NewRegisterUserUseCase(
 	}
 }
 
-func (uc *RegisterUserUseCase) Execute(cmd RegisterUserCommand) error {
+func (uc *RegisterUserUseCase) Execute(ctx context.Context, cmd RegisterUserCommand) error {
 	email := strings.TrimSpace(cmd.Email)
 	if email == "" {
 		return entity.ErrInvalidAuthEmail
@@ -51,7 +52,7 @@ func (uc *RegisterUserUseCase) Execute(cmd RegisterUserCommand) error {
 		return entity.ErrPasswordTooShort
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		_, err := uc.userRepo.FindUserByEmail(tx, email)
 		if err == nil {
 			return entity.ErrAuthUserAlreadyExists

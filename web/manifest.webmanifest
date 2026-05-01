@@ -1,0 +1,10 @@
+{
+  "name": "Poker Blind Timer",
+  "short_name": "Blind Timer",
+  "start_url": "/blinds",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1117",
+  "theme_color": "#0b1117",
+  "description": "Tournament blind timer with lock screen alerts."
+}

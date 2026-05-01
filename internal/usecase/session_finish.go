@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -13,6 +14,7 @@ type FinishSessionUseCase struct {
 	sessionWriter   SessionWriter
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
+	outboxWriter    OutboxWriter
 }
 
 func NewFinishSessionUseCase(
@@ -21,6 +23,7 @@ func NewFinishSessionUseCase(
 	sessionWriter SessionWriter,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
+	outboxWriter OutboxWriter,
 ) *FinishSessionUseCase {
 	return &FinishSessionUseCase{
 		projection:      projection,
@@ -28,11 +31,12 @@ func NewFinishSessionUseCase(
 		sessionWriter:   sessionWriter,
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
+		outboxWriter:    outboxWriter,
 	}
 }
 
-func (uc *FinishSessionUseCase) Execute(cmd command.FinishSessionCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *FinishSessionUseCase) Execute(ctx context.Context, cmd command.FinishSessionCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})
@@ -64,9 +68,19 @@ func (uc *FinishSessionUseCase) execute(tx Tx, cmd command.FinishSessionCommand)
 		}
 	}
 
-	if err := session.Finish(time.Now()); err != nil {
+	finishedAt := time.Now()
+	if err := session.Finish(finishedAt); err != nil {
 		return err
 	}
 
-	return uc.sessionWriter.Save(tx, session)
+	if err := uc.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewSessionFinishedOutboxEvent(cmd.RequestID, session.ID(), finishedAt)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }

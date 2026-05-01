@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -43,7 +44,7 @@ func NewSeedUserUseCase(
 	}
 }
 
-func (uc *SeedUserUseCase) Execute(cmd SeedUserCommand) error {
+func (uc *SeedUserUseCase) Execute(ctx context.Context, cmd SeedUserCommand) error {
 	email := strings.TrimSpace(cmd.Email)
 	if email == "" && cmd.Password == "" {
 		return nil
@@ -58,7 +59,7 @@ func (uc *SeedUserUseCase) Execute(cmd SeedUserCommand) error {
 		return entity.ErrInvalidAuthRole
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		_, err := uc.userRepo.FindUserByEmail(tx, email)
 		if err == nil {
 			return nil

@@ -58,7 +58,7 @@ docker compose up --build -d
 docker compose -f docker-compose.observability.yml up -d
 ```
 
-После старта Grafana уже содержит готовый dashboard `Poker App Overview`.
+После старта Grafana уже содержит готовый dashboard `Poker App Overview` и datasource `Tempo` для HTTP/usecase/PostgreSQL traces.
 
 Grafana берет admin credentials и внешний URL из `.env.observability`.
 Alertmanager и Telegram alerting тоже настраиваются через `.env.observability`.
@@ -75,6 +75,9 @@ Alertmanager и Telegram alerting тоже настраиваются через
 | `HTTP_PORT` | нет | `8080` | Порт HTTP сервера. |
 | `LOG_LEVEL` | нет | `info` | Уровень `slog`: `debug`, `info`, `warn`, `error`. |
 | `HTTP_ACCESS_LOG` | нет | `errors` | Режим HTTP access log: `errors`, `all`, `off`. |
+| `OTEL_SERVICE_NAME` | нет | `poker-app` | Имя сервиса в OpenTelemetry traces. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | нет | - | OTLP HTTP endpoint для traces, например `tempo:4318` в Docker или `http://127.0.0.1:4318/v1/traces` локально. Если пусто, tracing exporter выключен. |
+| `OTEL_EXPORTER_OTLP_INSECURE` | нет | `true` | Использовать plaintext OTLP HTTP. |
 
 Продовый дефолт для `HTTP_ACCESS_LOG` - `errors`: успешные `2xx/3xx` запросы не шумят в логах, пишутся только `4xx/5xx`.
 
@@ -99,6 +102,8 @@ HTTP_ACCESS_LOG=all
   "path": "/stats/player",
   "status": 400,
   "duration_ms": 1.2,
+  "trace_id": "abc123...",
+  "span_id": "def456...",
   "bytes": 74,
   "error_code": "player_id_required"
 }

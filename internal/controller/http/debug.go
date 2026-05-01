@@ -28,7 +28,7 @@ func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.renamePlayerUC.Execute(entity.PlayerID(playerID), req.Name); err != nil {
+	if err := h.renamePlayerUC.Execute(r.Context(), entity.PlayerID(playerID), req.Name); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -57,7 +57,7 @@ func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := h.updateSessionConfigUC.Execute(entity.SessionID(sessionID), req.ChipRate, req.BigBlind, entity.Currency(req.Currency)); err != nil {
+	if err := h.updateSessionConfigUC.Execute(r.Context(), entity.SessionID(sessionID), req.ChipRate, req.BigBlind, entity.Currency(req.Currency)); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -80,7 +80,7 @@ func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.deletePlayerUC.Execute(entity.PlayerID(playerID)); err != nil {
+	if err := h.deletePlayerUC.Execute(r.Context(), entity.PlayerID(playerID)); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -103,7 +103,7 @@ func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.deleteSessionUC.Execute(entity.SessionID(sessionID)); err != nil {
+	if err := h.deleteSessionUC.Execute(r.Context(), entity.SessionID(sessionID)); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -126,7 +126,7 @@ func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := h.deleteSessionFinishUC.Execute(entity.SessionID(sessionID)); err != nil {
+	if err := h.deleteSessionFinishUC.Execute(r.Context(), entity.SessionID(sessionID)); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -141,7 +141,7 @@ func (h *DebugHandler) requireAdmin(w http.ResponseWriter, r *http.Request) bool
 		return false
 	}
 
-	principal, err := h.authUC.CurrentUser(cookie.Value)
+	principal, err := h.authUC.CurrentUser(r.Context(), cookie.Value)
 	if err != nil {
 		writeError(w, r, err)
 		return false

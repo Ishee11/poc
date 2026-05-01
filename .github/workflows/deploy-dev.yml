@@ -57,6 +57,20 @@ jobs:
               > .env.observability
             chmod 600 .env.observability
 
+            echo "== Write app env =="
+            printf '%s\n' \
+              "AUTH_SEED_ADMIN_EMAIL=${{ secrets.AUTH_SEED_ADMIN_EMAIL }}" \
+              "AUTH_SEED_ADMIN_PASSWORD=${{ secrets.AUTH_SEED_ADMIN_PASSWORD }}" \
+              "AUTH_SEED_USER_EMAIL=${{ secrets.AUTH_SEED_USER_EMAIL }}" \
+              "AUTH_SEED_USER_PASSWORD=${{ secrets.AUTH_SEED_USER_PASSWORD }}" \
+              "APP_ORIGIN=http://193.238.134.58:18080" \
+              "PUSH_ENABLED=false" \
+              "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \
+              "PUSH_VAPID_PUBLIC_KEY=${{ secrets.PUSH_VAPID_PUBLIC_KEY }}" \
+              "PUSH_VAPID_PRIVATE_KEY=${{ secrets.PUSH_VAPID_PRIVATE_KEY }}" \
+              > .env.app
+            chmod 600 .env.app
+
             echo "== Validate observability env =="
             test -s .env.observability
             grep -E '^(GF_SECURITY_ADMIN_USER|GF_SERVER_ROOT_URL|TELEGRAM_CHAT_ID)=' .env.observability
@@ -106,7 +120,7 @@ jobs:
                   -d poker
 
             echo "== Build & start dev app =="
-            docker compose -p poker-dev -f docker-compose.dev.yml up -d --build app
+            docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml up -d --build app
 
             echo "== Start observability stack =="
             docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml down --remove-orphans || true

@@ -46,7 +46,7 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		viewerIsAdmin = viewer.Role == entity.AuthRoleAdmin
 	}
 
-	res, err := h.getStatsSessionsUC.Execute(usecase.GetStatsSessionsQuery{
+	res, err := h.getStatsSessionsUC.Execute(r.Context(), usecase.GetStatsSessionsQuery{
 		Limit:         limit,
 		From:          from,
 		To:            to,
@@ -86,7 +86,7 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 		limit = 0
 	}
 
-	res, err := h.getStatsPlayersUC.Execute(usecase.GetStatsPlayersQuery{
+	res, err := h.getStatsPlayersUC.Execute(r.Context(), usecase.GetStatsPlayersQuery{
 		Limit: limit,
 		From:  from,
 		To:    to,
@@ -109,7 +109,7 @@ func (h *StatsHandler) currentStatsViewer(r *http.Request) (*usecase.AuthPrincip
 		return nil, nil
 	}
 
-	principal, err := h.authUC.CurrentUser(cookie.Value)
+	principal, err := h.authUC.CurrentUser(r.Context(), cookie.Value)
 	if err != nil {
 		if errors.Is(err, entity.ErrUnauthorized) {
 			return nil, nil
@@ -146,7 +146,7 @@ func (h *PlayerHandler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.getPlayerStatsUC.Execute(usecase.GetPlayerStatsQuery{
+	res, err := h.getPlayerStatsUC.Execute(r.Context(), usecase.GetPlayerStatsQuery{
 		PlayerID: entity.PlayerID(playerID),
 		From:     from,
 		To:       to,

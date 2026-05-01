@@ -1,5 +1,7 @@
 package usecase
 
+import "context"
+
 type GetStatsSessionsUseCase struct {
 	statsRepo StatsRepository
 	txManager TxManager
@@ -15,14 +17,14 @@ func NewGetStatsSessionsUseCase(
 	}
 }
 
-func (uc *GetStatsSessionsUseCase) Execute(q GetStatsSessionsQuery) ([]SessionStat, error) {
+func (uc *GetStatsSessionsUseCase) Execute(ctx context.Context, q GetStatsSessionsQuery) ([]SessionStat, error) {
 	if q.Limit <= 0 {
 		q.Limit = 20
 	}
 
 	var result []SessionStat
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.execute(tx, q)
 		return err

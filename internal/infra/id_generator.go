@@ -23,3 +23,9 @@ type UUIDSessionIDGenerator struct{}
 func (g *UUIDSessionIDGenerator) New() entity.SessionID {
 	return entity.SessionID(uuid.New().String())
 }
+
+type UUIDBlindClockIDGenerator struct{}
+
+func (g *UUIDBlindClockIDGenerator) New() entity.BlindClockID {
+	return entity.BlindClockID(uuid.New().String())
+}

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"os"
@@ -68,7 +69,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE idempotency_keys, operations, sessions, players
+		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
@@ -79,7 +80,7 @@ func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 func txRun(t *testing.T, pool *pgxpool.Pool, fn func(tx usecase.Tx)) {
 	t.Helper()
 	txManager := NewTxManager(pool)
-	if err := txManager.RunInTx(func(tx usecase.Tx) error {
+	if err := txManager.RunInTx(context.Background(), func(tx usecase.Tx) error {
 		fn(tx)
 		return nil
 	}); err != nil {
@@ -189,6 +190,126 @@ func TestOperationRepository_Integration(t *testing.T) {
 			t.Fatal("expected reversal to exist")
 		}
 	})
+}
+
+func TestOutboxRepository_Integration(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		createdAt := time.Now().UTC().Truncate(time.Microsecond)
+		event := usecase.OutboxEvent{
+			ID:            "evt1",
+			EventType:     "operation.created",
+			AggregateType: "operation",
+			AggregateID:   "op1",
+			Payload:       json.RawMessage(`{"operation_id":"op1","type":"buy_in"}`),
+			CreatedAt:     createdAt,
+		}
+
+		if err := NewOutboxRepository().Save(tx, event); err != nil {
+			t.Fatalf("save outbox event: %v", err)
+		}
+
+		var eventType string
+		var aggregateType string
+		var aggregateID string
+		var payload []byte
+		var publishedAt *time.Time
+		err := tx.QueryRow(context.Background(), `
+			SELECT event_type, aggregate_type, aggregate_id, payload, published_at
+			FROM outbox_events
+			WHERE id = $1
+		`, event.ID).Scan(&eventType, &aggregateType, &aggregateID, &payload, &publishedAt)
+		if err != nil {
+			t.Fatalf("load outbox event: %v", err)
+		}
+
+		if eventType != event.EventType || aggregateType != event.AggregateType || aggregateID != event.AggregateID {
+			t.Fatalf("unexpected event metadata: type=%s aggregate=%s/%s", eventType, aggregateType, aggregateID)
+		}
+		if !json.Valid(payload) {
+			t.Fatalf("payload is not valid JSON: %s", string(payload))
+		}
+		if publishedAt != nil {
+			t.Fatalf("new event must be pending, got published_at=%v", publishedAt)
+		}
+	})
+}
+
+func TestOutboxRepository_FetchPendingAndMarkPublished_Integration(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		repo := NewOutboxRepository()
+		event := usecase.OutboxEvent{
+			ID:            "evt1",
+			EventType:     "operation.created",
+			AggregateType: "operation",
+			AggregateID:   "op1",
+			Payload:       json.RawMessage(`{"operation_id":"op1"}`),
+			CreatedAt:     time.Now(),
+		}
+		if err := repo.Save(tx, event); err != nil {
+			t.Fatalf("save outbox event: %v", err)
+		}
+
+		events, err := repo.FetchPending(tx, 10)
+		if err != nil {
+			t.Fatalf("fetch pending: %v", err)
+		}
+		if len(events) != 1 || events[0].ID != event.ID {
+			t.Fatalf("unexpected pending events: %+v", events)
+		}
+
+		publishedAt := time.Now()
+		if err := repo.MarkPublished(tx, event.ID, publishedAt); err != nil {
+			t.Fatalf("mark published: %v", err)
+		}
+
+		events, err = repo.FetchPending(tx, 10)
+		if err != nil {
+			t.Fatalf("fetch pending after publish: %v", err)
+		}
+		if len(events) != 0 {
+			t.Fatalf("published event must not be pending: %+v", events)
+		}
+	})
+}
+
+func TestAuditRepository_Integration(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	repo := NewAuditRepository(pool)
+	event := AuditEvent{
+		EventID:       "evt1",
+		EventType:     "operation.created",
+		AggregateType: "operation",
+		AggregateID:   "op1",
+		Payload:       json.RawMessage(`{"operation_id":"op1"}`),
+		ConsumedAt:    time.Now(),
+	}
+
+	if err := repo.Save(context.Background(), event); err != nil {
+		t.Fatalf("save audit event: %v", err)
+	}
+	if err := repo.Save(context.Background(), event); err != nil {
+		t.Fatalf("duplicate audit event should be ignored: %v", err)
+	}
+
+	var count int
+	if err := pool.QueryRow(context.Background(), `
+		SELECT COUNT(*)
+		FROM audit_events
+		WHERE event_id = $1
+	`, event.EventID).Scan(&count); err != nil {
+		t.Fatalf("count audit events: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected one idempotent audit event, got %d", count)
+	}
 }
 
 func TestProjectionRepository_Integration(t *testing.T) {

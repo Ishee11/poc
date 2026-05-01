@@ -36,6 +36,19 @@ var (
 	ErrTableNotSettled  = errors.New("table not settled")
 
 	ErrSessionNotBalanced = errors.New("session not balanced")
+
+	ErrBlindClockNotFound          = errors.New("blind clock not found")
+	ErrBlindClockHasNoLevels       = errors.New("blind clock has no levels")
+	ErrBlindClockAlreadyRunning    = errors.New("blind clock already running")
+	ErrBlindClockNotRunning        = errors.New("blind clock not running")
+	ErrBlindClockNotPaused         = errors.New("blind clock not paused")
+	ErrBlindClockFinished          = errors.New("blind clock finished")
+	ErrInvalidBlindClockLevel      = errors.New("invalid blind clock level")
+	ErrBlindClockLevelsLocked      = errors.New("blind clock levels locked")
+	ErrBlindClockLevelDeleteDenied = errors.New("blind clock level delete denied")
+
+	ErrPushDisabled            = errors.New("push disabled")
+	ErrInvalidPushSubscription = errors.New("invalid push subscription")
 )
 
 func (e *SessionNotBalancedError) Is(target error) bool {
