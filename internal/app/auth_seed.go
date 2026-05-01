@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -26,7 +27,7 @@ func seedAuthUsers(db *DB, cfg AuthConfig) error {
 		usecase.SystemClock{},
 	)
 
-	if err := seedUserUC.Execute(usecase.SeedUserCommand{
+	if err := seedUserUC.Execute(context.Background(), usecase.SeedUserCommand{
 		Email:    cfg.SeedAdminEmail,
 		Password: cfg.SeedAdminPass,
 		Role:     entity.AuthRoleAdmin,
@@ -34,7 +35,7 @@ func seedAuthUsers(db *DB, cfg AuthConfig) error {
 		return fmt.Errorf("seed auth admin: %w", err)
 	}
 
-	if err := seedUserUC.Execute(usecase.SeedUserCommand{
+	if err := seedUserUC.Execute(context.Background(), usecase.SeedUserCommand{
 		Email:    cfg.SeedUserEmail,
 		Password: cfg.SeedUserPass,
 		Role:     entity.AuthRoleUser,

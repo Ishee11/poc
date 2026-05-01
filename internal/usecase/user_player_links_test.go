@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -65,7 +66,7 @@ func TestUserPlayerLinksUseCaseLinkPlayer(t *testing.T) {
 	links := newFakeUserPlayerLinkRepo()
 	uc := NewUserPlayerLinksUseCase(links, fakePlayerRepo{store: store}, fakeTxManager{})
 
-	err = uc.LinkPlayer(LinkUserPlayerCommand{
+	err = uc.LinkPlayer(context.Background(), LinkUserPlayerCommand{
 		UserID:   "user-1",
 		PlayerID: "player-1",
 	})
@@ -90,7 +91,7 @@ func TestUserPlayerLinksUseCaseRejectsLinkedPlayerOwnedByAnotherUser(t *testing.
 	links.links["player-1"] = "user-2"
 
 	uc := NewUserPlayerLinksUseCase(links, fakePlayerRepo{store: store}, fakeTxManager{})
-	err = uc.LinkPlayer(LinkUserPlayerCommand{
+	err = uc.LinkPlayer(context.Background(), LinkUserPlayerCommand{
 		UserID:   "user-1",
 		PlayerID: "player-1",
 	})
@@ -111,7 +112,7 @@ func TestUserPlayerLinksUseCaseLinkIsIdempotentForSameUser(t *testing.T) {
 	links.links["player-1"] = "user-1"
 
 	uc := NewUserPlayerLinksUseCase(links, fakePlayerRepo{store: store}, fakeTxManager{})
-	err = uc.LinkPlayer(LinkUserPlayerCommand{
+	err = uc.LinkPlayer(context.Background(), LinkUserPlayerCommand{
 		UserID:   "user-1",
 		PlayerID: "player-1",
 	})
@@ -125,7 +126,7 @@ func TestUserPlayerLinksUseCaseUnlinkRejectsForeignLink(t *testing.T) {
 	links.links["player-1"] = "user-2"
 
 	uc := NewUserPlayerLinksUseCase(links, fakePlayerRepo{store: newFakeStore()}, fakeTxManager{})
-	err := uc.UnlinkPlayer(LinkUserPlayerCommand{
+	err := uc.UnlinkPlayer(context.Background(), LinkUserPlayerCommand{
 		UserID:   "user-1",
 		PlayerID: "player-1",
 	})

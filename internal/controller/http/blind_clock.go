@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -8,7 +9,7 @@ import (
 )
 
 func (h *BlindClockHandler) GetActive(w http.ResponseWriter, r *http.Request) {
-	resp, err := h.service.GetActive()
+	resp, err := h.service.GetActive(r.Context())
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -59,7 +60,7 @@ func (h *BlindClockHandler) UpdateLevels(w http.ResponseWriter, r *http.Request)
 		})
 	}
 
-	resp, err := h.service.UpdateLevels(input)
+	resp, err := h.service.UpdateLevels(r.Context(), input)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -71,9 +72,9 @@ func (h *BlindClockHandler) UpdateLevels(w http.ResponseWriter, r *http.Request)
 func (h *BlindClockHandler) writeMutation(
 	w http.ResponseWriter,
 	r *http.Request,
-	fn func() (*usecase.BlindClockResponse, error),
+	fn func(context.Context) (*usecase.BlindClockResponse, error),
 ) {
-	resp, err := fn()
+	resp, err := fn(r.Context())
 	if err != nil {
 		writeError(w, r, err)
 		return

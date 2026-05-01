@@ -30,7 +30,7 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.startSessionUC.Execute(command.StartSessionCommand{
+	id, err := h.startSessionUC.Execute(r.Context(), command.StartSessionCommand{
 		ChipRate: req.ChipRate,
 		BigBlind: req.BigBlind,
 		Currency: entity.Currency(req.Currency),

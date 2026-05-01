@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -34,8 +35,8 @@ func NewFinishSessionUseCase(
 	}
 }
 
-func (uc *FinishSessionUseCase) Execute(cmd command.FinishSessionCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *FinishSessionUseCase) Execute(ctx context.Context, cmd command.FinishSessionCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})

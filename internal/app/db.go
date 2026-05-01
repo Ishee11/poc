@@ -43,7 +43,12 @@ func connectWithRetry(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	)
 
 	for i := 0; i < 10; i++ {
-		pool, err = pgxpool.New(ctx, dsn)
+		var cfg *pgxpool.Config
+		cfg, err = pgxpool.ParseConfig(dsn)
+		if err == nil {
+			cfg.ConnConfig.Tracer = postgres.NewQueryTracer()
+			pool, err = pgxpool.NewWithConfig(ctx, cfg)
+		}
 		if err == nil {
 			if pingErr := pool.Ping(ctx); pingErr == nil {
 				slog.Info("db_connected")

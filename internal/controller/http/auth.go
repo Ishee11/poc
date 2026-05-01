@@ -33,7 +33,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.registerUserUC.Execute(usecase.RegisterUserCommand{
+	if err := h.registerUserUC.Execute(r.Context(), usecase.RegisterUserCommand{
 		Email:    req.Email,
 		Password: req.Password,
 	}); err != nil {
@@ -41,7 +41,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.authUC.Login(usecase.LoginCommand{
+	result, err := h.authUC.Login(r.Context(), usecase.LoginCommand{
 		Email:     req.Email,
 		Password:  req.Password,
 		UserAgent: r.UserAgent(),
@@ -93,7 +93,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.authUC.Login(usecase.LoginCommand{
+	result, err := h.authUC.Login(r.Context(), usecase.LoginCommand{
 		Email:     req.Email,
 		Password:  req.Password,
 		UserAgent: r.UserAgent(),
@@ -142,7 +142,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := h.sessionToken(r)
-	if err := h.authUC.Logout(token); err != nil {
+	if err := h.authUC.Logout(r.Context(), token); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -173,7 +173,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	principal, err := h.authUC.CurrentUser(h.sessionToken(r))
+	principal, err := h.authUC.CurrentUser(r.Context(), h.sessionToken(r))
 	if err != nil {
 		writeError(w, r, err)
 		return

@@ -28,7 +28,7 @@ func (h *OperationHandler) BuyIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.buyInUC.Execute(command.BuyInCommand{
+	err := h.buyInUC.Execute(r.Context(), command.BuyInCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 		PlayerID:  entity.PlayerID(req.PlayerID),

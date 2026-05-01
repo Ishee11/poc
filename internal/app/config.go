@@ -11,9 +11,16 @@ type Config struct {
 	DatabaseURL string
 	HTTPPort    string
 	LogLevel    string
+	Tracing     TracingConfig
 	Auth        AuthConfig
 	Push        PushConfig
 	Kafka       KafkaConfig
+}
+
+type TracingConfig struct {
+	ServiceName  string
+	OTLPEndpoint string
+	OTLPInsecure bool
 }
 
 type AuthConfig struct {
@@ -64,6 +71,11 @@ func Load() (*Config, error) {
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		HTTPPort:    getEnv("HTTP_PORT", "8080"),
 		LogLevel:    getEnv("LOG_LEVEL", "info"),
+		Tracing: TracingConfig{
+			ServiceName:  getEnv("OTEL_SERVICE_NAME", "poker-app"),
+			OTLPEndpoint: strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
+			OTLPInsecure: getBoolEnv("OTEL_EXPORTER_OTLP_INSECURE", true),
+		},
 		Auth: AuthConfig{
 			Enabled:        getBoolEnv("AUTH_ENABLED", false),
 			CookieName:     getEnv("AUTH_COOKIE_NAME", "sid"),

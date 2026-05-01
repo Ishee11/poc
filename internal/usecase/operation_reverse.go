@@ -4,6 +4,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -46,8 +47,8 @@ func NewReverseOperationUseCase(
 	}
 }
 
-func (uc *ReverseOperationUseCase) Execute(cmd command.ReverseOperationCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *ReverseOperationUseCase) Execute(ctx context.Context, cmd command.ReverseOperationCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})

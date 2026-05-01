@@ -38,7 +38,7 @@ func (h *SessionHandler) GetSessionOperations(w http.ResponseWriter, r *http.Req
 		offset = 0
 	}
 
-	res, err := h.getSessionOpsUC.Execute(usecase.GetSessionOperationsQuery{
+	res, err := h.getSessionOpsUC.Execute(r.Context(), usecase.GetSessionOperationsQuery{
 		SessionID: entity.SessionID(sessionID),
 		Limit:     limit,
 		Offset:    offset,

@@ -37,6 +37,7 @@ services:
     restart: unless-stopped
     depends_on:
       - prometheus
+      - tempo
     env_file:
       - .env.observability
     ports:
@@ -45,7 +46,20 @@ services:
       - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
 
+  tempo:
+    image: grafana/tempo:2.8.1
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/tempo/tempo.yml
+    ports:
+      - "${TEMPO_PORT_BIND:-127.0.0.1:3200:3200}"
+      - "${TEMPO_OTLP_HTTP_PORT_BIND:-127.0.0.1:4318:4318}"
+    volumes:
+      - ./deploy/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/tmp/tempo
+
 volumes:
   alertmanager_data:
   prometheus_data:
   grafana_data:
+  tempo_data:

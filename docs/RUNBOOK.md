@@ -42,6 +42,16 @@ docker compose down
 docker compose -f docker-compose.observability.yml up -d
 ```
 
+Стек включает Prometheus, Alertmanager, Grafana и Tempo. Приложение отправляет traces в Tempo через OTLP HTTP:
+
+```text
+OTEL_EXPORTER_OTLP_ENDPOINT=tempo:4318
+OTEL_EXPORTER_OTLP_INSECURE=true
+OTEL_SERVICE_NAME=poker-app-dev
+```
+
+Если приложение запущено без Docker, используйте `OTEL_EXPORTER_OTLP_ENDPOINT=127.0.0.1:4318`.
+
 Grafana читает admin credentials и внешний URL из `.env.observability`.
 Alertmanager читает Telegram-настройки из `.env.observability`.
 
@@ -66,6 +76,7 @@ GF_SERVER_ROOT_URL=http://193.238.134.58:3001
 - Prometheus: `http://127.0.0.1:9090`
 - Alertmanager: `http://127.0.0.1:9093`
 - Grafana: `http://193.238.134.58:3000`
+- Tempo: `http://127.0.0.1:3200`
 
 Логин Grafana по умолчанию:
 
@@ -99,6 +110,19 @@ TELEGRAM_SEND_RESOLVED=true
 - `PrometheusTargetDown`
 - `High5xxRate`
 - `HighLatencyP95`
+
+## Tracing
+
+HTTP-запросы трассируются через OpenTelemetry. В Grafana используйте datasource `Tempo`, чтобы открыть trace по `trace_id`.
+
+В одном trace видны:
+
+- root span HTTP-запроса, например `GET /sessions`.
+- `http.handler`.
+- usecase span, например `usecase.GetSessionUseCase.Execute`.
+- PostgreSQL spans, например `postgres.SELECT`.
+
+JSON-логи автоматически получают поля `trace_id` и `span_id`, если лог пишется внутри активного span.
 
 ## Конфигурация
 

@@ -34,7 +34,7 @@ func (h *PlayerHandler) CreatePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.createPlayerUC.Execute(command.CreatePlayerCommand{
+	id, err := h.createPlayerUC.Execute(r.Context(), command.CreatePlayerCommand{
 		RequestID: req.RequestID,
 		Name:      req.Name,
 	})

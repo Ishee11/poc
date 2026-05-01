@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
@@ -26,8 +27,8 @@ func NewBuyInUseCase(
 	}
 }
 
-func (uc *BuyInUseCase) Execute(cmd command.BuyInCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *BuyInUseCase) Execute(ctx context.Context, cmd command.BuyInCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})

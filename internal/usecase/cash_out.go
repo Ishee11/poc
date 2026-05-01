@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
@@ -32,8 +33,8 @@ func NewCashOutUseCase(
 	}
 }
 
-func (uc *CashOutUseCase) Execute(cmd command.CashOutCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *CashOutUseCase) Execute(ctx context.Context, cmd command.CashOutCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})

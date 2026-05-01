@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -56,10 +57,10 @@ func NewBlindClockService(
 	}
 }
 
-func (s *BlindClockService) GetActive() (*BlindClockResponse, error) {
+func (s *BlindClockService) GetActive(ctx context.Context) (*BlindClockResponse, error) {
 	var result *BlindClockResponse
 
-	err := s.txManager.RunInTx(func(tx Tx) error {
+	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
 		clock, now, err := s.ensureClock(tx, false)
 		if err != nil {
 			return err
@@ -74,45 +75,45 @@ func (s *BlindClockService) GetActive() (*BlindClockResponse, error) {
 	return result, nil
 }
 
-func (s *BlindClockService) Start() (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) Start(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		return clock.Start(now)
 	})
 }
 
-func (s *BlindClockService) Pause() (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) Pause(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		return clock.Pause(now)
 	})
 }
 
-func (s *BlindClockService) Resume() (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) Resume(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		return clock.Resume(now)
 	})
 }
 
-func (s *BlindClockService) Reset() (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) Reset(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		clock.Reset(now)
 		return nil
 	})
 }
 
-func (s *BlindClockService) PreviousLevel() (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) PreviousLevel(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		return clock.MoveToPreviousLevel(now)
 	})
 }
 
-func (s *BlindClockService) NextLevel() (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) NextLevel(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		return clock.MoveToNextLevel(now)
 	})
 }
 
-func (s *BlindClockService) UpdateLevels(levelInputs []BlindClockLevelInput) (*BlindClockResponse, error) {
-	return s.mutate(func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+func (s *BlindClockService) UpdateLevels(ctx context.Context, levelInputs []BlindClockLevelInput) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		levels := make([]entity.BlindClockLevel, 0, len(levelInputs))
 		for idx, level := range levelInputs {
 			levels = append(levels, entity.BlindClockLevel{
@@ -132,11 +133,12 @@ func (s *BlindClockService) UpdateLevels(levelInputs []BlindClockLevelInput) (*B
 }
 
 func (s *BlindClockService) mutate(
+	ctx context.Context,
 	fn func(tx Tx, clock *entity.BlindClock, now time.Time) error,
 ) (*BlindClockResponse, error) {
 	var result *BlindClockResponse
 
-	err := s.txManager.RunInTx(func(tx Tx) error {
+	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
 		clock, now, err := s.ensureClock(tx, true)
 		if err != nil {
 			return err

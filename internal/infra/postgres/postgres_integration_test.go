@@ -80,7 +80,7 @@ func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 func txRun(t *testing.T, pool *pgxpool.Pool, fn func(tx usecase.Tx)) {
 	t.Helper()
 	txManager := NewTxManager(pool)
-	if err := txManager.RunInTx(func(tx usecase.Tx) error {
+	if err := txManager.RunInTx(context.Background(), func(tx usecase.Tx) error {
 		fn(tx)
 		return nil
 	}); err != nil {

@@ -40,10 +40,15 @@ services:
       - kafka
     ports:
       - "18080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DATABASE_URL: postgres://poker:poker@db:5432/poker?sslmode=disable
       LOG_LEVEL: debug
       HTTP_ACCESS_LOG: errors
+      OTEL_SERVICE_NAME: poker-app-dev
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-tempo:4318}
+      OTEL_EXPORTER_OTLP_INSECURE: ${OTEL_EXPORTER_OTLP_INSECURE:-true}
       AUTH_ENABLED: "false"
       AUTH_COOKIE_SECURE: "false"
       AUTH_SESSION_TTL: 24h

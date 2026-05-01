@@ -72,7 +72,7 @@ func (r *OutboxRelay) DispatchOnce(ctx context.Context, limit int) (OutboxDispat
 	}
 
 	result := OutboxDispatchResult{}
-	err := r.txManager.RunInTx(func(tx Tx) error {
+	err := r.txManager.RunInTx(ctx, func(tx Tx) error {
 		events, err := r.repo.FetchPending(tx, limit)
 		if err != nil {
 			return err
