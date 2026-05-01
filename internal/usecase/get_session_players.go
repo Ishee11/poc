@@ -7,6 +7,7 @@ import "github.com/ishee11/poc/internal/entity"
 type GetSessionPlayersUseCase struct {
 	projection    ProjectionRepository
 	playerRepo    PlayerRepository
+	statsRepo     StatsRepository
 	txManager     TxManager
 	sessionReader SessionReader
 }
@@ -14,12 +15,14 @@ type GetSessionPlayersUseCase struct {
 func NewGetSessionPlayersUseCase(
 	projection ProjectionRepository,
 	playerRepo PlayerRepository,
+	statsRepo StatsRepository,
 	txManager TxManager,
 	sessionReader SessionReader,
 ) *GetSessionPlayersUseCase {
 	return &GetSessionPlayersUseCase{
 		projection:    projection,
 		playerRepo:    playerRepo,
+		statsRepo:     statsRepo,
 		txManager:     txManager,
 		sessionReader: sessionReader,
 	}
@@ -63,6 +66,11 @@ func (uc *GetSessionPlayersUseCase) execute(
 		return nil, err
 	}
 
+	ranks, err := uc.allTimeRanks(tx)
+	if err != nil {
+		return nil, err
+	}
+
 	result := make([]SessionPlayerDTO, 0, len(aggs))
 
 	for playerID, agg := range aggs {
@@ -84,6 +92,7 @@ func (uc *GetSessionPlayersUseCase) execute(
 		result = append(result, SessionPlayerDTO{
 			PlayerID:    playerID,
 			Name:        player.Name(),
+			Rank:        ranks[playerID],
 			BuyIn:       agg.BuyIn,
 			CashOut:     agg.CashOut,
 			ProfitChips: profitChips,
@@ -94,4 +103,12 @@ func (uc *GetSessionPlayersUseCase) execute(
 
 	return result, nil
 
+}
+
+func (uc *GetSessionPlayersUseCase) allTimeRanks(tx Tx) (map[entity.PlayerID]PlayerRank, error) {
+	allPlayers, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{Limit: 10000})
+	if err != nil {
+		return nil, err
+	}
+	return playerRanksByID(allPlayers), nil
 }

@@ -1,6 +1,10 @@
 package usecase
 
-import "context"
+import (
+	"context"
+
+	"github.com/ishee11/poc/internal/entity"
+)
 
 type GetStatsPlayersUseCase struct {
 	statsRepo StatsRepository
@@ -49,9 +53,30 @@ func (uc *GetStatsPlayersUseCase) execute(
 		limit = 100
 	}
 
-	return uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{
+	result, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{
 		Limit: limit,
 		From:  q.From,
 		To:    q.To,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	ranks, err := uc.allTimeRanks(tx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range result {
+		result[i].Rank = ranks[result[i].PlayerID]
+	}
+
+	return result, nil
+}
+
+func (uc *GetStatsPlayersUseCase) allTimeRanks(tx Tx) (map[entity.PlayerID]PlayerRank, error) {
+	allPlayers, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{Limit: 10000})
+	if err != nil {
+		return nil, err
+	}
+	return playerRanksByID(allPlayers), nil
 }

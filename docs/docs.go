@@ -15,6 +15,345 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/account": {
+            "get": {
+                "description": "Returns the authenticated user and linked players.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Current account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/players": {
+            "get": {
+                "description": "Links, unlinks, or lists players linked to the current user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Linked account players",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Links, unlinks, or lists players linked to the current user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Linked account players",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Links, unlinks, or lists players linked to the current user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Linked account players",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/players/available": {
+            "get": {
+                "description": "Returns players that are not linked to any user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Unlinked players",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticates a system user and sets an HttpOnly session cookie.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Login request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Revokes the current auth session and clears the session cookie.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "description": "Returns the authenticated system user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Current user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.MeResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Creates a regular user and sets an HttpOnly session cookie.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register",
+                "parameters": [
+                    {
+                        "description": "Register request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/operations": {
             "get": {
                 "description": "List operations for session",
@@ -55,20 +394,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.OperationDTO"
+                                "$ref": "#/definitions/usecase.OperationDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -94,7 +433,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.BuyInRequest"
+                            "$ref": "#/definitions/http.BuyInRequest"
                         }
                     }
                 ],
@@ -105,19 +444,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -143,7 +482,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.CashOutRequest"
+                            "$ref": "#/definitions/http.CashOutRequest"
                         }
                     }
                 ],
@@ -154,19 +493,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -192,7 +531,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ReverseOperationRequest"
+                            "$ref": "#/definitions/http.ReverseOperationRequest"
                         }
                     }
                 ],
@@ -203,19 +542,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -241,7 +580,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.CreatePlayerRequest"
+                            "$ref": "#/definitions/http.CreatePlayerRequest"
                         }
                     }
                 ],
@@ -249,19 +588,39 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.CreatePlayerResponse"
+                            "$ref": "#/definitions/http.CreatePlayerResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/players/unlinked": {
+            "get": {
+                "description": "Returns players that are not linked to any user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "players"
+                ],
+                "summary": "Unlinked players",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountPlayersResponse"
                         }
                     }
                 }
@@ -293,19 +652,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.GetSessionResponse"
+                            "$ref": "#/definitions/usecase.GetSessionResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -331,7 +690,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.FinishSessionRequest"
+                            "$ref": "#/definitions/http.FinishSessionRequest"
                         }
                     }
                 ],
@@ -342,25 +701,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -394,20 +753,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.PlayerDTO"
+                                "$ref": "#/definitions/usecase.PlayerDTO"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -433,7 +792,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.StartSessionRequest"
+                            "$ref": "#/definitions/http.StartSessionRequest"
                         }
                     }
                 ],
@@ -448,19 +807,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -504,19 +863,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.PlayerOverallStat"
+                            "$ref": "#/definitions/usecase.PlayerOverallStat"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -561,14 +920,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.PlayerStat"
+                                "$ref": "#/definitions/usecase.PlayerStat"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -613,14 +972,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_ishee11_poc_internal_usecase.SessionStat"
+                                "$ref": "#/definitions/usecase.SessionStat"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_http.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -628,7 +987,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_ishee11_poc_internal_entity.OperationType": {
+        "entity.AuthRole": {
+            "type": "string",
+            "enum": [
+                "admin",
+                "user"
+            ],
+            "x-enum-varnames": [
+                "AuthRoleAdmin",
+                "AuthRoleUser"
+            ]
+        },
+        "entity.Currency": {
+            "type": "string",
+            "enum": [
+                "RUB",
+                "USD"
+            ],
+            "x-enum-varnames": [
+                "CurrencyRUB",
+                "CurrencyUSD"
+            ]
+        },
+        "entity.OperationType": {
             "type": "string",
             "enum": [
                 "buy_in",
@@ -641,7 +1022,7 @@ const docTemplate = `{
                 "OperationReversal"
             ]
         },
-        "github_com_ishee11_poc_internal_entity.Status": {
+        "entity.Status": {
             "type": "string",
             "enum": [
                 "active",
@@ -652,145 +1033,46 @@ const docTemplate = `{
                 "StatusFinished"
             ]
         },
-        "github_com_ishee11_poc_internal_usecase.GetSessionResponse": {
+        "http.AccountPlayersResponse": {
             "type": "object",
             "properties": {
-                "chip_rate": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "session_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/github_com_ishee11_poc_internal_entity.Status"
-                },
-                "total_buy_in": {
-                    "type": "integer"
-                },
-                "total_cash_out": {
-                    "type": "integer"
-                },
-                "total_chips": {
-                    "type": "integer"
+                "players": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.PlayerDTO"
+                    }
                 }
             }
         },
-        "github_com_ishee11_poc_internal_usecase.OperationDTO": {
+        "http.AccountResponse": {
             "type": "object",
             "properties": {
-                "chips": {
-                    "type": "integer"
+                "players": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.PlayerDTO"
+                    }
                 },
-                "created_at": {
+                "user": {
+                    "$ref": "#/definitions/http.AuthUserResponse"
+                }
+            }
+        },
+        "http.AuthUserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "player_id": {
-                    "type": "string"
-                },
-                "reference_id": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/github_com_ishee11_poc_internal_entity.OperationType"
+                "role": {
+                    "$ref": "#/definitions/entity.AuthRole"
                 }
             }
         },
-        "github_com_ishee11_poc_internal_usecase.PlayerDTO": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "player_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_ishee11_poc_internal_usecase.PlayerOverallStat": {
-            "type": "object",
-            "properties": {
-                "last_activity_at": {
-                    "type": "string"
-                },
-                "player_id": {
-                    "type": "string"
-                },
-                "profit_chips": {
-                    "type": "integer"
-                },
-                "profit_money": {
-                    "type": "integer"
-                },
-                "sessions_count": {
-                    "type": "integer"
-                },
-                "total_buy_in": {
-                    "type": "integer"
-                },
-                "total_cash_out": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_ishee11_poc_internal_usecase.PlayerStat": {
-            "type": "object",
-            "properties": {
-                "last_activity_at": {
-                    "type": "string"
-                },
-                "player_id": {
-                    "type": "string"
-                },
-                "profit_chips": {
-                    "type": "integer"
-                },
-                "profit_money": {
-                    "type": "integer"
-                },
-                "sessions_count": {
-                    "type": "integer"
-                },
-                "total_buy_in": {
-                    "type": "integer"
-                },
-                "total_cash_out": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_ishee11_poc_internal_usecase.SessionStat": {
-            "type": "object",
-            "properties": {
-                "chip_rate": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "player_count": {
-                    "type": "integer"
-                },
-                "session_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/github_com_ishee11_poc_internal_entity.Status"
-                },
-                "total_buy_in": {
-                    "type": "integer"
-                },
-                "total_cash_out": {
-                    "type": "integer"
-                }
-            }
-        },
-        "internal_controller_http.BuyInRequest": {
+        "http.BuyInRequest": {
             "type": "object",
             "properties": {
                 "chips": {
@@ -811,7 +1093,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_http.CashOutRequest": {
+        "http.CashOutRequest": {
             "type": "object",
             "properties": {
                 "chips": {
@@ -832,7 +1114,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_http.CreatePlayerRequest": {
+        "http.CreatePlayerRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -845,7 +1127,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_http.CreatePlayerResponse": {
+        "http.CreatePlayerResponse": {
             "type": "object",
             "properties": {
                 "player_id": {
@@ -854,16 +1136,19 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_http.ErrorResponse": {
+        "http.ErrorResponse": {
             "type": "object",
             "properties": {
                 "details": {},
                 "error": {
                     "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
                 }
             }
         },
-        "internal_controller_http.FinishSessionRequest": {
+        "http.FinishSessionRequest": {
             "type": "object",
             "properties": {
                 "request_id": {
@@ -874,7 +1159,59 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_http.ReverseOperationRequest": {
+        "http.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/http.AuthUserResponse"
+                }
+            }
+        },
+        "http.MeResponse": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/http.AuthUserResponse"
+                }
+            }
+        },
+        "http.PlayerDTO": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.ReverseOperationRequest": {
             "type": "object",
             "properties": {
                 "request_id": {
@@ -887,10 +1224,242 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_http.StartSessionRequest": {
+        "http.StartSessionRequest": {
             "type": "object",
             "properties": {
+                "big_blind": {
+                    "type": "integer"
+                },
                 "chip_rate": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.GetSessionResponse": {
+            "type": "object",
+            "properties": {
+                "big_blind": {
+                    "type": "integer"
+                },
+                "chip_rate": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "$ref": "#/definitions/entity.Currency"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.Status"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
+                    "type": "integer"
+                },
+                "total_chips": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.OperationDTO": {
+            "type": "object",
+            "properties": {
+                "chips": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "reference_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/entity.OperationType"
+                }
+            }
+        },
+        "usecase.PlayerCurrencyStat": {
+            "type": "object",
+            "properties": {
+                "avg_profit_per_session": {
+                    "type": "number"
+                },
+                "currency": {
+                    "$ref": "#/definitions/entity.Currency"
+                },
+                "profit_money": {
+                    "type": "integer"
+                },
+                "roi_percent": {
+                    "type": "number"
+                },
+                "sessions_count": {
+                    "type": "integer"
+                },
+                "total_buy_in_money": {
+                    "type": "integer"
+                },
+                "total_cash_out_money": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.PlayerDTO": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.PlayerOverallStat": {
+            "type": "object",
+            "properties": {
+                "avg_buy_in_per_session": {
+                    "type": "number"
+                },
+                "avg_profit_per_session": {
+                    "type": "number"
+                },
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "money_by_currency": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/usecase.PlayerCurrencyStat"
+                    }
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "player_name": {
+                    "type": "string"
+                },
+                "profit_chips": {
+                    "type": "integer"
+                },
+                "profit_money": {
+                    "type": "integer"
+                },
+                "rank": {
+                    "$ref": "#/definitions/usecase.PlayerRank"
+                },
+                "roi_percent": {
+                    "type": "number"
+                },
+                "sessions_count": {
+                    "type": "integer"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_buy_in_money": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
+                    "type": "integer"
+                },
+                "total_cash_out_money": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.PlayerRank": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.PlayerStat": {
+            "type": "object",
+            "properties": {
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "player_name": {
+                    "type": "string"
+                },
+                "profit_chips": {
+                    "type": "integer"
+                },
+                "profit_money": {
+                    "type": "integer"
+                },
+                "rank": {
+                    "$ref": "#/definitions/usecase.PlayerRank"
+                },
+                "sessions_count": {
+                    "type": "integer"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.SessionStat": {
+            "type": "object",
+            "properties": {
+                "big_blind": {
+                    "type": "integer"
+                },
+                "chip_rate": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "$ref": "#/definitions/entity.Currency"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "player_count": {
+                    "type": "integer"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.Status"
+                },
+                "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_cash_out": {
                     "type": "integer"
                 }
             }
@@ -900,12 +1469,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Poker API",
-	Description:      "Poker sessions service",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
