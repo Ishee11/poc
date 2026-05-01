@@ -8,7 +8,7 @@ import (
 )
 
 type TxManager interface {
-	RunInTx(fn func(tx Tx) error) error
+	RunInTx(ctx context.Context, fn func(tx Tx) error) error
 }
 
 type Tx interface {

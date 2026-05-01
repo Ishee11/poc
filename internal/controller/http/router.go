@@ -112,10 +112,12 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux
+	handler = HandlerSpanMiddleware(handler)
 	handler = CORSMiddleware(handler)
 	handler = RecoveryMiddleware(handler)
 	handler = MetricsMiddleware(handler)
 	handler = LoggingMiddleware(handler)
+	handler = TracingMiddleware(handler)
 	handler = RequestIDMiddleware(handler)
 
 	return handler

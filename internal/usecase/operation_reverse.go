@@ -4,6 +4,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -19,6 +20,7 @@ type ReverseOperationUseCase struct {
 	idGen           OperationIDGenerator
 	idempotencyRepo IdempotencyRepository
 	sessionLocker   SessionLocker
+	outboxWriter    OutboxWriter
 }
 
 func NewReverseOperationUseCase(
@@ -30,6 +32,7 @@ func NewReverseOperationUseCase(
 	idGen OperationIDGenerator,
 	idempotencyRepo IdempotencyRepository,
 	sessionLocker SessionLocker,
+	outboxWriter OutboxWriter,
 ) *ReverseOperationUseCase {
 	return &ReverseOperationUseCase{
 		opWriter:        opWriter,
@@ -40,11 +43,12 @@ func NewReverseOperationUseCase(
 		idGen:           idGen,
 		idempotencyRepo: idempotencyRepo,
 		sessionLocker:   sessionLocker,
+		outboxWriter:    outboxWriter,
 	}
 }
 
-func (uc *ReverseOperationUseCase) Execute(cmd command.ReverseOperationCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *ReverseOperationUseCase) Execute(ctx context.Context, cmd command.ReverseOperationCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})
@@ -118,7 +122,16 @@ func (uc *ReverseOperationUseCase) execute(tx Tx, cmd command.ReverseOperationCo
 		return err
 	}
 
-	return uc.sessionWriter.Save(tx, session)
+	if err := uc.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewOperationReversedOutboxEvent(op)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }
 
 func (uc *ReverseOperationUseCase) applyReversal(

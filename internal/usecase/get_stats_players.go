@@ -1,5 +1,7 @@
 package usecase
 
+import "context"
+
 type GetStatsPlayersUseCase struct {
 	statsRepo StatsRepository
 	txManager TxManager
@@ -15,10 +17,10 @@ func NewGetStatsPlayersUseCase(
 	}
 }
 
-func (uc *GetStatsPlayersUseCase) Execute(q GetStatsPlayersQuery) ([]PlayerStat, error) {
+func (uc *GetStatsPlayersUseCase) Execute(ctx context.Context, q GetStatsPlayersQuery) ([]PlayerStat, error) {
 	var result []PlayerStat
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		res, err := uc.execute(tx, q)
 		if err != nil {
 			return err

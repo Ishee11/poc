@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"strings"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -19,7 +20,7 @@ func NewRenameDebugPlayerUseCase(repo DebugAdminRepository, txManager TxManager)
 	}
 }
 
-func (uc *RenameDebugPlayerUseCase) Execute(playerID entity.PlayerID, name string) error {
+func (uc *RenameDebugPlayerUseCase) Execute(ctx context.Context, playerID entity.PlayerID, name string) error {
 	name = strings.TrimSpace(name)
 	if playerID == "" {
 		return entity.ErrInvalidPlayerID
@@ -28,7 +29,7 @@ func (uc *RenameDebugPlayerUseCase) Execute(playerID entity.PlayerID, name strin
 		return entity.ErrInvalidPlayerName
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return uc.repo.RenamePlayer(tx, playerID, name)
 	})
 }
@@ -45,7 +46,7 @@ func NewUpdateDebugSessionConfigUseCase(repo DebugAdminRepository, txManager TxM
 	}
 }
 
-func (uc *UpdateDebugSessionConfigUseCase) Execute(sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error {
+func (uc *UpdateDebugSessionConfigUseCase) Execute(ctx context.Context, sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error {
 	if sessionID == "" {
 		return entity.ErrSessionNotFound
 	}
@@ -59,7 +60,7 @@ func (uc *UpdateDebugSessionConfigUseCase) Execute(sessionID entity.SessionID, c
 		currency = entity.CurrencyRUB
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return uc.repo.UpdateSessionConfig(tx, sessionID, chipRate, bigBlind, currency)
 	})
 }
@@ -76,12 +77,12 @@ func NewDeleteDebugPlayerUseCase(repo DebugAdminRepository, txManager TxManager)
 	}
 }
 
-func (uc *DeleteDebugPlayerUseCase) Execute(playerID entity.PlayerID) error {
+func (uc *DeleteDebugPlayerUseCase) Execute(ctx context.Context, playerID entity.PlayerID) error {
 	if playerID == "" {
 		return entity.ErrInvalidPlayerID
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return uc.repo.DeletePlayer(tx, playerID)
 	})
 }
@@ -103,12 +104,12 @@ func NewDeleteDebugSessionFinishUseCase(repo DebugAdminRepository, txManager TxM
 	}
 }
 
-func (uc *DeleteDebugSessionFinishUseCase) Execute(sessionID entity.SessionID) error {
+func (uc *DeleteDebugSessionFinishUseCase) Execute(ctx context.Context, sessionID entity.SessionID) error {
 	if sessionID == "" {
 		return entity.ErrSessionNotFound
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return uc.repo.DeleteSessionFinish(tx, sessionID)
 	})
 }
@@ -120,12 +121,12 @@ func NewDeleteDebugSessionUseCase(repo DebugAdminRepository, txManager TxManager
 	}
 }
 
-func (uc *DeleteDebugSessionUseCase) Execute(sessionID entity.SessionID) error {
+func (uc *DeleteDebugSessionUseCase) Execute(ctx context.Context, sessionID entity.SessionID) error {
 	if sessionID == "" {
 		return entity.ErrSessionNotFound
 	}
 
-	return uc.txManager.RunInTx(func(tx Tx) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return uc.repo.DeleteSession(tx, sessionID)
 	})
 }

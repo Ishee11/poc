@@ -26,7 +26,7 @@ func (h *SessionHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.getSessionUC.Execute(usecase.GetSessionQuery{
+	res, err := h.getSessionUC.Execute(r.Context(), usecase.GetSessionQuery{
 		SessionID: entity.SessionID(sessionID),
 	})
 	if err != nil {

@@ -44,7 +44,7 @@ func (h *SessionHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.finishSessionUC.Execute(command.FinishSessionCommand{
+	err := h.finishSessionUC.Execute(r.Context(), command.FinishSessionCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 	})

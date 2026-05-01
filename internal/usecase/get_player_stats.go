@@ -1,5 +1,7 @@
 package usecase
 
+import "context"
+
 import "github.com/ishee11/poc/internal/entity"
 
 type GetPlayerStatsResponse struct {
@@ -22,10 +24,10 @@ func NewGetPlayerStatsUseCase(
 	}
 }
 
-func (uc *GetPlayerStatsUseCase) Execute(q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {
+func (uc *GetPlayerStatsUseCase) Execute(ctx context.Context, q GetPlayerStatsQuery) (*GetPlayerStatsResponse, error) {
 	var result *GetPlayerStatsResponse
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.execute(tx, q)
 		return err

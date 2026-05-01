@@ -31,7 +31,7 @@ func (testTx) QueryRow(context.Context, string, ...any) pgx.Row {
 
 type fakeTxManager struct{}
 
-func (fakeTxManager) RunInTx(fn func(tx Tx) error) error {
+func (fakeTxManager) RunInTx(_ context.Context, fn func(tx Tx) error) error {
 	return fn(testTx{})
 }
 
@@ -84,6 +84,15 @@ func (r *fakeIdempotencyRepo) Save(_ Tx, requestID string) error {
 		return entity.ErrDuplicateRequest
 	}
 	r.seen[requestID] = true
+	return nil
+}
+
+type fakeOutboxRepo struct {
+	events []OutboxEvent
+}
+
+func (r *fakeOutboxRepo) Save(_ Tx, event OutboxEvent) error {
+	r.events = append(r.events, event)
 	return nil
 }
 
@@ -371,7 +380,7 @@ func TestStartSessionUseCase(t *testing.T) {
 		sequenceSessionIDGen{next: "s1"},
 	)
 
-	id, err := uc.Execute(command.StartSessionCommand{ChipRate: 2, BigBlind: 2, Currency: entity.CurrencyRUB})
+	id, err := uc.Execute(context.Background(), command.StartSessionCommand{ChipRate: 2, BigBlind: 2, Currency: entity.CurrencyRUB})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -382,10 +391,10 @@ func TestStartSessionUseCase(t *testing.T) {
 		t.Fatalf("session was not saved with chip rate")
 	}
 
-	if _, err := uc.Execute(command.StartSessionCommand{ChipRate: 0, BigBlind: 2, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
+	if _, err := uc.Execute(context.Background(), command.StartSessionCommand{ChipRate: 0, BigBlind: 2, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
 		t.Fatalf("expected invalid chips, got %v", err)
 	}
-	if _, err := uc.Execute(command.StartSessionCommand{ChipRate: 2, BigBlind: 0, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
+	if _, err := uc.Execute(context.Background(), command.StartSessionCommand{ChipRate: 2, BigBlind: 0, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
 		t.Fatalf("expected invalid chips, got %v", err)
 	}
 }
@@ -396,7 +405,7 @@ func TestCreatePlayerUseCase(t *testing.T) {
 	helper := newHelperForStore(store, &sequenceOperationIDGen{}, sequencePlayerIDGen{next: "p1"})
 	uc := NewCreatePlayerUseCase(helper, fakeTxManager{}, idem)
 
-	id, err := uc.Execute(command.CreatePlayerCommand{RequestID: "req1", Name: " Alice "})
+	id, err := uc.Execute(context.Background(), command.CreatePlayerCommand{RequestID: "req1", Name: " Alice "})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -404,7 +413,7 @@ func TestCreatePlayerUseCase(t *testing.T) {
 		t.Fatalf("player was not created with trimmed name")
 	}
 
-	duplicateID, err := uc.Execute(command.CreatePlayerCommand{RequestID: "req1", Name: "Bob"})
+	duplicateID, err := uc.Execute(context.Background(), command.CreatePlayerCommand{RequestID: "req1", Name: "Bob"})
 	if err != nil {
 		t.Fatalf("duplicate request should be idempotent, got %v", err)
 	}
@@ -412,7 +421,7 @@ func TestCreatePlayerUseCase(t *testing.T) {
 		t.Fatalf("duplicate request should not return a new id, got %s", duplicateID)
 	}
 
-	if _, err := uc.Execute(command.CreatePlayerCommand{RequestID: "req2", Name: " "}); !errors.Is(err, entity.ErrInvalidPlayerName) {
+	if _, err := uc.Execute(context.Background(), command.CreatePlayerCommand{RequestID: "req2", Name: " "}); !errors.Is(err, entity.ErrInvalidPlayerName) {
 		t.Fatalf("expected invalid player name, got %v", err)
 	}
 }
@@ -423,17 +432,21 @@ func TestBuyInUseCase(t *testing.T) {
 	addPlayer(t, store, "p1", "Alice")
 
 	helper := newHelperForStore(store, &sequenceOperationIDGen{next: "op1"}, sequencePlayerIDGen{})
-	uc := NewBuyInUseCase(helper, fakeTxManager{}, newFakeIdempotencyRepo())
+	outbox := &fakeOutboxRepo{}
+	uc := NewBuyInUseCase(helper, fakeTxManager{}, newFakeIdempotencyRepo(), outbox)
 
-	err := uc.Execute(command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
+	err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if store.sessions["s1"].TotalBuyIn() != 100 || len(store.ops) != 1 {
 		t.Fatalf("buy in did not update session and save operation")
 	}
+	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationCreated {
+		t.Fatalf("buy in did not save operation.created event")
+	}
 
-	err = uc.Execute(command.BuyInCommand{RequestID: "req2", SessionID: "s1", PlayerID: "missing", Chips: 100})
+	err = uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req2", SessionID: "s1", PlayerID: "missing", Chips: 100})
 	if !errors.Is(err, entity.ErrPlayerNotFound) {
 		t.Fatalf("expected player not found, got %v", err)
 	}
@@ -450,22 +463,27 @@ func TestCashOutUseCase(t *testing.T) {
 	store.saveOperation(t, buyInOp)
 
 	helper := newHelperForStore(store, &sequenceOperationIDGen{next: "op2"}, sequencePlayerIDGen{})
+	outbox := &fakeOutboxRepo{}
 	uc := NewCashOutUseCase(
 		helper,
 		fakeSessionRepo{store: store},
 		fakeProjectionRepo{store: store},
 		fakeTxManager{},
 		newFakeIdempotencyRepo(),
+		outbox,
 	)
 
-	if err := uc.Execute(command.CashOutCommand{RequestID: "req2", SessionID: "s1", PlayerID: "p1", Chips: 40}); err != nil {
+	if err := uc.Execute(context.Background(), command.CashOutCommand{RequestID: "req2", SessionID: "s1", PlayerID: "p1", Chips: 40}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if store.sessions["s1"].TotalCashOut() != 40 {
 		t.Fatalf("cash out did not update session")
 	}
+	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationCreated {
+		t.Fatalf("cash out did not save operation.created event")
+	}
 
-	err = uc.Execute(command.CashOutCommand{RequestID: "req3", SessionID: "s1", PlayerID: "p1", Chips: 1000})
+	err = uc.Execute(context.Background(), command.CashOutCommand{RequestID: "req3", SessionID: "s1", PlayerID: "p1", Chips: 1000})
 	if !errors.Is(err, entity.ErrInvalidCashOut) {
 		t.Fatalf("expected invalid cash out, got %v", err)
 	}
@@ -475,19 +493,24 @@ func TestFinishSessionUseCase(t *testing.T) {
 	t.Run("balanced session finishes", func(t *testing.T) {
 		store := newFakeStore()
 		addSession(t, store, "s1", entity.StatusActive, 100, 100)
+		outbox := &fakeOutboxRepo{}
 		uc := NewFinishSessionUseCase(
 			fakeProjectionRepo{store: store},
 			fakeSessionRepo{store: store},
 			fakeSessionRepo{store: store},
 			fakeTxManager{},
 			newFakeIdempotencyRepo(),
+			outbox,
 		)
 
-		if err := uc.Execute(command.FinishSessionCommand{RequestID: "req1", SessionID: "s1"}); err != nil {
+		if err := uc.Execute(context.Background(), command.FinishSessionCommand{RequestID: "req1", SessionID: "s1"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if store.sessions["s1"].Status() != entity.StatusFinished {
 			t.Fatal("session was not finished")
+		}
+		if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventSessionFinished {
+			t.Fatalf("finish session did not save session.finished event")
 		}
 	})
 
@@ -510,9 +533,10 @@ func TestFinishSessionUseCase(t *testing.T) {
 			fakeSessionRepo{store: store},
 			fakeTxManager{},
 			newFakeIdempotencyRepo(),
+			&fakeOutboxRepo{},
 		)
 
-		err = uc.Execute(command.FinishSessionCommand{RequestID: "req1", SessionID: "s1"})
+		err = uc.Execute(context.Background(), command.FinishSessionCommand{RequestID: "req1", SessionID: "s1"})
 		var balancedErr *entity.SessionNotBalancedError
 		if !errors.As(err, &balancedErr) {
 			t.Fatalf("expected SessionNotBalancedError, got %v", err)
@@ -533,6 +557,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 	}
 	store.saveOperation(t, target)
 
+	outbox := &fakeOutboxRepo{}
 	uc := NewReverseOperationUseCase(
 		fakeOperationRepo{store: store},
 		fakeOperationRepo{store: store},
@@ -542,16 +567,20 @@ func TestReverseOperationUseCase(t *testing.T) {
 		&sequenceOperationIDGen{next: "op2"},
 		newFakeIdempotencyRepo(),
 		fakeSessionRepo{store: store},
+		outbox,
 	)
 
-	if err := uc.Execute(command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"}); err != nil {
+	if err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if store.sessions["s1"].TotalChips() != 0 {
 		t.Fatalf("expected reversed buy in to clear table chips, got %d", store.sessions["s1"].TotalChips())
 	}
+	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationReversed {
+		t.Fatalf("reverse operation did not save operation.reversed event")
+	}
 
-	err = uc.Execute(command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
+	err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
 	if !errors.Is(err, entity.ErrOperationAlreadyReversed) {
 		t.Fatalf("expected operation already reversed, got %v", err)
 	}
@@ -578,7 +607,7 @@ func TestGetSessionPlayersUseCase(t *testing.T) {
 		fakeTxManager{},
 		fakeSessionRepo{store: store},
 	)
-	players, err := uc.Execute(GetSessionPlayersQuery{SessionID: "s1"})
+	players, err := uc.Execute(context.Background(), GetSessionPlayersQuery{SessionID: "s1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -615,7 +644,7 @@ func TestGetSessionPlayersUseCase_CashOutSettlesActivePlayer(t *testing.T) {
 		fakeTxManager{},
 		fakeSessionRepo{store: store},
 	)
-	players, err := uc.Execute(GetSessionPlayersQuery{SessionID: "s1"})
+	players, err := uc.Execute(context.Background(), GetSessionPlayersQuery{SessionID: "s1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

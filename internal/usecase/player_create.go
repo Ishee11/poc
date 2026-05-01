@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"strings"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -25,7 +26,7 @@ func NewCreatePlayerUseCase(
 	}
 }
 
-func (uc *CreatePlayerUseCase) Execute(cmd command.CreatePlayerCommand) (entity.PlayerID, error) {
+func (uc *CreatePlayerUseCase) Execute(ctx context.Context, cmd command.CreatePlayerCommand) (entity.PlayerID, error) {
 	name := strings.TrimSpace(cmd.Name)
 	if name == "" {
 		return "", entity.ErrInvalidPlayerName
@@ -33,7 +34,7 @@ func (uc *CreatePlayerUseCase) Execute(cmd command.CreatePlayerCommand) (entity.
 
 	var result entity.PlayerID
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			id, err := uc.execute(tx, name)
 			if err != nil {

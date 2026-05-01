@@ -21,7 +21,7 @@ jobs:
 
             echo "== Disk before deploy =="
             df -h
-            docker system df
+            docker system df || true
 
             echo "== Pull project =="
             if [ ! -d /app-dev/.git ]; then
@@ -32,6 +32,7 @@ jobs:
               git -C /app-dev clean -fd
             fi
             cd /app-dev
+
             test -f docker-compose.dev.yml
             test -f docker-compose.observability.yml
             test -f deploy/observability/prometheus/prometheus.yml
@@ -77,6 +78,7 @@ jobs:
             echo "== Check docker cache pressure =="
             available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
             min_available_kb=$((3 * 1024 * 1024))
+
             if [ "$available_kb" -lt "$min_available_kb" ]; then
               echo "Low disk space: ${available_kb}KB available. Pruning docker build cache."
               docker builder prune -af || true
@@ -88,14 +90,24 @@ jobs:
             docker compose -p poker-dev -f docker-compose.dev.yml up -d db
 
             echo "== Wait for dev postgres =="
+            ready=0
+
             for i in {1..20}; do
               if docker exec poker-db-dev pg_isready -U poker; then
                 echo "Dev postgres is ready"
+                ready=1
                 break
               fi
+
               echo "Waiting for dev postgres..."
               sleep 2
             done
+
+            if [ "$ready" != "1" ]; then
+              echo "Dev postgres is not ready"
+              docker logs poker-db-dev --tail=100 || true
+              exit 1
+            fi
 
             echo "== Copy prod database to dev =="
             docker exec poker-db-dev psql -U poker -d poker -v ON_ERROR_STOP=1 -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
@@ -117,13 +129,18 @@ jobs:
 
             echo "== Check dev app logs =="
             sleep 3
-            docker logs poker-app-dev --tail=50
+            docker logs poker-app-dev --tail=50 || true
+
+            echo "== Check observability containers =="
+            docker ps --filter name=poker-prometheus
+            docker ps --filter name=poker-grafana
+            docker ps --filter name=poker-alertmanager
 
             echo "== Check observability containers =="
             docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml ps
 
             echo "== Disk after deploy =="
             df -h
-            docker system df
+            docker system df || true
 
             echo "== Done =="

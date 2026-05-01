@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase/command"
 )
@@ -9,22 +10,25 @@ type BuyInUseCase struct {
 	helper          *Helper
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
+	outboxWriter    OutboxWriter
 }
 
 func NewBuyInUseCase(
 	helper *Helper,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
+	outboxWriter OutboxWriter,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
 		helper:          helper,
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
+		outboxWriter:    outboxWriter,
 	}
 }
 
-func (uc *BuyInUseCase) Execute(cmd command.BuyInCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *BuyInUseCase) Execute(ctx context.Context, cmd command.BuyInCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
 			return uc.execute(tx, cmd)
 		})
@@ -77,5 +81,14 @@ func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
 		return err
 	}
 
-	return uc.helper.sessionWriter.Save(tx, session)
+	if err := uc.helper.sessionWriter.Save(tx, session); err != nil {
+		return err
+	}
+
+	event, err := NewOperationCreatedOutboxEvent(op)
+	if err != nil {
+		return err
+	}
+
+	return uc.outboxWriter.Save(tx, event)
 }

@@ -29,7 +29,7 @@ func (h *AccountHandler) Account(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	players, err := h.userPlayerLinksUC.ListUserPlayers(principal.UserID)
+	players, err := h.userPlayerLinksUC.ListUserPlayers(r.Context(), principal.UserID)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -77,7 +77,7 @@ func (h *AccountHandler) ListPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	players, err := h.userPlayerLinksUC.ListUserPlayers(principal.UserID)
+	players, err := h.userPlayerLinksUC.ListUserPlayers(r.Context(), principal.UserID)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -107,7 +107,7 @@ func (h *AccountHandler) LinkPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.userPlayerLinksUC.LinkPlayer(usecase.LinkUserPlayerCommand{
+	if err := h.userPlayerLinksUC.LinkPlayer(r.Context(), usecase.LinkUserPlayerCommand{
 		UserID:   principal.UserID,
 		PlayerID: entity.PlayerID(req.PlayerID),
 	}); err != nil {
@@ -131,7 +131,7 @@ func (h *AccountHandler) UnlinkPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.userPlayerLinksUC.UnlinkPlayer(usecase.LinkUserPlayerCommand{
+	if err := h.userPlayerLinksUC.UnlinkPlayer(r.Context(), usecase.LinkUserPlayerCommand{
 		UserID:   principal.UserID,
 		PlayerID: entity.PlayerID(playerID),
 	}); err != nil {
@@ -191,7 +191,7 @@ func (h *AccountHandler) writeAvailablePlayers(w http.ResponseWriter, r *http.Re
 		offset = 0
 	}
 
-	players, err := h.userPlayerLinksUC.ListUnlinkedPlayers(usecase.ListUnlinkedPlayersQuery{
+	players, err := h.userPlayerLinksUC.ListUnlinkedPlayers(r.Context(), usecase.ListUnlinkedPlayersQuery{
 		Limit:  limit,
 		Offset: offset,
 	})
@@ -211,7 +211,7 @@ func (h *AccountHandler) currentPrincipal(r *http.Request) (*usecase.AuthPrincip
 		return nil, entity.ErrUnauthorized
 	}
 
-	return h.authUC.CurrentUser(cookie.Value)
+	return h.authUC.CurrentUser(r.Context(), cookie.Value)
 }
 
 func playerResponses(players []usecase.PlayerDTO) []PlayerDTO {

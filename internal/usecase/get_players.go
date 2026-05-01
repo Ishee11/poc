@@ -1,5 +1,7 @@
 package usecase
 
+import "context"
+
 type GetPlayersUseCase struct {
 	playerRepo PlayerRepository
 	txManager  TxManager
@@ -15,10 +17,10 @@ func NewGetPlayersUseCase(
 	}
 }
 
-func (uc *GetPlayersUseCase) Execute(q GetPlayersQuery) ([]PlayerDTO, error) {
+func (uc *GetPlayersUseCase) Execute(ctx context.Context, q GetPlayersQuery) ([]PlayerDTO, error) {
 	var result []PlayerDTO
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.execute(tx, q)
 		return err

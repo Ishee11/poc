@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"context"
+
 	"github.com/ishee11/poc/internal/entity"
 )
 
@@ -32,8 +34,8 @@ func NewUserPlayerLinksUseCase(
 	}
 }
 
-func (uc *UserPlayerLinksUseCase) LinkPlayer(cmd LinkUserPlayerCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *UserPlayerLinksUseCase) LinkPlayer(ctx context.Context, cmd LinkUserPlayerCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		exists, err := uc.playerRepo.Exists(tx, cmd.PlayerID)
 		if err != nil {
 			return err
@@ -61,8 +63,8 @@ func (uc *UserPlayerLinksUseCase) LinkPlayer(cmd LinkUserPlayerCommand) error {
 	})
 }
 
-func (uc *UserPlayerLinksUseCase) UnlinkPlayer(cmd LinkUserPlayerCommand) error {
-	return uc.txManager.RunInTx(func(tx Tx) error {
+func (uc *UserPlayerLinksUseCase) UnlinkPlayer(ctx context.Context, cmd LinkUserPlayerCommand) error {
+	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		linkedToUser, err := uc.linkRepo.IsPlayerLinkedToUser(tx, cmd.UserID, cmd.PlayerID)
 		if err != nil {
 			return err
@@ -75,10 +77,10 @@ func (uc *UserPlayerLinksUseCase) UnlinkPlayer(cmd LinkUserPlayerCommand) error 
 	})
 }
 
-func (uc *UserPlayerLinksUseCase) ListUserPlayers(userID entity.AuthUserID) ([]PlayerDTO, error) {
+func (uc *UserPlayerLinksUseCase) ListUserPlayers(ctx context.Context, userID entity.AuthUserID) ([]PlayerDTO, error) {
 	var result []PlayerDTO
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.linkRepo.ListUserPlayers(tx, userID)
 		return err
@@ -90,7 +92,7 @@ func (uc *UserPlayerLinksUseCase) ListUserPlayers(userID entity.AuthUserID) ([]P
 	return result, nil
 }
 
-func (uc *UserPlayerLinksUseCase) ListUnlinkedPlayers(q ListUnlinkedPlayersQuery) ([]PlayerDTO, error) {
+func (uc *UserPlayerLinksUseCase) ListUnlinkedPlayers(ctx context.Context, q ListUnlinkedPlayersQuery) ([]PlayerDTO, error) {
 	limit := q.Limit
 	if limit <= 0 {
 		limit = 100
@@ -105,7 +107,7 @@ func (uc *UserPlayerLinksUseCase) ListUnlinkedPlayers(q ListUnlinkedPlayersQuery
 	}
 
 	var result []PlayerDTO
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.linkRepo.ListUnlinkedPlayers(tx, limit, offset)
 		return err

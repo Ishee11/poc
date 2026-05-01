@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -37,10 +38,10 @@ func NewGetSessionUseCase(
 	}
 }
 
-func (uc *GetSessionUseCase) Execute(q GetSessionQuery) (*GetSessionResponse, error) {
+func (uc *GetSessionUseCase) Execute(ctx context.Context, q GetSessionQuery) (*GetSessionResponse, error) {
 	var result *GetSessionResponse
 
-	err := uc.txManager.RunInTx(func(tx Tx) error {
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.execute(tx, q)
 		return err
