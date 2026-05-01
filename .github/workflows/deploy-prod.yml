@@ -22,7 +22,7 @@ jobs:
 
             echo "== Disk before deploy =="
             df -h
-            docker system df
+            docker system df || true
 
             echo "== Pull project =="
             if [ ! -d /app/.git ]; then
@@ -115,6 +115,6 @@ jobs:
 
             echo "== Disk after deploy =="
             df -h
-            docker system df
+            docker system df || true
 
             echo "== Done =="
