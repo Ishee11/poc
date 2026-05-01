@@ -1,6 +1,21 @@
-basePath: /
 definitions:
-  github_com_ishee11_poc_internal_entity.OperationType:
+  entity.AuthRole:
+    enum:
+    - admin
+    - user
+    type: string
+    x-enum-varnames:
+    - AuthRoleAdmin
+    - AuthRoleUser
+  entity.Currency:
+    enum:
+    - RUB
+    - USD
+    type: string
+    x-enum-varnames:
+    - CurrencyRUB
+    - CurrencyUSD
+  entity.OperationType:
     enum:
     - buy_in
     - cash_out
@@ -10,7 +25,7 @@ definitions:
     - OperationBuyIn
     - OperationCashOut
     - OperationReversal
-  github_com_ishee11_poc_internal_entity.Status:
+  entity.Status:
     enum:
     - active
     - finished
@@ -18,97 +33,32 @@ definitions:
     x-enum-varnames:
     - StatusActive
     - StatusFinished
-  github_com_ishee11_poc_internal_usecase.GetSessionResponse:
+  http.AccountPlayersResponse:
     properties:
-      chip_rate:
-        type: integer
-      created_at:
-        type: string
-      session_id:
-        type: string
-      status:
-        $ref: '#/definitions/github_com_ishee11_poc_internal_entity.Status'
-      total_buy_in:
-        type: integer
-      total_cash_out:
-        type: integer
-      total_chips:
-        type: integer
+      players:
+        items:
+          $ref: '#/definitions/http.PlayerDTO'
+        type: array
     type: object
-  github_com_ishee11_poc_internal_usecase.OperationDTO:
+  http.AccountResponse:
     properties:
-      chips:
-        type: integer
-      created_at:
+      players:
+        items:
+          $ref: '#/definitions/http.PlayerDTO'
+        type: array
+      user:
+        $ref: '#/definitions/http.AuthUserResponse'
+    type: object
+  http.AuthUserResponse:
+    properties:
+      email:
         type: string
       id:
         type: string
-      player_id:
-        type: string
-      reference_id:
-        type: string
-      type:
-        $ref: '#/definitions/github_com_ishee11_poc_internal_entity.OperationType'
+      role:
+        $ref: '#/definitions/entity.AuthRole'
     type: object
-  github_com_ishee11_poc_internal_usecase.PlayerDTO:
-    properties:
-      name:
-        type: string
-      player_id:
-        type: string
-    type: object
-  github_com_ishee11_poc_internal_usecase.PlayerOverallStat:
-    properties:
-      last_activity_at:
-        type: string
-      player_id:
-        type: string
-      profit_chips:
-        type: integer
-      profit_money:
-        type: integer
-      sessions_count:
-        type: integer
-      total_buy_in:
-        type: integer
-      total_cash_out:
-        type: integer
-    type: object
-  github_com_ishee11_poc_internal_usecase.PlayerStat:
-    properties:
-      last_activity_at:
-        type: string
-      player_id:
-        type: string
-      profit_chips:
-        type: integer
-      profit_money:
-        type: integer
-      sessions_count:
-        type: integer
-      total_buy_in:
-        type: integer
-      total_cash_out:
-        type: integer
-    type: object
-  github_com_ishee11_poc_internal_usecase.SessionStat:
-    properties:
-      chip_rate:
-        type: integer
-      created_at:
-        type: string
-      player_count:
-        type: integer
-      session_id:
-        type: string
-      status:
-        $ref: '#/definitions/github_com_ishee11_poc_internal_entity.Status'
-      total_buy_in:
-        type: integer
-      total_cash_out:
-        type: integer
-    type: object
-  internal_controller_http.BuyInRequest:
+  http.BuyInRequest:
     properties:
       chips:
         example: 1000
@@ -123,7 +73,7 @@ definitions:
         example: session-1
         type: string
     type: object
-  internal_controller_http.CashOutRequest:
+  http.CashOutRequest:
     properties:
       chips:
         example: 500
@@ -138,7 +88,7 @@ definitions:
         example: session-1
         type: string
     type: object
-  internal_controller_http.CreatePlayerRequest:
+  http.CreatePlayerRequest:
     properties:
       name:
         example: Alice
@@ -147,26 +97,61 @@ definitions:
         example: req-123
         type: string
     type: object
-  internal_controller_http.CreatePlayerResponse:
+  http.CreatePlayerResponse:
     properties:
       player_id:
         example: player-123
         type: string
     type: object
-  internal_controller_http.ErrorResponse:
+  http.ErrorResponse:
     properties:
       details: {}
       error:
         type: string
+      request_id:
+        type: string
     type: object
-  internal_controller_http.FinishSessionRequest:
+  http.FinishSessionRequest:
     properties:
       request_id:
         type: string
       session_id:
         type: string
     type: object
-  internal_controller_http.ReverseOperationRequest:
+  http.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  http.LoginResponse:
+    properties:
+      expires_at:
+        type: string
+      user:
+        $ref: '#/definitions/http.AuthUserResponse'
+    type: object
+  http.MeResponse:
+    properties:
+      user:
+        $ref: '#/definitions/http.AuthUserResponse'
+    type: object
+  http.PlayerDTO:
+    properties:
+      name:
+        type: string
+      player_id:
+        type: string
+    type: object
+  http.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  http.ReverseOperationRequest:
     properties:
       request_id:
         example: req-123
@@ -175,17 +160,389 @@ definitions:
         example: op-456
         type: string
     type: object
-  internal_controller_http.StartSessionRequest:
+  http.StartSessionRequest:
     properties:
+      big_blind:
+        type: integer
       chip_rate:
+        type: integer
+      currency:
+        type: string
+    type: object
+  usecase.GetSessionResponse:
+    properties:
+      big_blind:
+        type: integer
+      chip_rate:
+        type: integer
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/entity.Currency'
+      finished_at:
+        type: string
+      session_id:
+        type: string
+      status:
+        $ref: '#/definitions/entity.Status'
+      total_buy_in:
+        type: integer
+      total_cash_out:
+        type: integer
+      total_chips:
+        type: integer
+    type: object
+  usecase.OperationDTO:
+    properties:
+      chips:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      player_id:
+        type: string
+      reference_id:
+        type: string
+      type:
+        $ref: '#/definitions/entity.OperationType'
+    type: object
+  usecase.PlayerCurrencyStat:
+    properties:
+      avg_profit_per_session:
+        type: number
+      currency:
+        $ref: '#/definitions/entity.Currency'
+      profit_money:
+        type: integer
+      roi_percent:
+        type: number
+      sessions_count:
+        type: integer
+      total_buy_in_money:
+        type: integer
+      total_cash_out_money:
+        type: integer
+    type: object
+  usecase.PlayerDTO:
+    properties:
+      name:
+        type: string
+      player_id:
+        type: string
+    type: object
+  usecase.PlayerOverallStat:
+    properties:
+      avg_buy_in_per_session:
+        type: number
+      avg_profit_per_session:
+        type: number
+      last_activity_at:
+        type: string
+      money_by_currency:
+        items:
+          $ref: '#/definitions/usecase.PlayerCurrencyStat'
+        type: array
+      player_id:
+        type: string
+      player_name:
+        type: string
+      profit_chips:
+        type: integer
+      profit_money:
+        type: integer
+      rank:
+        $ref: '#/definitions/usecase.PlayerRank'
+      roi_percent:
+        type: number
+      sessions_count:
+        type: integer
+      total_buy_in:
+        type: integer
+      total_buy_in_money:
+        type: integer
+      total_cash_out:
+        type: integer
+      total_cash_out_money:
+        type: integer
+    type: object
+  usecase.PlayerRank:
+    properties:
+      code:
+        type: string
+      label:
+        type: string
+    type: object
+  usecase.PlayerStat:
+    properties:
+      last_activity_at:
+        type: string
+      player_id:
+        type: string
+      player_name:
+        type: string
+      profit_chips:
+        type: integer
+      profit_money:
+        type: integer
+      rank:
+        $ref: '#/definitions/usecase.PlayerRank'
+      sessions_count:
+        type: integer
+      total_buy_in:
+        type: integer
+      total_cash_out:
+        type: integer
+    type: object
+  usecase.SessionStat:
+    properties:
+      big_blind:
+        type: integer
+      chip_rate:
+        type: integer
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/entity.Currency'
+      finished_at:
+        type: string
+      player_count:
+        type: integer
+      session_id:
+        type: string
+      status:
+        $ref: '#/definitions/entity.Status'
+      total_buy_in:
+        type: integer
+      total_cash_out:
         type: integer
     type: object
 info:
   contact: {}
-  description: Poker sessions service
-  title: Poker API
-  version: "1.0"
 paths:
+  /account:
+    get:
+      description: Returns the authenticated user and linked players.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AccountResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Current account
+      tags:
+      - account
+  /account/players:
+    delete:
+      consumes:
+      - application/json
+      description: Links, unlinks, or lists players linked to the current user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AccountPlayersResponse'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Linked account players
+      tags:
+      - account
+    get:
+      consumes:
+      - application/json
+      description: Links, unlinks, or lists players linked to the current user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AccountPlayersResponse'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Linked account players
+      tags:
+      - account
+    post:
+      consumes:
+      - application/json
+      description: Links, unlinks, or lists players linked to the current user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AccountPlayersResponse'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Linked account players
+      tags:
+      - account
+  /account/players/available:
+    get:
+      description: Returns players that are not linked to any user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AccountPlayersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Unlinked players
+      tags:
+      - account
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a system user and sets an HttpOnly session cookie.
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Revokes the current auth session and clears the session cookie.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Logout
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Returns the authenticated system user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.MeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Current user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a regular user and sets an HttpOnly session cookie.
+      parameters:
+      - description: Register request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Register
+      tags:
+      - auth
   /operations:
     get:
       consumes:
@@ -212,16 +569,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.OperationDTO'
+              $ref: '#/definitions/usecase.OperationDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get session operations
       tags:
       - operations
@@ -236,7 +593,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_http.BuyInRequest'
+          $ref: '#/definitions/http.BuyInRequest'
       produces:
       - application/json
       responses:
@@ -245,15 +602,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Buy-in
       tags:
       - operations
@@ -268,7 +625,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_http.CashOutRequest'
+          $ref: '#/definitions/http.CashOutRequest'
       produces:
       - application/json
       responses:
@@ -277,15 +634,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Cash out
       tags:
       - operations
@@ -300,7 +657,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_http.ReverseOperationRequest'
+          $ref: '#/definitions/http.ReverseOperationRequest'
       produces:
       - application/json
       responses:
@@ -309,15 +666,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Reverse operation
       tags:
       - operations
@@ -332,23 +689,36 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_http.CreatePlayerRequest'
+          $ref: '#/definitions/http.CreatePlayerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_controller_http.CreatePlayerResponse'
+            $ref: '#/definitions/http.CreatePlayerResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Create player
+      tags:
+      - players
+  /players/unlinked:
+    get:
+      description: Returns players that are not linked to any user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AccountPlayersResponse'
+      summary: Unlinked players
       tags:
       - players
   /sessions:
@@ -368,15 +738,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.GetSessionResponse'
+            $ref: '#/definitions/usecase.GetSessionResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get session
       tags:
       - sessions
@@ -391,7 +761,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_http.FinishSessionRequest'
+          $ref: '#/definitions/http.FinishSessionRequest'
       produces:
       - application/json
       responses:
@@ -400,19 +770,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Finish session
       tags:
       - sessions
@@ -434,16 +804,16 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.PlayerDTO'
+              $ref: '#/definitions/usecase.PlayerDTO'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get session players
       tags:
       - sessions
@@ -458,7 +828,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_http.StartSessionRequest'
+          $ref: '#/definitions/http.StartSessionRequest'
       produces:
       - application/json
       responses:
@@ -470,15 +840,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Start session
       tags:
       - sessions
@@ -507,15 +877,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.PlayerOverallStat'
+            $ref: '#/definitions/usecase.PlayerOverallStat'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get player stats
       tags:
       - stats
@@ -544,12 +914,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.PlayerStat'
+              $ref: '#/definitions/usecase.PlayerStat'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get players stats
       tags:
       - stats
@@ -578,12 +948,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_ishee11_poc_internal_usecase.SessionStat'
+              $ref: '#/definitions/usecase.SessionStat'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller_http.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get sessions stats
       tags:
       - stats

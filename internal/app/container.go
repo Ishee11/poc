@@ -151,6 +151,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	getSessionPlayersUC := usecase.NewGetSessionPlayersUseCase(
 		projectionRepo,
 		playerRepo,
+		statsRepo,
 		txManager,
 		sessionRepo,
 	)

@@ -12,6 +12,7 @@ type PlayerDTO struct {
 type SessionPlayerDTO struct {
 	PlayerID entity.PlayerID `json:"player_id"`
 	Name     string          `json:"name"`
+	Rank     PlayerRank      `json:"rank"`
 
 	BuyIn       int64 `json:"buy_in"`
 	CashOut     int64 `json:"cash_out"`
@@ -48,6 +49,12 @@ type PlayerStat struct {
 	ProfitChips    int64           `json:"profit_chips"`
 	ProfitMoney    int64           `json:"profit_money"`
 	LastActivityAt *string         `json:"last_activity_at"`
+	Rank           PlayerRank      `json:"rank"`
+}
+
+type PlayerRank struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
 }
 
 type SessionStat struct {
@@ -77,6 +84,7 @@ type PlayerOverallStat struct {
 	ROIPercent          float64              `json:"roi_percent"`
 	AvgBuyInPerSession  float64              `json:"avg_buy_in_per_session"`
 	LastActivityAt      *string              `json:"last_activity_at"`
+	Rank                PlayerRank           `json:"rank"`
 	MoneyByCurrency     []PlayerCurrencyStat `json:"money_by_currency"`
 }
 

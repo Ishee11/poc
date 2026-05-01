@@ -35,6 +35,26 @@ func (fakeTxManager) RunInTx(_ context.Context, fn func(tx Tx) error) error {
 	return fn(testTx{})
 }
 
+type fakeStatsRepo struct {
+	players []PlayerStat
+}
+
+func (r fakeStatsRepo) ListSessions(_ Tx, _ SessionStatsFilter) ([]SessionStat, error) {
+	return nil, nil
+}
+
+func (r fakeStatsRepo) ListPlayers(_ Tx, _ PlayerStatsFilter) ([]PlayerStat, error) {
+	return r.players, nil
+}
+
+func (r fakeStatsRepo) GetPlayerOverall(_ Tx, _ entity.PlayerID, _ PlayerStatsFilter) (*PlayerOverallStat, error) {
+	return nil, nil
+}
+
+func (r fakeStatsRepo) ListPlayerSessions(_ Tx, _ entity.PlayerID, _ PlayerStatsFilter) ([]PlayerSessionStat, error) {
+	return nil, nil
+}
+
 type sequenceSessionIDGen struct{ next entity.SessionID }
 
 func (g sequenceSessionIDGen) New() entity.SessionID {
@@ -604,6 +624,7 @@ func TestGetSessionPlayersUseCase(t *testing.T) {
 	uc := NewGetSessionPlayersUseCase(
 		fakeProjectionRepo{store: store},
 		fakePlayerRepo{store: store},
+		fakeStatsRepo{players: []PlayerStat{{PlayerID: "p1", SessionsCount: 3, ProfitMoney: -30}}},
 		fakeTxManager{},
 		fakeSessionRepo{store: store},
 	)
@@ -641,6 +662,7 @@ func TestGetSessionPlayersUseCase_CashOutSettlesActivePlayer(t *testing.T) {
 	uc := NewGetSessionPlayersUseCase(
 		fakeProjectionRepo{store: store},
 		fakePlayerRepo{store: store},
+		fakeStatsRepo{players: []PlayerStat{{PlayerID: "p1", SessionsCount: 3, ProfitMoney: -30}}},
 		fakeTxManager{},
 		fakeSessionRepo{store: store},
 	)

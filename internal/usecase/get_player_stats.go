@@ -63,9 +63,25 @@ func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlay
 	if player == nil {
 		player = &PlayerOverallStat{PlayerID: q.PlayerID}
 	}
+	player.Rank = uc.playerRank(tx, q)
 
 	return &GetPlayerStatsResponse{
 		Player:   *player,
 		Sessions: sessions,
 	}, nil
+}
+
+func (uc *GetPlayerStatsUseCase) playerRank(tx Tx, q GetPlayerStatsQuery) PlayerRank {
+	allPlayers, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{Limit: 10000})
+	if err != nil {
+		return PlayerRank{}
+	}
+
+	if rank := playerRanksByID(allPlayers)[q.PlayerID]; rank.Code != "" {
+		return rank
+	}
+	return PlayerRank{
+		Code:  PlayerRankNewcomer,
+		Label: playerRankLabels[PlayerRankNewcomer],
+	}
 }
