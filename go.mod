@@ -21,7 +21,7 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/prometheus/client_golang v1.22.0
 	github.com/segmentio/kafka-go v0.4.49
 	github.com/swaggo/http-swagger/v2 v2.0.2
