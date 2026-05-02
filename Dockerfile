@@ -19,10 +19,11 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -o app ./cmd/app/main.go
 
 # ========= RUNTIME =========
-FROM gcr.io/distroless/base-debian12
+FROM scratch
 
 WORKDIR /app
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /app/app .
 
 EXPOSE 8080

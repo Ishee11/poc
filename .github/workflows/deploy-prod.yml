@@ -80,6 +80,17 @@ jobs:
               echo "Keeping docker build cache: ${available_kb}KB available."
             fi
 
+            echo "== Pre-pull build base image =="
+            if ! docker image inspect golang:1.25.0-alpine >/dev/null 2>&1; then
+              for i in 1 2 3 4 5; do
+                if docker pull golang:1.25.0-alpine; then
+                  break
+                fi
+                echo "Retrying build base pull..."
+                sleep 5
+              done
+            fi
+
             echo "== Build & start prod containers =="
             docker compose --env-file .env.app -f docker-compose.yml up -d --build --force-recreate
 
