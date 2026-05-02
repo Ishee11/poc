@@ -430,6 +430,23 @@
                     </div>
                 </section>
             </main>
+
+            <footer class="admin-login-footer">
+                <details class="admin-login-disclosure" id="admin-login-disclosure">
+                    <summary data-i18n="adminLogin.summary">Admin</summary>
+                    <section class="admin-login-panel" aria-label="Admin login" data-i18n-aria-label="adminLogin.label">
+                        <form id="admin-login-form" class="admin-login-form" onsubmit="return false;">
+                            <input id="admin-login-email" type="email" autocomplete="username" placeholder="Email" data-i18n-placeholder="auth.email" />
+                            <input id="admin-login-password" type="password" autocomplete="current-password" placeholder="Password" data-i18n-placeholder="auth.password" />
+                            <button type="submit" data-i18n="auth.login">Login</button>
+                        </form>
+                        <div id="admin-login-user-panel" class="admin-login-user-panel" hidden>
+                            <span id="admin-login-user-name">-</span>
+                            <button type="button" class="secondary" id="admin-login-logout-btn" data-i18n="auth.logout">Logout</button>
+                        </div>
+                    </section>
+                </details>
+            </footer>
         </div>
 
         <div id="modal-root" class="modal-root" hidden></div>

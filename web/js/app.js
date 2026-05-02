@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
   applyUiFeatureFlags();
   initPlayersSort();
+  initAdminLoginFooter();
   if (state.authUiEnabled) {
     initAuth();
     initAccountPanel();
@@ -65,7 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadCurrentUser();
     await loadGuestPlayers();
   } else {
-    syncDebugMode();
+    await loadCurrentAdminUser();
   }
   await Promise.all([loadSessions(), loadPlayersOverview()]);
   await openInitialRoute();
@@ -143,6 +144,79 @@ function applyUiFeatureFlags() {
   document.body.classList.toggle("auth-ui-disabled", !state.authUiEnabled);
 }
 
+function initAdminLoginFooter() {
+  const form = document.getElementById("admin-login-form");
+  const logoutButton = document.getElementById("admin-login-logout-btn");
+
+  if (form) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById("admin-login-email")?.value?.trim() || "";
+      const password = document.getElementById("admin-login-password")?.value || "";
+      if (!email || !password) {
+        showNotice(t("notice.authCredentialsRequired"), "error");
+        return;
+      }
+
+      const res = await login({ email, password });
+      if (!res.ok || !res.body?.user) {
+        showNotice(describeError(res, t("error.loginFailed")), "error");
+        return;
+      }
+
+      if (res.body.user.role !== "admin") {
+        await logout();
+        state.authUser = null;
+        state.authChecked = true;
+        syncDebugMode();
+        renderAdminLoginFooter();
+        showNotice(t("error.adminRequired"), "error");
+        return;
+      }
+
+      state.authUser = res.body.user;
+      state.authChecked = true;
+      state.authLoginOpen = false;
+      form.reset();
+      renderAuthPanel();
+      renderAdminLoginFooter();
+      syncDebugMode();
+      if (state.authUiEnabled) await loadAccount();
+      showNotice(t("notice.loginSuccess"), "success");
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
+    });
+  }
+
+  if (logoutButton) {
+    logoutButton.addEventListener("click", async () => {
+      const res = await logout();
+      if (!res.ok && res.status !== 401) {
+        showNotice(describeError(res, t("error.logoutFailed")), "error");
+        return;
+      }
+
+      state.authUser = null;
+      state.authChecked = true;
+      state.authLoginOpen = false;
+      clearAccount();
+      renderAuthPanel();
+      renderAdminLoginFooter();
+      syncDebugMode();
+      showNotice(t("notice.logoutSuccess"), "success");
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
+    });
+  }
+}
+
+async function loadCurrentAdminUser() {
+  const res = await getCurrentUser();
+  state.authChecked = true;
+  state.authUser = res.ok && res.body?.user ? res.body.user : null;
+  renderAdminLoginFooter();
+  syncDebugMode();
+}
+
 function initAuth() {
   const showLoginButton = document.getElementById("auth-show-login-btn");
   const form = document.getElementById("auth-login-form");
@@ -180,6 +254,7 @@ function initAuth() {
       state.authLoginOpen = false;
       form.reset();
       renderAuthPanel();
+      renderAdminLoginFooter();
       syncDebugMode();
       await loadAccount();
       showNotice(t("notice.loginSuccess"), "success");
@@ -200,6 +275,7 @@ function initAuth() {
       state.authLoginOpen = false;
       clearAccount();
       renderAuthPanel();
+      renderAdminLoginFooter();
       syncDebugMode();
       await loadGuestPlayers();
       if (window.location.pathname === "/account") {
@@ -237,6 +313,7 @@ function initAuth() {
       state.authLoginOpen = false;
       form?.reset();
       renderAuthPanel();
+      renderAdminLoginFooter();
       syncDebugMode();
       await loadAccount();
       showNotice(t("notice.registrationSuccess"), "success");
@@ -250,6 +327,7 @@ async function loadCurrentUser() {
   state.authChecked = true;
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAuthPanel();
+  renderAdminLoginFooter();
   syncDebugMode();
   if (state.authUser) {
     await loadAccount();
@@ -284,6 +362,24 @@ function renderAuthPanel() {
     userName.textContent = `${user.email} · ${user.role}`;
   } else {
     userName.textContent = "-";
+  }
+}
+
+function renderAdminLoginFooter() {
+  const form = document.getElementById("admin-login-form");
+  const userPanel = document.getElementById("admin-login-user-panel");
+  const userName = document.getElementById("admin-login-user-name");
+  const disclosure = document.getElementById("admin-login-disclosure");
+
+  if (!form || !userPanel || !userName) return;
+
+  const user = state.authUser?.role === "admin" ? state.authUser : null;
+  form.hidden = Boolean(user);
+  userPanel.hidden = !user;
+  userName.textContent = user ? `${user.email} · ${user.role}` : "-";
+
+  if (disclosure && user) {
+    disclosure.open = false;
   }
 }
 
