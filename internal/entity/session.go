@@ -105,6 +105,42 @@ func (s *Session) CashOut(chips int64) error {
 	return nil
 }
 
+func (s *Session) ReverseBuyIn(chips int64) error {
+	if s.status != StatusActive {
+		return ErrSessionNotActive
+	}
+
+	if chips <= 0 {
+		return ErrInvalidChips
+	}
+
+	if chips > s.totalBuyInCache {
+		return ErrInvalidOperation
+	}
+
+	s.totalBuyInCache -= chips
+
+	return nil
+}
+
+func (s *Session) ReverseCashOut(chips int64) error {
+	if s.status != StatusActive {
+		return ErrSessionNotActive
+	}
+
+	if chips <= 0 {
+		return ErrInvalidChips
+	}
+
+	if chips > s.totalCashOutCache {
+		return ErrInvalidOperation
+	}
+
+	s.totalCashOutCache -= chips
+
+	return nil
+}
+
 func (s *Session) Finish(finishedAt time.Time) error {
 	if s.status != StatusActive {
 		return ErrSessionNotActive
