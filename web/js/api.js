@@ -330,6 +330,10 @@ export function resetBlindClock() {
   return apiPost("/blinds-clock/reset");
 }
 
+export function resetBlindClockToDefault() {
+  return apiPost("/blinds-clock/reset-default");
+}
+
 export function previousBlindClockLevel() {
   return apiPost("/blinds-clock/previous");
 }
