@@ -113,14 +113,26 @@ jobs:
             docker logs poker-app --tail=50
 
             echo "== Wait for prod app health =="
+            healthy=0
             for i in {1..20}; do
               if curl -fsS http://127.0.0.1:8080/health >/dev/null; then
                 echo "Prod app is healthy"
+                healthy=1
                 break
               fi
               echo "Waiting for prod app health..."
               sleep 3
             done
+
+            if [ "$healthy" != "1" ]; then
+              echo "Prod app is not healthy"
+              docker logs poker-app --tail=100 || true
+              exit 1
+            fi
+
+            echo "== Docker cleanup =="
+            docker image prune -af --filter "until=24h" || true
+            docker builder prune -af --filter "until=24h" || true
 
             echo "== Disk after deploy =="
             df -h
