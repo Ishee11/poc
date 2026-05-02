@@ -34,6 +34,10 @@ func (h *BlindClockHandler) Reset(w http.ResponseWriter, r *http.Request) {
 	h.writeMutation(w, r, h.service.Reset)
 }
 
+func (h *BlindClockHandler) ResetToDefault(w http.ResponseWriter, r *http.Request) {
+	h.writeMutation(w, r, h.service.ResetToDefault)
+}
+
 func (h *BlindClockHandler) PreviousLevel(w http.ResponseWriter, r *http.Request) {
 	h.writeMutation(w, r, h.service.PreviousLevel)
 }
