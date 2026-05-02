@@ -193,6 +193,104 @@ func TestSession_CashOut_Multiple(t *testing.T) {
 	}
 }
 
+func TestSession_ReverseBuyIn(t *testing.T) {
+	tt := []struct {
+		name       string
+		chips      int64
+		totalBuyIn int64
+		wantErr    bool
+		status     Status
+	}{
+		{"valid reverse buyin", 400, 1000, false, StatusActive},
+		{"zero chips", 0, 1000, true, StatusActive},
+		{"negative chips", -100, 1000, true, StatusActive},
+		{"more than total buyin", 1200, 1000, true, StatusActive},
+		{"invalid status", 400, 1000, true, StatusFinished},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newSession(t)
+			s.status = tc.status
+			s.totalBuyInCache = tc.totalBuyIn
+
+			before := s.TotalBuyIn()
+
+			err := s.ReverseBuyIn(tc.chips)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if s.TotalBuyIn() != before {
+					t.Fatal("state changed on error")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if s.TotalBuyIn() != before-tc.chips {
+				t.Fatalf("expected buyin %d, got %d", before-tc.chips, s.TotalBuyIn())
+			}
+		})
+	}
+}
+
+func TestSession_ReverseCashOut(t *testing.T) {
+	tt := []struct {
+		name         string
+		chips        int64
+		totalBuyIn   int64
+		totalCashOut int64
+		wantErr      bool
+		status       Status
+	}{
+		{"valid reverse cashout", 400, 1000, 700, false, StatusActive},
+		{"zero chips", 0, 1000, 700, true, StatusActive},
+		{"negative chips", -100, 1000, 700, true, StatusActive},
+		{"more than total cashout", 800, 1000, 700, true, StatusActive},
+		{"invalid status", 400, 1000, 700, true, StatusFinished},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newSession(t)
+			s.status = tc.status
+			s.totalBuyInCache = tc.totalBuyIn
+			s.totalCashOutCache = tc.totalCashOut
+
+			beforeCashOut := s.TotalCashOut()
+
+			err := s.ReverseCashOut(tc.chips)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if s.TotalCashOut() != beforeCashOut {
+					t.Fatal("state changed on error")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if s.TotalCashOut() != beforeCashOut-tc.chips {
+				t.Fatalf("expected cashout %d, got %d", beforeCashOut-tc.chips, s.TotalCashOut())
+			}
+
+			if s.TotalChips() != tc.totalBuyIn-s.TotalCashOut() {
+				t.Fatal("invalid total chips")
+			}
+		})
+	}
+}
+
 func TestSession_Flow(t *testing.T) {
 	s := newSession(t)
 

@@ -568,42 +568,89 @@ func TestFinishSessionUseCase(t *testing.T) {
 }
 
 func TestReverseOperationUseCase(t *testing.T) {
-	store := newFakeStore()
-	addSession(t, store, "s1", entity.StatusActive, 100, 0)
-	addPlayer(t, store, "p1", "Alice")
-	target, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-	store.saveOperation(t, target)
+	t.Run("reverses buy in", func(t *testing.T) {
+		store := newFakeStore()
+		addSession(t, store, "s1", entity.StatusActive, 100, 0)
+		addPlayer(t, store, "p1", "Alice")
+		target, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		store.saveOperation(t, target)
 
-	outbox := &fakeOutboxRepo{}
-	uc := NewReverseOperationUseCase(
-		fakeOperationRepo{store: store},
-		fakeOperationRepo{store: store},
-		fakeOperationRepo{store: store},
-		fakeSessionRepo{store: store},
-		fakeTxManager{},
-		&sequenceOperationIDGen{next: "op2"},
-		newFakeIdempotencyRepo(),
-		fakeSessionRepo{store: store},
-		outbox,
-	)
+		outbox := &fakeOutboxRepo{}
+		uc := NewReverseOperationUseCase(
+			fakeOperationRepo{store: store},
+			fakeOperationRepo{store: store},
+			fakeOperationRepo{store: store},
+			fakeSessionRepo{store: store},
+			fakeTxManager{},
+			&sequenceOperationIDGen{next: "op2"},
+			newFakeIdempotencyRepo(),
+			fakeSessionRepo{store: store},
+			outbox,
+		)
 
-	if err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if store.sessions["s1"].TotalChips() != 0 {
-		t.Fatalf("expected reversed buy in to clear table chips, got %d", store.sessions["s1"].TotalChips())
-	}
-	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationReversed {
-		t.Fatalf("reverse operation did not save operation.reversed event")
-	}
+		if err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if store.sessions["s1"].TotalChips() != 0 {
+			t.Fatalf("expected reversed buy in to clear table chips, got %d", store.sessions["s1"].TotalChips())
+		}
+		if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationReversed {
+			t.Fatalf("reverse operation did not save operation.reversed event")
+		}
 
-	err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
-	if !errors.Is(err, entity.ErrOperationAlreadyReversed) {
-		t.Fatalf("expected operation already reversed, got %v", err)
-	}
+		err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
+		if !errors.Is(err, entity.ErrOperationAlreadyReversed) {
+			t.Fatalf("expected operation already reversed, got %v", err)
+		}
+	})
+
+	t.Run("reverses cash out without increasing buy in", func(t *testing.T) {
+		store := newFakeStore()
+		addSession(t, store, "s1", entity.StatusActive, 100, 40)
+		addPlayer(t, store, "p1", "Alice")
+		buyInOp, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		cashOutOp, err := entity.NewOperation("op2", "req2", "s1", entity.OperationCashOut, "p1", 40, time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		store.saveOperation(t, buyInOp)
+		store.saveOperation(t, cashOutOp)
+
+		outbox := &fakeOutboxRepo{}
+		uc := NewReverseOperationUseCase(
+			fakeOperationRepo{store: store},
+			fakeOperationRepo{store: store},
+			fakeOperationRepo{store: store},
+			fakeSessionRepo{store: store},
+			fakeTxManager{},
+			&sequenceOperationIDGen{next: "op3"},
+			newFakeIdempotencyRepo(),
+			fakeSessionRepo{store: store},
+			outbox,
+		)
+
+		if err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op2"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if store.sessions["s1"].TotalBuyIn() != 100 {
+			t.Fatalf("expected buy in to stay 100, got %d", store.sessions["s1"].TotalBuyIn())
+		}
+		if store.sessions["s1"].TotalCashOut() != 0 {
+			t.Fatalf("expected cash out to become 0, got %d", store.sessions["s1"].TotalCashOut())
+		}
+		if store.sessions["s1"].TotalChips() != 100 {
+			t.Fatalf("expected table chips to become 100, got %d", store.sessions["s1"].TotalChips())
+		}
+		if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationReversed {
+			t.Fatalf("reverse operation did not save operation.reversed event")
+		}
+	})
 }
 
 func TestGetSessionPlayersUseCase(t *testing.T) {

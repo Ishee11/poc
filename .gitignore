@@ -24,3 +24,6 @@ bin/
 vendor/
 
 coverage.txt
+
+# Local backups
+backup/

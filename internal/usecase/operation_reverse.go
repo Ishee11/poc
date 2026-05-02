@@ -141,9 +141,9 @@ func (uc *ReverseOperationUseCase) applyReversal(
 
 	switch target.Type() {
 	case entity.OperationBuyIn:
-		return session.CashOut(target.Chips())
+		return session.ReverseBuyIn(target.Chips())
 	case entity.OperationCashOut:
-		return session.BuyIn(target.Chips())
+		return session.ReverseCashOut(target.Chips())
 	default:
 		return entity.ErrInvalidOperation
 	}

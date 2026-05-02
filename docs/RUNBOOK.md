@@ -42,15 +42,15 @@ docker compose down
 docker compose -f docker-compose.observability.yml up -d
 ```
 
-Стек включает Prometheus, Alertmanager, Grafana и Tempo. Приложение отправляет traces в Tempo через OTLP HTTP:
+Стек включает Prometheus, Alertmanager, Grafana и Tempo. Tracing в приложении выключен по умолчанию и включается только если явно задать OTLP endpoint:
 
 ```text
-OTEL_EXPORTER_OTLP_ENDPOINT=tempo:4318
+OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318/v1/traces
 OTEL_EXPORTER_OTLP_INSECURE=true
 OTEL_SERVICE_NAME=poker-app-dev
 ```
 
-Если приложение запущено без Docker, используйте `OTEL_EXPORTER_OTLP_ENDPOINT=127.0.0.1:4318`.
+Если приложение запущено без Docker, используйте `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318/v1/traces`.
 
 Grafana читает admin credentials и внешний URL из `.env.observability`.
 Alertmanager читает Telegram-настройки из `.env.observability`.
@@ -213,6 +213,34 @@ server_started
 db_connected
 db_migrations_applied
 ```
+
+## Бэкап Продовой БД
+
+Продовая PostgreSQL база живет в контейнере `poker-db`. Для бэкапа лучше не писать файл на сервер, а сразу стримить дамп на свой компьютер по SSH.
+
+Скрипт в репозитории:
+
+```sh
+./scripts/backup-prod-db.sh root@203.0.113.10
+```
+
+По умолчанию он сохраняет файл в локальную папку `backup/` рядом с проектом:
+
+```text
+backup/poker-YYYY-MM-DD_HH-MM-SS.dump
+```
+
+Если на сервере контейнер или имя базы отличаются, можно переопределить переменные:
+
+```sh
+REMOTE_CONTAINER=poker-db \
+REMOTE_DB=poker \
+REMOTE_USER=poker \
+OUTPUT_DIR=backup \
+./scripts/backup-prod-db.sh root@203.0.113.10
+```
+
+Восстановление такого дампа делается через `pg_restore` в отдельную базу, не поверх продовой.
 
 ## Типовые Проблемы
 

@@ -93,6 +93,12 @@ jobs:
               echo "Keeping docker build cache: ${available_kb}KB available."
             fi
 
+            echo "== Log in to GHCR =="
+            printf '%s' '${{ github.token }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+
+            echo "== Pull app image =="
+            docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml pull app
+
             echo "== Start dev postgres =="
             docker compose -p poker-dev -f docker-compose.dev.yml up -d db
 
