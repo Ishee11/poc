@@ -75,6 +75,7 @@ jobs:
               "AUTH_SEED_USER_PASSWORD=${{ secrets.AUTH_SEED_USER_PASSWORD }}" \
               "APP_ORIGIN=http://193.238.134.58:18080" \
               "PUSH_ENABLED=false" \
+              "KAFKA_ENABLED=false" \
               "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \
               "PUSH_VAPID_PUBLIC_KEY=${{ secrets.PUSH_VAPID_PUBLIC_KEY }}" \
               "PUSH_VAPID_PRIVATE_KEY=${{ secrets.PUSH_VAPID_PRIVATE_KEY }}" \
