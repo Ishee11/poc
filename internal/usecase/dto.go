@@ -48,6 +48,7 @@ type PlayerStat struct {
 	TotalCashOut   int64           `json:"total_cash_out"`
 	ProfitChips    int64           `json:"profit_chips"`
 	ProfitMoney    int64           `json:"profit_money"`
+	PositiveStreak int64           `json:"positive_streak"`
 	LastActivityAt *string         `json:"last_activity_at"`
 	Rank           PlayerRank      `json:"rank"`
 }
