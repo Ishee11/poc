@@ -64,28 +64,6 @@ jobs:
             cd /app-dev
 
             test -f docker-compose.dev.yml
-            test -f docker-compose.observability.yml
-            test -f deploy/observability/prometheus/prometheus.yml
-            test -f deploy/observability/prometheus/alerts.yml
-            test -f deploy/observability/alertmanager/alertmanager.yml
-
-            echo "== Write observability env =="
-            printf '%s\n' \
-              "GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}" \
-              "GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
-              "GF_SERVER_DOMAIN=193.238.134.58" \
-              "GF_SERVER_ROOT_URL=http://193.238.134.58:3000" \
-              "GF_AUTH_ANONYMOUS_ENABLED=false" \
-              "GF_USERS_ALLOW_SIGN_UP=false" \
-              "PROMETHEUS_CONFIG_FILE=prometheus.yml" \
-              "PROMETHEUS_PORT_BIND=127.0.0.1:9090:9090" \
-              "ALERTMANAGER_PORT_BIND=127.0.0.1:9093:9093" \
-              "GRAFANA_PORT_BIND=3000:3000" \
-              "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
-              "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" \
-              "TELEGRAM_SEND_RESOLVED=${{ secrets.TELEGRAM_SEND_RESOLVED }}" \
-              > .env.observability
-            chmod 600 .env.observability
 
             echo "== Write app env =="
             printf '%s\n' \
@@ -96,15 +74,12 @@ jobs:
               "AUTH_SEED_USER_PASSWORD=${{ secrets.AUTH_SEED_USER_PASSWORD }}" \
               "APP_ORIGIN=http://193.238.134.58:18080" \
               "PUSH_ENABLED=false" \
+              "KAFKA_ENABLED=false" \
               "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \
               "PUSH_VAPID_PUBLIC_KEY=${{ secrets.PUSH_VAPID_PUBLIC_KEY }}" \
               "PUSH_VAPID_PRIVATE_KEY=${{ secrets.PUSH_VAPID_PRIVATE_KEY }}" \
               > .env.app
             chmod 600 .env.app
-
-            echo "== Validate observability env =="
-            test -s .env.observability
-            grep -E '^(GF_SECURITY_ADMIN_USER|GF_SERVER_ROOT_URL|TELEGRAM_CHAT_ID)=' .env.observability
 
             echo "== Check docker cache pressure =="
             available_kb=$(df --output=avail / | tail -n 1 | tr -d ' ')
@@ -159,22 +134,9 @@ jobs:
             echo "== Start dev app =="
             docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml up -d --no-build --force-recreate app
 
-            echo "== Start observability stack =="
-            docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml down --remove-orphans || true
-            docker compose --env-file .env.observability -p poker-obs -f docker-compose.observability.yml down --remove-orphans || true
-            docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml up -d
-
             echo "== Check dev app logs =="
             sleep 3
             docker logs poker-app-dev --tail=50 || true
-
-            echo "== Check observability containers =="
-            docker ps --filter name=poker-prometheus
-            docker ps --filter name=poker-grafana
-            docker ps --filter name=poker-alertmanager
-
-            echo "== Check observability containers =="
-            docker compose --env-file .env.observability -p poker-dev-obs -f docker-compose.observability.yml ps
 
             echo "== Disk after deploy =="
             df -h

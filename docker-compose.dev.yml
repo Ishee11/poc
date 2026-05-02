@@ -12,33 +12,12 @@ services:
     ports:
       - "127.0.0.1:15432:5432"
 
-  kafka:
-    image: apache/kafka:4.1.1
-    container_name: poker-kafka-dev
-    restart: always
-    environment:
-      KAFKA_NODE_ID: "1"
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:19092,DOCKER://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: HOST://127.0.0.1:19092,DOCKER://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
-      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
-    ports:
-      - "127.0.0.1:19092:19092"
-
   app:
     build: .
     container_name: poker-app-dev
     restart: always
     depends_on:
       - db
-      - kafka
     ports:
       - "18080:8080"
     extra_hosts:
@@ -63,13 +42,8 @@ services:
       PUSH_SUBJECT: ${PUSH_SUBJECT:-}
       PUSH_VAPID_PUBLIC_KEY: ${PUSH_VAPID_PUBLIC_KEY:-}
       PUSH_VAPID_PRIVATE_KEY: ${PUSH_VAPID_PRIVATE_KEY:-}
-      KAFKA_ENABLED: ${KAFKA_ENABLED:-true}
-      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
-      KAFKA_OUTBOX_TOPIC: ${KAFKA_OUTBOX_TOPIC:-poker.events}
-      KAFKA_OUTBOX_BATCH_SIZE: ${KAFKA_OUTBOX_BATCH_SIZE:-100}
-      KAFKA_OUTBOX_INTERVAL: ${KAFKA_OUTBOX_INTERVAL:-1s}
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD", "/app/healthcheck"]
       interval: 10s
       timeout: 3s
       retries: 3
