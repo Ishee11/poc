@@ -1372,9 +1372,9 @@ body.debug-mode .debug-only {
 }
 
 .player-rank-grinder {
-    color: #ffd27a;
-    border-color: rgba(255, 195, 92, 0.38);
-    background: rgba(255, 195, 92, 0.12);
+    color: #8cffd3;
+    border-color: rgba(88, 208, 167, 0.34);
+    background: rgba(88, 208, 167, 0.12);
 }
 
 .player-rank-shark {
