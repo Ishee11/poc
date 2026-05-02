@@ -831,6 +831,18 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     align-items: end;
 }
 
+.blinds-duration-cascade {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.blinds-duration-cascade input {
+    width: auto;
+}
+
 .blinds-editor-actions {
     align-items: end;
 }

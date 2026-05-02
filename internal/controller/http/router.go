@@ -74,6 +74,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/blinds-clock/pause", h.Blinds.Pause)
 	mux.HandleFunc("/blinds-clock/resume", h.Blinds.Resume)
 	mux.HandleFunc("/blinds-clock/reset", h.Blinds.Reset)
+	mux.HandleFunc("/blinds-clock/reset-default", h.Blinds.ResetToDefault)
 	mux.HandleFunc("/blinds-clock/previous", h.Blinds.PreviousLevel)
 	mux.HandleFunc("/blinds-clock/next", h.Blinds.NextLevel)
 	mux.HandleFunc("/blinds-clock/levels", h.Blinds.UpdateLevels)

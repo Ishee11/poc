@@ -100,6 +100,13 @@ func (s *BlindClockService) Reset(ctx context.Context) (*BlindClockResponse, err
 	})
 }
 
+func (s *BlindClockService) ResetToDefault(ctx context.Context) (*BlindClockResponse, error) {
+	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
+		clock.Reset(now)
+		return clock.ReplaceLevels(defaultBlindClockLevels(), now)
+	})
+}
+
 func (s *BlindClockService) PreviousLevel(ctx context.Context) (*BlindClockResponse, error) {
 	return s.mutate(ctx, func(tx Tx, clock *entity.BlindClock, now time.Time) error {
 		return clock.MoveToPreviousLevel(now)
@@ -201,11 +208,15 @@ func (s *BlindClockService) ensureClock(tx Tx, forUpdate bool) (*entity.BlindClo
 
 func defaultBlindClockLevels() []entity.BlindClockLevel {
 	input := []BlindClockLevelInput{
-		{SmallBlind: 10, BigBlind: 20, DurationMinutes: 30},
-		{SmallBlind: 20, BigBlind: 40, DurationMinutes: 30},
+		{SmallBlind: 10, BigBlind: 20, DurationMinutes: 40},
+		{SmallBlind: 20, BigBlind: 40, DurationMinutes: 40},
+		{SmallBlind: 40, BigBlind: 80, DurationMinutes: 40},
 		{SmallBlind: 50, BigBlind: 100, DurationMinutes: 30},
 		{SmallBlind: 100, BigBlind: 200, DurationMinutes: 30},
-		{SmallBlind: 250, BigBlind: 500, DurationMinutes: 30},
+		{SmallBlind: 150, BigBlind: 300, DurationMinutes: 30},
+		{SmallBlind: 200, BigBlind: 400, DurationMinutes: 20},
+		{SmallBlind: 300, BigBlind: 600, DurationMinutes: 20},
+		{SmallBlind: 500, BigBlind: 1000, DurationMinutes: 20},
 	}
 
 	levels := make([]entity.BlindClockLevel, 0, len(input))
@@ -222,9 +233,6 @@ func defaultBlindClockLevels() []entity.BlindClockLevel {
 }
 
 func validateBlindClockLevelUpdate(clock *entity.BlindClock, next []entity.BlindClockLevel, now time.Time) error {
-	if clock.Status() == entity.BlindClockStatusRunning {
-		return entity.ErrBlindClockLevelsLocked
-	}
 	if clock.Status() == entity.BlindClockStatusIdle {
 		return nil
 	}
@@ -237,7 +245,12 @@ func validateBlindClockLevelUpdate(clock *entity.BlindClock, next []entity.Blind
 		return entity.ErrBlindClockLevelsLocked
 	}
 
-	for idx := 0; idx <= currentIndex; idx++ {
+	lockedThroughIndex := currentIndex - 1
+	if clock.Status() == entity.BlindClockStatusRunning {
+		lockedThroughIndex = currentIndex
+	}
+
+	for idx := 0; idx <= lockedThroughIndex; idx++ {
 		if existing[idx].SmallBlind != next[idx].SmallBlind ||
 			existing[idx].BigBlind != next[idx].BigBlind ||
 			existing[idx].DurationSeconds != next[idx].DurationSeconds {

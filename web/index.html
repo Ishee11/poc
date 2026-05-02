@@ -198,7 +198,7 @@
                                 </div>
                             </div>
                             <div class="blinds-structure-shell" id="blinds-structure-shell" hidden>
-                                <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit current or future levels.</p>
+                                <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit the current level; future levels can be edited live.</p>
                                 <div class="blinds-editor-grid">
                                     <label class="blinds-level-picker">
                                         <span data-i18n="blinds.selectedLevel">Selected Level</span>
@@ -217,6 +217,10 @@
                                         <label>
                                             <span data-i18n="blinds.duration">Minutes</span>
                                             <input id="blinds-level-duration" type="number" min="1" />
+                                        </label>
+                                        <label class="blinds-duration-cascade">
+                                            <input id="blinds-apply-duration-next" type="checkbox" />
+                                            <span data-i18n="blinds.applyDurationNext">Apply minutes to this and following levels</span>
                                         </label>
                                         <div class="actions blinds-editor-actions">
                                             <button type="button" id="blinds-save-level-btn" data-i18n="common.save">Save</button>
@@ -243,6 +247,7 @@
                                     <div class="blinds-tool-label" data-i18n="blinds.toolStructure">Structure</div>
                                     <button type="button" class="secondary" id="blinds-toggle-editor-btn" data-i18n="blinds.editStructure">Edit Structure</button>
                                     <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">Add Level</button>
+                                    <button type="button" class="secondary" id="blinds-delete-future-levels-btn" data-i18n="blinds.deleteFutureLevels">Delete All Except First</button>
                                     <button type="button" class="danger" id="blinds-delete-all-levels-btn" data-i18n="blinds.deleteAllLevels">Delete All Levels</button>
                                 </div>
                                 <div class="blinds-tool-group">
@@ -264,7 +269,8 @@
                                         <button type="button" class="secondary" id="blinds-previous-level-btn" data-i18n="blinds.previousLevel">Previous Level</button>
                                         <button type="button" class="secondary" id="blinds-next-level-btn" data-i18n="blinds.nextLevelAction">Next Level</button>
                                     </div>
-                                    <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.reset">Reset</button>
+                                    <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.resetTimer">Reset Timer</button>
+                                    <button type="button" class="danger" id="blinds-reset-default-btn" data-i18n="blinds.resetDefault">Reset to Default Structure</button>
                                 </div>
                             </div>
                         </div>

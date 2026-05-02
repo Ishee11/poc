@@ -6,6 +6,7 @@ import {
   pauseBlindClock,
   previousBlindClockLevel,
   resetBlindClock,
+  resetBlindClockToDefault,
   resumeBlindClock,
   sendBlindClockPushTest,
   startBlindClock,
@@ -154,13 +155,29 @@ export function initBlindsClock() {
     const confirmed = await openModal({
       title: t("blinds.resetTitle"),
       description: t("blinds.resetDescription"),
-      confirmText: t("blinds.reset"),
+      confirmText: t("blinds.resetTimer"),
     });
     if (!confirmed) return;
 
     const res = await resetBlindClock();
     handleMutationResult(res, {
       eventMessage: t("blinds.eventReset"),
+      eventTone: "warning",
+      errorMessage: t("error.internal_error"),
+    });
+  });
+
+  document.getElementById("blinds-reset-default-btn")?.addEventListener("click", async () => {
+    const confirmed = await openModal({
+      title: t("blinds.resetDefaultTitle"),
+      description: t("blinds.resetDefaultDescription"),
+      confirmText: t("blinds.resetDefault"),
+    });
+    if (!confirmed) return;
+
+    const res = await resetBlindClockToDefault();
+    handleMutationResult(res, {
+      eventMessage: t("blinds.eventResetDefault"),
       eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
@@ -250,12 +267,34 @@ export function initBlindsClock() {
     });
   });
 
+  document.getElementById("blinds-delete-future-levels-btn")?.addEventListener("click", async () => {
+    if (!clockState?.levels?.length) return;
+
+    const confirmed = await openModal({
+      title: t("blinds.deleteFutureLevelsTitle"),
+      description: t("blinds.deleteFutureLevelsDescription"),
+      confirmText: t("blinds.deleteFutureLevels"),
+    });
+    if (!confirmed) return;
+
+    const levels = clockState.levels.map(cloneLevelInput).slice(0, 1);
+    const res = await updateBlindClockLevels(levels);
+    handleMutationResult(res, {
+      successMessage: t("notice.blindsFutureLevelsDeleted"),
+      errorMessage: t("error.invalid_blind_clock_level"),
+      onSuccess: () => {
+        selectedLevelIndex = 0;
+      },
+    });
+  });
+
   document.getElementById("blinds-save-level-btn")?.addEventListener("click", async () => {
     if (!clockState?.levels?.[selectedLevelIndex]) return;
 
     const sbInput = document.getElementById("blinds-level-sb");
     const bbInput = document.getElementById("blinds-level-bb");
     const durationInput = document.getElementById("blinds-level-duration");
+    const applyDurationInput = document.getElementById("blinds-apply-duration-next");
     if (!(sbInput instanceof HTMLInputElement) || !(bbInput instanceof HTMLInputElement) || !(durationInput instanceof HTMLInputElement)) {
       return;
     }
@@ -281,6 +320,14 @@ export function initBlindsClock() {
       big_blind: bigBlind,
       duration_minutes: durationMinutes,
     };
+    if (applyDurationInput instanceof HTMLInputElement && applyDurationInput.checked) {
+      for (let index = selectedLevelIndex + 1; index < levels.length; index += 1) {
+        levels[index] = {
+          ...levels[index],
+          duration_minutes: durationMinutes,
+        };
+      }
+    }
 
     const res = await updateBlindClockLevels(levels);
     handleMutationResult(res, {
@@ -428,7 +475,10 @@ function renderLevelEditor() {
   const addButton = document.getElementById("blinds-add-level-btn");
   const saveButton = document.getElementById("blinds-save-level-btn");
   const deleteButton = document.getElementById("blinds-delete-level-btn");
+  const deleteFutureButton = document.getElementById("blinds-delete-future-levels-btn");
   const deleteAllButton = document.getElementById("blinds-delete-all-levels-btn");
+  const resetDefaultButton = document.getElementById("blinds-reset-default-btn");
+  const applyDurationInput = document.getElementById("blinds-apply-duration-next");
 
   if (
     !(collapsedSelect instanceof HTMLSelectElement) ||
@@ -444,7 +494,7 @@ function renderLevelEditor() {
   selectedLevelIndex = clampLevelIndex(selectedLevelIndex, levels.length);
   const selectedLevel = levels[selectedLevelIndex] || null;
   const locked = isSelectedLevelLocked();
-  const canEdit = editorOpen && runtimeStatus !== "running";
+  const canEdit = editorOpen && runtimeStatus !== "finished";
 
   if (structurePanel) structurePanel.classList.toggle("is-editing", editorOpen);
   if (shell) shell.hidden = !editorOpen;
@@ -489,12 +539,20 @@ function renderLevelEditor() {
   sbInput.disabled = locked || !canEdit;
   bbInput.disabled = locked || !canEdit;
   durationInput.disabled = locked || !canEdit;
+  if (applyDurationInput instanceof HTMLInputElement) {
+    applyDurationInput.disabled = locked || !canEdit || selectedLevelIndex >= levels.length - 1;
+  }
   if (saveButton) saveButton.disabled = locked || !canEdit;
   if (deleteButton) deleteButton.disabled = locked || levels.length <= 1 || !canEdit;
+  if (deleteFutureButton) deleteFutureButton.disabled = levels.length <= 1 || runtimeStatus !== "idle";
   if (deleteAllButton) deleteAllButton.disabled = levels.length === 0 || runtimeStatus !== "idle";
+  if (resetDefaultButton) resetDefaultButton.disabled = false;
   if (addButton) {
-    addButton.disabled = runtimeStatus === "running";
+    addButton.disabled = runtimeStatus === "finished";
     addButton.hidden = !editorOpen;
+  }
+  if (deleteFutureButton) {
+    deleteFutureButton.hidden = !editorOpen;
   }
   if (deleteAllButton) {
     deleteAllButton.hidden = !editorOpen;
@@ -512,10 +570,13 @@ function renderLevelEditor() {
     if (!selectedLevel) {
       lockHint.hidden = false;
       lockHint.textContent = t("blinds.noLevels");
-    } else if (runtimeStatus === "running") {
+    } else if (locked && runtimeStatus === "running") {
       lockHint.hidden = false;
-      lockHint.textContent = t("blinds.lockedWhileRunning");
-    } else if (selectedLevelIndex <= runtimeLevelIndex && runtimeStatus !== "idle") {
+      lockHint.textContent =
+        selectedLevelIndex === runtimeLevelIndex
+          ? t("blinds.lockedCurrentLevelWhileRunning")
+          : t("blinds.lockedCompletedLevel");
+    } else if (locked && runtimeStatus !== "idle") {
       lockHint.hidden = false;
       lockHint.textContent = t("blinds.lockedCompletedLevel");
     } else {
@@ -636,8 +697,9 @@ function maybePlayCountdownWarning() {
 
 function isSelectedLevelLocked() {
   if (!clockState?.levels?.[selectedLevelIndex]) return true;
-  if (runtimeStatus === "running") return true;
   if (runtimeStatus === "idle") return false;
+  if (runtimeStatus === "running") return selectedLevelIndex <= runtimeLevelIndex;
+  if (runtimeStatus === "paused") return selectedLevelIndex < runtimeLevelIndex;
   return selectedLevelIndex <= runtimeLevelIndex;
 }
 
