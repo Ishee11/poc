@@ -181,6 +181,75 @@ body:not([data-screen="lobby"]) .lobby-auth-bar {
     font-size: 0.86rem;
 }
 
+.admin-login-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
+}
+
+.admin-login-disclosure {
+    width: min(100%, 520px);
+    color: var(--muted);
+    font-size: 0.84rem;
+    text-align: center;
+}
+
+.admin-login-disclosure summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.admin-login-disclosure summary:hover,
+.admin-login-disclosure summary:focus-visible {
+    border-color: var(--line);
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+    outline: none;
+}
+
+.admin-login-panel {
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(2, 11, 22, 0.34);
+}
+
+.admin-login-form {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) auto;
+    gap: 8px;
+}
+
+.admin-login-form input,
+.admin-login-form button,
+.admin-login-user-panel button {
+    min-width: 0;
+    height: 38px;
+}
+
+.admin-login-user-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-login-user-panel span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .account-panel {
     display: grid;
     gap: 10px;
@@ -1972,6 +2041,15 @@ pre {
     .auth-user-label,
     .auth-user-name {
         text-align: left;
+    }
+
+    .admin-login-form {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-login-user-panel {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .account-header {
