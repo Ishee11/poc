@@ -267,27 +267,6 @@ export function initBlindsClock() {
     });
   });
 
-  document.getElementById("blinds-delete-future-levels-btn")?.addEventListener("click", async () => {
-    if (!clockState?.levels?.length) return;
-
-    const confirmed = await openModal({
-      title: t("blinds.deleteFutureLevelsTitle"),
-      description: t("blinds.deleteFutureLevelsDescription"),
-      confirmText: t("blinds.deleteFutureLevels"),
-    });
-    if (!confirmed) return;
-
-    const levels = clockState.levels.map(cloneLevelInput).slice(0, 1);
-    const res = await updateBlindClockLevels(levels);
-    handleMutationResult(res, {
-      successMessage: t("notice.blindsFutureLevelsDeleted"),
-      errorMessage: t("error.invalid_blind_clock_level"),
-      onSuccess: () => {
-        selectedLevelIndex = 0;
-      },
-    });
-  });
-
   document.getElementById("blinds-save-level-btn")?.addEventListener("click", async () => {
     if (!clockState?.levels?.[selectedLevelIndex]) return;
 
@@ -475,7 +454,6 @@ function renderLevelEditor() {
   const addButton = document.getElementById("blinds-add-level-btn");
   const saveButton = document.getElementById("blinds-save-level-btn");
   const deleteButton = document.getElementById("blinds-delete-level-btn");
-  const deleteFutureButton = document.getElementById("blinds-delete-future-levels-btn");
   const deleteAllButton = document.getElementById("blinds-delete-all-levels-btn");
   const resetDefaultButton = document.getElementById("blinds-reset-default-btn");
   const applyDurationInput = document.getElementById("blinds-apply-duration-next");
@@ -509,7 +487,7 @@ function renderLevelEditor() {
               : index === runtimeLevelIndex
                 ? t("blinds.levelCurrent")
                 : "";
-          const label = `${t("blinds.levelValue", { level: index + 1 })} - ${formatNumber(level.small_blind)}/${formatNumber(level.big_blind)}${suffix ? ` · ${suffix}` : ""}`;
+          const label = `${t("blinds.levelValue", { level: index + 1 })} - ${formatNumber(level.small_blind)}/${formatNumber(level.big_blind)} · ${formatNumber(level.duration_minutes)} ${t("blinds.minutesShort")}${suffix ? ` · ${suffix}` : ""}`;
           return `<option value="${index}">${escapeHtml(label)}</option>`;
         })
         .join("")
@@ -544,15 +522,11 @@ function renderLevelEditor() {
   }
   if (saveButton) saveButton.disabled = locked || !canEdit;
   if (deleteButton) deleteButton.disabled = locked || levels.length <= 1 || !canEdit;
-  if (deleteFutureButton) deleteFutureButton.disabled = levels.length <= 1 || runtimeStatus !== "idle";
   if (deleteAllButton) deleteAllButton.disabled = levels.length === 0 || runtimeStatus !== "idle";
   if (resetDefaultButton) resetDefaultButton.disabled = false;
   if (addButton) {
     addButton.disabled = runtimeStatus === "finished";
     addButton.hidden = !editorOpen;
-  }
-  if (deleteFutureButton) {
-    deleteFutureButton.hidden = !editorOpen;
   }
   if (deleteAllButton) {
     deleteAllButton.hidden = !editorOpen;
