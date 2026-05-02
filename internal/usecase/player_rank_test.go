@@ -26,8 +26,8 @@ func TestAssignPlayerRanks(t *testing.T) {
 	ranked := assignPlayerRanks(players)
 	got := ranksByPlayer(ranked)
 
-	assertRank(t, got, "lucky", PlayerRankPositive)
-	assertRank(t, got, "short_loss", PlayerRankFish)
+	assertRank(t, got, "lucky", PlayerRankNewcomer)
+	assertRank(t, got, "short_loss", PlayerRankNewcomer)
 	assertRank(t, got, "regular", PlayerRankRegular)
 	assertRank(t, got, "shark", PlayerRankShark)
 	assertRank(t, got, "captain", PlayerRankCaptain)
@@ -43,14 +43,16 @@ func TestAssignPlayerRanksUsesMinimumQualification(t *testing.T) {
 		{PlayerID: "one", SessionsCount: 1, ProfitMoney: 100},
 		{PlayerID: "two", SessionsCount: 2, ProfitMoney: -100},
 		{PlayerID: "three", SessionsCount: 3, ProfitMoney: 10},
+		{PlayerID: "four", SessionsCount: 4, ProfitMoney: 10},
 	}
 
 	ranked := assignPlayerRanks(players)
 	got := ranksByPlayer(ranked)
 
-	assertRank(t, got, "one", PlayerRankPositive)
-	assertRank(t, got, "two", PlayerRankFish)
-	assertRank(t, got, "three", PlayerRankShark)
+	assertRank(t, got, "one", PlayerRankNewcomer)
+	assertRank(t, got, "two", PlayerRankNewcomer)
+	assertRank(t, got, "three", PlayerRankNewcomer)
+	assertRank(t, got, "four", PlayerRankShark)
 }
 
 func TestAssignPlayerRanksTieBreaksBySessionsThenActivity(t *testing.T) {
@@ -60,8 +62,8 @@ func TestAssignPlayerRanksTieBreaksBySessionsThenActivity(t *testing.T) {
 	players := []PlayerStat{
 		{PlayerID: "short_shark", SessionsCount: 3, ProfitMoney: 1000, LastActivityAt: &newer},
 		{PlayerID: "long_shark", SessionsCount: 4, ProfitMoney: 1000, LastActivityAt: &older},
-		{PlayerID: "old_fish", SessionsCount: 3, ProfitMoney: -1000, LastActivityAt: &older},
-		{PlayerID: "new_fish", SessionsCount: 3, ProfitMoney: -1000, LastActivityAt: &newer},
+		{PlayerID: "old_fish", SessionsCount: 4, ProfitMoney: -1000, LastActivityAt: &older},
+		{PlayerID: "new_fish", SessionsCount: 4, ProfitMoney: -1000, LastActivityAt: &newer},
 	}
 
 	ranked := assignPlayerRanks(players)
@@ -69,6 +71,23 @@ func TestAssignPlayerRanksTieBreaksBySessionsThenActivity(t *testing.T) {
 
 	assertRank(t, got, "long_shark", PlayerRankShark)
 	assertRank(t, got, "new_fish", PlayerRankSponsor)
+}
+
+func TestAssignPlayerRanksNewcomerHasPriorityForFewSessions(t *testing.T) {
+	players := []PlayerStat{
+		{PlayerID: "small_winner", SessionsCount: 3, ProfitMoney: 10000, PositiveStreak: 5},
+		{PlayerID: "small_loser", SessionsCount: 3, ProfitMoney: -10000},
+		{PlayerID: "shark", SessionsCount: 4, ProfitMoney: 100},
+		{PlayerID: "sponsor", SessionsCount: 4, ProfitMoney: -100},
+	}
+
+	ranked := assignPlayerRanks(players)
+	got := ranksByPlayer(ranked)
+
+	assertRank(t, got, "small_winner", PlayerRankNewcomer)
+	assertRank(t, got, "small_loser", PlayerRankNewcomer)
+	assertRank(t, got, "shark", PlayerRankShark)
+	assertRank(t, got, "sponsor", PlayerRankSponsor)
 }
 
 func TestAssignPlayerRanksAverageBuyInTieBreaksBySessionsThenActivity(t *testing.T) {

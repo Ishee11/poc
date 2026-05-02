@@ -44,7 +44,7 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 	qualificationSessions := playerRankQualificationSessions(players)
 	qualified := make([]PlayerStat, 0, len(players))
 	for _, player := range players {
-		if player.SessionsCount >= qualificationSessions {
+		if !isNewcomer(player) && player.SessionsCount >= qualificationSessions {
 			qualified = append(qualified, player)
 		}
 	}
@@ -73,6 +73,8 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 		rank := PlayerRankNewcomer
 		player := players[i]
 		switch {
+		case isNewcomer(player):
+			rank = PlayerRankNewcomer
 		case player.PlayerID == sharkID:
 			rank = PlayerRankShark
 		case player.PositiveStreak >= 5:
@@ -101,6 +103,10 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 	}
 
 	return players
+}
+
+func isNewcomer(player PlayerStat) bool {
+	return player.SessionsCount <= 3
 }
 
 func playerRankLabel(rank string, player PlayerStat) string {
