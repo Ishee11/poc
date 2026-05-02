@@ -60,9 +60,19 @@ func (uc *SeedUserUseCase) Execute(ctx context.Context, cmd SeedUserCommand) err
 	}
 
 	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
-		_, err := uc.userRepo.FindUserByEmail(tx, email)
+		existing, err := uc.userRepo.FindUserByEmail(tx, email)
 		if err == nil {
-			return nil
+			passwordHash, err := uc.passwords.HashPassword(cmd.Password)
+			if err != nil {
+				return err
+			}
+
+			existing.Email = email
+			existing.PasswordHash = passwordHash
+			existing.Role = cmd.Role
+			existing.Status = entity.AuthUserStatusActive
+			existing.UpdatedAt = uc.clock.Now()
+			return uc.userRepo.Save(tx, existing)
 		}
 		if !errors.Is(err, entity.ErrAuthUserNotFound) {
 			return err

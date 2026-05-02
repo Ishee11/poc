@@ -384,10 +384,10 @@ func TestSeedUserUseCaseCreatesUserWithRole(t *testing.T) {
 	}
 }
 
-func TestSeedUserUseCaseIsNoopWhenUserExists(t *testing.T) {
+func TestSeedUserUseCaseUpdatesUserWhenExists(t *testing.T) {
 	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
 	repo := newFakeAuthRepo()
-	existing, err := entity.NewAuthUser("admin-1", "admin@example.com", "old-hash", entity.AuthRoleAdmin, now)
+	existing, err := entity.NewAuthUser("admin-1", "admin@example.com", "old-hash", entity.AuthRoleUser, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,8 +416,8 @@ func TestSeedUserUseCaseIsNoopWhenUserExists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if user.ID != "admin-1" || user.PasswordHash != "old-hash" {
-		t.Fatalf("existing user should not be overwritten: %+v", user)
+	if user.ID != "admin-1" || user.PasswordHash != "new-hash" || user.Role != entity.AuthRoleAdmin {
+		t.Fatalf("existing user should be updated: %+v", user)
 	}
 }
 
