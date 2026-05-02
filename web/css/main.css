@@ -1303,9 +1303,9 @@ body.debug-mode .debug-only {
 }
 
 .player-rank-grinder {
-    color: #ffd27a;
-    border-color: rgba(255, 195, 92, 0.38);
-    background: rgba(255, 195, 92, 0.12);
+    color: #8cffd3;
+    border-color: rgba(88, 208, 167, 0.34);
+    background: rgba(88, 208, 167, 0.12);
 }
 
 .player-rank-shark {
@@ -1318,6 +1318,30 @@ body.debug-mode .debug-only {
     color: #ff8f8f;
     border-color: rgba(255, 90, 90, 0.42);
     background: rgba(255, 90, 90, 0.14);
+}
+
+.player-rank-sponsor {
+    color: #ff6f91;
+    border-color: rgba(255, 111, 145, 0.42);
+    background: rgba(255, 111, 145, 0.14);
+}
+
+.player-rank-ludoman {
+    color: #ff9f43;
+    border-color: rgba(255, 159, 67, 0.42);
+    background: rgba(255, 159, 67, 0.14);
+}
+
+.player-rank-maniac {
+    color: #7cf7ff;
+    border-color: rgba(124, 247, 255, 0.38);
+    background: rgba(124, 247, 255, 0.12);
+}
+
+.player-rank-captain_run {
+    color: #f8e36f;
+    border-color: rgba(248, 227, 111, 0.42);
+    background: rgba(248, 227, 111, 0.13);
 }
 
 .row-action {
