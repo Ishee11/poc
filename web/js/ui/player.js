@@ -421,7 +421,7 @@ function renderPlayerRankBadge(rank) {
   }
 
   const localized = t(`rank.${rank.code}`);
-  const label = localized === `rank.${rank.code}` ? rank.label : localized;
+  const label = rank.code === "captain_run" || localized === `rank.${rank.code}` ? rank.label : localized;
   return `<span class="player-rank player-rank-${escapeHtml(rank.code)}">${escapeHtml(label)}</span>`;
 }
 

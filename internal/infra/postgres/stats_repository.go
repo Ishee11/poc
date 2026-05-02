@@ -155,6 +155,39 @@ func (r *StatsRepository) ListPlayers(
 				AND rev.type = 'reversal'
 			WHERE o.type <> 'reversal'
 			  AND rev.id IS NULL
+		),
+		player_session_results AS (
+			SELECT
+				eo.player_id,
+				eo.session_id,
+				MAX(eo.created_at) AS last_activity_at,
+				COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0)
+					- COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0) AS profit_chips
+			FROM effective_operations eo
+			WHERE ($1::timestamp IS NULL OR eo.created_at >= $1::timestamp)
+			  AND ($2::timestamp IS NULL OR eo.created_at < $2::timestamp)
+			GROUP BY eo.player_id, eo.session_id
+		),
+		player_session_streaks AS (
+			SELECT
+				player_id,
+				profit_chips,
+				COUNT(*) FILTER (WHERE profit_chips <= 0) OVER (
+					PARTITION BY player_id
+					ORDER BY last_activity_at DESC, session_id DESC
+					ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+				) AS previous_non_positive_count
+			FROM player_session_results
+		),
+		positive_streaks AS (
+			SELECT
+				player_id,
+				COUNT(*) FILTER (
+					WHERE profit_chips > 0
+					  AND COALESCE(previous_non_positive_count, 0) = 0
+				) AS positive_streak
+			FROM player_session_streaks
+			GROUP BY player_id
 		)
 		SELECT
 		    eo.player_id,
@@ -164,13 +197,15 @@ func (r *StatsRepository) ListPlayers(
 		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
 		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
 		        - COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
+		    COALESCE(ps.positive_streak, 0),
 		    MAX(eo.created_at)
 		FROM effective_operations eo
 		JOIN sessions s ON s.id = eo.session_id
 		LEFT JOIN players p ON p.id = eo.player_id
+		LEFT JOIN positive_streaks ps ON ps.player_id = eo.player_id
 		WHERE ($1::timestamp IS NULL OR eo.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR eo.created_at < $2::timestamp)
-		GROUP BY eo.player_id, p.name
+		GROUP BY eo.player_id, p.name, ps.positive_streak
 		ORDER BY MAX(eo.created_at) DESC, eo.player_id ASC
 		LIMIT $3
 `, boundTime(filter.From), boundTime(filter.To), limit)
@@ -190,6 +225,7 @@ func (r *StatsRepository) ListPlayers(
 			&stat.TotalBuyIn,
 			&stat.TotalCashOut,
 			&stat.ProfitMoney,
+			&stat.PositiveStreak,
 			&lastActivity,
 		); err != nil {
 			return nil, err

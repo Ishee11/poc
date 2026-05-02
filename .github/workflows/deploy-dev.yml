@@ -64,6 +64,7 @@ jobs:
             cd /app-dev
 
             test -f docker-compose.dev.yml
+            test -f docker-compose.registry.yml
 
             echo "== Write app env =="
             printf '%s\n' \
@@ -130,6 +131,12 @@ jobs:
                   --single-transaction \
                   -U poker \
                   -d poker
+
+            echo "== Log in to GHCR =="
+            printf '%s' '${{ github.token }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+
+            echo "== Pull app image =="
+            docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml pull app
 
             echo "== Start dev app =="
             docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml up -d --no-build --force-recreate app

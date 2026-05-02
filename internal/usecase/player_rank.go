@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -15,6 +16,10 @@ const (
 	PlayerRankGrinder  = "grinder"
 	PlayerRankShark    = "shark"
 	PlayerRankMainFish = "main_fish"
+	PlayerRankSponsor  = "sponsor"
+	PlayerRankLudoman  = "ludoman"
+	PlayerRankManiac   = "maniac"
+	PlayerRankCaptain  = "captain_run"
 )
 
 var playerRankLabels = map[string]string{
@@ -24,7 +29,11 @@ var playerRankLabels = map[string]string{
 	PlayerRankRegular:  "Регуляр",
 	PlayerRankGrinder:  "Гриндер",
 	PlayerRankShark:    "Акула",
-	PlayerRankMainFish: "Главная рыба",
+	PlayerRankMainFish: "ГлавРыба",
+	PlayerRankSponsor:  "Спонсор",
+	PlayerRankLudoman:  "Лудоман",
+	PlayerRankManiac:   "Маньяк",
+	PlayerRankCaptain:  "Капитан занос",
 }
 
 func assignPlayerRanks(players []PlayerStat) []PlayerStat {
@@ -43,12 +52,22 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 	sharkID := bestPlayerID(qualified, func(player PlayerStat) bool {
 		return player.ProfitMoney > 0
 	}, compareShark)
-	mainFishID := bestPlayerID(qualified, func(player PlayerStat) bool {
+	sponsorID := bestPlayerID(qualified, func(player PlayerStat) bool {
 		return player.ProfitMoney < 0
-	}, compareMainFish)
+	}, compareSponsor)
 	grinderID := bestPlayerID(qualified, func(player PlayerStat) bool {
-		return player.PlayerID != sharkID && player.PlayerID != mainFishID
+		return player.PlayerID != sharkID && player.PlayerID != sponsorID
 	}, compareGrinder)
+	maniacID := bestPlayerID(qualified, func(player PlayerStat) bool {
+		return player.ProfitMoney > 0 &&
+			player.PlayerID != sharkID &&
+			player.PlayerID != grinderID
+	}, compareAverageBuyIn)
+	ludomanID := bestPlayerID(qualified, func(player PlayerStat) bool {
+		return player.ProfitMoney < 0 &&
+			player.PlayerID != sponsorID &&
+			player.PlayerID != grinderID
+	}, compareAverageBuyIn)
 
 	for i := range players {
 		rank := PlayerRankNewcomer
@@ -56,10 +75,18 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 		switch {
 		case player.PlayerID == sharkID:
 			rank = PlayerRankShark
-		case player.PlayerID == mainFishID:
-			rank = PlayerRankMainFish
+		case player.PositiveStreak >= 5:
+			rank = PlayerRankCaptain
+		case player.PlayerID == sponsorID:
+			rank = PlayerRankSponsor
 		case player.PlayerID == grinderID:
 			rank = PlayerRankGrinder
+		case player.PlayerID == maniacID:
+			rank = PlayerRankManiac
+		case player.PlayerID == ludomanID:
+			rank = PlayerRankLudoman
+		case player.SessionsCount >= qualificationSessions && player.ProfitMoney < 0:
+			rank = PlayerRankMainFish
 		case player.SessionsCount >= qualificationSessions:
 			rank = PlayerRankRegular
 		case player.ProfitMoney > 0:
@@ -69,11 +96,18 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 		}
 		players[i].Rank = PlayerRank{
 			Code:  rank,
-			Label: playerRankLabels[rank],
+			Label: playerRankLabel(rank, player),
 		}
 	}
 
 	return players
+}
+
+func playerRankLabel(rank string, player PlayerStat) string {
+	if rank == PlayerRankCaptain {
+		return fmt.Sprintf("%s x%d", playerRankLabels[rank], player.PositiveStreak)
+	}
+	return playerRankLabels[rank]
 }
 
 func playerRanksByID(players []PlayerStat) map[entity.PlayerID]PlayerRank {
@@ -134,7 +168,7 @@ func compareShark(left PlayerStat, right PlayerStat) bool {
 	return compareActivity(left, right)
 }
 
-func compareMainFish(left PlayerStat, right PlayerStat) bool {
+func compareSponsor(left PlayerStat, right PlayerStat) bool {
 	if left.ProfitMoney != right.ProfitMoney {
 		return left.ProfitMoney < right.ProfitMoney
 	}
@@ -143,6 +177,22 @@ func compareMainFish(left PlayerStat, right PlayerStat) bool {
 
 func compareGrinder(left PlayerStat, right PlayerStat) bool {
 	return compareActivity(left, right)
+}
+
+func compareAverageBuyIn(left PlayerStat, right PlayerStat) bool {
+	leftAvg := averageBuyIn(left)
+	rightAvg := averageBuyIn(right)
+	if leftAvg != rightAvg {
+		return leftAvg > rightAvg
+	}
+	return compareActivity(left, right)
+}
+
+func averageBuyIn(player PlayerStat) float64 {
+	if player.SessionsCount <= 0 {
+		return 0
+	}
+	return float64(player.TotalBuyIn) / float64(player.SessionsCount)
 }
 
 func compareActivity(left PlayerStat, right PlayerStat) bool {
