@@ -73,12 +73,12 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 		rank := PlayerRankNewcomer
 		player := players[i]
 		switch {
+		case player.PositiveStreak >= 5:
+			rank = PlayerRankCaptain
 		case isNewcomer(player):
 			rank = PlayerRankNewcomer
 		case player.PlayerID == sharkID:
 			rank = PlayerRankShark
-		case player.PositiveStreak >= 5:
-			rank = PlayerRankCaptain
 		case player.PlayerID == sponsorID:
 			rank = PlayerRankSponsor
 		case player.PlayerID == grinderID:
