@@ -127,7 +127,13 @@
                     <details class="panel panel-disclosure" id="overview-players-panel">
                         <summary class="panel-title-row">
                             <h3 data-i18n="lobby.players">Players</h3>
-                            <span class="summary-count" id="overview-players-count">0</span>
+                            <span class="summary-actions">
+                                <span class="summary-count" id="overview-players-count">0</span>
+                                <label class="summary-check-label" for="overview-players-show-all">
+                                    <input id="overview-players-show-all" type="checkbox" />
+                                    <span data-i18n="lobby.showAllPlayers">Show all</span>
+                                </label>
+                            </span>
                         </summary>
                         <div class="panel-inline-toolbar">
                             <label class="inline-select-label" for="overview-players-sort">
@@ -138,10 +144,6 @@
                                     <option value="profit_money" data-i18n="sort.profit">Profit</option>
                                     <option value="name" data-i18n="sort.name">Name</option>
                                 </select>
-                            </label>
-                            <label class="inline-check-label" for="overview-players-show-all">
-                                <input id="overview-players-show-all" type="checkbox" />
-                                <span data-i18n="lobby.showAllPlayers">Show all</span>
                             </label>
                             <button type="button" class="secondary" id="open-players-stats-btn" data-i18n="playersStats.open">
                                 Player Stats

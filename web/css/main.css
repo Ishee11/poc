@@ -470,6 +470,14 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     margin: 0;
 }
 
+.summary-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .panel-disclosure {
     overflow: hidden;
 }
@@ -526,6 +534,32 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .inline-check-label input {
     width: 18px;
     height: 18px;
+    accent-color: var(--accent);
+}
+
+.summary-check-label {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    min-height: 24px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#overview-players-panel[open] .summary-check-label {
+    display: inline-flex;
+}
+
+.summary-check-label input {
+    width: 12px;
+    height: 12px;
+    margin: 0;
     accent-color: var(--accent);
 }
 
@@ -2110,8 +2144,13 @@ pre {
     }
 
     .inline-select-label {
-        grid-template-columns: 1fr;
+        grid-template-columns: max-content minmax(0, 1fr);
         min-width: 0;
+        width: 100%;
+    }
+
+    .summary-actions {
+        gap: 8px;
     }
 
     .stats,

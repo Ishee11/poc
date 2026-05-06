@@ -41,16 +41,19 @@ type PlayerResultDTO struct {
 }
 
 type PlayerStat struct {
-	PlayerID       entity.PlayerID `json:"player_id"`
-	PlayerName     string          `json:"player_name"`
-	SessionsCount  int64           `json:"sessions_count"`
-	TotalBuyIn     int64           `json:"total_buy_in"`
-	TotalCashOut   int64           `json:"total_cash_out"`
-	ProfitChips    int64           `json:"profit_chips"`
-	ProfitMoney    int64           `json:"profit_money"`
-	PositiveStreak int64           `json:"positive_streak"`
-	LastActivityAt *string         `json:"last_activity_at"`
-	Rank           PlayerRank      `json:"rank"`
+	PlayerID                entity.PlayerID `json:"player_id"`
+	PlayerName              string          `json:"player_name"`
+	SessionsCount           int64           `json:"sessions_count"`
+	TotalBuyIn              int64           `json:"total_buy_in"`
+	TotalCashOut            int64           `json:"total_cash_out"`
+	TotalBuyInMoney         int64           `json:"total_buy_in_money"`
+	ProfitChips             int64           `json:"profit_chips"`
+	ProfitMoney             int64           `json:"profit_money"`
+	AvgBuyInPerSession      float64         `json:"avg_buy_in_per_session"`
+	AvgBuyInMoneyPerSession float64         `json:"avg_buy_in_money_per_session"`
+	PositiveStreak          int64           `json:"positive_streak"`
+	LastActivityAt          *string         `json:"last_activity_at"`
+	Rank                    PlayerRank      `json:"rank"`
 }
 
 type PlayerRank struct {

@@ -195,6 +195,7 @@ func (r *StatsRepository) ListPlayers(
 		    COUNT(DISTINCT eo.session_id),
 		    COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips ELSE 0 END), 0),
 		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips ELSE 0 END), 0),
+		    COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
 		    COALESCE(SUM(CASE WHEN eo.type = 'cash_out' THEN eo.chips / s.chip_rate ELSE 0 END), 0)
 		        - COALESCE(SUM(CASE WHEN eo.type = 'buy_in' THEN eo.chips / s.chip_rate ELSE 0 END), 0),
 		    COALESCE(ps.positive_streak, 0),
@@ -224,6 +225,7 @@ func (r *StatsRepository) ListPlayers(
 			&stat.SessionsCount,
 			&stat.TotalBuyIn,
 			&stat.TotalCashOut,
+			&stat.TotalBuyInMoney,
 			&stat.ProfitMoney,
 			&stat.PositiveStreak,
 			&lastActivity,
@@ -231,6 +233,10 @@ func (r *StatsRepository) ListPlayers(
 			return nil, err
 		}
 		stat.ProfitChips = stat.TotalCashOut - stat.TotalBuyIn
+		if stat.SessionsCount > 0 {
+			stat.AvgBuyInPerSession = float64(stat.TotalBuyIn) / float64(stat.SessionsCount)
+			stat.AvgBuyInMoneyPerSession = float64(stat.TotalBuyInMoney) / float64(stat.SessionsCount)
+		}
 		if lastActivity != nil {
 			formatted := lastActivity.Format(time.RFC3339)
 			stat.LastActivityAt = &formatted
