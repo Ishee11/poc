@@ -37,8 +37,8 @@ func (uc *GetPlayersUseCase) execute(tx Tx, q GetPlayersQuery) ([]PlayerDTO, err
 	if limit <= 0 {
 		limit = 100
 	}
-	if limit > 500 {
-		limit = 500
+	if limit > 1000 {
+		limit = 1000
 	}
 
 	offset := q.Offset

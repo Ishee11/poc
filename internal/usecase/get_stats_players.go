@@ -49,8 +49,8 @@ func (uc *GetStatsPlayersUseCase) execute(
 	if limit <= 0 {
 		limit = 20
 	}
-	if limit > 100 {
-		limit = 100
+	if limit > 1000 {
+		limit = 1000
 	}
 
 	result, err := uc.statsRepo.ListPlayers(tx, PlayerStatsFilter{

@@ -114,6 +114,10 @@ export function setScreen(name) {
     ?.classList.toggle("active", name === "player");
 
   document
+    .getElementById("screen-players-stats")
+    ?.classList.toggle("active", name === "players-stats");
+
+  document
     .getElementById("screen-account")
     ?.classList.toggle("active", name === "account");
 
@@ -141,6 +145,10 @@ export function routeToSession(sessionId) {
 
 export function routeToPlayer(playerId) {
   return `/player/${encodeURIComponent(playerId)}`;
+}
+
+export function routeToPlayersStats() {
+  return "/players/stats";
 }
 
 export function routeToAccount() {
