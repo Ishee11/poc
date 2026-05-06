@@ -22,9 +22,11 @@ import {
 import {
   loadPlayerDetail,
   loadPlayersOverview,
+  openPlayersStats,
   renderPlayerDetail,
   renderPlayers,
   renderPlayersOverview,
+  renderPlayersStatsPage,
   sortOverviewPlayers,
 } from "./ui/player.js";
 import {
@@ -51,6 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
   applyUiFeatureFlags();
   initPlayersSort();
+  initPlayersOverviewFilters();
   initAdminLoginFooter();
   if (state.authUiEnabled) {
     initAuth();
@@ -642,6 +645,23 @@ function initPlayersSort() {
   });
 }
 
+function initPlayersOverviewFilters() {
+  const showAll = document.getElementById("overview-players-show-all");
+  if (showAll) {
+    showAll.checked = state.overviewPlayersShowAll;
+    showAll.addEventListener("change", async () => {
+      state.overviewPlayersShowAll = showAll.checked;
+      await loadPlayersOverview();
+    });
+  }
+
+  document
+    .getElementById("open-players-stats-btn")
+    ?.addEventListener("click", async () => {
+      await openPlayersStats();
+    });
+}
+
 function renderCurrentLanguage() {
   if (state.authUiEnabled) {
     renderAuthPanel();
@@ -662,6 +682,9 @@ function renderCurrentLanguage() {
   }
   if (state.selectedPlayerDetail) {
     renderPlayerDetail();
+  }
+  if (document.body.dataset.screen === "players-stats") {
+    renderPlayersStatsPage();
   }
   if (document.body.dataset.screen === "blinds") {
     renderBlindsClock();
@@ -696,6 +719,11 @@ async function openInitialRoute({ fromHistory = false } = {}) {
 
   if (section === "player" && id) {
     await loadPlayerDetail(id, { replace: !fromHistory });
+    return;
+  }
+
+  if (section === "players" && id === "stats") {
+    await openPlayersStats({ replace: !fromHistory });
     return;
   }
 

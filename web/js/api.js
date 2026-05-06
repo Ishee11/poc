@@ -182,8 +182,14 @@ export function getSessions({ guestPlayerId } = {}) {
   return request(`/stats/sessions${suffix}`);
 }
 
-export function getPlayersStats() {
-  return request("/stats/players?limit=200");
+export function getPlayersStats({ limit = 200, from, to } = {}) {
+  const params = new URLSearchParams();
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/stats/players${suffix}`);
 }
 
 export function getPlayers({ limit, offset } = {}) {
