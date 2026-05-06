@@ -57,6 +57,8 @@ const translations = {
     "playersStats.placeholder": "Player statistics will appear here",
     "playersStats.summary": "{count} player(s)",
     "playersStats.positiveStreak": "Positive Streak",
+    "playersStats.avgBuyInChips": "Avg Buy-in Chips",
+    "playersStats.avgBuyInMoney": "Avg Buy-in Money",
     "language.title": "Interface Language",
     "language.hint":
       "Russian is selected automatically for Russian-language devices. Everyone else gets English.",
@@ -437,6 +439,8 @@ const translations = {
     "playersStats.placeholder": "Статистика игроков появится здесь",
     "playersStats.summary": "Игроков: {count}",
     "playersStats.positiveStreak": "Плюсовая серия",
+    "playersStats.avgBuyInChips": "Средний бай-ин фишками",
+    "playersStats.avgBuyInMoney": "Средний бай-ин деньгами",
     "language.title": "Язык интерфейса",
     "language.hint":
       "Русский выбирается автоматически для русскоязычных устройств. Для остальных используется английский.",

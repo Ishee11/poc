@@ -171,8 +171,8 @@ export function renderPlayersStatsPage() {
           <tr>
             <th>${escapeHtml(t("table.player"))}</th>
             <th>${escapeHtml(t("common.sessions"))}</th>
-            <th>${escapeHtml(t("player.totalBuyIn"))}</th>
-            <th>${escapeHtml(t("player.totalCashOut"))}</th>
+            <th>${escapeHtml(t("playersStats.avgBuyInChips"))}</th>
+            <th>${escapeHtml(t("playersStats.avgBuyInMoney"))}</th>
             <th>${escapeHtml(t("table.profitChips"))}</th>
             <th>${escapeHtml(t("table.profit"))}</th>
             <th>${escapeHtml(t("playersStats.positiveStreak"))}</th>
@@ -204,8 +204,8 @@ function renderPlayersStatsRow(player) {
         </div>
       </td>
       <td>${formatNumber(player.sessions_count)}</td>
-      <td>${formatNumber(player.total_buy_in)}</td>
-      <td>${formatNumber(player.total_cash_out)}</td>
+      <td>${formatNumber(roundMetric(avgBuyInChips(player)))}</td>
+      <td>${formatMoney(roundMetric(avgBuyInMoney(player)), "RUB")}</td>
       <td>${formatNumber(player.profit_chips)}</td>
       <td class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(profitMoney, "RUB")}</td>
       <td>${formatNumber(player.positive_streak)}</td>
@@ -235,12 +235,12 @@ function renderPlayersStatsCard(player) {
           <strong>${formatNumber(player.sessions_count)}</strong>
         </div>
         <div class="card-meta-item">
-          <span>${escapeHtml(t("player.totalBuyIn"))}</span>
-          <strong>${formatNumber(player.total_buy_in)}</strong>
+          <span>${escapeHtml(t("playersStats.avgBuyInChips"))}</span>
+          <strong>${formatNumber(roundMetric(avgBuyInChips(player)))}</strong>
         </div>
         <div class="card-meta-item">
-          <span>${escapeHtml(t("player.totalCashOut"))}</span>
-          <strong>${formatNumber(player.total_cash_out)}</strong>
+          <span>${escapeHtml(t("playersStats.avgBuyInMoney"))}</span>
+          <strong>${formatMoney(roundMetric(avgBuyInMoney(player)), "RUB")}</strong>
         </div>
         <div class="card-meta-item">
           <span>${escapeHtml(t("playersStats.positiveStreak"))}</span>
@@ -249,6 +249,24 @@ function renderPlayersStatsCard(player) {
       </div>
     </div>
   `;
+}
+
+function avgBuyInChips(player) {
+  const direct = Number(player.avg_buy_in_per_session);
+  if (Number.isFinite(direct)) return direct;
+
+  const sessions = Number(player.sessions_count) || 0;
+  if (sessions <= 0) return 0;
+  return (Number(player.total_buy_in) || 0) / sessions;
+}
+
+function avgBuyInMoney(player) {
+  const direct = Number(player.avg_buy_in_money_per_session);
+  if (Number.isFinite(direct)) return direct;
+
+  const sessions = Number(player.sessions_count) || 0;
+  if (sessions <= 0) return 0;
+  return (Number(player.total_buy_in_money) || 0) / sessions;
 }
 
 export function sortOverviewPlayers() {
