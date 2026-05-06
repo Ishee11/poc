@@ -649,6 +649,12 @@ function initPlayersOverviewFilters() {
   const showAll = document.getElementById("overview-players-show-all");
   if (showAll) {
     showAll.checked = state.overviewPlayersShowAll;
+    showAll.closest("label")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    showAll.closest("label")?.addEventListener("keydown", (event) => {
+      event.stopPropagation();
+    });
     showAll.addEventListener("change", async () => {
       state.overviewPlayersShowAll = showAll.checked;
       await loadPlayersOverview();
