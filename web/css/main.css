@@ -538,7 +538,29 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .summary-check-label {
-    min-height: 32px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#overview-players-panel[open] .summary-check-label {
+    display: inline-flex;
+}
+
+.summary-check-label input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--accent);
 }
 
 .panel p {
@@ -2117,10 +2139,6 @@ pre {
 
     .summary-actions {
         gap: 8px;
-    }
-
-    .summary-check-label {
-        font-size: 0.86rem;
     }
 
     .stats,
