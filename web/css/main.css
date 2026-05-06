@@ -321,6 +321,7 @@ body:not([data-screen="lobby"]) .lobby-auth-bar {
 
 body:not([data-screen="session"]) .nav-session-only,
 body:not([data-screen="player"]) .nav-player-only,
+body:not([data-screen="players-stats"]) .nav-players-stats-only,
 body:not([data-screen="account"]) .nav-account-only,
 body:not([data-screen="blinds"]) .nav-blinds-only {
     display: none;
@@ -500,6 +501,8 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .panel-inline-toolbar {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
     margin: 0 0 12px;
 }
 
@@ -509,6 +512,21 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     gap: 10px;
     align-items: center;
     min-width: min(100%, 320px);
+}
+
+.inline-check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.inline-check-label input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
 }
 
 .panel p {

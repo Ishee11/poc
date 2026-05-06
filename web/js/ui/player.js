@@ -18,6 +18,7 @@ import {
   replaceRoute,
   routeToHome,
   routeToPlayer,
+  routeToPlayersStats,
   setScreen,
   setValue,
   showNotice,
@@ -41,16 +42,24 @@ export async function loadPlayers(sessionId) {
 }
 
 export async function loadPlayersOverview() {
-  const [playersRes, statsRes] = await Promise.all([
-    getPlayers({ limit: 500 }),
-    getPlayersStats(),
+  const recentFrom = recentPlayersCutoffDate();
+  const [playersRes, statsRes, recentStatsRes] = await Promise.all([
+    getPlayers({ limit: 1000 }),
+    getPlayersStats({ limit: 1000 }),
+    getPlayersStats({ limit: 1000, from: recentFrom }),
   ]);
 
   const players = Array.isArray(playersRes.body) ? playersRes.body : [];
   const stats = Array.isArray(statsRes.body) ? statsRes.body : [];
+  const recentStats = Array.isArray(recentStatsRes.body) ? recentStatsRes.body : [];
   const statsById = new Map(stats.map((item) => [item.player_id, item]));
+  const activeRecentPlayerIds = new Set(
+    recentStats
+      .filter((item) => (Number(item.sessions_count) || 0) >= 2)
+      .map((item) => item.player_id),
+  );
 
-  state.overviewPlayers = players.map((player) => {
+  state.overviewPlayersAll = players.map((player) => {
     const stat = statsById.get(player.player_id);
     return {
       player_id: player.player_id,
@@ -62,6 +71,12 @@ export async function loadPlayersOverview() {
     };
   });
 
+  state.overviewPlayers = state.overviewPlayersShowAll
+    ? [...state.overviewPlayersAll]
+    : state.overviewPlayersAll.filter((player) =>
+        activeRecentPlayerIds.has(player.player_id),
+      );
+
   sortOverviewPlayers();
   renderPlayersOverview();
 }
@@ -71,10 +86,12 @@ export function renderPlayersOverview() {
   const count = document.getElementById("overview-players-count");
   if (!wrap || !count) return;
 
-  count.textContent = String(state.overviewPlayers.length);
+  count.textContent = state.overviewPlayersShowAll
+    ? String(state.overviewPlayers.length)
+    : `${state.overviewPlayers.length}/${state.overviewPlayersAll.length}`;
 
   if (!state.overviewPlayers.length) {
-    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("lobby.noActivePlayers"))}</div>`;
     return;
   }
 
@@ -100,6 +117,138 @@ export function renderPlayersOverview() {
     .join("");
 
   bindOpenPlayerButtons(wrap);
+}
+
+export async function openPlayersStats({ replace = false } = {}) {
+  await loadPlayersStatsPage();
+  setScreen("players-stats");
+  if (replace) {
+    replaceRoute(routeToPlayersStats());
+  } else {
+    pushRoute(routeToPlayersStats());
+  }
+}
+
+export async function loadPlayersStatsPage() {
+  const res = await getPlayersStats({ limit: 1000 });
+  if (!res.ok) {
+    console.error("loadPlayersStatsPage failed:", res.text);
+    state.playersStatsRows = [];
+    renderPlayersStatsPage();
+    return;
+  }
+
+  state.playersStatsRows = Array.isArray(res.body) ? res.body : [];
+  state.playersStatsRows.sort((a, b) => {
+    const profitDiff = (Number(b.profit_money) || 0) - (Number(a.profit_money) || 0);
+    if (profitDiff !== 0) return profitDiff;
+    return (Number(b.sessions_count) || 0) - (Number(a.sessions_count) || 0);
+  });
+  renderPlayersStatsPage();
+}
+
+export function renderPlayersStatsPage() {
+  const wrap = document.getElementById("players-stats-wrap");
+  const summary = document.getElementById("players-stats-summary");
+  if (!wrap) return;
+
+  const rows = state.playersStatsRows || [];
+  if (summary) {
+    summary.textContent = t("playersStats.summary", { count: rows.length });
+  }
+
+  if (!rows.length) {
+    wrap.className = "empty";
+    wrap.textContent = t("common.noData");
+    return;
+  }
+
+  wrap.className = "";
+  wrap.innerHTML = `
+    <div class="table-wrap players-stats-table desktop-only">
+      <table>
+        <thead>
+          <tr>
+            <th>${escapeHtml(t("table.player"))}</th>
+            <th>${escapeHtml(t("common.sessions"))}</th>
+            <th>${escapeHtml(t("player.totalBuyIn"))}</th>
+            <th>${escapeHtml(t("player.totalCashOut"))}</th>
+            <th>${escapeHtml(t("table.profitChips"))}</th>
+            <th>${escapeHtml(t("table.profit"))}</th>
+            <th>${escapeHtml(t("playersStats.positiveStreak"))}</th>
+            <th>${escapeHtml(t("table.lastActivity"))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(renderPlayersStatsRow).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="mobile-only mobile-session-cards">
+      ${rows.map(renderPlayersStatsCard).join("")}
+    </div>
+  `;
+
+  bindOpenPlayerButtons(wrap);
+}
+
+function renderPlayersStatsRow(player) {
+  const id = player.player_id;
+  const profitMoney = Number(player.profit_money) || 0;
+  return `
+    <tr class="clickable-row table-clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
+      <td>
+        <div class="player-name-line">
+          <span>${escapeHtml(player.player_name || id)}</span>
+          ${renderPlayerRankBadge(player.rank)}
+        </div>
+      </td>
+      <td>${formatNumber(player.sessions_count)}</td>
+      <td>${formatNumber(player.total_buy_in)}</td>
+      <td>${formatNumber(player.total_cash_out)}</td>
+      <td>${formatNumber(player.profit_chips)}</td>
+      <td class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(profitMoney, "RUB")}</td>
+      <td>${formatNumber(player.positive_streak)}</td>
+      <td>${escapeHtml(formatDate(player.last_activity_at))}</td>
+    </tr>
+  `;
+}
+
+function renderPlayersStatsCard(player) {
+  const id = player.player_id;
+  const profitMoney = Number(player.profit_money) || 0;
+  return `
+    <div class="card-item clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
+      <div class="card-header">
+        <div>
+          <div class="card-title player-name-line">
+            <span>${escapeHtml(player.player_name || id)}</span>
+            ${renderPlayerRankBadge(player.rank)}
+          </div>
+          <div class="row-meta">${escapeHtml(formatDate(player.last_activity_at))}</div>
+        </div>
+        <strong class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(profitMoney, "RUB")}</strong>
+      </div>
+      <div class="card-meta">
+        <div class="card-meta-item">
+          <span>${escapeHtml(t("common.sessions"))}</span>
+          <strong>${formatNumber(player.sessions_count)}</strong>
+        </div>
+        <div class="card-meta-item">
+          <span>${escapeHtml(t("player.totalBuyIn"))}</span>
+          <strong>${formatNumber(player.total_buy_in)}</strong>
+        </div>
+        <div class="card-meta-item">
+          <span>${escapeHtml(t("player.totalCashOut"))}</span>
+          <strong>${formatNumber(player.total_cash_out)}</strong>
+        </div>
+        <div class="card-meta-item">
+          <span>${escapeHtml(t("playersStats.positiveStreak"))}</span>
+          <strong>${formatNumber(player.positive_streak)}</strong>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 export function sortOverviewPlayers() {
@@ -660,6 +809,12 @@ function currencySymbol(currency) {
 
 function roundMetric(value) {
   return Math.round(value * 100) / 100;
+}
+
+function recentPlayersCutoffDate() {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 3);
+  return date.toISOString().slice(0, 10);
 }
 
 function periodSummary() {

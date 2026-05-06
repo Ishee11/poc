@@ -15,7 +15,10 @@ export const state = {
 
   overviewSessions: [],
   overviewPlayers: [],
+  overviewPlayersAll: [],
   overviewPlayersSort: "last_activity",
+  overviewPlayersShowAll: false,
+  playersStatsRows: [],
 
   players: [],
   operations: [],

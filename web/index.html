@@ -30,6 +30,9 @@
                         <button type="button" class="secondary nav-player-only" id="player-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
+                        <button type="button" class="secondary nav-players-stats-only" id="players-stats-back-home-btn" data-i18n="nav.backHome">
+                            Back to Home
+                        </button>
                         <button type="button" class="secondary nav-account-only" id="account-back-home-btn" data-i18n="nav.backHome">
                             Back to Home
                         </button>
@@ -136,6 +139,13 @@
                                     <option value="name" data-i18n="sort.name">Name</option>
                                 </select>
                             </label>
+                            <label class="inline-check-label" for="overview-players-show-all">
+                                <input id="overview-players-show-all" type="checkbox" />
+                                <span data-i18n="lobby.showAllPlayers">Show all</span>
+                            </label>
+                            <button type="button" class="secondary" id="open-players-stats-btn" data-i18n="playersStats.open">
+                                Player Stats
+                            </button>
                         </div>
                         <div id="overview-players-wrap"></div>
                     </details>
@@ -427,6 +437,23 @@
                         <button type="button" class="danger" id="debug-delete-player-btn" data-i18n="debug.deletePlayer">
                             Delete Player
                         </button>
+                    </div>
+                </section>
+
+                <section class="screen" id="screen-players-stats">
+                    <div class="panel">
+                        <div class="toolbar">
+                            <div>
+                                <h2 data-i18n="playersStats.title">Player Statistics</h2>
+                                <div class="muted" id="players-stats-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div id="players-stats-wrap" class="empty" data-i18n="playersStats.placeholder">
+                            Player statistics will appear here
+                        </div>
                     </div>
                 </section>
             </main>
