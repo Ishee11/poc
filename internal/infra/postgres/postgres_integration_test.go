@@ -278,6 +278,81 @@ func TestOutboxRepository_FetchPendingAndMarkPublished_Integration(t *testing.T)
 	})
 }
 
+func TestDebugAdminRepository_DeleteSessionFinishRemovesSessionFinishedOutbox(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		saveTestSession(t, tx, "s1", entity.StatusFinished, 2)
+
+		finishedEvent := usecase.OutboxEvent{
+			ID:            usecase.OutboxEventSessionFinished + ":s1",
+			EventType:     usecase.OutboxEventSessionFinished,
+			AggregateType: usecase.OutboxAggregateSession,
+			AggregateID:   "s1",
+			Payload:       json.RawMessage(`{"session_id":"s1"}`),
+			CreatedAt:     time.Now().UTC().Truncate(time.Microsecond),
+		}
+		operationEvent := usecase.OutboxEvent{
+			ID:            "operation.created:op1",
+			EventType:     usecase.OutboxEventOperationCreated,
+			AggregateType: usecase.OutboxAggregateOperation,
+			AggregateID:   "op1",
+			Payload:       json.RawMessage(`{"operation_id":"op1"}`),
+			CreatedAt:     time.Now().UTC().Truncate(time.Microsecond),
+		}
+
+		outbox := NewOutboxRepository()
+		if err := outbox.Save(tx, finishedEvent); err != nil {
+			t.Fatalf("save finished outbox event: %v", err)
+		}
+		if err := outbox.Save(tx, operationEvent); err != nil {
+			t.Fatalf("save operation outbox event: %v", err)
+		}
+
+		if err := NewDebugAdminRepository().DeleteSessionFinish(tx, "s1"); err != nil {
+			t.Fatalf("delete session finish: %v", err)
+		}
+
+		var status string
+		var finishedAt *time.Time
+		if err := tx.QueryRow(context.Background(), `
+			SELECT status, finished_at
+			FROM sessions
+			WHERE id = 's1'
+		`).Scan(&status, &finishedAt); err != nil {
+			t.Fatalf("load session: %v", err)
+		}
+		if status != string(entity.StatusActive) || finishedAt != nil {
+			t.Fatalf("expected active unfinished session, got status=%s finished_at=%v", status, finishedAt)
+		}
+
+		var finishedEventCount int
+		if err := tx.QueryRow(context.Background(), `
+			SELECT count(*)
+			FROM outbox_events
+			WHERE id = $1
+		`, finishedEvent.ID).Scan(&finishedEventCount); err != nil {
+			t.Fatalf("count finished event: %v", err)
+		}
+		if finishedEventCount != 0 {
+			t.Fatalf("expected stale session.finished event to be removed, got %d", finishedEventCount)
+		}
+
+		var operationEventCount int
+		if err := tx.QueryRow(context.Background(), `
+			SELECT count(*)
+			FROM outbox_events
+			WHERE id = $1
+		`, operationEvent.ID).Scan(&operationEventCount); err != nil {
+			t.Fatalf("count operation event: %v", err)
+		}
+		if operationEventCount != 1 {
+			t.Fatalf("expected unrelated operation event to remain, got %d", operationEventCount)
+		}
+	})
+}
+
 func TestAuditRepository_Integration(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)
