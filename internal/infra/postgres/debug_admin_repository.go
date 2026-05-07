@@ -143,6 +143,16 @@ func (r *DebugAdminRepository) DeleteSessionFinish(tx usecase.Tx, sessionID enti
 		return entity.ErrSessionNotFound
 	}
 
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM outbox_events
+		WHERE id = $1
+		  AND event_type = 'session.finished'
+		  AND aggregate_type = 'session'
+		  AND aggregate_id = $2
+	`, usecase.OutboxEventSessionFinished+":"+string(sessionID), sessionID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
