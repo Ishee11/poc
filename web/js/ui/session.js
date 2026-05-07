@@ -462,7 +462,7 @@ async function confirmAddExistingPlayer() {
       .filter((player) => player.in_game)
       .map((player) => player.player_id || player.id),
   );
-  const availablePlayers = state.overviewPlayers.filter(
+  const availablePlayers = state.overviewPlayersAll.filter(
     (player) => !inGameIds.has(player.player_id),
   );
 
