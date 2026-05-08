@@ -25,6 +25,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	sessionRepo := postgres.NewSessionRepository()
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
+	expenseRepo := postgres.NewSessionExpenseRepository()
 	outboxRepo := postgres.NewOutboxRepository()
 	idempotencyRepo := postgres.NewIdempotencyRepository()
 	statsRepo := postgres.NewStatsRepository(db.Pool)
@@ -43,6 +44,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	playerIDGen := &infra.UUIDPlayerIDGenerator{}
 	sessionIDGen := &infra.UUIDSessionIDGenerator{}
 	blindClockIDGen := &infra.UUIDBlindClockIDGenerator{}
+	expenseIDGen := &infra.UUIDExpenseIDGenerator{}
 	authSessionIDGen := infra.UUIDAuthSessionIDGenerator{}
 	loginAttemptIDGen := infra.UUIDLoginAttemptIDGenerator{}
 	blindClockPushSender := infra.NewBlindClockPushSender(
@@ -107,6 +109,13 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		idempotencyRepo,
 		sessionRepo,
 		outboxRepo,
+	)
+
+	sessionExpenseUC := usecase.NewSessionExpenseService(
+		expenseRepo,
+		sessionRepo,
+		txManager,
+		expenseIDGen,
 	)
 
 	createPlayerUC := usecase.NewCreatePlayerUseCase(
@@ -262,6 +271,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		buyInUC,
 		cashOutUC,
 		reverseOpUC,
+		sessionExpenseUC,
 
 		// blinds
 		blindClockUC,

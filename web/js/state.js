@@ -22,6 +22,7 @@ export const state = {
 
   players: [],
   operations: [],
+  expenses: [],
 
   // player screen
   selectedPlayerId: "",

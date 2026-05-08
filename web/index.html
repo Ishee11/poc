@@ -410,6 +410,42 @@
                         <div id="operations-wrap"></div>
                     </details>
 
+                    <div class="panel action-card" id="session-expenses-panel">
+                        <div class="panel-title-row">
+                            <h3 data-i18n="expenses.title">Счет после игры</h3>
+                            <span class="summary-count" id="session-expenses-count">0</span>
+                        </div>
+                        <form id="session-expense-form" onsubmit="return false;">
+                            <div class="field-group">
+                                <label>
+                                    <span data-i18n="expenses.name">Позиция</span>
+                                    <input id="expense-title" type="text" placeholder="Кальяны" data-i18n-placeholder="expenses.namePlaceholder" />
+                                </label>
+                                <label>
+                                    <span data-i18n="expenses.amount">Сумма</span>
+                                    <input id="expense-amount" type="number" min="1" placeholder="0" />
+                                </label>
+                            </div>
+                            <div>
+                                <div class="expense-section-label" data-i18n="expenses.splitBetween">Делить между</div>
+                                <div class="expense-player-grid" id="expense-participants-wrap"></div>
+                            </div>
+                            <div>
+                                <div class="expense-section-label" data-i18n="expenses.paidBy">Кто оплатил</div>
+                                <div class="expense-payers-grid" id="expense-payers-wrap"></div>
+                            </div>
+                            <div class="actions">
+                                <button type="button" id="add-expense-btn" data-i18n="expenses.add">Добавить расход</button>
+                            </div>
+                        </form>
+                        <div id="expenses-wrap" class="top-gap"></div>
+                    </div>
+
+                    <div class="panel" id="session-settlement-panel">
+                        <h3 data-i18n="settlement.title">Итоговые переводы</h3>
+                        <div id="settlement-wrap"></div>
+                    </div>
+
                     <div class="panel debug-admin-actions" id="session-delete-debug-panel" hidden>
                         <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
                             Delete Session

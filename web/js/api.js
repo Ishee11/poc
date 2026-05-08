@@ -218,6 +218,30 @@ export function getSessionOperations(sessionId) {
   return request(`/sessions/operations?session_id=${sessionId}`);
 }
 
+export function getExpenses(sessionId) {
+  return request(`/expenses?session_id=${sessionId}`);
+}
+
+export function createExpense({ sessionId, title, amount, participants, payments }) {
+  return request("/expenses", {
+    method: "POST",
+    body: JSON.stringify({
+      session_id: sessionId,
+      title,
+      amount,
+      participants,
+      payments,
+    }),
+  });
+}
+
+export function deleteExpense(expenseId) {
+  const params = new URLSearchParams({ expense_id: expenseId });
+  return request(`/expenses?${params.toString()}`, {
+    method: "DELETE",
+  });
+}
+
 // ===== operations =====
 
 export function buyIn({ sessionId, playerId, chips }) {

@@ -91,6 +91,17 @@ func (r *DebugAdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.Playe
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM session_expenses
+		WHERE id IN (
+			SELECT expense_id FROM session_expense_participants WHERE player_id = $1
+			UNION
+			SELECT expense_id FROM session_expense_payments WHERE player_id = $1
+		)
+	`, playerID); err != nil {
+		return err
+	}
+
 	tag, err := tx.Exec(ctx, `DELETE FROM players WHERE id = $1`, playerID)
 	if err != nil {
 		return err

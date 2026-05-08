@@ -41,6 +41,19 @@ type CashOutRequest struct {
 	Chips     int64  `json:"chips" example:"500"`
 }
 
+type CreateExpensePaymentRequest struct {
+	PlayerID string `json:"player_id"`
+	Amount   int64  `json:"amount"`
+}
+
+type CreateExpenseRequest struct {
+	SessionID    string                        `json:"session_id"`
+	Title        string                        `json:"title"`
+	Amount       int64                         `json:"amount"`
+	Participants []string                      `json:"participants"`
+	Payments     []CreateExpensePaymentRequest `json:"payments"`
+}
+
 type CreatePlayerRequest struct {
 	RequestID string `json:"request_id" example:"req-123"`
 	Name      string `json:"name" example:"Alice"`

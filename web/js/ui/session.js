@@ -2,10 +2,13 @@ import {
   buyIn,
   cashOut,
   createPlayer,
+  createExpense,
   debugDeleteSessionFinish,
   debugDeleteSession,
   debugUpdateSessionConfig,
+  deleteExpense,
   finishSession,
+  getExpenses,
   getSession,
   getSessionOperations,
   reverseOperation,
@@ -36,6 +39,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.activeSessionId = sessionId;
   state.session = null;
   state.operations = [];
+  state.expenses = [];
   state.players = [];
 
   const res = await getSession(sessionId);
@@ -49,14 +53,34 @@ export async function openSession(sessionId, { replace = false } = {}) {
   renderOperations();
   renderActionPlayerOptions();
 
-  await Promise.all([loadPlayers(sessionId), loadOperations(sessionId)]);
+  await Promise.all([loadPlayers(sessionId), loadOperations(sessionId), loadExpenses(sessionId)]);
   renderActionPlayerOptions();
+  renderExpenseForm();
+  renderExpenses();
+  renderSettlement();
   setScreen("session");
   if (replace) {
     replaceRoute(routeToSession(sessionId));
   } else {
     pushRoute(routeToSession(sessionId));
   }
+}
+
+export async function loadExpenses(sessionId) {
+  if (!sessionId) return;
+
+  const res = await getExpenses(sessionId);
+  if (!res.ok) {
+    console.error("loadExpenses failed:", res.text);
+    state.expenses = [];
+    renderExpenses();
+    renderSettlement();
+    return;
+  }
+
+  state.expenses = Array.isArray(res.body) ? res.body : [];
+  renderExpenses();
+  renderSettlement();
 }
 
 export async function loadOperations(sessionId) {
@@ -253,6 +277,131 @@ export function renderActionPlayerOptions() {
   );
 }
 
+export function renderExpenseForm() {
+  const participantsWrap = document.getElementById("expense-participants-wrap");
+  const payersWrap = document.getElementById("expense-payers-wrap");
+  const panel = document.getElementById("session-expenses-panel");
+  if (!participantsWrap || !payersWrap) return;
+
+  const isActiveOrFinished = state.session?.status === "active" || state.session?.status === "finished";
+  if (panel) panel.hidden = !isActiveOrFinished;
+
+  const players = state.players || [];
+  const participantRows = players
+    .map((player) => {
+      const id = player.player_id || player.id;
+      const name = player.player_name || player.name || id;
+      return `
+        <label class="expense-check">
+          <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
+          <span>${escapeHtml(name)}</span>
+        </label>
+      `;
+    })
+    .join("");
+
+  const payerRows = players
+    .map((player) => {
+      const id = player.player_id || player.id;
+      const name = player.player_name || player.name || id;
+      return `
+        <label class="expense-payer-row">
+          <span>${escapeHtml(name)}</span>
+          <input type="number" min="0" data-expense-payer="${escapeHtml(id)}" placeholder="0" />
+        </label>
+      `;
+    })
+    .join("");
+
+  participantsWrap.innerHTML = participantRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  payersWrap.innerHTML = payerRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+}
+
+export function renderExpenses() {
+  const wrap = document.getElementById("expenses-wrap");
+  const count = document.getElementById("session-expenses-count");
+  if (!wrap || !count) return;
+
+  count.textContent = String(state.expenses.length);
+  if (!state.expenses.length) {
+    wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("expenses.empty"))}</div>`;
+    return;
+  }
+
+  wrap.innerHTML = state.expenses
+    .map((expense) => {
+      const participants = (expense.participants || []).map(findPlayerName).join(", ");
+      const payments = (expense.payments || [])
+        .map((payment) => `${findPlayerName(payment.player_id)}: ${formatMoney(payment.amount, state.session?.currency)}`)
+        .join(", ");
+      return `
+        <div class="operation-row expense-row">
+          <div class="row-main">
+            <div class="row-title">${escapeHtml(expense.title)}</div>
+            <div class="inline-stats">
+              <span>${escapeHtml(t("expenses.amount"))}: ${formatMoney(expense.amount, state.session?.currency)}</span>
+              <span>${escapeHtml(t("expenses.splitBetween"))}: ${escapeHtml(participants || "-")}</span>
+              <span>${escapeHtml(t("expenses.paidBy"))}: ${escapeHtml(payments || "-")}</span>
+            </div>
+          </div>
+          <button type="button" class="secondary" data-delete-expense="${escapeHtml(expense.id)}">${escapeHtml(t("common.delete"))}</button>
+        </div>
+      `;
+    })
+    .join("");
+
+  wrap.querySelectorAll("[data-delete-expense]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const expenseId = button.getAttribute("data-delete-expense");
+      if (!expenseId) return;
+      await confirmDeleteExpense(expenseId);
+    });
+  });
+}
+
+export function renderSettlement() {
+  const wrap = document.getElementById("settlement-wrap");
+  if (!wrap) return;
+
+  const balances = settlementBalances();
+  const transfers = settlementTransfers(balances);
+  const balanceRows = Array.from(balances.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([playerId, amount]) => `
+      <div class="settlement-balance-row">
+        <span>${escapeHtml(findPlayerName(playerId))}</span>
+        <strong class="${amount >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(amount, state.session?.currency)}</strong>
+      </div>
+    `)
+    .join("");
+
+  const transferRows = transfers
+    .map((transfer) => `
+      <div class="operation-row settlement-transfer-row">
+        <div class="row-main">
+          <div class="row-title">${escapeHtml(findPlayerName(transfer.from))} -> ${escapeHtml(findPlayerName(transfer.to))}</div>
+          <div class="inline-stats">
+            <span>${formatMoney(transfer.amount, state.session?.currency)}</span>
+          </div>
+        </div>
+      </div>
+    `)
+    .join("");
+
+  wrap.innerHTML = `
+    <div class="settlement-grid">
+      <div>
+        <h4>${escapeHtml(t("settlement.balances"))}</h4>
+        ${balanceRows || `<div class="empty-inline">${escapeHtml(t("common.noData"))}</div>`}
+      </div>
+      <div>
+        <h4>${escapeHtml(t("settlement.transfers"))}</h4>
+        ${transferRows || `<div class="empty-inline">${escapeHtml(t("settlement.noTransfers"))}</div>`}
+      </div>
+    </div>
+  `;
+}
+
 function renderPlayerSelect(selectId, players) {
   const select = document.getElementById(selectId);
   if (!select) return;
@@ -304,6 +453,9 @@ export function initSessionActions() {
         break;
       case "finish-session-btn":
         await confirmFinishSession();
+        break;
+      case "add-expense-btn":
+        await confirmAddExpense();
         break;
       case "debug-delete-session-btn":
         await confirmDebugDeleteSession();
@@ -619,6 +771,7 @@ async function confirmDebugDeleteSession() {
   state.session = null;
   state.players = [];
   state.operations = [];
+  state.expenses = [];
   await Promise.all([loadSessions(), loadPlayersOverview()]);
   setScreen("lobby");
   pushRoute(routeToHome());
@@ -738,6 +891,64 @@ async function confirmReverse(operationId) {
   showNotice(t("notice.operationReversed"), "success");
 }
 
+async function confirmAddExpense() {
+  const title = (document.getElementById("expense-title")?.value || "").trim();
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const participants = Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
+    .map((input) => input.value)
+    .filter(Boolean);
+  const payments = Array.from(document.querySelectorAll("[data-expense-payer]"))
+    .map((input) => ({
+      player_id: input.getAttribute("data-expense-payer"),
+      amount: Number(input.value),
+    }))
+    .filter((payment) => payment.player_id && Number.isFinite(payment.amount) && payment.amount > 0);
+  const paidTotal = payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+  if (!title || !Number.isFinite(amount) || amount <= 0 || participants.length === 0 || paidTotal !== amount) {
+    showNotice(t("notice.invalidExpense"), "error");
+    return;
+  }
+
+  const res = await createExpense({
+    sessionId: state.activeSessionId,
+    title,
+    amount,
+    participants,
+    payments,
+  });
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedExpense")), "error");
+    return;
+  }
+
+  document.getElementById("expense-title").value = "";
+  document.getElementById("expense-amount").value = "";
+  document.querySelectorAll("[data-expense-payer]").forEach((input) => {
+    input.value = "";
+  });
+  await loadExpenses(state.activeSessionId);
+  showNotice(t("notice.expenseAdded"), "success");
+}
+
+async function confirmDeleteExpense(expenseId) {
+  const confirmed = await openModal({
+    title: t("modal.deleteExpenseTitle"),
+    description: t("modal.deleteExpenseDescription"),
+    confirmText: t("common.delete"),
+  });
+  if (!confirmed) return;
+
+  const res = await deleteExpense(expenseId);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedDeleteExpense")), "error");
+    return;
+  }
+
+  await loadExpenses(state.activeSessionId);
+  showNotice(t("notice.expenseDeleted"), "success");
+}
+
 async function refreshSessionData() {
   const id = state.activeSessionId;
   if (!id) return;
@@ -754,10 +965,13 @@ async function refreshSessionData() {
   await Promise.all([
     loadPlayers(id),
     loadOperations(id),
+    loadExpenses(id),
     loadSessions(),
     loadPlayersOverview(),
   ]);
   renderActionPlayerOptions();
+  renderExpenseForm();
+  renderSettlement();
 }
 
 function hydrateSession(raw) {
@@ -795,4 +1009,63 @@ function totalMoneyIn(session) {
     return 0;
   }
   return totalBuyIn / chipRate;
+}
+
+function settlementBalances() {
+  const balances = new Map();
+  for (const player of state.players || []) {
+    const id = player.player_id || player.id;
+    balances.set(id, Number(player.profit_money) || 0);
+  }
+
+  for (const expense of state.expenses || []) {
+    const participants = expense.participants || [];
+    if (!participants.length) continue;
+
+    const amount = Number(expense.amount) || 0;
+    const baseShare = Math.floor(amount / participants.length);
+    let remainder = amount - baseShare * participants.length;
+    for (const playerId of participants) {
+      const extra = remainder > 0 ? 1 : 0;
+      remainder -= extra;
+      balances.set(playerId, (balances.get(playerId) || 0) - baseShare - extra);
+    }
+
+    for (const payment of expense.payments || []) {
+      const paid = Number(payment.amount) || 0;
+      balances.set(payment.player_id, (balances.get(payment.player_id) || 0) + paid);
+    }
+  }
+
+  return balances;
+}
+
+function settlementTransfers(balances) {
+  const debtors = [];
+  const creditors = [];
+  for (const [playerId, amount] of balances.entries()) {
+    if (amount < 0) debtors.push({ playerId, amount: -amount });
+    if (amount > 0) creditors.push({ playerId, amount });
+  }
+
+  debtors.sort((a, b) => b.amount - a.amount);
+  creditors.sort((a, b) => b.amount - a.amount);
+
+  const transfers = [];
+  let debtorIndex = 0;
+  let creditorIndex = 0;
+  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+    const debtor = debtors[debtorIndex];
+    const creditor = creditors[creditorIndex];
+    const amount = Math.min(debtor.amount, creditor.amount);
+    if (amount > 0) {
+      transfers.push({ from: debtor.playerId, to: creditor.playerId, amount });
+    }
+    debtor.amount -= amount;
+    creditor.amount -= amount;
+    if (debtor.amount === 0) debtorIndex += 1;
+    if (creditor.amount === 0) creditorIndex += 1;
+  }
+
+  return transfers;
 }

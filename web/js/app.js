@@ -33,8 +33,11 @@ import {
   initSessionActions,
   openSession,
   renderActionPlayerOptions,
+  renderExpenseForm,
+  renderExpenses,
   renderOperations,
   renderSession,
+  renderSettlement,
 } from "./ui/session.js";
 import { initBlindsClock, openBlindsClock, renderBlindsClock } from "./ui/blinds.js";
 import {
@@ -682,6 +685,9 @@ function renderCurrentLanguage() {
     renderSession();
     renderOperations();
     renderActionPlayerOptions();
+    renderExpenseForm();
+    renderExpenses();
+    renderSettlement();
   }
   if (state.players.length) {
     renderPlayers();
