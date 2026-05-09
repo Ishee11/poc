@@ -331,7 +331,7 @@ func addPlayer(t *testing.T, store *fakeStore, id entity.PlayerID, name string) 
 
 func addSession(t *testing.T, store *fakeStore, id entity.SessionID, status entity.Status, buyIn int64, cashOut int64) {
 	t.Helper()
-	store.sessions[id] = entity.RestoreSession(id, mustChipRate(t, 2), 2, entity.CurrencyRUB, status, time.Now(), nil, buyIn, cashOut)
+	store.sessions[id] = entity.RestoreSession(id, mustChipRate(t, 2), 2, entity.CurrencyRUB, status, time.Now(), nil, false, buyIn, cashOut)
 }
 
 func newHelperForStore(store *fakeStore, opGen OperationIDGenerator, playerGen PlayerIDGenerator) *Helper {
@@ -655,7 +655,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 
 func TestGetSessionPlayersUseCase(t *testing.T) {
 	store := newFakeStore()
-	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), 2, entity.CurrencyRUB, entity.StatusFinished, time.Now(), nil, 100, 40)
+	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), 2, entity.CurrencyRUB, entity.StatusFinished, time.Now(), nil, false, 100, 40)
 	addPlayer(t, store, "p1", "Alice")
 	buyInOp, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
 	if err != nil {
@@ -693,7 +693,7 @@ func TestGetSessionPlayersUseCase(t *testing.T) {
 
 func TestGetSessionPlayersUseCase_CashOutSettlesActivePlayer(t *testing.T) {
 	store := newFakeStore()
-	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), 2, entity.CurrencyRUB, entity.StatusActive, time.Now(), nil, 100, 40)
+	store.sessions["s1"] = entity.RestoreSession("s1", mustChipRate(t, 2), 2, entity.CurrencyRUB, entity.StatusActive, time.Now(), nil, false, 100, 40)
 	addPlayer(t, store, "p1", "Alice")
 	buyInOp, err := entity.NewOperation("op1", "req1", "s1", entity.OperationBuyIn, "p1", 100, time.Now())
 	if err != nil {

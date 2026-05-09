@@ -1503,6 +1503,18 @@ body.debug-mode .debug-only {
     font-weight: 700;
 }
 
+.expense-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.expense-status-row button {
+    padding: 8px 12px;
+}
+
 .expense-section-heading {
     display: flex;
     align-items: center;

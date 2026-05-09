@@ -29,15 +29,22 @@ type SessionExpensePayment struct {
 }
 
 type CreateSessionExpenseInput struct {
-	SessionID    entity.SessionID
-	Title        string
-	Amount       int64
-	Participants []entity.PlayerID
-	Payments     []SessionExpensePayment
+	SessionID               entity.SessionID
+	Title                   string
+	Amount                  int64
+	Participants            []entity.PlayerID
+	Payments                []SessionExpensePayment
+	AllowClosedModification bool
+}
+
+type DeleteSessionExpenseInput struct {
+	ExpenseID               string
+	AllowClosedModification bool
 }
 
 type SessionExpenseRepository interface {
 	Create(tx Tx, expense SessionExpense) error
+	FindByID(tx Tx, expenseID string) (*SessionExpense, error)
 	ListBySession(tx Tx, sessionID entity.SessionID) ([]SessionExpense, error)
 	Delete(tx Tx, expenseID string) error
 }
@@ -49,6 +56,7 @@ type ExpenseIDGenerator interface {
 type SessionExpenseService struct {
 	repo          SessionExpenseRepository
 	sessionReader SessionReader
+	sessionWriter SessionWriter
 	txManager     TxManager
 	idGen         ExpenseIDGenerator
 }
@@ -56,12 +64,14 @@ type SessionExpenseService struct {
 func NewSessionExpenseService(
 	repo SessionExpenseRepository,
 	sessionReader SessionReader,
+	sessionWriter SessionWriter,
 	txManager TxManager,
 	idGen ExpenseIDGenerator,
 ) *SessionExpenseService {
 	return &SessionExpenseService{
 		repo:          repo,
 		sessionReader: sessionReader,
+		sessionWriter: sessionWriter,
 		txManager:     txManager,
 		idGen:         idGen,
 	}
@@ -70,8 +80,12 @@ func NewSessionExpenseService(
 func (s *SessionExpenseService) Create(ctx context.Context, input CreateSessionExpenseInput) (SessionExpense, error) {
 	var created SessionExpense
 	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
-		if _, err := s.sessionReader.FindByID(tx, input.SessionID); err != nil {
+		session, err := s.sessionReader.FindByID(tx, input.SessionID)
+		if err != nil {
 			return err
+		}
+		if session.ExpensesClosed() && !input.AllowClosedModification {
+			return entity.ErrSessionExpensesClosed
 		}
 
 		expense, err := s.buildExpense(input)
@@ -103,9 +117,37 @@ func (s *SessionExpenseService) List(ctx context.Context, sessionID entity.Sessi
 	return expenses, err
 }
 
-func (s *SessionExpenseService) Delete(ctx context.Context, expenseID string) error {
+func (s *SessionExpenseService) Delete(ctx context.Context, input DeleteSessionExpenseInput) error {
 	return s.txManager.RunInTx(ctx, func(tx Tx) error {
-		return s.repo.Delete(tx, expenseID)
+		expense, err := s.repo.FindByID(tx, input.ExpenseID)
+		if err != nil {
+			return err
+		}
+		if expense == nil {
+			return nil
+		}
+
+		session, err := s.sessionReader.FindByID(tx, expense.SessionID)
+		if err != nil {
+			return err
+		}
+		if session.ExpensesClosed() && !input.AllowClosedModification {
+			return entity.ErrSessionExpensesClosed
+		}
+
+		return s.repo.Delete(tx, input.ExpenseID)
+	})
+}
+
+func (s *SessionExpenseService) Close(ctx context.Context, sessionID entity.SessionID) error {
+	return s.txManager.RunInTx(ctx, func(tx Tx) error {
+		session, err := s.sessionReader.FindByID(tx, sessionID)
+		if err != nil {
+			return err
+		}
+
+		session.CloseExpenses()
+		return s.sessionWriter.Save(tx, session)
 	})
 }
 

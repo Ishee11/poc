@@ -54,6 +54,10 @@ type CreateExpenseRequest struct {
 	Payments     []CreateExpensePaymentRequest `json:"payments"`
 }
 
+type CloseExpensesRequest struct {
+	SessionID string `json:"session_id"`
+}
+
 type CreatePlayerRequest struct {
 	RequestID string `json:"request_id" example:"req-123"`
 	Name      string `json:"name" example:"Alice"`

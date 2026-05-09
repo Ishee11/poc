@@ -45,6 +45,26 @@ func (r *SessionExpenseRepository) Create(tx usecase.Tx, expense usecase.Session
 	return nil
 }
 
+func (r *SessionExpenseRepository) FindByID(tx usecase.Tx, expenseID string) (*usecase.SessionExpense, error) {
+	row := tx.QueryRow(context.Background(), `
+		SELECT id, session_id, title, amount, created_at
+		FROM session_expenses
+		WHERE id = $1
+	`, expenseID)
+
+	var expense usecase.SessionExpense
+	var createdAt time.Time
+	if err := row.Scan(&expense.ID, &expense.SessionID, &expense.Title, &expense.Amount, &createdAt); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	expense.CreatedAt = createdAt.Format(time.RFC3339)
+	return &expense, nil
+}
+
 func (r *SessionExpenseRepository) ListBySession(tx usecase.Tx, sessionID entity.SessionID) ([]usecase.SessionExpense, error) {
 	rows, err := tx.Query(context.Background(), `
 		SELECT id, session_id, title, amount, created_at

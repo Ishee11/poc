@@ -18,13 +18,14 @@ const (
 )
 
 type Session struct {
-	id         SessionID
-	chipRate   valueobject.ChipRate
-	bigBlind   int64
-	currency   Currency
-	status     Status
-	createdAt  time.Time
-	finishedAt *time.Time
+	id             SessionID
+	chipRate       valueobject.ChipRate
+	bigBlind       int64
+	currency       Currency
+	status         Status
+	createdAt      time.Time
+	finishedAt     *time.Time
+	expensesClosed bool
 
 	// cached aggregates, derived from operations (source of truth)
 	totalBuyInCache   int64
@@ -52,6 +53,7 @@ func RestoreSession(
 	status Status,
 	createdAt time.Time,
 	finishedAt *time.Time,
+	expensesClosed bool,
 	totalBuyIn int64,
 	totalCashOut int64,
 ) *Session {
@@ -63,6 +65,7 @@ func RestoreSession(
 		status:            status,
 		createdAt:         createdAt,
 		finishedAt:        finishedAt,
+		expensesClosed:    expensesClosed,
 		totalBuyInCache:   totalBuyIn,
 		totalCashOutCache: totalCashOut,
 	}
@@ -76,6 +79,7 @@ func (s *Session) Status() Status                 { return s.status }
 func (s *Session) TotalBuyIn() int64              { return s.totalBuyInCache }
 func (s *Session) TotalCashOut() int64            { return s.totalCashOutCache }
 func (s *Session) TotalChips() int64              { return s.totalBuyInCache - s.totalCashOutCache }
+func (s *Session) ExpensesClosed() bool           { return s.expensesClosed }
 
 func (s *Session) BuyIn(chips int64) error {
 	if s.status != StatusActive {
@@ -150,6 +154,10 @@ func (s *Session) Finish(finishedAt time.Time) error {
 	s.finishedAt = &finishedAt
 
 	return nil
+}
+
+func (s *Session) CloseExpenses() {
+	s.expensesClosed = true
 }
 
 func (s *Session) CreatedAt() time.Time {

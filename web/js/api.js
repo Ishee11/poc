@@ -235,6 +235,13 @@ export function createExpense({ sessionId, title, amount, participants, payments
   });
 }
 
+export function closeExpenses(sessionId) {
+  return request("/expenses/close", {
+    method: "POST",
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+}
+
 export function deleteExpense(expenseId) {
   const params = new URLSearchParams({ expense_id: expenseId });
   return request(`/expenses?${params.toString()}`, {

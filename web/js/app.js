@@ -764,6 +764,10 @@ async function openInitialRoute({ fromHistory = false } = {}) {
 function syncDebugMode() {
   state.debugMode = state.authUser?.role === "admin";
   document.body.classList.toggle("debug-mode", state.debugMode);
+  if (state.session) {
+    renderExpenseForm();
+    renderExpenses();
+  }
 }
 
 function loadGuestPlayerId() {

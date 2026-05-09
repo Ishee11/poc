@@ -410,11 +410,18 @@
                         <div id="operations-wrap"></div>
                     </details>
 
-                    <div class="panel action-card" id="session-expenses-panel">
-                        <div class="panel-title-row">
+                    <details class="panel panel-disclosure action-card" id="session-expenses-panel">
+                        <summary class="panel-title-row">
                             <h3 data-i18n="expenses.title">Счет после игры</h3>
                             <span class="summary-count" id="session-expenses-count">0</span>
+                        </summary>
+                        <div class="expense-status-row">
+                            <span id="session-expenses-status" class="muted"></span>
+                            <button type="button" class="secondary" id="close-expenses-btn" data-i18n="expenses.closeBill">Закрыть счет</button>
                         </div>
+                        <p class="hint" id="session-expenses-locked-hint" data-i18n="expenses.closedHint" hidden>
+                            Счет закрыт. Изменения может вносить только админ.
+                        </p>
                         <form id="session-expense-form" onsubmit="return false;">
                             <div class="field-group">
                                 <label>
@@ -442,7 +449,7 @@
                             </div>
                         </form>
                         <div id="expenses-wrap" class="top-gap"></div>
-                    </div>
+                    </details>
 
                     <div class="panel" id="session-settlement-panel">
                         <h3 data-i18n="settlement.title">Итоговые переводы</h3>

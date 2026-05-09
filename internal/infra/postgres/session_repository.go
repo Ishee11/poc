@@ -28,21 +28,22 @@ func (r *SessionRepository) FindByID(
 	ctx := context.Background()
 
 	row := tx.QueryRow(ctx, `
-		SELECT id, chip_rate, big_blind, currency, status, created_at, finished_at, total_buy_in, total_cash_out
+		SELECT id, chip_rate, big_blind, currency, status, created_at, finished_at, expenses_closed, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
 `, sessionID)
 
 	var (
-		id           string
-		chipRate     int64
-		bigBlind     int64
-		currency     entity.Currency
-		status       string
-		createdAt    time.Time
-		finishedAt   *time.Time
-		totalBuyIn   int64
-		totalCashOut int64
+		id             string
+		chipRate       int64
+		bigBlind       int64
+		currency       entity.Currency
+		status         string
+		createdAt      time.Time
+		finishedAt     *time.Time
+		expensesClosed bool
+		totalBuyIn     int64
+		totalCashOut   int64
 	)
 
 	err := row.Scan(
@@ -53,6 +54,7 @@ func (r *SessionRepository) FindByID(
 		&status,
 		&createdAt,
 		&finishedAt,
+		&expensesClosed,
 		&totalBuyIn,
 		&totalCashOut,
 	)
@@ -77,6 +79,7 @@ func (r *SessionRepository) FindByID(
 		entity.Status(status),
 		createdAt,
 		finishedAt,
+		expensesClosed,
 		totalBuyIn,
 		totalCashOut,
 	), nil
@@ -93,12 +96,13 @@ func (r *SessionRepository) Save(
 
 	_, err := tx.Exec(ctx, `
 		INSERT INTO sessions (
-			id, chip_rate, big_blind, currency, status, created_at, finished_at, total_buy_in, total_cash_out
+			id, chip_rate, big_blind, currency, status, created_at, finished_at, expenses_closed, total_buy_in, total_cash_out
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (id) DO UPDATE SET
 			status = EXCLUDED.status,
 			finished_at = EXCLUDED.finished_at,
+			expenses_closed = EXCLUDED.expenses_closed,
 			total_buy_in = EXCLUDED.total_buy_in,
 			total_cash_out = EXCLUDED.total_cash_out
 	`,
@@ -109,6 +113,7 @@ func (r *SessionRepository) Save(
 		session.Status(),
 		session.CreatedAt(),
 		session.FinishedAt(),
+		session.ExpensesClosed(),
 		session.TotalBuyIn(),
 		session.TotalCashOut(),
 	)
@@ -124,7 +129,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 	row := tx.QueryRow(
 		context.Background(),
 		`
-		SELECT id, chip_rate, big_blind, currency, status, created_at, finished_at, total_buy_in, total_cash_out
+		SELECT id, chip_rate, big_blind, currency, status, created_at, finished_at, expenses_closed, total_buy_in, total_cash_out
 		FROM sessions
 		WHERE id = $1
 		FOR UPDATE
@@ -133,15 +138,16 @@ func (r *SessionRepository) FindByIDForUpdate(
 	)
 
 	var (
-		sessionID    entity.SessionID
-		chipRate     int64
-		bigBlind     int64
-		currency     entity.Currency
-		status       entity.Status
-		createdAt    time.Time
-		finishedAt   *time.Time
-		totalBuyIn   int64
-		totalCashOut int64
+		sessionID      entity.SessionID
+		chipRate       int64
+		bigBlind       int64
+		currency       entity.Currency
+		status         entity.Status
+		createdAt      time.Time
+		finishedAt     *time.Time
+		expensesClosed bool
+		totalBuyIn     int64
+		totalCashOut   int64
 	)
 
 	err := row.Scan(
@@ -152,6 +158,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 		&status,
 		&createdAt,
 		&finishedAt,
+		&expensesClosed,
 		&totalBuyIn,
 		&totalCashOut,
 	)
@@ -176,6 +183,7 @@ func (r *SessionRepository) FindByIDForUpdate(
 		status,
 		createdAt,
 		finishedAt,
+		expensesClosed,
 		totalBuyIn,
 		totalCashOut,
 	), nil

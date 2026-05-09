@@ -90,6 +90,8 @@ func NewHandler(
 			cashOutUC:          cashOut,
 			reverseOperationUC: reverse,
 			expenseService:     sessionExpenses,
+			authUC:             authUC,
+			cookie:             authCookie,
 		},
 		Blinds: &BlindClockHandler{
 			service: blindClockUC,
@@ -145,6 +147,8 @@ type OperationHandler struct {
 	cashOutUC          *usecase.CashOutUseCase
 	reverseOperationUC *usecase.ReverseOperationUseCase
 	expenseService     *usecase.SessionExpenseService
+	authUC             *usecase.AuthService
+	cookie             AuthCookieConfig
 }
 
 type BlindClockHandler struct {

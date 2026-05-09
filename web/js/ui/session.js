@@ -1,6 +1,7 @@
 import {
   buyIn,
   cashOut,
+  closeExpenses,
   createPlayer,
   createExpense,
   debugDeleteSessionFinish,
@@ -281,10 +282,22 @@ export function renderExpenseForm() {
   const participantsWrap = document.getElementById("expense-participants-wrap");
   const payersWrap = document.getElementById("expense-payers-wrap");
   const panel = document.getElementById("session-expenses-panel");
+  const form = document.getElementById("session-expense-form");
+  const closeButton = document.getElementById("close-expenses-btn");
+  const lockedHint = document.getElementById("session-expenses-locked-hint");
+  const status = document.getElementById("session-expenses-status");
   if (!participantsWrap || !payersWrap) return;
 
   const isActiveOrFinished = state.session?.status === "active" || state.session?.status === "finished";
   if (panel) panel.hidden = !isActiveOrFinished;
+  const expensesClosed = Boolean(state.session?.expensesClosed);
+  const canEditExpenses = !expensesClosed || state.debugMode;
+  if (form) form.hidden = !canEditExpenses;
+  if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed;
+  if (lockedHint) lockedHint.hidden = canEditExpenses || !expensesClosed;
+  if (status) {
+    status.textContent = expensesClosed ? t("expenses.closed") : t("expenses.open");
+  }
 
   const players = state.players || [];
   const participantRows = players
@@ -392,6 +405,7 @@ export function renderExpenses() {
     return;
   }
 
+  const canEditExpenses = !state.session?.expensesClosed || state.debugMode;
   wrap.innerHTML = state.expenses
     .map((expense) => {
       const participants = (expense.participants || []).map(findPlayerName).join(", ");
@@ -408,7 +422,11 @@ export function renderExpenses() {
               <span>${escapeHtml(t("expenses.paidBy"))}: ${escapeHtml(payments || "-")}</span>
             </div>
           </div>
-          <button type="button" class="secondary" data-delete-expense="${escapeHtml(expense.id)}">${escapeHtml(t("common.delete"))}</button>
+          ${
+            canEditExpenses
+              ? `<button type="button" class="secondary" data-delete-expense="${escapeHtml(expense.id)}">${escapeHtml(t("common.delete"))}</button>`
+              : ""
+          }
         </div>
       `;
     })
@@ -520,6 +538,9 @@ export function initSessionActions() {
         break;
       case "add-expense-btn":
         await confirmAddExpense();
+        break;
+      case "close-expenses-btn":
+        await confirmCloseExpenses();
         break;
       case "expense-split-even-btn":
         fillEqualExpensePayments();
@@ -976,6 +997,11 @@ async function confirmReverse(operationId) {
 }
 
 async function confirmAddExpense() {
+  if (state.session?.expensesClosed && !state.debugMode) {
+    showNotice(t("notice.expensesClosed"), "error");
+    return;
+  }
+
   const title = (document.getElementById("expense-title")?.value || "").trim();
   const amount = Number(document.getElementById("expense-amount")?.value);
   const participants = selectedExpenseParticipants();
@@ -1014,7 +1040,32 @@ async function confirmAddExpense() {
   showNotice(t("notice.expenseAdded"), "success");
 }
 
+async function confirmCloseExpenses() {
+  if (!state.activeSessionId || state.session?.expensesClosed) return;
+
+  const confirmed = await openModal({
+    title: t("modal.closeExpensesTitle"),
+    description: t("modal.closeExpensesDescription"),
+    confirmText: t("expenses.closeBill"),
+  });
+  if (!confirmed) return;
+
+  const res = await closeExpenses(state.activeSessionId);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedCloseExpenses")), "error");
+    return;
+  }
+
+  await refreshSessionData();
+  showNotice(t("notice.expensesClosed"), "success");
+}
+
 async function confirmDeleteExpense(expenseId) {
+  if (state.session?.expensesClosed && !state.debugMode) {
+    showNotice(t("notice.expensesClosed"), "error");
+    return;
+  }
+
   const confirmed = await openModal({
     title: t("modal.deleteExpenseTitle"),
     description: t("modal.deleteExpenseDescription"),
@@ -1066,6 +1117,7 @@ function hydrateSession(raw) {
     currency: raw.currency || "RUB",
     createdAt: raw.created_at,
     finishedAt: raw.finished_at,
+    expensesClosed: Boolean(raw.expenses_closed),
     totalBuyIn: raw.total_buy_in,
     totalCashOut: raw.total_cash_out,
     totalChips: raw.total_chips,
