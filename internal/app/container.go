@@ -114,6 +114,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	sessionExpenseUC := usecase.NewSessionExpenseService(
 		expenseRepo,
 		sessionRepo,
+		sessionRepo,
 		txManager,
 		expenseIDGen,
 	)

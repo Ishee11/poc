@@ -54,6 +54,9 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrSessionAlreadyExists):
 		return apiError{status: http.StatusConflict, code: "session_already_exists"}
 
+	case errors.Is(err, entity.ErrSessionExpensesClosed):
+		return apiError{status: http.StatusForbidden, code: "session_expenses_closed"}
+
 	case errors.Is(err, entity.ErrSessionFinished):
 		return apiError{status: http.StatusConflict, code: "session_finished"}
 

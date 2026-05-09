@@ -68,6 +68,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/operations/cash-out", h.Operation.CashOut)
 	mux.HandleFunc("/operations/reverse", h.Operation.ReverseOperation)
 	mux.HandleFunc("/expenses", h.Operation.Expenses)
+	mux.HandleFunc("/expenses/close", h.Operation.CloseExpenses)
 
 	// ===== BLINDS CLOCK =====
 	mux.HandleFunc("/blinds-clock", h.Blinds.GetActive)

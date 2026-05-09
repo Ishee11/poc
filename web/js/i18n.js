@@ -99,6 +99,10 @@ const translations = {
     "expenses.splitBetween": "Split between",
     "expenses.paidBy": "Paid by",
     "expenses.splitEven": "Evenly",
+    "expenses.closeBill": "Close bill",
+    "expenses.closed": "Closed",
+    "expenses.open": "Open",
+    "expenses.closedHint": "The bill is closed. Only an admin can make changes.",
     "expenses.add": "Add expense",
     "expenses.empty": "No expenses yet",
     "settlement.title": "Final Transfers",
@@ -282,6 +286,7 @@ const translations = {
       "Enter an item, amount, participants, and payer amounts. Paid total must equal amount.",
     "notice.expenseAdded": "Expense added.",
     "notice.expenseDeleted": "Expense deleted.",
+    "notice.expensesClosed": "Bill closed.",
     "notice.noAvailablePlayers":
       "No available players to add. Create a new player instead.",
     "notice.choosePlayerAndBuyIn":
@@ -341,6 +346,9 @@ const translations = {
     "modal.reverseDescription": "Reverse {type} for {name} with {chips} chips?",
     "modal.deleteExpenseTitle": "Delete expense",
     "modal.deleteExpenseDescription": "Delete this bill item?",
+    "modal.closeExpensesTitle": "Close bill",
+    "modal.closeExpensesDescription":
+      "Close the post-game bill? After this, only an admin can change expenses.",
     "modal.deletePlayerTitle": "Delete Player",
     "modal.deletePlayerDescription":
       "Delete player {name}? This also deletes this player's operations and recalculates affected sessions.",
@@ -364,6 +372,8 @@ const translations = {
     "error.failedReverse": "Failed to reverse operation",
     "error.failedExpense": "Failed to save expense",
     "error.failedDeleteExpense": "Failed to delete expense",
+    "error.failedCloseExpenses": "Failed to close bill",
+    "error.session_expenses_closed": "The bill is closed. Only an admin can make changes.",
     "error.failedRefresh": "Failed to refresh session",
     "error.failedDeletePlayer": "Failed to delete player",
     "error.failedDeleteSession": "Failed to delete session",
@@ -511,6 +521,10 @@ const translations = {
     "expenses.splitBetween": "Делить между",
     "expenses.paidBy": "Кто оплатил",
     "expenses.splitEven": "Поровну",
+    "expenses.closeBill": "Закрыть счет",
+    "expenses.closed": "Закрыт",
+    "expenses.open": "Открыт",
+    "expenses.closedHint": "Счет закрыт. Изменения может вносить только админ.",
     "expenses.add": "Добавить расход",
     "expenses.empty": "Расходов пока нет",
     "settlement.title": "Итоговые переводы",
@@ -693,6 +707,7 @@ const translations = {
       "Введите позицию, сумму, участников и суммы оплат. Сумма оплат должна совпадать с расходом.",
     "notice.expenseAdded": "Расход добавлен.",
     "notice.expenseDeleted": "Расход удален.",
+    "notice.expensesClosed": "Счет закрыт.",
     "notice.noAvailablePlayers":
       "Нет доступных игроков для добавления. Создайте нового игрока.",
     "notice.choosePlayerAndBuyIn":
@@ -752,6 +767,9 @@ const translations = {
     "modal.reverseDescription": "Отменить {type} для {name} на {chips} фишек?",
     "modal.deleteExpenseTitle": "Удалить расход",
     "modal.deleteExpenseDescription": "Удалить эту позицию счета?",
+    "modal.closeExpensesTitle": "Закрыть счет",
+    "modal.closeExpensesDescription":
+      "Закрыть счет после игры? После этого расходы сможет менять только админ.",
     "modal.deletePlayerTitle": "Удалить игрока",
     "modal.deletePlayerDescription":
       "Удалить игрока {name}? Это также удалит операции этого игрока и пересчитает затронутые сессии.",
@@ -775,6 +793,8 @@ const translations = {
     "error.failedReverse": "Не удалось отменить операцию",
     "error.failedExpense": "Не удалось сохранить расход",
     "error.failedDeleteExpense": "Не удалось удалить расход",
+    "error.failedCloseExpenses": "Не удалось закрыть счет",
+    "error.session_expenses_closed": "Счет закрыт. Изменения может вносить только админ.",
     "error.failedRefresh": "Не удалось обновить сессию",
     "error.failedDeletePlayer": "Не удалось удалить игрока",
     "error.failedDeleteSession": "Не удалось удалить сессию",

@@ -8,16 +8,17 @@ import (
 )
 
 type GetSessionResponse struct {
-	SessionID    entity.SessionID `json:"session_id"`
-	Status       entity.Status    `json:"status"`
-	ChipRate     int64            `json:"chip_rate"`
-	BigBlind     int64            `json:"big_blind"`
-	Currency     entity.Currency  `json:"currency"`
-	CreatedAt    string           `json:"created_at"`
-	FinishedAt   *string          `json:"finished_at,omitempty"`
-	TotalBuyIn   int64            `json:"total_buy_in"`
-	TotalCashOut int64            `json:"total_cash_out"`
-	TotalChips   int64            `json:"total_chips"`
+	SessionID      entity.SessionID `json:"session_id"`
+	Status         entity.Status    `json:"status"`
+	ChipRate       int64            `json:"chip_rate"`
+	BigBlind       int64            `json:"big_blind"`
+	Currency       entity.Currency  `json:"currency"`
+	CreatedAt      string           `json:"created_at"`
+	FinishedAt     *string          `json:"finished_at,omitempty"`
+	ExpensesClosed bool             `json:"expenses_closed"`
+	TotalBuyIn     int64            `json:"total_buy_in"`
+	TotalCashOut   int64            `json:"total_cash_out"`
+	TotalChips     int64            `json:"total_chips"`
 }
 
 type GetSessionUseCase struct {
@@ -69,15 +70,16 @@ func (uc *GetSessionUseCase) execute(tx Tx, q GetSessionQuery) (*GetSessionRespo
 	}
 
 	return &GetSessionResponse{
-		SessionID:    session.ID(),
-		Status:       session.Status(),
-		ChipRate:     session.ChipRate().Value(),
-		BigBlind:     session.BigBlind(),
-		Currency:     session.Currency(),
-		CreatedAt:    session.CreatedAt().Format(time.RFC3339),
-		FinishedAt:   finishedAt,
-		TotalBuyIn:   session.TotalBuyIn(),
-		TotalCashOut: session.TotalCashOut(),
-		TotalChips:   session.TotalChips(),
+		SessionID:      session.ID(),
+		Status:         session.Status(),
+		ChipRate:       session.ChipRate().Value(),
+		BigBlind:       session.BigBlind(),
+		Currency:       session.Currency(),
+		CreatedAt:      session.CreatedAt().Format(time.RFC3339),
+		FinishedAt:     finishedAt,
+		ExpensesClosed: session.ExpensesClosed(),
+		TotalBuyIn:     session.TotalBuyIn(),
+		TotalCashOut:   session.TotalCashOut(),
+		TotalChips:     session.TotalChips(),
 	}, nil
 }

@@ -53,11 +53,12 @@ func (h *OperationHandler) CreateExpense(w http.ResponseWriter, r *http.Request)
 	}
 
 	expense, err := h.expenseService.Create(r.Context(), usecase.CreateSessionExpenseInput{
-		SessionID:    entity.SessionID(req.SessionID),
-		Title:        req.Title,
-		Amount:       req.Amount,
-		Participants: participants,
-		Payments:     payments,
+		SessionID:               entity.SessionID(req.SessionID),
+		Title:                   req.Title,
+		Amount:                  req.Amount,
+		Participants:            participants,
+		Payments:                payments,
+		AllowClosedModification: h.isAdmin(r),
 	})
 	if err != nil {
 		writeError(w, r, err)
@@ -74,10 +75,56 @@ func (h *OperationHandler) DeleteExpense(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.expenseService.Delete(r.Context(), expenseID); err != nil {
+	if err := h.expenseService.Delete(r.Context(), usecase.DeleteSessionExpenseInput{
+		ExpenseID:               expenseID,
+		AllowClosedModification: h.isAdmin(r),
+	}); err != nil {
 		writeError(w, r, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *OperationHandler) CloseExpenses(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	defer r.Body.Close()
+
+	var req CloseExpensesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
+		return
+	}
+	if req.SessionID == "" {
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
+		return
+	}
+
+	if err := h.expenseService.Close(r.Context(), entity.SessionID(req.SessionID)); err != nil {
+		writeError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *OperationHandler) isAdmin(r *http.Request) bool {
+	if h.authUC == nil {
+		return false
+	}
+
+	cookie, err := r.Cookie(h.cookie.Name)
+	if err != nil || cookie.Value == "" {
+		return false
+	}
+
+	principal, err := h.authUC.CurrentUser(r.Context(), cookie.Value)
+	if err != nil {
+		return false
+	}
+
+	return principal.Role == entity.AuthRoleAdmin
 }
