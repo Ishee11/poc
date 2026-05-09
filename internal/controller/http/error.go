@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/ishee11/poc/internal/entity"
+	"github.com/ishee11/poc/internal/usecase"
 )
 
 type apiError struct {
@@ -184,6 +185,12 @@ func mapError(err error) apiError {
 
 	case errors.Is(err, entity.ErrAuthRateLimited):
 		return apiError{status: http.StatusTooManyRequests, code: "rate_limited"}
+
+	case errors.Is(err, usecase.ErrInvalidExpense):
+		return apiError{status: http.StatusBadRequest, code: "invalid_expense"}
+
+	case errors.Is(err, usecase.ErrInvalidExpensePayment):
+		return apiError{status: http.StatusBadRequest, code: "invalid_expense_payment"}
 
 	default:
 		return apiError{status: http.StatusInternalServerError, code: "internal_error"}

@@ -44,6 +44,7 @@ func NewHandler(
 	buyIn *usecase.BuyInUseCase,
 	cashOut *usecase.CashOutUseCase,
 	reverse *usecase.ReverseOperationUseCase,
+	sessionExpenses *usecase.SessionExpenseService,
 
 	// blinds
 	blindClockUC *usecase.BlindClockService,
@@ -88,6 +89,7 @@ func NewHandler(
 			buyInUC:            buyIn,
 			cashOutUC:          cashOut,
 			reverseOperationUC: reverse,
+			expenseService:     sessionExpenses,
 		},
 		Blinds: &BlindClockHandler{
 			service: blindClockUC,
@@ -142,6 +144,7 @@ type OperationHandler struct {
 	buyInUC            *usecase.BuyInUseCase
 	cashOutUC          *usecase.CashOutUseCase
 	reverseOperationUC *usecase.ReverseOperationUseCase
+	expenseService     *usecase.SessionExpenseService
 }
 
 type BlindClockHandler struct {

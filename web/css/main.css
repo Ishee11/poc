@@ -1496,6 +1496,95 @@ body.debug-mode .debug-only {
     font-size: 0.88rem;
 }
 
+.expense-section-label {
+    margin-bottom: 8px;
+    color: #dae7f8;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.expense-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.expense-section-heading .expense-section-label {
+    margin-bottom: 0;
+}
+
+.expense-section-heading button {
+    padding: 8px 12px;
+}
+
+.expense-player-grid,
+.expense-payers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.expense-check,
+.expense-payer-row {
+    min-height: 46px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.expense-check {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.expense-check-main {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.expense-check input {
+    width: auto;
+}
+
+.expense-payer-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px;
+    align-items: center;
+}
+
+.expense-payer-row input {
+    padding: 9px 10px;
+}
+
+.settlement-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.settlement-grid h4 {
+    margin: 0 0 8px;
+}
+
+.settlement-balance-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settlement-balance-row:last-child {
+    border-bottom: 0;
+}
+
 .player-status {
     display: inline-flex;
     align-items: center;
