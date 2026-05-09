@@ -1503,6 +1503,22 @@ body.debug-mode .debug-only {
     font-weight: 700;
 }
 
+.expense-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.expense-section-heading .expense-section-label {
+    margin-bottom: 0;
+}
+
+.expense-section-heading button {
+    padding: 8px 12px;
+}
+
 .expense-player-grid,
 .expense-payers-grid {
     display: grid;
@@ -1520,8 +1536,15 @@ body.debug-mode .debug-only {
 }
 
 .expense-check {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.expense-check-main {
     display: flex;
-    grid-template-columns: none;
+    min-width: 0;
     align-items: center;
     gap: 10px;
 }

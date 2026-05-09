@@ -293,8 +293,11 @@ export function renderExpenseForm() {
       const name = player.player_name || player.name || id;
       return `
         <label class="expense-check">
-          <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
-          <span>${escapeHtml(name)}</span>
+          <span class="expense-check-main">
+            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
+            <span>${escapeHtml(name)}</span>
+          </span>
+          <strong data-expense-share="${escapeHtml(id)}">${formatMoney(0, state.session?.currency)}</strong>
         </label>
       `;
     })
@@ -315,6 +318,67 @@ export function renderExpenseForm() {
 
   participantsWrap.innerHTML = participantRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
   payersWrap.innerHTML = payerRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  bindExpenseSplitInputs();
+  updateExpenseParticipantShares();
+}
+
+function bindExpenseSplitInputs() {
+  const amountInput = document.getElementById("expense-amount");
+  if (amountInput) {
+    amountInput.oninput = updateExpenseParticipantShares;
+  }
+
+  document.querySelectorAll("[name='expense-participant']").forEach((input) => {
+    input.addEventListener("change", updateExpenseParticipantShares);
+  });
+}
+
+function calculateEqualShares(amount, participants) {
+  if (!Number.isFinite(amount) || amount <= 0 || participants.length === 0) {
+    return new Map();
+  }
+
+  const baseShare = Math.floor(amount / participants.length);
+  let remainder = amount - baseShare * participants.length;
+  const shares = new Map();
+  for (const playerId of participants) {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    shares.set(playerId, baseShare + extra);
+  }
+  return shares;
+}
+
+function selectedExpenseParticipants() {
+  return Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
+    .map((input) => input.value)
+    .filter(Boolean);
+}
+
+function updateExpenseParticipantShares() {
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const shares = calculateEqualShares(amount, selectedExpenseParticipants());
+
+  document.querySelectorAll("[data-expense-share]").forEach((element) => {
+    const playerId = element.getAttribute("data-expense-share");
+    element.textContent = formatMoney(shares.get(playerId) || 0, state.session?.currency);
+  });
+}
+
+function fillEqualExpensePayments() {
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const shares = calculateEqualShares(amount, selectedExpenseParticipants());
+
+  if (!shares.size) {
+    showNotice(t("notice.invalidExpense"), "error");
+    return;
+  }
+
+  document.querySelectorAll("[data-expense-payer]").forEach((input) => {
+    const playerId = input.getAttribute("data-expense-payer");
+    const share = shares.get(playerId) || 0;
+    input.value = share > 0 ? String(share) : "";
+  });
 }
 
 export function renderExpenses() {
@@ -457,6 +521,9 @@ export function initSessionActions() {
       case "add-expense-btn":
         await confirmAddExpense();
         break;
+      case "expense-split-even-btn":
+        fillEqualExpensePayments();
+        break;
       case "debug-delete-session-btn":
         await confirmDebugDeleteSession();
         break;
@@ -520,6 +587,23 @@ function lastBuyInChipsForRebuy(playerId) {
 
   const sessionBuyIn = buyIns[0];
   return sessionBuyIn ? Number(sessionBuyIn.chips) : 0;
+}
+
+function sortPlayersByLastActivity(players) {
+  return [...players].sort((left, right) => {
+    const leftActivity = Date.parse(left.last_activity_at || "") || 0;
+    const rightActivity = Date.parse(right.last_activity_at || "") || 0;
+    if (leftActivity !== rightActivity) return rightActivity - leftActivity;
+
+    const nameCompare = String(left.player_name || "").localeCompare(
+      String(right.player_name || ""),
+      undefined,
+      { sensitivity: "base" },
+    );
+    if (nameCompare !== 0) return nameCompare;
+
+    return String(left.player_id || "").localeCompare(String(right.player_id || ""));
+  });
 }
 
 async function confirmPlayerRebuy(playerId) {
@@ -614,8 +698,8 @@ async function confirmAddExistingPlayer() {
       .filter((player) => player.in_game)
       .map((player) => player.player_id || player.id),
   );
-  const availablePlayers = state.overviewPlayersAll.filter(
-    (player) => !inGameIds.has(player.player_id),
+  const availablePlayers = sortPlayersByLastActivity(
+    state.overviewPlayersAll.filter((player) => !inGameIds.has(player.player_id)),
   );
 
   if (!availablePlayers.length) {
@@ -894,9 +978,7 @@ async function confirmReverse(operationId) {
 async function confirmAddExpense() {
   const title = (document.getElementById("expense-title")?.value || "").trim();
   const amount = Number(document.getElementById("expense-amount")?.value);
-  const participants = Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
-    .map((input) => input.value)
-    .filter(Boolean);
+  const participants = selectedExpenseParticipants();
   const payments = Array.from(document.querySelectorAll("[data-expense-payer]"))
     .map((input) => ({
       player_id: input.getAttribute("data-expense-payer"),
@@ -927,6 +1009,7 @@ async function confirmAddExpense() {
   document.querySelectorAll("[data-expense-payer]").forEach((input) => {
     input.value = "";
   });
+  updateExpenseParticipantShares();
   await loadExpenses(state.activeSessionId);
   showNotice(t("notice.expenseAdded"), "success");
 }
@@ -998,7 +1081,7 @@ function findPlayerName(playerId) {
     return inSession.player_name || inSession.name || playerId;
   }
 
-  const overview = state.overviewPlayers.find((player) => player.player_id === playerId);
+  const overview = state.overviewPlayersAll.find((player) => player.player_id === playerId);
   return overview?.player_name || playerId;
 }
 
@@ -1022,13 +1105,9 @@ function settlementBalances() {
     const participants = expense.participants || [];
     if (!participants.length) continue;
 
-    const amount = Number(expense.amount) || 0;
-    const baseShare = Math.floor(amount / participants.length);
-    let remainder = amount - baseShare * participants.length;
+    const shares = calculateEqualShares(Number(expense.amount) || 0, participants);
     for (const playerId of participants) {
-      const extra = remainder > 0 ? 1 : 0;
-      remainder -= extra;
-      balances.set(playerId, (balances.get(playerId) || 0) - baseShare - extra);
+      balances.set(playerId, (balances.get(playerId) || 0) - (shares.get(playerId) || 0));
     }
 
     for (const payment of expense.payments || []) {
