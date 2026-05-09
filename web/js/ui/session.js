@@ -368,6 +368,13 @@ function selectedExpenseParticipants() {
     .filter(Boolean);
 }
 
+function setExpenseParticipantsChecked(checked) {
+  document.querySelectorAll("[name='expense-participant']").forEach((input) => {
+    input.checked = checked;
+  });
+  updateExpenseParticipantShares();
+}
+
 function updateExpenseParticipantShares() {
   const amount = Number(document.getElementById("expense-amount")?.value);
   const shares = calculateEqualShares(amount, selectedExpenseParticipants());
@@ -541,6 +548,12 @@ export function initSessionActions() {
         break;
       case "close-expenses-btn":
         await confirmCloseExpenses();
+        break;
+      case "expense-select-all-btn":
+        setExpenseParticipantsChecked(true);
+        break;
+      case "expense-clear-all-btn":
+        setExpenseParticipantsChecked(false);
         break;
       case "expense-split-even-btn":
         fillEqualExpensePayments();
