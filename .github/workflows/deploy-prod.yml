@@ -71,7 +71,7 @@ jobs:
               "AUTH_SEED_ADMIN_PASSWORD=${{ secrets.AUTH_SEED_ADMIN_PASSWORD }}" \
               "AUTH_SEED_USER_EMAIL=${{ secrets.AUTH_SEED_USER_EMAIL }}" \
               "AUTH_SEED_USER_PASSWORD=${{ secrets.AUTH_SEED_USER_PASSWORD }}" \
-              "APP_ORIGIN=https://semenovv.space" \
+              "APP_ORIGIN=https://poker.semenovv.space" \
               "PUSH_ENABLED=${{ secrets.PUSH_ENABLED }}" \
               "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \
               "PUSH_VAPID_PUBLIC_KEY=${{ secrets.PUSH_VAPID_PUBLIC_KEY }}" \
