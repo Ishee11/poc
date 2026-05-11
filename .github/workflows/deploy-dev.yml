@@ -94,7 +94,7 @@ jobs:
             fi
 
             echo "== Start dev postgres =="
-            docker compose -p poker-dev -f docker-compose.dev.yml up -d db
+            docker-compose -p poker-dev -f docker-compose.dev.yml up -d db
 
             echo "== Wait for dev postgres =="
             ready=0
@@ -130,10 +130,10 @@ jobs:
             printf '%s' '${{ github.token }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
 
             echo "== Pull app image =="
-            docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml pull app
+            docker-compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml pull app
 
             echo "== Start dev app =="
-            docker compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml up -d --no-build --force-recreate app
+            docker-compose --env-file .env.app -p poker-dev -f docker-compose.dev.yml -f docker-compose.registry.yml up -d --no-build --force-recreate app
 
             echo "== Check dev app logs =="
             sleep 3

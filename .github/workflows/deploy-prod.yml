@@ -93,10 +93,10 @@ jobs:
             printf '%s' '${{ github.token }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
 
             echo "== Pull app image =="
-            docker compose --env-file .env.app -f docker-compose.yml -f docker-compose.registry.yml pull app
+            docker-compose --env-file .env.app -f docker-compose.yml -f docker-compose.registry.yml pull app
 
             echo "== Start prod containers =="
-            docker compose --env-file .env.app -f docker-compose.yml -f docker-compose.registry.yml up -d --no-build --force-recreate
+            docker-compose --env-file .env.app -f docker-compose.yml -f docker-compose.registry.yml up -d --no-build --force-recreate
 
             echo "== Wait for prod postgres =="
             for i in {1..10}; do
