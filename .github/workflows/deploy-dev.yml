@@ -73,7 +73,7 @@ jobs:
               "AUTH_SEED_ADMIN_PASSWORD=${{ secrets.AUTH_SEED_ADMIN_PASSWORD }}" \
               "AUTH_SEED_USER_EMAIL=${{ secrets.AUTH_SEED_USER_EMAIL }}" \
               "AUTH_SEED_USER_PASSWORD=${{ secrets.AUTH_SEED_USER_PASSWORD }}" \
-              "APP_ORIGIN=http://193.238.134.58:18080" \
+              "APP_ORIGIN=https://dev.semenovv.space" \
               "PUSH_ENABLED=false" \
               "KAFKA_ENABLED=false" \
               "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \
