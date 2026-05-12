@@ -102,6 +102,13 @@ func (r *DebugAdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.Playe
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM settlement_transfers
+		WHERE from_player_id = $1 OR to_player_id = $1
+	`, playerID); err != nil {
+		return err
+	}
+
 	tag, err := tx.Exec(ctx, `DELETE FROM players WHERE id = $1`, playerID)
 	if err != nil {
 		return err

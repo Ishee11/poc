@@ -45,6 +45,7 @@ func NewHandler(
 	cashOut *usecase.CashOutUseCase,
 	reverse *usecase.ReverseOperationUseCase,
 	sessionExpenses *usecase.SessionExpenseService,
+	settlementTransfers *usecase.SettlementTransferService,
 
 	// blinds
 	blindClockUC *usecase.BlindClockService,
@@ -86,12 +87,13 @@ func NewHandler(
 			getSessionOpsUC:     getSessionOps,
 		},
 		Operation: &OperationHandler{
-			buyInUC:            buyIn,
-			cashOutUC:          cashOut,
-			reverseOperationUC: reverse,
-			expenseService:     sessionExpenses,
-			authUC:             authUC,
-			cookie:             authCookie,
+			buyInUC:                   buyIn,
+			cashOutUC:                 cashOut,
+			reverseOperationUC:        reverse,
+			expenseService:            sessionExpenses,
+			settlementTransferService: settlementTransfers,
+			authUC:                    authUC,
+			cookie:                    authCookie,
 		},
 		Blinds: &BlindClockHandler{
 			service: blindClockUC,
@@ -143,12 +145,13 @@ type SessionHandler struct {
 }
 
 type OperationHandler struct {
-	buyInUC            *usecase.BuyInUseCase
-	cashOutUC          *usecase.CashOutUseCase
-	reverseOperationUC *usecase.ReverseOperationUseCase
-	expenseService     *usecase.SessionExpenseService
-	authUC             *usecase.AuthService
-	cookie             AuthCookieConfig
+	buyInUC                   *usecase.BuyInUseCase
+	cashOutUC                 *usecase.CashOutUseCase
+	reverseOperationUC        *usecase.ReverseOperationUseCase
+	expenseService            *usecase.SessionExpenseService
+	settlementTransferService *usecase.SettlementTransferService
+	authUC                    *usecase.AuthService
+	cookie                    AuthCookieConfig
 }
 
 type BlindClockHandler struct {

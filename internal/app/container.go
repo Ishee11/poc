@@ -26,6 +26,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	opRepo := postgres.NewOperationRepository()
 	projectionRepo := postgres.NewProjectionRepository()
 	expenseRepo := postgres.NewSessionExpenseRepository()
+	settlementTransferRepo := postgres.NewSettlementTransferRepository()
 	outboxRepo := postgres.NewOutboxRepository()
 	idempotencyRepo := postgres.NewIdempotencyRepository()
 	statsRepo := postgres.NewStatsRepository(db.Pool)
@@ -45,6 +46,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	sessionIDGen := &infra.UUIDSessionIDGenerator{}
 	blindClockIDGen := &infra.UUIDBlindClockIDGenerator{}
 	expenseIDGen := &infra.UUIDExpenseIDGenerator{}
+	settlementTransferIDGen := &infra.UUIDSettlementTransferIDGenerator{}
 	authSessionIDGen := infra.UUIDAuthSessionIDGenerator{}
 	loginAttemptIDGen := infra.UUIDLoginAttemptIDGenerator{}
 	blindClockPushSender := infra.NewBlindClockPushSender(
@@ -117,6 +119,13 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		sessionRepo,
 		txManager,
 		expenseIDGen,
+	)
+
+	settlementTransferUC := usecase.NewSettlementTransferService(
+		settlementTransferRepo,
+		sessionRepo,
+		txManager,
+		settlementTransferIDGen,
 	)
 
 	createPlayerUC := usecase.NewCreatePlayerUseCase(
@@ -273,6 +282,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		cashOutUC,
 		reverseOpUC,
 		sessionExpenseUC,
+		settlementTransferUC,
 
 		// blinds
 		blindClockUC,

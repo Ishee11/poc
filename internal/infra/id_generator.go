@@ -35,3 +35,9 @@ type UUIDExpenseIDGenerator struct{}
 func (g *UUIDExpenseIDGenerator) New() string {
 	return uuid.New().String()
 }
+
+type UUIDSettlementTransferIDGenerator struct{}
+
+func (g *UUIDSettlementTransferIDGenerator) New() string {
+	return uuid.New().String()
+}

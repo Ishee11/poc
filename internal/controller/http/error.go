@@ -195,6 +195,9 @@ func mapError(err error) apiError {
 	case errors.Is(err, usecase.ErrInvalidExpensePayment):
 		return apiError{status: http.StatusBadRequest, code: "invalid_expense_payment"}
 
+	case errors.Is(err, usecase.ErrInvalidSettlementTransfer):
+		return apiError{status: http.StatusBadRequest, code: "invalid_settlement_transfer"}
+
 	default:
 		return apiError{status: http.StatusInternalServerError, code: "internal_error"}
 	}

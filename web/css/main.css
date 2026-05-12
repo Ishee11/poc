@@ -1592,6 +1592,42 @@ body.debug-mode .debug-only {
     margin: 0 0 8px;
 }
 
+.settlement-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.settlement-heading-row h4 {
+    margin: 0;
+}
+
+.settlement-mode-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 2px 8px;
+    color: #b8d5f0;
+    font-size: 0.78rem;
+    font-weight: 800;
+    background: rgba(131, 189, 241, 0.1);
+    border: 1px solid rgba(131, 189, 241, 0.22);
+    border-radius: 999px;
+}
+
+.settlement-subtitle {
+    margin: 12px 0 8px;
+    color: var(--muted);
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.settlement-remaining-title {
+    margin-top: 16px;
+}
+
 .settlement-balance-row {
     display: flex;
     justify-content: space-between;
@@ -1602,6 +1638,35 @@ body.debug-mode .debug-only {
 
 .settlement-balance-row:last-child {
     border-bottom: 0;
+}
+
+.settlement-manual-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px 40px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.settlement-manual-row select,
+.settlement-manual-row input {
+    padding: 9px 10px;
+}
+
+.settlement-add-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px max-content;
+    margin-top: 12px;
+}
+
+.settlement-remove-btn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+}
+
+.settlement-actions {
+    margin-top: 12px;
 }
 
 .player-status {
@@ -2272,6 +2337,19 @@ pre {
 
     .session-totals-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .settlement-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settlement-manual-row,
+    .settlement-add-row {
+        grid-template-columns: 1fr;
+    }
+
+    .settlement-remove-btn {
+        width: 100%;
     }
 
     .session-balance-stat #stat-total-chips {
