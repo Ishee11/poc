@@ -23,6 +23,7 @@ export const state = {
   players: [],
   operations: [],
   expenses: [],
+  settlementDrafts: {},
 
   // player screen
   selectedPlayerId: "",

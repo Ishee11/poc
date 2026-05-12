@@ -42,6 +42,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.operations = [];
   state.expenses = [];
   state.players = [];
+  loadSettlementDraft(sessionId);
 
   const res = await getSession(sessionId);
   if (!res.ok || !res.body) {
@@ -453,7 +454,12 @@ export function renderSettlement() {
   if (!wrap) return;
 
   const balances = settlementBalances();
-  const transfers = settlementTransfers(balances);
+  const autoTransfers = settlementTransfers(balances);
+  const draft = currentSettlementDraft();
+  const manualTransfers = draft?.transfers || [];
+  const isManual = Boolean(draft);
+  const adjustedBalances = isManual ? balancesAfterSettlementTransfers(balances, manualTransfers) : balances;
+  const remainingTransfers = isManual ? settlementTransfers(adjustedBalances) : autoTransfers;
   const balanceRows = Array.from(balances.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([playerId, amount]) => `
@@ -464,7 +470,110 @@ export function renderSettlement() {
     `)
     .join("");
 
-  const transferRows = transfers
+  const transferRows = renderAutoSettlementTransfers(remainingTransfers);
+  const manualRows = isManual ? renderManualSettlementTransfers(manualTransfers) : "";
+  const addTransferRow = isManual ? renderManualSettlementAddRow() : "";
+
+  wrap.innerHTML = `
+    <div class="settlement-grid">
+      <div>
+        <h4>${escapeHtml(t("settlement.balances"))}</h4>
+        ${balanceRows || `<div class="empty-inline">${escapeHtml(t("common.noData"))}</div>`}
+      </div>
+      <div>
+        <div class="settlement-heading-row">
+          <h4>${escapeHtml(t("settlement.transfers"))}</h4>
+          <span class="settlement-mode-pill">${escapeHtml(t(isManual ? "settlement.manualMode" : "settlement.autoMode"))}</span>
+        </div>
+        ${
+          isManual
+            ? `
+              <div class="settlement-subtitle">${escapeHtml(t("settlement.fixedTransfers"))}</div>
+              ${manualRows || `<div class="empty-inline">${escapeHtml(t("settlement.noFixedTransfers"))}</div>`}
+              ${addTransferRow}
+              <div class="settlement-subtitle settlement-remaining-title">${escapeHtml(t("settlement.remainingTransfers"))}</div>
+            `
+            : ""
+        }
+        ${transferRows || `<div class="empty-inline">${escapeHtml(t("settlement.noTransfers"))}</div>`}
+        <div class="actions settlement-actions">
+          ${
+            isManual
+              ? `<button type="button" class="secondary" id="settlement-reset-auto-btn">${escapeHtml(t("settlement.resetAuto"))}</button>`
+              : `<button type="button" class="secondary" id="settlement-edit-btn">${escapeHtml(t("settlement.edit"))}</button>`
+          }
+        </div>
+        ${isManual ? `<div class="hint">${escapeHtml(t("settlement.manualHint"))}</div>` : ""}
+      </div>
+    </div>
+  `;
+
+  bindManualSettlementControls();
+}
+
+function settlementDraftKey(sessionId = state.activeSessionId) {
+  return sessionId ? `poker.settlementDraft.${sessionId}` : "";
+}
+
+function loadSettlementDraft(sessionId) {
+  if (!sessionId) return;
+
+  const key = settlementDraftKey(sessionId);
+  const raw = window.localStorage?.getItem(key);
+  if (!raw) {
+    delete state.settlementDrafts[sessionId];
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    const transfers = Array.isArray(parsed?.transfers)
+      ? parsed.transfers.map(normalizeSettlementTransfer).filter(Boolean)
+      : [];
+    state.settlementDrafts[sessionId] = { transfers };
+  } catch (error) {
+    console.error("failed to load settlement draft:", error);
+    delete state.settlementDrafts[sessionId];
+  }
+}
+
+function saveSettlementDraft() {
+  const sessionId = state.activeSessionId;
+  if (!sessionId) return;
+
+  const draft = currentSettlementDraft();
+  const key = settlementDraftKey(sessionId);
+  if (!draft) {
+    window.localStorage?.removeItem(key);
+    return;
+  }
+
+  window.localStorage?.setItem(key, JSON.stringify({ transfers: draft.transfers }));
+}
+
+function currentSettlementDraft() {
+  return state.activeSessionId ? state.settlementDrafts[state.activeSessionId] : null;
+}
+
+function normalizeSettlementTransfer(transfer) {
+  const from = String(transfer?.from || "");
+  const to = String(transfer?.to || "");
+  const amount = Number(transfer?.amount);
+  const id = String(transfer?.id || `settlement-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  if (!from || !to || !Number.isFinite(amount) || amount <= 0) return null;
+  return { id, from, to, amount };
+}
+
+function setSettlementDraft(transfers) {
+  if (!state.activeSessionId) return;
+  state.settlementDrafts[state.activeSessionId] = {
+    transfers: transfers.map(normalizeSettlementTransfer).filter(Boolean),
+  };
+  saveSettlementDraft();
+}
+
+function renderAutoSettlementTransfers(transfers) {
+  return transfers
     .map((transfer) => `
       <div class="operation-row settlement-transfer-row">
         <div class="row-main">
@@ -476,19 +585,127 @@ export function renderSettlement() {
       </div>
     `)
     .join("");
+}
 
-  wrap.innerHTML = `
-    <div class="settlement-grid">
-      <div>
-        <h4>${escapeHtml(t("settlement.balances"))}</h4>
-        ${balanceRows || `<div class="empty-inline">${escapeHtml(t("common.noData"))}</div>`}
+function renderManualSettlementTransfers(transfers) {
+  return transfers
+    .map((transfer) => `
+      <div class="settlement-manual-row" data-settlement-transfer="${escapeHtml(transfer.id)}">
+        <select data-settlement-field="from" aria-label="${escapeHtml(t("settlement.from"))}">
+          ${renderSettlementPlayerOptions(transfer.from)}
+        </select>
+        <select data-settlement-field="to" aria-label="${escapeHtml(t("settlement.to"))}">
+          ${renderSettlementPlayerOptions(transfer.to)}
+        </select>
+        <input type="number" min="0" step="1" data-settlement-field="amount" value="${escapeHtml(String(transfer.amount))}" aria-label="${escapeHtml(t("settlement.amount"))}" />
+        <button type="button" class="secondary settlement-remove-btn" data-delete-settlement-transfer="${escapeHtml(transfer.id)}" aria-label="${escapeHtml(t("settlement.removeTransfer"))}">&times;</button>
       </div>
-      <div>
-        <h4>${escapeHtml(t("settlement.transfers"))}</h4>
-        ${transferRows || `<div class="empty-inline">${escapeHtml(t("settlement.noTransfers"))}</div>`}
-      </div>
+    `)
+    .join("");
+}
+
+function renderManualSettlementAddRow() {
+  return `
+    <div class="settlement-manual-row settlement-add-row">
+      <select id="settlement-add-from" aria-label="${escapeHtml(t("settlement.from"))}">
+        ${renderSettlementPlayerOptions("")}
+      </select>
+      <select id="settlement-add-to" aria-label="${escapeHtml(t("settlement.to"))}">
+        ${renderSettlementPlayerOptions("")}
+      </select>
+      <input type="number" min="0" step="1" id="settlement-add-amount" placeholder="${escapeHtml(t("settlement.amount"))}" aria-label="${escapeHtml(t("settlement.amount"))}" />
+      <button type="button" id="settlement-add-transfer-btn">${escapeHtml(t("settlement.addTransfer"))}</button>
     </div>
   `;
+}
+
+function renderSettlementPlayerOptions(selectedId) {
+  const options = [`<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`];
+  for (const player of state.players || []) {
+    const id = player.player_id || player.id;
+    const name = player.player_name || player.name || id;
+    options.push(
+      `<option value="${escapeHtml(id)}" ${id === selectedId ? "selected" : ""}>${escapeHtml(name)}</option>`,
+    );
+  }
+  return options.join("");
+}
+
+function bindManualSettlementControls() {
+  document.querySelectorAll("[data-settlement-transfer] [data-settlement-field]").forEach((control) => {
+    control.addEventListener("change", () => {
+      updateManualSettlementTransfer(control);
+    });
+  });
+}
+
+function updateManualSettlementTransfer(control) {
+  const row = control.closest("[data-settlement-transfer]");
+  const transferId = row?.getAttribute("data-settlement-transfer");
+  const field = control.getAttribute("data-settlement-field");
+  const draft = currentSettlementDraft();
+  if (!row || !transferId || !field || !draft) return;
+
+  const transfer = draft.transfers.find((item) => item.id === transferId);
+  if (!transfer) return;
+
+  const nextTransfer = { ...transfer };
+  if (field === "amount") {
+    const amount = Number(control.value);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      renderSettlement();
+      return;
+    }
+    nextTransfer.amount = amount;
+  } else if (field === "from" || field === "to") {
+    nextTransfer[field] = control.value;
+  }
+
+  if (!nextTransfer.from || !nextTransfer.to || nextTransfer.from === nextTransfer.to) {
+    renderSettlement();
+    return;
+  }
+
+  draft.transfers = draft.transfers
+    .map((item) => (item.id === transferId ? nextTransfer : item))
+    .map(normalizeSettlementTransfer)
+    .filter(Boolean);
+  saveSettlementDraft();
+  renderSettlement();
+}
+
+function enableManualSettlement() {
+  setSettlementDraft([]);
+  renderSettlement();
+}
+
+function resetSettlementToAuto() {
+  if (!state.activeSessionId) return;
+  delete state.settlementDrafts[state.activeSessionId];
+  saveSettlementDraft();
+  renderSettlement();
+}
+
+function addManualSettlementTransfer() {
+  const from = document.getElementById("settlement-add-from")?.value || "";
+  const to = document.getElementById("settlement-add-to")?.value || "";
+  const amount = Number(document.getElementById("settlement-add-amount")?.value);
+  const transfer = normalizeSettlementTransfer({ from, to, amount });
+  if (!transfer || from === to) return;
+
+  const draft = currentSettlementDraft() || { transfers: [] };
+  draft.transfers = [...draft.transfers, transfer];
+  state.settlementDrafts[state.activeSessionId] = draft;
+  saveSettlementDraft();
+  renderSettlement();
+}
+
+function deleteManualSettlementTransfer(transferId) {
+  const draft = currentSettlementDraft();
+  if (!draft) return;
+  draft.transfers = draft.transfers.filter((transfer) => transfer.id !== transferId);
+  saveSettlementDraft();
+  renderSettlement();
 }
 
 function renderPlayerSelect(selectId, players) {
@@ -530,6 +747,12 @@ export function initSessionActions() {
       return;
     }
 
+    const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
+    if (deleteSettlementTransferId) {
+      deleteManualSettlementTransfer(deleteSettlementTransferId);
+      return;
+    }
+
     switch (button.id) {
       case "cash-out-btn":
         await confirmCashOut();
@@ -557,6 +780,15 @@ export function initSessionActions() {
         break;
       case "expense-split-even-btn":
         fillEqualExpensePayments();
+        break;
+      case "settlement-edit-btn":
+        enableManualSettlement();
+        break;
+      case "settlement-reset-auto-btn":
+        resetSettlementToAuto();
+        break;
+      case "settlement-add-transfer-btn":
+        addManualSettlementTransfer();
         break;
       case "debug-delete-session-btn":
         await confirmDebugDeleteSession();
@@ -1212,4 +1444,16 @@ function settlementTransfers(balances) {
   }
 
   return transfers;
+}
+
+function balancesAfterSettlementTransfers(balances, transfers) {
+  const next = new Map(balances);
+  for (const transfer of transfers || []) {
+    const amount = Number(transfer.amount) || 0;
+    if (!transfer.from || !transfer.to || amount <= 0) continue;
+
+    next.set(transfer.from, (next.get(transfer.from) || 0) + amount);
+    next.set(transfer.to, (next.get(transfer.to) || 0) - amount);
+  }
+  return next;
 }
