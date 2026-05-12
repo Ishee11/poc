@@ -226,7 +226,6 @@ export function openModal({
               type="${escapeHtml(field.type || "text")}"
               value="${escapeHtml(field.value ?? "")}"
               ${field.min != null ? `min="${escapeHtml(field.min)}"` : ""}
-              ${field.step != null ? `step="${escapeHtml(String(field.step))}"` : ""}
               ${field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : ""}
             />
             ${
