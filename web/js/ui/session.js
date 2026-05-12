@@ -487,7 +487,7 @@ export function renderSettlement() {
   const autoTransfers = settlementTransfers(balances);
   const draft = currentSettlementDraft();
   const manualTransfers = draft?.transfers || [];
-  const hasAdjustments = Boolean(draft);
+  const hasAdjustments = manualTransfers.length > 0;
   const isEditing = state.settlementEditing;
   const adjustedBalances = hasAdjustments ? balancesAfterSettlementTransfers(balances, manualTransfers) : balances;
   const remainingTransfers = hasAdjustments ? settlementTransfers(adjustedBalances) : autoTransfers;
@@ -502,7 +502,9 @@ export function renderSettlement() {
     .join("");
 
   const transferRows = renderAutoSettlementTransfers(remainingTransfers);
-  const manualRows = isEditing ? renderManualSettlementTransfers(manualTransfers) : "";
+  const fixedTransferRows = isEditing
+    ? renderManualSettlementTransfers(manualTransfers)
+    : renderAutoSettlementTransfers(manualTransfers);
   const addTransferRow = isEditing ? renderManualSettlementAddRow() : "";
 
   wrap.innerHTML = `
@@ -517,10 +519,10 @@ export function renderSettlement() {
           <span class="settlement-mode-pill">${escapeHtml(t(hasAdjustments ? "settlement.adjustedMode" : "settlement.autoMode"))}</span>
         </div>
         ${
-          isEditing
+          isEditing || hasAdjustments
             ? `
               <div class="settlement-subtitle">${escapeHtml(t("settlement.fixedTransfers"))}</div>
-              ${manualRows || `<div class="empty-inline">${escapeHtml(t("settlement.noFixedTransfers"))}</div>`}
+              ${fixedTransferRows || `<div class="empty-inline">${escapeHtml(t("settlement.noFixedTransfers"))}</div>`}
               ${addTransferRow}
               <div class="settlement-subtitle settlement-remaining-title">${escapeHtml(t("settlement.remainingTransfers"))}</div>
             `
