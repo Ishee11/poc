@@ -24,6 +24,7 @@ export const state = {
   operations: [],
   expenses: [],
   settlementDrafts: {},
+  settlementEditing: false,
 
   // player screen
   selectedPlayerId: "",

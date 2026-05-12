@@ -44,6 +44,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.operations = [];
   state.expenses = [];
   state.players = [];
+  state.settlementEditing = false;
   delete state.settlementDrafts[sessionId];
 
   const res = await getSession(sessionId);
@@ -486,9 +487,10 @@ export function renderSettlement() {
   const autoTransfers = settlementTransfers(balances);
   const draft = currentSettlementDraft();
   const manualTransfers = draft?.transfers || [];
-  const isManual = Boolean(draft);
-  const adjustedBalances = isManual ? balancesAfterSettlementTransfers(balances, manualTransfers) : balances;
-  const remainingTransfers = isManual ? settlementTransfers(adjustedBalances) : autoTransfers;
+  const hasAdjustments = Boolean(draft);
+  const isEditing = state.settlementEditing;
+  const adjustedBalances = hasAdjustments ? balancesAfterSettlementTransfers(balances, manualTransfers) : balances;
+  const remainingTransfers = hasAdjustments ? settlementTransfers(adjustedBalances) : autoTransfers;
   const balanceRows = Array.from(balances.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([playerId, amount]) => `
@@ -500,8 +502,8 @@ export function renderSettlement() {
     .join("");
 
   const transferRows = renderAutoSettlementTransfers(remainingTransfers);
-  const manualRows = isManual ? renderManualSettlementTransfers(manualTransfers) : "";
-  const addTransferRow = isManual ? renderManualSettlementAddRow() : "";
+  const manualRows = isEditing ? renderManualSettlementTransfers(manualTransfers) : "";
+  const addTransferRow = isEditing ? renderManualSettlementAddRow() : "";
 
   wrap.innerHTML = `
     <div class="settlement-grid">
@@ -512,10 +514,10 @@ export function renderSettlement() {
       <div>
         <div class="settlement-heading-row">
           <h4>${escapeHtml(t("settlement.transfers"))}</h4>
-          <span class="settlement-mode-pill">${escapeHtml(t(isManual ? "settlement.manualMode" : "settlement.autoMode"))}</span>
+          <span class="settlement-mode-pill">${escapeHtml(t(hasAdjustments ? "settlement.adjustedMode" : "settlement.autoMode"))}</span>
         </div>
         ${
-          isManual
+          isEditing
             ? `
               <div class="settlement-subtitle">${escapeHtml(t("settlement.fixedTransfers"))}</div>
               ${manualRows || `<div class="empty-inline">${escapeHtml(t("settlement.noFixedTransfers"))}</div>`}
@@ -527,12 +529,15 @@ export function renderSettlement() {
         ${transferRows || `<div class="empty-inline">${escapeHtml(t("settlement.noTransfers"))}</div>`}
         <div class="actions settlement-actions">
           ${
-            isManual
-              ? `<button type="button" class="secondary" id="settlement-reset-auto-btn">${escapeHtml(t("settlement.resetAuto"))}</button>`
+            isEditing
+              ? `
+                <button type="button" class="secondary" id="settlement-done-btn">${escapeHtml(t("settlement.done"))}</button>
+                <button type="button" class="secondary" id="settlement-reset-auto-btn">${escapeHtml(t("settlement.resetAuto"))}</button>
+              `
               : `<button type="button" class="secondary" id="settlement-edit-btn">${escapeHtml(t("settlement.edit"))}</button>`
           }
         </div>
-        ${isManual ? `<div class="hint">${escapeHtml(t("settlement.manualHint"))}</div>` : ""}
+        ${isEditing ? `<div class="hint">${escapeHtml(t("settlement.manualHint"))}</div>` : ""}
       </div>
     </div>
   `;
@@ -684,7 +689,15 @@ async function updateManualSettlementTransfer(control) {
 }
 
 async function enableManualSettlement() {
-  await setSettlementDraft([]);
+  state.settlementEditing = true;
+  if (!currentSettlementDraft()) {
+    await setSettlementDraft([]);
+  }
+  renderSettlement();
+}
+
+function closeManualSettlement() {
+  state.settlementEditing = false;
   renderSettlement();
 }
 
@@ -692,6 +705,7 @@ async function resetSettlementToAuto() {
   if (!state.activeSessionId) return;
   delete state.settlementDrafts[state.activeSessionId];
   await persistSettlementDraft();
+  state.settlementEditing = false;
   renderSettlement();
 }
 
@@ -792,6 +806,9 @@ export function initSessionActions() {
         break;
       case "settlement-edit-btn":
         await enableManualSettlement();
+        break;
+      case "settlement-done-btn":
+        closeManualSettlement();
         break;
       case "settlement-reset-auto-btn":
         await resetSettlementToAuto();
