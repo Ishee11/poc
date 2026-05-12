@@ -58,6 +58,18 @@ type CloseExpensesRequest struct {
 	SessionID string `json:"session_id"`
 }
 
+type SettlementTransferRequest struct {
+	ID     string `json:"id,omitempty"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Amount int64  `json:"amount"`
+}
+
+type SaveSettlementTransfersRequest struct {
+	SessionID string                      `json:"session_id"`
+	Transfers []SettlementTransferRequest `json:"transfers"`
+}
+
 type CreatePlayerRequest struct {
 	RequestID string `json:"request_id" example:"req-123"`
 	Name      string `json:"name" example:"Alice"`

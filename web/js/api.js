@@ -249,6 +249,20 @@ export function deleteExpense(expenseId) {
   });
 }
 
+export function getSettlementTransfers(sessionId) {
+  return request(`/settlement-transfers?session_id=${sessionId}`);
+}
+
+export function saveSettlementTransfers(sessionId, transfers) {
+  return request("/settlement-transfers", {
+    method: "PUT",
+    body: JSON.stringify({
+      session_id: sessionId,
+      transfers,
+    }),
+  });
+}
+
 // ===== operations =====
 
 export function buyIn({ sessionId, playerId, chips }) {

@@ -10,9 +10,11 @@ import {
   deleteExpense,
   finishSession,
   getExpenses,
+  getSettlementTransfers,
   getSession,
   getSessionOperations,
   reverseOperation,
+  saveSettlementTransfers,
 } from "../api.js";
 import { operationLabel, statusLabel, t } from "../i18n.js";
 import { state } from "../state.js";
@@ -42,7 +44,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.operations = [];
   state.expenses = [];
   state.players = [];
-  loadSettlementDraft(sessionId);
+  delete state.settlementDrafts[sessionId];
 
   const res = await getSession(sessionId);
   if (!res.ok || !res.body) {
@@ -55,7 +57,12 @@ export async function openSession(sessionId, { replace = false } = {}) {
   renderOperations();
   renderActionPlayerOptions();
 
-  await Promise.all([loadPlayers(sessionId), loadOperations(sessionId), loadExpenses(sessionId)]);
+  await Promise.all([
+    loadPlayers(sessionId),
+    loadOperations(sessionId),
+    loadExpenses(sessionId),
+    loadSettlementTransfers(sessionId),
+  ]);
   renderActionPlayerOptions();
   renderExpenseForm();
   renderExpenses();
@@ -82,6 +89,28 @@ export async function loadExpenses(sessionId) {
 
   state.expenses = Array.isArray(res.body) ? res.body : [];
   renderExpenses();
+  renderSettlement();
+}
+
+async function loadSettlementTransfers(sessionId) {
+  if (!sessionId) return;
+
+  const res = await getSettlementTransfers(sessionId);
+  if (!res.ok) {
+    console.error("loadSettlementTransfers failed:", res.text);
+    delete state.settlementDrafts[sessionId];
+    renderSettlement();
+    return;
+  }
+
+  const transfers = Array.isArray(res.body)
+    ? res.body.map(normalizeSettlementTransfer).filter(Boolean)
+    : [];
+  if (transfers.length) {
+    state.settlementDrafts[sessionId] = { transfers };
+  } else {
+    delete state.settlementDrafts[sessionId];
+  }
   renderSettlement();
 }
 
@@ -511,44 +540,24 @@ export function renderSettlement() {
   bindManualSettlementControls();
 }
 
-function settlementDraftKey(sessionId = state.activeSessionId) {
-  return sessionId ? `poker.settlementDraft.${sessionId}` : "";
-}
-
-function loadSettlementDraft(sessionId) {
-  if (!sessionId) return;
-
-  const key = settlementDraftKey(sessionId);
-  const raw = window.localStorage?.getItem(key);
-  if (!raw) {
-    delete state.settlementDrafts[sessionId];
-    return;
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    const transfers = Array.isArray(parsed?.transfers)
-      ? parsed.transfers.map(normalizeSettlementTransfer).filter(Boolean)
-      : [];
-    state.settlementDrafts[sessionId] = { transfers };
-  } catch (error) {
-    console.error("failed to load settlement draft:", error);
-    delete state.settlementDrafts[sessionId];
-  }
-}
-
-function saveSettlementDraft() {
+async function persistSettlementDraft() {
   const sessionId = state.activeSessionId;
   if (!sessionId) return;
 
   const draft = currentSettlementDraft();
-  const key = settlementDraftKey(sessionId);
-  if (!draft) {
-    window.localStorage?.removeItem(key);
+  const transfers = draft?.transfers || [];
+  const res = await saveSettlementTransfers(sessionId, transfers);
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedSaveSettlementTransfers")), "error");
     return;
   }
 
-  window.localStorage?.setItem(key, JSON.stringify({ transfers: draft.transfers }));
+  const saved = Array.isArray(res.body)
+    ? res.body.map(normalizeSettlementTransfer).filter(Boolean)
+    : [];
+  if (draft || saved.length) {
+    state.settlementDrafts[sessionId] = { transfers: saved };
+  }
 }
 
 function currentSettlementDraft() {
@@ -564,12 +573,12 @@ function normalizeSettlementTransfer(transfer) {
   return { id, from, to, amount };
 }
 
-function setSettlementDraft(transfers) {
+async function setSettlementDraft(transfers) {
   if (!state.activeSessionId) return;
   state.settlementDrafts[state.activeSessionId] = {
     transfers: transfers.map(normalizeSettlementTransfer).filter(Boolean),
   };
-  saveSettlementDraft();
+  await persistSettlementDraft();
 }
 
 function renderAutoSettlementTransfers(transfers) {
@@ -633,13 +642,13 @@ function renderSettlementPlayerOptions(selectedId) {
 
 function bindManualSettlementControls() {
   document.querySelectorAll("[data-settlement-transfer] [data-settlement-field]").forEach((control) => {
-    control.addEventListener("change", () => {
-      updateManualSettlementTransfer(control);
+    control.addEventListener("change", async () => {
+      await updateManualSettlementTransfer(control);
     });
   });
 }
 
-function updateManualSettlementTransfer(control) {
+async function updateManualSettlementTransfer(control) {
   const row = control.closest("[data-settlement-transfer]");
   const transferId = row?.getAttribute("data-settlement-transfer");
   const field = control.getAttribute("data-settlement-field");
@@ -670,23 +679,23 @@ function updateManualSettlementTransfer(control) {
     .map((item) => (item.id === transferId ? nextTransfer : item))
     .map(normalizeSettlementTransfer)
     .filter(Boolean);
-  saveSettlementDraft();
+  await persistSettlementDraft();
   renderSettlement();
 }
 
-function enableManualSettlement() {
-  setSettlementDraft([]);
+async function enableManualSettlement() {
+  await setSettlementDraft([]);
   renderSettlement();
 }
 
-function resetSettlementToAuto() {
+async function resetSettlementToAuto() {
   if (!state.activeSessionId) return;
   delete state.settlementDrafts[state.activeSessionId];
-  saveSettlementDraft();
+  await persistSettlementDraft();
   renderSettlement();
 }
 
-function addManualSettlementTransfer() {
+async function addManualSettlementTransfer() {
   const from = document.getElementById("settlement-add-from")?.value || "";
   const to = document.getElementById("settlement-add-to")?.value || "";
   const amount = Number(document.getElementById("settlement-add-amount")?.value);
@@ -696,15 +705,15 @@ function addManualSettlementTransfer() {
   const draft = currentSettlementDraft() || { transfers: [] };
   draft.transfers = [...draft.transfers, transfer];
   state.settlementDrafts[state.activeSessionId] = draft;
-  saveSettlementDraft();
+  await persistSettlementDraft();
   renderSettlement();
 }
 
-function deleteManualSettlementTransfer(transferId) {
+async function deleteManualSettlementTransfer(transferId) {
   const draft = currentSettlementDraft();
   if (!draft) return;
   draft.transfers = draft.transfers.filter((transfer) => transfer.id !== transferId);
-  saveSettlementDraft();
+  await persistSettlementDraft();
   renderSettlement();
 }
 
@@ -749,7 +758,7 @@ export function initSessionActions() {
 
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
-      deleteManualSettlementTransfer(deleteSettlementTransferId);
+      await deleteManualSettlementTransfer(deleteSettlementTransferId);
       return;
     }
 
@@ -782,13 +791,13 @@ export function initSessionActions() {
         fillEqualExpensePayments();
         break;
       case "settlement-edit-btn":
-        enableManualSettlement();
+        await enableManualSettlement();
         break;
       case "settlement-reset-auto-btn":
-        resetSettlementToAuto();
+        await resetSettlementToAuto();
         break;
       case "settlement-add-transfer-btn":
-        addManualSettlementTransfer();
+        await addManualSettlementTransfer();
         break;
       case "debug-delete-session-btn":
         await confirmDebugDeleteSession();
@@ -1345,6 +1354,7 @@ async function refreshSessionData() {
     loadPlayers(id),
     loadOperations(id),
     loadExpenses(id),
+    loadSettlementTransfers(id),
     loadSessions(),
     loadPlayersOverview(),
   ]);
