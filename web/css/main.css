@@ -2151,6 +2151,19 @@ pre {
     line-height: 1.5;
 }
 
+.modal-number-stepper {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    gap: 8px;
+    align-items: center;
+}
+
+.modal-number-stepper button {
+    min-width: 78px;
+    padding: 12px 10px;
+    white-space: nowrap;
+}
+
 .modal-actions {
     display: flex;
     flex-wrap: wrap;

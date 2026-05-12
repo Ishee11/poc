@@ -215,13 +215,26 @@ export function openModal({
       return `
         <label>
           ${escapeHtml(field.label)}
-          <input
-            name="${escapeHtml(field.name)}"
-            type="${escapeHtml(field.type || "text")}"
-            value="${escapeHtml(field.value ?? "")}"
-            ${field.min != null ? `min="${escapeHtml(field.min)}"` : ""}
-            ${field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : ""}
-          />
+          <span class="${field.step ? "modal-number-stepper" : ""}">
+            ${
+              field.step
+                ? `<button type="button" class="secondary" data-modal-step="${escapeHtml(String(-Math.abs(Number(field.step))))}" data-modal-step-target="${escapeHtml(field.name)}">-${escapeHtml(String(Math.abs(Number(field.step))))}</button>`
+                : ""
+            }
+            <input
+              name="${escapeHtml(field.name)}"
+              type="${escapeHtml(field.type || "text")}"
+              value="${escapeHtml(field.value ?? "")}"
+              ${field.min != null ? `min="${escapeHtml(field.min)}"` : ""}
+              ${field.step != null ? `step="${escapeHtml(String(field.step))}"` : ""}
+              ${field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : ""}
+            />
+            ${
+              field.step
+                ? `<button type="button" class="secondary" data-modal-step="${escapeHtml(String(Math.abs(Number(field.step))))}" data-modal-step-target="${escapeHtml(field.name)}">+${escapeHtml(String(Math.abs(Number(field.step))))}</button>`
+                : ""
+            }
+          </span>
         </label>
       `;
     })
@@ -264,6 +277,23 @@ export function openModal({
 
     root.querySelector("#modal-cancel-btn")?.addEventListener("click", () => {
       close(null);
+    });
+
+    root.querySelectorAll("[data-modal-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const targetName = button.getAttribute("data-modal-step-target");
+        const delta = Number(button.getAttribute("data-modal-step"));
+        const input = targetName
+          ? Array.from(root.querySelectorAll("input")).find((item) => item.name === targetName)
+          : null;
+        if (!input || !Number.isFinite(delta)) return;
+
+        const current = Number(input.value) || 0;
+        const min = input.min === "" ? 0 : Number(input.min);
+        const next = Math.max(Number.isFinite(min) ? min : 0, current + delta);
+        input.value = String(next);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
     });
 
     root.querySelector("#modal-form")?.addEventListener("submit", (event) => {
