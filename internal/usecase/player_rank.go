@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -20,6 +19,11 @@ const (
 	PlayerRankLudoman  = "ludoman"
 	PlayerRankManiac   = "maniac"
 	PlayerRankCaptain  = "captain_run"
+)
+
+const (
+	playerRankQualifiedMinSessions int64 = 5
+	playerRankActiveWindow               = 60 * 24 * time.Hour
 )
 
 var playerRankLabels = map[string]string{
@@ -41,29 +45,29 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 		return players
 	}
 
-	qualificationSessions := playerRankQualificationSessions(players)
-	qualified := make([]PlayerStat, 0, len(players))
+	latestActivity := latestPlayerRankActivity(players)
+	contenders := make([]PlayerStat, 0, len(players))
 	for _, player := range players {
-		if !isNewcomer(player) && player.SessionsCount >= qualificationSessions {
-			qualified = append(qualified, player)
+		if isSpecialRankContender(player, latestActivity) {
+			contenders = append(contenders, player)
 		}
 	}
 
-	sharkID := bestPlayerID(qualified, func(player PlayerStat) bool {
+	sharkID := bestPlayerID(contenders, func(player PlayerStat) bool {
 		return player.ProfitMoney > 0
 	}, compareShark)
-	sponsorID := bestPlayerID(qualified, func(player PlayerStat) bool {
+	sponsorID := bestPlayerID(contenders, func(player PlayerStat) bool {
 		return player.ProfitMoney < 0
 	}, compareSponsor)
-	grinderID := bestPlayerID(qualified, func(player PlayerStat) bool {
+	grinderID := bestPlayerID(contenders, func(player PlayerStat) bool {
 		return player.PlayerID != sharkID && player.PlayerID != sponsorID
 	}, compareGrinder)
-	maniacID := bestPlayerID(qualified, func(player PlayerStat) bool {
+	maniacID := bestPlayerID(contenders, func(player PlayerStat) bool {
 		return player.ProfitMoney > 0 &&
 			player.PlayerID != sharkID &&
 			player.PlayerID != grinderID
 	}, compareAverageBuyIn)
-	ludomanID := bestPlayerID(qualified, func(player PlayerStat) bool {
+	ludomanID := bestPlayerID(contenders, func(player PlayerStat) bool {
 		return player.ProfitMoney < 0 &&
 			player.PlayerID != sponsorID &&
 			player.PlayerID != grinderID
@@ -87,9 +91,9 @@ func assignPlayerRanks(players []PlayerStat) []PlayerStat {
 			rank = PlayerRankManiac
 		case player.PlayerID == ludomanID:
 			rank = PlayerRankLudoman
-		case player.SessionsCount >= qualificationSessions && player.ProfitMoney < 0:
+		case player.SessionsCount >= playerRankQualifiedMinSessions && player.ProfitMoney < 0:
 			rank = PlayerRankMainFish
-		case player.SessionsCount >= qualificationSessions:
+		case player.SessionsCount >= playerRankQualifiedMinSessions:
 			rank = PlayerRankRegular
 		case player.ProfitMoney > 0:
 			rank = PlayerRankPositive
@@ -109,6 +113,17 @@ func isNewcomer(player PlayerStat) bool {
 	return player.SessionsCount <= 3
 }
 
+func isSpecialRankContender(player PlayerStat, latestActivity time.Time) bool {
+	if isNewcomer(player) || player.SessionsCount < playerRankQualifiedMinSessions {
+		return false
+	}
+	activity := parseRankActivity(player.LastActivityAt)
+	if activity.IsZero() || latestActivity.IsZero() {
+		return false
+	}
+	return !activity.Before(latestActivity.Add(-playerRankActiveWindow))
+}
+
 func playerRankLabel(rank string, player PlayerStat) string {
 	if rank == PlayerRankCaptain {
 		return fmt.Sprintf("%s x%d", playerRankLabels[rank], player.PositiveStreak)
@@ -125,28 +140,15 @@ func playerRanksByID(players []PlayerStat) map[entity.PlayerID]PlayerRank {
 	return result
 }
 
-func playerRankQualificationSessions(players []PlayerStat) int64 {
-	counts := make([]int64, 0, len(players))
+func latestPlayerRankActivity(players []PlayerStat) time.Time {
+	var latest time.Time
 	for _, player := range players {
-		if player.SessionsCount > 0 {
-			counts = append(counts, player.SessionsCount)
+		activity := parseRankActivity(player.LastActivityAt)
+		if activity.After(latest) {
+			latest = activity
 		}
 	}
-	if len(counts) == 0 {
-		return 3
-	}
-
-	sort.Slice(counts, func(i, j int) bool {
-		return counts[i] < counts[j]
-	})
-	median := counts[len(counts)/2]
-	if len(counts)%2 == 0 {
-		median = (counts[len(counts)/2-1] + counts[len(counts)/2]) / 2
-	}
-	if median < 3 {
-		return 3
-	}
-	return median
+	return latest
 }
 
 func bestPlayerID(players []PlayerStat, eligible func(PlayerStat) bool, better func(PlayerStat, PlayerStat) bool) entity.PlayerID {
