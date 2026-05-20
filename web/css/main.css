@@ -693,10 +693,10 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .blinds-hero-panel {
     position: relative;
     overflow: hidden;
-    border-color: rgba(88, 208, 167, 0.28);
+    border-color: var(--line-strong);
     background:
-        linear-gradient(180deg, rgba(88, 208, 167, 0.08), rgba(255, 255, 255, 0.02)),
-        var(--panel);
+        radial-gradient(circle at center, rgba(72, 98, 59, 0.22), transparent 32rem),
+        var(--panel-strong);
     text-align: center;
     transition:
         box-shadow 0.24s ease,
@@ -786,12 +786,13 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .blinds-timer-display {
     margin: 24px 0 16px;
+    color: var(--accent-strong);
     font-size: clamp(4rem, 14vw, 8rem);
     line-height: 0.95;
     font-weight: 900;
     letter-spacing: 0.06em;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 28px rgba(88, 208, 167, 0.18);
+    text-shadow: 0 0 24px rgba(216, 168, 79, 0.24);
 }
 
 .blinds-hero-panel.is-event-active .blinds-timer-display,
@@ -819,8 +820,8 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .blinds-score-item {
     padding: 14px 16px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    background: rgba(18, 13, 10, 0.52);
 }
 
 .blinds-score-label {
@@ -883,6 +884,12 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     margin-top: 14px;
 }
 
+.blinds-structure-shell {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.52);
+}
+
 .blinds-structure-collapsed {
     display: grid;
     gap: 12px;
@@ -905,6 +912,9 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
     gap: 12px;
     align-items: end;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.52);
 }
 
 .blinds-duration-cascade {
@@ -939,6 +949,9 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .blinds-tool-group {
     display: grid;
     gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.52);
 }
 
 .blinds-push-settings {
@@ -1340,6 +1353,9 @@ button:disabled {
     gap: 10px;
     align-items: center;
     justify-content: space-between;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(27, 19, 15, 0.92);
 }
 
 .period-summary {
@@ -1459,9 +1475,9 @@ body.debug-mode .debug-only {
     min-height: 22px;
     padding: 3px 8px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--muted);
+    border: 1px solid rgba(216, 168, 79, 0.28);
+    background: rgba(216, 168, 79, 0.16);
+    color: var(--accent-strong);
     font-size: 0.72rem;
     font-weight: 900;
     line-height: 1;
@@ -2047,9 +2063,9 @@ pre {
 
 .card-item {
     padding: 12px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    background: rgba(27, 19, 15, 0.92);
+    border: 1px solid var(--line);
     display: grid;
     gap: 10px;
     min-width: 0;
@@ -2105,6 +2121,9 @@ pre {
 
 .mobile-player-session-card {
     padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(27, 19, 15, 0.92);
 }
 
 .mobile-player-session-card .card-header strong {
