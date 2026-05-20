@@ -1084,15 +1084,8 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     background: rgba(255, 208, 122, 0.1);
 }
 
-.stat.on-table-emphasis #stat-total-chips {
-    font-size: 1.18rem;
-    font-weight: 800;
-}
-
 .stat.on-table-warning #stat-total-chips {
     color: var(--warning);
-    font-size: 1.28rem;
-    font-weight: 800;
 }
 
 .stat.on-table-clear {
