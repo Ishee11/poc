@@ -1,16 +1,27 @@
 :root {
-    --bg: #0b1117;
-    --panel: rgba(15, 24, 34, 0.9);
-    --panel-strong: rgba(17, 28, 39, 0.98);
-    --line: rgba(181, 202, 225, 0.16);
-    --text: #edf4ff;
-    --muted: #99aec9;
-    --accent: #58d0a7;
-    --accent-strong: #20a97d;
-    --danger: #ff8d7a;
-    --warning: #ffd07a;
-    --shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
-    --radius: 12px;
+    --bg: #120d0a;
+    --bg-elevated: #17100c;
+    --panel: rgba(27, 19, 15, 0.94);
+    --panel-strong: rgba(33, 23, 17, 0.98);
+    --panel-felt: #26351f;
+    --line: rgba(216, 168, 79, 0.2);
+    --line-strong: rgba(216, 168, 79, 0.34);
+    --text: #fff2de;
+    --muted: #cbb693;
+    --muted-soft: #9f8b70;
+    --accent: #d8a84f;
+    --accent-strong: #f0c875;
+    --accent-ink: #1c1109;
+    --felt: #48623b;
+    --felt-text: #c8e6a8;
+    --danger: #f0a092;
+    --danger-bg: #2a1714;
+    --warning: #f0c875;
+    --warning-bg: #2a1e17;
+    --input: #120d0a;
+    --ring: rgba(240, 200, 117, 0.58);
+    --shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
+    --radius: 8px;
 }
 
 * {
@@ -23,7 +34,9 @@ body {
     overflow-x: hidden;
     color: var(--text);
     font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-    background: linear-gradient(160deg, #091018 0%, #10211d 52%, #0b1117 100%);
+    background:
+        radial-gradient(circle at top left, rgba(72, 98, 59, 0.28), transparent 34rem),
+        linear-gradient(160deg, #120d0a 0%, #1b120d 44%, #0f0b08 100%);
 }
 
 body::before {
