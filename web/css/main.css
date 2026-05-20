@@ -58,15 +58,11 @@ body::before {
 }
 
 .app-header {
-    padding: 12px 14px;
+    padding: 14px 16px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--radius);
     background:
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.05),
-            rgba(255, 255, 255, 0.02)
-        ),
+        linear-gradient(120deg, rgba(33, 23, 17, 0.98), rgba(38, 53, 31, 0.92)),
         var(--panel-strong);
     box-shadow: var(--shadow);
     overflow: hidden;
@@ -75,18 +71,13 @@ body::before {
 
 .app-header h1 {
     margin: 0;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.45rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 800;
     letter-spacing: 0;
 }
 
 .app-header p {
-    margin: 4px 0 0;
-    max-width: 58ch;
-    color: var(--muted);
-    line-height: 1.35;
-    font-size: 0.92rem;
+    display: none;
 }
 
 .app-header-content {
@@ -107,6 +98,10 @@ body::before {
     align-items: center;
     flex-wrap: wrap;
     margin-top: 12px;
+}
+
+.lobby-utility-bar {
+    margin-top: 0;
 }
 
 body.auth-ui-disabled .lobby-auth-bar,
