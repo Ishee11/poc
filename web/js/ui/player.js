@@ -68,6 +68,8 @@ export async function loadPlayersOverview() {
       profit_money: stat?.profit_money || 0,
       last_activity_at: stat?.last_activity_at || null,
       rank: stat?.rank || { code: "newcomer", label: t("rank.newcomer") },
+      avg_buy_in_per_session: stat?.avg_buy_in_per_session,
+      total_buy_in: stat?.total_buy_in || 0,
     };
   });
 
@@ -100,7 +102,7 @@ export function renderPlayersOverview() {
       const id = player.player_id;
       const profitMoney = Number(player.profit_money) || 0;
       return `
-        <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
+        <div class="player-row overview-player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title player-name-line">
               <span>${escapeHtml(player.player_name || id)}</span>
@@ -108,6 +110,8 @@ export function renderPlayersOverview() {
             </div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
+              <span>${escapeHtml(t("sort.lastActivity"))}: ${escapeHtml(formatDate(player.last_activity_at))}</span>
+              <span>${escapeHtml(t("playersStats.avgBuyInChips"))}: ${formatNumber(roundMetric(avgBuyInChips(player)))}</span>
               <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, "RUB")}</span>
             </div>
           </div>

@@ -1504,6 +1504,17 @@ body.debug-mode .debug-only {
     font-size: 0.88rem;
 }
 
+.overview-player-row .inline-stats {
+    gap: 6px;
+}
+
+.overview-player-row .inline-stats span {
+    border: 1px solid rgba(216, 168, 79, 0.16);
+    border-radius: 999px;
+    padding: 3px 7px;
+    background: rgba(18, 13, 10, 0.42);
+}
+
 .expense-section-label {
     margin-bottom: 8px;
     color: #dae7f8;
