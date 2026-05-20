@@ -704,6 +704,7 @@ function bindOpenPlayerButtons(container) {
       await loadPlayerDetail(playerId);
     });
     row.addEventListener("keydown", async (event) => {
+      if (event.target.closest("button")) return;
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       const playerId = row.getAttribute("data-open-player");
