@@ -314,11 +314,6 @@
                             <div class="title-row session-status-row">
                                 <span id="workspace-status" class="session-status">-</span>
                                 <span id="workspace-finished-at" class="session-finished-at" hidden></span>
-                                <div class="actions compact-actions" id="session-finish-actions">
-                                    <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
-                                        Finish Session
-                                    </button>
-                                </div>
                             </div>
                         </div>
 
@@ -352,6 +347,12 @@
                         </div>
 
                         <div id="finish-session-hint" class="finish-hint" hidden></div>
+
+                        <div class="actions compact-actions session-finish-inline" id="session-finish-actions">
+                            <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
+                                Finish Session
+                            </button>
+                        </div>
 
                         <div class="stats top-gap" id="session-money-panel" hidden>
                             <div class="stat money-stat">

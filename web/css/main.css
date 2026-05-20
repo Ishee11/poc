@@ -514,6 +514,13 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     transform: rotate(-90deg);
 }
 
+#session-operations-panel,
+#session-expenses-panel,
+#session-settlement-panel {
+    border-color: var(--line);
+    background: var(--panel);
+}
+
 .panel-inline-toolbar {
     display: flex;
     justify-content: flex-end;
@@ -645,16 +652,17 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     align-items: center;
 
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: var(--radius);
 
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(33, 23, 17, 0.9);
+    border: 1px solid var(--line);
 }
 
 .session-balance-stat {
     margin: 14px 0;
     padding: 10px 12px;
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(38, 53, 31, 0.98), rgba(27, 19, 15, 0.96));
+    border-color: rgba(72, 98, 59, 0.88);
 }
 
 .session-balance-stat .stat-label {
@@ -662,8 +670,16 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .session-balance-stat #stat-total-chips {
-    font-size: 1.35rem;
-    font-weight: 900;
+    font-size: clamp(2rem, 8vw, 3.4rem);
+    font-weight: 850;
+}
+
+.session-finish-inline {
+    margin-top: 12px;
+}
+
+.session-finish-inline button {
+    width: 100%;
 }
 
 .session-config-stats {
@@ -1416,6 +1432,14 @@ body.debug-mode .debug-only {
 .player-row:last-child,
 .operation-row:last-child {
     border-bottom: 0;
+}
+
+.operation-row,
+.expense-row,
+.settlement-transfer-row,
+.settlement-transfer-card {
+    border-color: rgba(216, 168, 79, 0.16);
+    background: rgba(42, 30, 23, 0.72);
 }
 
 .row-main {
@@ -2414,10 +2438,6 @@ pre {
 
     .settlement-remove-btn {
         width: 100%;
-    }
-
-    .session-balance-stat #stat-total-chips {
-        font-size: 1.35rem;
     }
 
     .period-toolbar {
