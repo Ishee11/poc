@@ -369,7 +369,13 @@ export function renderPlayers() {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
-      const canRebuy = canUseSessionActions;
+      const canUsePlayerAction = canUseSessionActions;
+      const actionMode = state.sessionPlayerActionMode === "cash_out" ? "cash_out" : "rebuy";
+      const actionClass = actionMode === "cash_out" ? "cash-out-action" : "rebuy-action";
+      const actionAttr =
+        actionMode === "cash_out" ? "data-session-cash-out-player" : "data-session-rebuy-player";
+      const actionLabel =
+        actionMode === "cash_out" ? t("session.actionModeCashOut") : t("session.actionModeRebuy");
       const statusClass = player.in_game ? "player-status in-game" : "player-status settled";
 
       return `
@@ -387,8 +393,8 @@ export function renderPlayers() {
             </div>
           </div>
           ${
-            canRebuy
-              ? `<button type="button" class="rebuy-action row-action" data-session-rebuy-player="${escapeHtml(id)}">${escapeHtml(t("session.buyIn"))}</button>`
+            canUsePlayerAction
+              ? `<button type="button" class="${actionClass} row-action" ${actionAttr}="${escapeHtml(id)}">${escapeHtml(actionLabel)}</button>`
               : ""
           }
         </div>

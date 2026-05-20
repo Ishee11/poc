@@ -1168,6 +1168,38 @@ label {
     font-size: 0.85rem;
 }
 
+.session-player-mode-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 12px;
+}
+
+.segmented-control {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.72);
+}
+
+.segmented-control button {
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--muted);
+    background: transparent;
+    box-shadow: none;
+}
+
+.segmented-control button.is-active {
+    color: var(--accent-ink);
+    background: var(--accent);
+}
+
 input,
 select,
 button {

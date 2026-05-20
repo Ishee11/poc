@@ -364,6 +364,13 @@
 
                     <div class="panel">
                         <h3 data-i18n="session.players">Players</h3>
+                        <div class="session-player-mode-row" id="session-player-mode-row">
+                            <span class="stat-label" data-i18n="session.actionMode">Player action</span>
+                            <div class="segmented-control" role="group" aria-label="Player action">
+                                <button type="button" id="session-player-mode-rebuy" data-session-player-mode="rebuy" data-i18n="session.actionModeRebuy">Rebuy</button>
+                                <button type="button" id="session-player-mode-cash-out" data-session-player-mode="cash_out" data-i18n="session.actionModeCashOut">Cash-out</button>
+                            </div>
+                        </div>
                         <div id="players-wrap"></div>
                         <p class="hint top-gap" id="session-player-actions-hint" data-i18n="session.buyInHint">
                             To add a player to the session, make a Buy-in.
@@ -376,30 +383,6 @@
                                 Create New Player
                             </button>
                         </div>
-                    </div>
-
-                    <div class="panel action-card" id="session-actions-panel">
-                        <h3 data-i18n="session.cashOut">Cash Out</h3>
-                        <p class="hint" data-i18n="session.cashOutHint">
-                            After cash-out, the player is considered settled. Make a buy-in to continue.
-                        </p>
-                        <form id="session-operation-form" onsubmit="return false;">
-                            <label>
-                                <span data-i18n="session.player">Player</span>
-                                <select id="cash-out-player-select">
-                                    <option value="" data-i18n="session.selectPlayer">Select player</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span data-i18n="session.chips">Chips</span>
-                                <input id="cash-out-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
-                            </label>
-
-                            <button type="button" id="cash-out-btn" class="cash-out-action" data-i18n="session.cashOut">
-                                Cash Out
-                            </button>
-                        </form>
                     </div>
 
                     <details class="panel panel-disclosure" id="session-operations-panel">

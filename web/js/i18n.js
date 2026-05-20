@@ -84,6 +84,9 @@ const translations = {
     "session.actionsHint": "Cash-out is available only for players currently in game.",
     "session.buyInHint":
       "Add an existing player through Buy-in or create a new player here.",
+    "session.actionMode": "Player action",
+    "session.actionModeRebuy": "Rebuy",
+    "session.actionModeCashOut": "Cash-out",
     "session.cashOutHint":
       "After cash-out, the player is considered settled. Make a rebuy to continue.",
     "session.player": "Player",
@@ -524,6 +527,9 @@ const translations = {
       "Cash-out доступен только игрокам, которые сейчас в игре.",
     "session.buyInHint":
       "Добавьте существующего игрока через Buy-in или создайте нового здесь.",
+    "session.actionMode": "Действие",
+    "session.actionModeRebuy": "Ребай",
+    "session.actionModeCashOut": "Кэшаут",
     "session.cashOutHint":
       "После кэшаута игрок считается завершившим игру. Для продолжения необходимо сделать ребай.",
     "session.player": "Игрок",

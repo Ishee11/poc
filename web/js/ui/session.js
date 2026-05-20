@@ -208,6 +208,7 @@ export function renderSession() {
     finishHint.hidden = true;
     finishHint.textContent = "";
   }
+  renderSessionPlayerMode();
   if (playerActions) playerActions.hidden = !isActive;
   if (playerActionsHint) playerActionsHint.hidden = !isActive;
   if (actionsPanel) actionsPanel.hidden = !isActive;
@@ -307,6 +308,18 @@ export function renderActionPlayerOptions() {
     "cash-out-player-select",
     state.players.filter((player) => player.in_game),
   );
+}
+
+export function renderSessionPlayerMode() {
+  const row = document.getElementById("session-player-mode-row");
+  if (!row) return;
+
+  const isActive = state.session?.status === "active";
+  row.hidden = !isActive;
+  row.querySelectorAll("[data-session-player-mode]").forEach((button) => {
+    const mode = button.getAttribute("data-session-player-mode");
+    button.classList.toggle("is-active", mode === state.sessionPlayerActionMode);
+  });
 }
 
 export function renderExpenseForm() {
@@ -772,6 +785,20 @@ export function initSessionActions() {
       return;
     }
 
+    const cashOutPlayerId = button.getAttribute("data-session-cash-out-player");
+    if (cashOutPlayerId) {
+      await confirmPlayerCashOut(cashOutPlayerId);
+      return;
+    }
+
+    const sessionPlayerMode = button.getAttribute("data-session-player-mode");
+    if (sessionPlayerMode) {
+      state.sessionPlayerActionMode = sessionPlayerMode === "cash_out" ? "cash_out" : "rebuy";
+      renderPlayers();
+      renderSessionPlayerMode();
+      return;
+    }
+
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
       await deleteManualSettlementTransfer(deleteSettlementTransferId);
@@ -981,7 +1008,49 @@ async function confirmCashOut() {
   }
 
   await refreshSessionData();
-  document.getElementById("cash-out-chips").value = "";
+  const chipsInput = document.getElementById("cash-out-chips");
+  if (chipsInput) chipsInput.value = "";
+  showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
+}
+
+async function confirmPlayerCashOut(playerId) {
+  const player = state.players.find((item) => (item.player_id || item.id) === playerId);
+  if (!playerId || !player) {
+    showNotice(t("notice.selectPlayerAndChips"), "error");
+    return;
+  }
+
+  const playerName = findPlayerName(playerId);
+  const values = await openModal({
+    title: t("modal.confirmCashOutTitle"),
+    description: t("modal.confirmCashOutDescription", { chips: "", name: playerName }),
+    confirmText: t("session.cashOut"),
+    fields: [
+      {
+        name: "chips",
+        label: t("session.chips"),
+        type: "number",
+        min: "1",
+        step: 1000,
+        placeholder: t("session.chips"),
+      },
+    ],
+  });
+  if (!values) return;
+
+  const chips = Number(values.chips);
+  if (!Number.isFinite(chips) || chips <= 0) {
+    showNotice(t("notice.selectPlayerAndChips"), "error");
+    return;
+  }
+
+  const res = await cashOut({ sessionId: state.activeSessionId, playerId, chips });
+  if (!res.ok) {
+    showNotice(describeError(res, t("error.failedCashOut")), "error");
+    return;
+  }
+
+  await refreshSessionData();
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
