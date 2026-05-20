@@ -369,8 +369,9 @@ export function renderPlayers() {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
-      const canUsePlayerAction = canUseSessionActions;
       const actionMode = state.sessionPlayerActionMode === "cash_out" ? "cash_out" : "rebuy";
+      const canUsePlayerAction =
+        canUseSessionActions && (actionMode === "rebuy" || Boolean(player.in_game));
       const actionClass = actionMode === "cash_out" ? "cash-out-action" : "rebuy-action";
       const actionAttr =
         actionMode === "cash_out" ? "data-session-cash-out-player" : "data-session-rebuy-player";

@@ -318,7 +318,9 @@ export function renderSessionPlayerMode() {
   row.hidden = !isActive;
   row.querySelectorAll("[data-session-player-mode]").forEach((button) => {
     const mode = button.getAttribute("data-session-player-mode");
-    button.classList.toggle("is-active", mode === state.sessionPlayerActionMode);
+    const isActiveMode = mode === state.sessionPlayerActionMode;
+    button.classList.toggle("is-active", isActiveMode);
+    button.setAttribute("aria-pressed", isActiveMode ? "true" : "false");
   });
 }
 
@@ -1015,7 +1017,7 @@ async function confirmCashOut() {
 
 async function confirmPlayerCashOut(playerId) {
   const player = state.players.find((item) => (item.player_id || item.id) === playerId);
-  if (!playerId || !player) {
+  if (!playerId || !player || !player.in_game) {
     showNotice(t("notice.selectPlayerAndChips"), "error");
     return;
   }
@@ -1023,7 +1025,7 @@ async function confirmPlayerCashOut(playerId) {
   const playerName = findPlayerName(playerId);
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
-    description: t("modal.confirmCashOutDescription", { chips: "", name: playerName }),
+    description: t("modal.cashOutPlayerDescription", { name: playerName }),
     confirmText: t("session.cashOut"),
     fields: [
       {
