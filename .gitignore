@@ -27,3 +27,6 @@ coverage.txt
 
 # Local backups
 backup/
+
+# Local git worktrees
+.worktrees/

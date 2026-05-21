@@ -18,7 +18,6 @@
                 <div class="app-header-content">
                     <div>
                         <h1 data-i18n="app.title">Poker Session Control</h1>
-                        <p data-i18n="app.subtitle">Control panel for poker cash games.</p>
                     </div>
                     <nav class="top-nav" aria-label="Page navigation" data-i18n-aria-label="nav.page">
                         <button type="button" class="secondary nav-session-only" id="session-back-home-btn" data-i18n="nav.backHome">
@@ -40,34 +39,6 @@
                             Back to Home
                         </button>
                     </nav>
-                </div>
-                <div class="lobby-auth-bar">
-                    <label class="guest-player-label" id="guest-player-label">
-                        <span data-i18n="guest.player">Guest player</span>
-                        <select id="guest-player-select">
-                            <option value="" data-i18n="guest.noPlayer">No player selected</option>
-                        </select>
-                    </label>
-                    <section class="auth-panel" aria-label="Authentication" data-i18n-aria-label="auth.label">
-                        <button type="button" class="secondary" id="auth-show-login-btn" data-i18n="auth.login">Login</button>
-                        <form id="auth-login-form" class="auth-login-form" onsubmit="return false;" hidden>
-                            <input id="auth-email" type="email" autocomplete="username" placeholder="Email" data-i18n-placeholder="auth.email" />
-                            <input id="auth-password" type="password" autocomplete="current-password" placeholder="Password" data-i18n-placeholder="auth.password" />
-                            <button type="submit" data-i18n="auth.login">Login</button>
-                            <div class="auth-register-row" id="auth-register-row" hidden>
-                                <span data-i18n="auth.noAccount">No account yet?</span>
-                                <button type="button" class="secondary" id="auth-register-btn" data-i18n="auth.register">Register</button>
-                            </div>
-                        </form>
-                        <div id="auth-user-panel" class="auth-user-panel" hidden>
-                            <div>
-                                <div class="auth-user-label" data-i18n="auth.signedIn">Signed in</div>
-                                <div id="auth-user-name" class="auth-user-name">-</div>
-                            </div>
-                            <button type="button" class="secondary" id="auth-account-btn" data-i18n="account.title">Account</button>
-                            <button type="button" class="secondary" id="auth-logout-btn" data-i18n="auth.logout">Logout</button>
-                        </div>
-                    </section>
                 </div>
             </header>
 
@@ -151,6 +122,35 @@
                         </div>
                         <div id="overview-players-wrap"></div>
                     </details>
+
+                    <div class="lobby-auth-bar lobby-utility-bar">
+                        <label class="guest-player-label" id="guest-player-label">
+                            <span data-i18n="guest.player">Guest player</span>
+                            <select id="guest-player-select">
+                                <option value="" data-i18n="guest.noPlayer">No player selected</option>
+                            </select>
+                        </label>
+                        <section class="auth-panel" aria-label="Authentication" data-i18n-aria-label="auth.label">
+                            <button type="button" class="secondary" id="auth-show-login-btn" data-i18n="auth.login">Login</button>
+                            <form id="auth-login-form" class="auth-login-form" onsubmit="return false;" hidden>
+                                <input id="auth-email" type="email" autocomplete="username" placeholder="Email" data-i18n-placeholder="auth.email" />
+                                <input id="auth-password" type="password" autocomplete="current-password" placeholder="Password" data-i18n-placeholder="auth.password" />
+                                <button type="submit" data-i18n="auth.login">Login</button>
+                                <div class="auth-register-row" id="auth-register-row" hidden>
+                                    <span data-i18n="auth.noAccount">No account yet?</span>
+                                    <button type="button" class="secondary" id="auth-register-btn" data-i18n="auth.register">Register</button>
+                                </div>
+                            </form>
+                            <div id="auth-user-panel" class="auth-user-panel" hidden>
+                                <div>
+                                    <div class="auth-user-label" data-i18n="auth.signedIn">Signed in</div>
+                                    <div id="auth-user-name" class="auth-user-name">-</div>
+                                </div>
+                                <button type="button" class="secondary" id="auth-account-btn" data-i18n="account.title">Account</button>
+                                <button type="button" class="secondary" id="auth-logout-btn" data-i18n="auth.logout">Logout</button>
+                            </div>
+                        </section>
+                    </div>
 
                     <div class="panel language-panel">
                         <label class="language-select-label">
@@ -314,11 +314,6 @@
                             <div class="title-row session-status-row">
                                 <span id="workspace-status" class="session-status">-</span>
                                 <span id="workspace-finished-at" class="session-finished-at" hidden></span>
-                                <div class="actions compact-actions" id="session-finish-actions">
-                                    <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
-                                        Finish Session
-                                    </button>
-                                </div>
                             </div>
                         </div>
 
@@ -353,6 +348,12 @@
 
                         <div id="finish-session-hint" class="finish-hint" hidden></div>
 
+                        <div class="actions compact-actions session-finish-inline" id="session-finish-actions">
+                            <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
+                                Finish Session
+                            </button>
+                        </div>
+
                         <div class="stats top-gap" id="session-money-panel" hidden>
                             <div class="stat money-stat">
                                 <div class="stat-label" data-i18n="session.totalMoneyIn">Total Money In</div>
@@ -364,6 +365,13 @@
 
                     <div class="panel">
                         <h3 data-i18n="session.players">Players</h3>
+                        <div class="session-player-mode-row" id="session-player-mode-row">
+                            <span class="stat-label" data-i18n="session.actionMode">Player action</span>
+                            <div class="segmented-control" role="group" aria-label="Player action" data-i18n-aria-label="session.actionMode">
+                                <button type="button" id="session-player-mode-rebuy" data-session-player-mode="rebuy" data-i18n="session.actionModeRebuy">Rebuy</button>
+                                <button type="button" id="session-player-mode-cash-out" data-session-player-mode="cash_out" data-i18n="session.actionModeCashOut">Cash-out</button>
+                            </div>
+                        </div>
                         <div id="players-wrap"></div>
                         <p class="hint top-gap" id="session-player-actions-hint" data-i18n="session.buyInHint">
                             To add a player to the session, make a Buy-in.
@@ -376,30 +384,6 @@
                                 Create New Player
                             </button>
                         </div>
-                    </div>
-
-                    <div class="panel action-card" id="session-actions-panel">
-                        <h3 data-i18n="session.cashOut">Cash Out</h3>
-                        <p class="hint" data-i18n="session.cashOutHint">
-                            After cash-out, the player is considered settled. Make a buy-in to continue.
-                        </p>
-                        <form id="session-operation-form" onsubmit="return false;">
-                            <label>
-                                <span data-i18n="session.player">Player</span>
-                                <select id="cash-out-player-select">
-                                    <option value="" data-i18n="session.selectPlayer">Select player</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span data-i18n="session.chips">Chips</span>
-                                <input id="cash-out-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
-                            </label>
-
-                            <button type="button" id="cash-out-btn" class="cash-out-action" data-i18n="session.cashOut">
-                                Cash Out
-                            </button>
-                        </form>
                     </div>
 
                     <details class="panel panel-disclosure" id="session-operations-panel">

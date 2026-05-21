@@ -84,6 +84,9 @@ const translations = {
     "session.actionsHint": "Cash-out is available only for players currently in game.",
     "session.buyInHint":
       "Add an existing player through Buy-in or create a new player here.",
+    "session.actionMode": "Player action",
+    "session.actionModeRebuy": "Rebuy",
+    "session.actionModeCashOut": "Cash-out",
     "session.cashOutHint":
       "After cash-out, the player is considered settled. Make a rebuy to continue.",
     "session.player": "Player",
@@ -346,6 +349,7 @@ const translations = {
     "modal.confirmBuyInDescription": "Add {chips} chips for {name}?",
     "modal.confirmCashOutTitle": "Confirm Cash Out",
     "modal.confirmCashOutDescription": "Cash out {chips} chips for {name}?",
+    "modal.cashOutPlayerDescription": "Enter cash-out chips for {name}.",
     "modal.addPlayerTitle": "Add Player to Session",
     "modal.addPlayerDescription":
       "The player will appear in the session after the first buy in. This matches the current backend flow.",
@@ -524,6 +528,9 @@ const translations = {
       "Cash-out доступен только игрокам, которые сейчас в игре.",
     "session.buyInHint":
       "Добавьте существующего игрока через Buy-in или создайте нового здесь.",
+    "session.actionMode": "Действие",
+    "session.actionModeRebuy": "Ребай",
+    "session.actionModeCashOut": "Кэшаут",
     "session.cashOutHint":
       "После кэшаута игрок считается завершившим игру. Для продолжения необходимо сделать ребай.",
     "session.player": "Игрок",
@@ -785,6 +792,7 @@ const translations = {
     "modal.confirmBuyInDescription": "Добавить {chips} фишек для {name}?",
     "modal.confirmCashOutTitle": "Подтвердить кэш-аут",
     "modal.confirmCashOutDescription": "Вывести {chips} фишек для {name}?",
+    "modal.cashOutPlayerDescription": "Введите количество фишек для кэшаута игрока {name}.",
     "modal.addPlayerTitle": "Добавить игрока в сессию",
     "modal.addPlayerDescription":
       "Игрок появится в сессии после первого бай-ина. Это соответствует текущей логике бэкенда.",
