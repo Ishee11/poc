@@ -578,10 +578,6 @@ function renderPlayerSessionCards(sessions) {
                   <span>${escapeHtml(t("table.profitChips"))}</span>
                   <strong>${formatNumber(session.profit_chips)}</strong>
                 </div>
-                <div class="card-meta-item">
-                  <span>${escapeHtml(t("table.lastActivity"))}</span>
-                  <strong>${escapeHtml(formatDate(session.last_activity_at))}</strong>
-                </div>
               </div>
             </div>
           `,

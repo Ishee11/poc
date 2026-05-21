@@ -1350,9 +1350,6 @@ button:disabled {
     gap: 10px;
     align-items: center;
     justify-content: space-between;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: rgba(27, 19, 15, 0.92);
 }
 
 .period-summary {
