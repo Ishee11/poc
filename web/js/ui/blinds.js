@@ -510,9 +510,18 @@ function renderLevelEditor() {
     renderBlindsClock({ updateEditor: true });
   };
 
-  sbInput.value = selectedLevel ? String(selectedLevel.small_blind) : "";
-  bbInput.value = selectedLevel ? String(selectedLevel.big_blind) : "";
-  durationInput.value = selectedLevel ? String(selectedLevel.duration_minutes) : "";
+  setEditorInputValueUnlessFocused(
+    sbInput,
+    selectedLevel ? String(selectedLevel.small_blind) : "",
+  );
+  setEditorInputValueUnlessFocused(
+    bbInput,
+    selectedLevel ? String(selectedLevel.big_blind) : "",
+  );
+  setEditorInputValueUnlessFocused(
+    durationInput,
+    selectedLevel ? String(selectedLevel.duration_minutes) : "",
+  );
 
   sbInput.disabled = locked || !canEdit;
   bbInput.disabled = locked || !canEdit;
@@ -558,6 +567,11 @@ function renderLevelEditor() {
       lockHint.textContent = "";
     }
   }
+}
+
+function setEditorInputValueUnlessFocused(input, value) {
+  if (document.activeElement === input) return;
+  input.value = value;
 }
 
 async function refreshBlindClock({ silent = false, announceLevelChange = true } = {}) {

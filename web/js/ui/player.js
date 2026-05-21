@@ -110,8 +110,6 @@ export function renderPlayersOverview() {
             </div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
-              <span>${escapeHtml(t("sort.lastActivity"))}: ${escapeHtml(formatDate(player.last_activity_at))}</span>
-              <span>${escapeHtml(t("playersStats.avgBuyInChips"))}: ${formatNumber(roundMetric(avgBuyInChips(player)))}</span>
               <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, "RUB")}</span>
             </div>
           </div>
