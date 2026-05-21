@@ -21,6 +21,7 @@ export const state = {
   playersStatsRows: [],
 
   players: [],
+  sessionPlayerActionMode: "rebuy",
   operations: [],
   expenses: [],
   settlementDrafts: {},

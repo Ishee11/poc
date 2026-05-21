@@ -68,6 +68,8 @@ export async function loadPlayersOverview() {
       profit_money: stat?.profit_money || 0,
       last_activity_at: stat?.last_activity_at || null,
       rank: stat?.rank || { code: "newcomer", label: t("rank.newcomer") },
+      avg_buy_in_per_session: stat?.avg_buy_in_per_session,
+      total_buy_in: stat?.total_buy_in || 0,
     };
   });
 
@@ -100,7 +102,7 @@ export function renderPlayersOverview() {
       const id = player.player_id;
       const profitMoney = Number(player.profit_money) || 0;
       return `
-        <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
+        <div class="player-row overview-player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title player-name-line">
               <span>${escapeHtml(player.player_name || id)}</span>
@@ -365,7 +367,14 @@ export function renderPlayers() {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
-      const canRebuy = canUseSessionActions;
+      const actionMode = state.sessionPlayerActionMode === "cash_out" ? "cash_out" : "rebuy";
+      const canUsePlayerAction =
+        canUseSessionActions && (actionMode === "rebuy" || Boolean(player.in_game));
+      const actionClass = actionMode === "cash_out" ? "cash-out-action" : "rebuy-action";
+      const actionAttr =
+        actionMode === "cash_out" ? "data-session-cash-out-player" : "data-session-rebuy-player";
+      const actionLabel =
+        actionMode === "cash_out" ? t("session.actionModeCashOut") : t("session.actionModeRebuy");
       const statusClass = player.in_game ? "player-status in-game" : "player-status settled";
 
       return `
@@ -383,8 +392,8 @@ export function renderPlayers() {
             </div>
           </div>
           ${
-            canRebuy
-              ? `<button type="button" class="rebuy-action row-action" data-session-rebuy-player="${escapeHtml(id)}">${escapeHtml(t("session.buyIn"))}</button>`
+            canUsePlayerAction
+              ? `<button type="button" class="${actionClass} row-action" ${actionAttr}="${escapeHtml(id)}">${escapeHtml(actionLabel)}</button>`
               : ""
           }
         </div>
@@ -569,10 +578,6 @@ function renderPlayerSessionCards(sessions) {
                   <span>${escapeHtml(t("table.profitChips"))}</span>
                   <strong>${formatNumber(session.profit_chips)}</strong>
                 </div>
-                <div class="card-meta-item">
-                  <span>${escapeHtml(t("table.lastActivity"))}</span>
-                  <strong>${escapeHtml(formatDate(session.last_activity_at))}</strong>
-                </div>
               </div>
             </div>
           `,
@@ -693,6 +698,7 @@ function bindOpenPlayerButtons(container) {
       await loadPlayerDetail(playerId);
     });
     row.addEventListener("keydown", async (event) => {
+      if (event.target.closest("button")) return;
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       const playerId = row.getAttribute("data-open-player");

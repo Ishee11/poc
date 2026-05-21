@@ -1,16 +1,27 @@
 :root {
-    --bg: #0b1117;
-    --panel: rgba(15, 24, 34, 0.9);
-    --panel-strong: rgba(17, 28, 39, 0.98);
-    --line: rgba(181, 202, 225, 0.16);
-    --text: #edf4ff;
-    --muted: #99aec9;
-    --accent: #58d0a7;
-    --accent-strong: #20a97d;
-    --danger: #ff8d7a;
-    --warning: #ffd07a;
-    --shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
-    --radius: 12px;
+    --bg: #120d0a;
+    --bg-elevated: #17100c;
+    --panel: rgba(27, 19, 15, 0.94);
+    --panel-strong: rgba(33, 23, 17, 0.98);
+    --panel-felt: #26351f;
+    --line: rgba(216, 168, 79, 0.2);
+    --line-strong: rgba(216, 168, 79, 0.34);
+    --text: #fff2de;
+    --muted: #cbb693;
+    --muted-soft: #9f8b70;
+    --accent: #d8a84f;
+    --accent-strong: #f0c875;
+    --accent-ink: #1c1109;
+    --felt: #48623b;
+    --felt-text: #c8e6a8;
+    --danger: #f0a092;
+    --danger-bg: #2a1714;
+    --warning: #f0c875;
+    --warning-bg: #2a1e17;
+    --input: #120d0a;
+    --ring: rgba(240, 200, 117, 0.58);
+    --shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
+    --radius: 8px;
 }
 
 * {
@@ -23,7 +34,9 @@ body {
     overflow-x: hidden;
     color: var(--text);
     font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-    background: linear-gradient(160deg, #091018 0%, #10211d 52%, #0b1117 100%);
+    background:
+        radial-gradient(circle at top left, rgba(72, 98, 59, 0.28), transparent 34rem),
+        linear-gradient(160deg, #120d0a 0%, #1b120d 44%, #0f0b08 100%);
 }
 
 body::before {
@@ -45,15 +58,11 @@ body::before {
 }
 
 .app-header {
-    padding: 12px 14px;
+    padding: 14px 16px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--radius);
     background:
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.05),
-            rgba(255, 255, 255, 0.02)
-        ),
+        linear-gradient(120deg, rgba(33, 23, 17, 0.98), rgba(38, 53, 31, 0.92)),
         var(--panel-strong);
     box-shadow: var(--shadow);
     overflow: hidden;
@@ -62,18 +71,13 @@ body::before {
 
 .app-header h1 {
     margin: 0;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.45rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 800;
     letter-spacing: 0;
 }
 
 .app-header p {
-    margin: 4px 0 0;
-    max-width: 58ch;
-    color: var(--muted);
-    line-height: 1.35;
-    font-size: 0.92rem;
+    display: none;
 }
 
 .app-header-content {
@@ -94,6 +98,10 @@ body::before {
     align-items: center;
     flex-wrap: wrap;
     margin-top: 12px;
+}
+
+.lobby-utility-bar {
+    margin-top: 0;
 }
 
 body.auth-ui-disabled .lobby-auth-bar,
@@ -506,6 +514,13 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     transform: rotate(-90deg);
 }
 
+#session-operations-panel,
+#session-expenses-panel,
+#session-settlement-panel {
+    border-color: var(--line);
+    background: var(--panel);
+}
+
 .panel-inline-toolbar {
     display: flex;
     justify-content: flex-end;
@@ -637,16 +652,17 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     align-items: center;
 
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: var(--radius);
 
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(33, 23, 17, 0.9);
+    border: 1px solid var(--line);
 }
 
 .session-balance-stat {
     margin: 14px 0;
     padding: 10px 12px;
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(38, 53, 31, 0.98), rgba(27, 19, 15, 0.96));
+    border-color: rgba(72, 98, 59, 0.88);
 }
 
 .session-balance-stat .stat-label {
@@ -654,8 +670,16 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .session-balance-stat #stat-total-chips {
-    font-size: 1.35rem;
-    font-weight: 900;
+    font-size: clamp(2rem, 8vw, 3.4rem);
+    font-weight: 850;
+}
+
+.session-finish-inline {
+    margin-top: 12px;
+}
+
+.session-finish-inline button {
+    width: 100%;
 }
 
 .session-config-stats {
@@ -669,10 +693,10 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .blinds-hero-panel {
     position: relative;
     overflow: hidden;
-    border-color: rgba(88, 208, 167, 0.28);
+    border-color: var(--line-strong);
     background:
-        linear-gradient(180deg, rgba(88, 208, 167, 0.08), rgba(255, 255, 255, 0.02)),
-        var(--panel);
+        radial-gradient(circle at center, rgba(72, 98, 59, 0.22), transparent 32rem),
+        var(--panel-strong);
     text-align: center;
     transition:
         box-shadow 0.24s ease,
@@ -762,12 +786,13 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .blinds-timer-display {
     margin: 24px 0 16px;
+    color: var(--accent-strong);
     font-size: clamp(4rem, 14vw, 8rem);
     line-height: 0.95;
     font-weight: 900;
     letter-spacing: 0.06em;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 28px rgba(88, 208, 167, 0.18);
+    text-shadow: 0 0 24px rgba(216, 168, 79, 0.24);
 }
 
 .blinds-hero-panel.is-event-active .blinds-timer-display,
@@ -795,8 +820,8 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .blinds-score-item {
     padding: 14px 16px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    background: rgba(18, 13, 10, 0.52);
 }
 
 .blinds-score-label {
@@ -859,6 +884,12 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     margin-top: 14px;
 }
 
+.blinds-structure-shell {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.52);
+}
+
 .blinds-structure-collapsed {
     display: grid;
     gap: 12px;
@@ -881,6 +912,9 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
     gap: 12px;
     align-items: end;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.52);
 }
 
 .blinds-duration-cascade {
@@ -1060,15 +1094,8 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     background: rgba(255, 208, 122, 0.1);
 }
 
-.stat.on-table-emphasis #stat-total-chips {
-    font-size: 1.18rem;
-    font-weight: 800;
-}
-
 .stat.on-table-warning #stat-total-chips {
     color: var(--warning);
-    font-size: 1.28rem;
-    font-weight: 800;
 }
 
 .stat.on-table-clear {
@@ -1158,6 +1185,38 @@ label {
 .hint {
     color: var(--muted);
     font-size: 0.85rem;
+}
+
+.session-player-mode-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 12px;
+}
+
+.segmented-control {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(18, 13, 10, 0.72);
+}
+
+.segmented-control button {
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--muted);
+    background: transparent;
+    box-shadow: none;
+}
+
+.segmented-control button.is-active {
+    color: var(--accent-ink);
+    background: var(--accent);
 }
 
 input,
@@ -1378,6 +1437,14 @@ body.debug-mode .debug-only {
     border-bottom: 0;
 }
 
+.operation-row,
+.expense-row,
+.settlement-transfer-row,
+.settlement-transfer-card {
+    border-color: rgba(216, 168, 79, 0.16);
+    background: rgba(42, 30, 23, 0.72);
+}
+
 .row-main {
     min-width: 0;
     display: grid;
@@ -1402,9 +1469,9 @@ body.debug-mode .debug-only {
     min-height: 22px;
     padding: 3px 8px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--muted);
+    border: 1px solid rgba(216, 168, 79, 0.28);
+    background: rgba(216, 168, 79, 0.16);
+    color: var(--accent-strong);
     font-size: 0.72rem;
     font-weight: 900;
     line-height: 1;
@@ -1494,6 +1561,17 @@ body.debug-mode .debug-only {
     gap: 10px;
     color: var(--muted);
     font-size: 0.88rem;
+}
+
+.overview-player-row .inline-stats {
+    gap: 6px;
+}
+
+.overview-player-row .inline-stats span {
+    border: 1px solid rgba(216, 168, 79, 0.16);
+    border-radius: 999px;
+    padding: 3px 7px;
+    background: rgba(18, 13, 10, 0.42);
 }
 
 .expense-section-label {
@@ -1979,9 +2057,9 @@ pre {
 
 .card-item {
     padding: 12px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    background: rgba(27, 19, 15, 0.92);
+    border: 1px solid var(--line);
     display: grid;
     gap: 10px;
     min-width: 0;
@@ -2037,6 +2115,9 @@ pre {
 
 .mobile-player-session-card {
     padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(27, 19, 15, 0.92);
 }
 
 .mobile-player-session-card .card-header strong {
@@ -2363,10 +2444,6 @@ pre {
 
     .settlement-remove-btn {
         width: 100%;
-    }
-
-    .session-balance-stat #stat-total-chips {
-        font-size: 1.35rem;
     }
 
     .period-toolbar {
