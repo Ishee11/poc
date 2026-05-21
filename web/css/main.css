@@ -949,9 +949,6 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .blinds-tool-group {
     display: grid;
     gap: 8px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: rgba(18, 13, 10, 0.52);
 }
 
 .blinds-push-settings {
