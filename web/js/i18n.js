@@ -1,5 +1,5 @@
 const STORAGE_KEY = "poker-ui-language";
-const DEFAULT_LANGUAGE = "en";
+const DEFAULT_LANGUAGE = "ru";
 const SUPPORTED_LANGUAGES = new Set(["en", "ru"]);
 
 let currentLanguage = detectLanguage();
@@ -38,6 +38,7 @@ const translations = {
     "lobby.latestActiveSession": "Latest active session",
     "lobby.sessionOption": "{date} · 1{currencySymbol}={chipRate} · BB {bigBlind} · table {chips}",
     "lobby.openWorkspace": "Continue Session",
+    "lobby.noActiveSession": "No active session right now.",
     "lobby.openBlindsClock": "Blind Timer",
     "lobby.startTitle": "Start a New Session",
     "lobby.startHint": "Create and configure a new session",
@@ -506,6 +507,7 @@ const translations = {
     "lobby.latestActiveSession": "Последняя активная сессия",
     "lobby.sessionOption": "{date} · 1{currencySymbol}={chipRate} · BB {bigBlind} · стол {chips}",
     "lobby.openWorkspace": "Продолжить сессию",
+    "lobby.noActiveSession": "Активной сессии сейчас нет.",
     "lobby.openBlindsClock": "Таймер блайндов",
     "lobby.startTitle": "Начать новую сессию",
     "lobby.startHint": "Создать и настроить новую сессию",
@@ -1014,18 +1016,7 @@ export function applyTranslations(root = document) {
 }
 
 function detectLanguage() {
-  const saved = loadSavedLanguage();
-  if (SUPPORTED_LANGUAGES.has(saved)) {
-    return saved;
-  }
-
-  const languages = navigator.languages?.length
-    ? navigator.languages
-    : [navigator.language || DEFAULT_LANGUAGE];
-
-  return languages.some((language) => language.toLowerCase().startsWith("ru"))
-    ? "ru"
-    : DEFAULT_LANGUAGE;
+  return DEFAULT_LANGUAGE;
 }
 
 function loadSavedLanguage() {

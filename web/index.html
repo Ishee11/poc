@@ -93,17 +93,42 @@
                     <div class="grid lobby-primary">
                         <div class="panel lobby-connect-panel">
                             <h2>
-                                <span data-i18n="lobby.connectTitle">Latest Active Session</span>
-                                <span class="status-pill status-active">LIVE</span>
+                                <span data-i18n="lobby.connectTitle">Последняя активная сессия</span>
+                                <span class="status-pill status-active" id="lobby-latest-live-badge">LIVE</span>
                             </h2>
 
-                            <form id="connect-session-form" onsubmit="return false;">
-                                <select id="active-session-select"></select>
+                            <div class="lobby-latest-empty" id="lobby-latest-empty" hidden data-i18n="lobby.noActiveSession">
+                                Активной сессии сейчас нет.
+                            </div>
+
+                            <form id="connect-session-form" class="lobby-latest-card" onsubmit="return false;">
+                                <select id="active-session-select" hidden aria-hidden="true" tabindex="-1"></select>
+
+                                <div class="lobby-latest-date" id="lobby-latest-date">-</div>
+
+                                <div class="lobby-latest-info-grid">
+                                    <div class="lobby-latest-info">
+                                        <span data-i18n="session.chipRate">Курс</span>
+                                        <strong id="lobby-latest-chip-rate">-</strong>
+                                    </div>
+                                    <div class="lobby-latest-info">
+                                        <span data-i18n="session.bigBlind">BB</span>
+                                        <strong id="lobby-latest-big-blind">-</strong>
+                                    </div>
+                                </div>
+
+                                <div class="lobby-latest-chips">
+                                    <span data-i18n="session.onTable">Фишек на столе</span>
+                                    <strong>
+                                        <span id="lobby-latest-chips">-</span>
+                                        <img src="/static/svg/10-poker-chips-gold.svg" alt="" aria-hidden="true" />
+                                    </strong>
+                                </div>
 
                                 <div class="actions">
                                     <button type="button" id="open-workspace-btn" class="lobby-continue-btn">
                                         <img class="button-icon" src="/static/svg/04-play-filled-white.svg" alt="" aria-hidden="true" />
-                                        <span data-i18n="lobby.openWorkspace">Continue Session</span>
+                                        <span data-i18n="lobby.openWorkspace">Продолжить сессию</span>
                                     </button>
                                 </div>
                             </form>
@@ -114,8 +139,8 @@
                                 <button type="button" class="lobby-start-toggle" id="start-session-toggle">
                                     <img class="lobby-start-icon" src="/static/svg/05-plus-circle-gold.svg" alt="" aria-hidden="true" />
                                     <span>
-                                        <strong data-i18n="lobby.startTitle">Start a New Session</strong>
-                                        <small data-i18n="lobby.startHint">Create and configure a new session</small>
+                                        <strong data-i18n="lobby.startTitle">Начать новую сессию</strong>
+                                        <small data-i18n="lobby.startHint">Создать и настроить новую сессию</small>
                                     </span>
                                 </button>
                             </form>
@@ -124,7 +149,7 @@
 
                     <details class="panel panel-disclosure" id="overview-sessions-panel">
                         <summary class="panel-title-row">
-                            <h3 data-i18n="lobby.sessions">Sessions</h3>
+                            <h3 data-i18n="lobby.sessions">Сессии</h3>
                             <span class="summary-count" id="overview-sessions-count">0</span>
                         </summary>
                         <div id="overview-sessions-wrap"></div>
@@ -133,21 +158,20 @@
                     <details class="panel panel-disclosure" id="overview-players-panel">
                         <summary class="panel-title-row">
                             <span class="overview-players-heading">
-                                <h3 data-i18n="lobby.players">Players</h3>
-                                <span class="overview-players-summary" id="overview-players-summary">Shown 0 of 0</span>
+                                <h3 data-i18n="lobby.players">Игроки</h3>
+                                <span class="overview-players-summary" id="overview-players-summary">Показано 0 из 0</span>
                             </span>
                             <span class="summary-actions overview-player-controls">
                                 <button type="button" class="overview-filter-pill" id="overview-players-filter-toggle">
-                                    <img src="/static/svg/10-poker-chips-gold.svg" alt="" aria-hidden="true" />
-                                    <span id="overview-players-filter-label">In game · 0/0</span>
+                                    <span id="overview-players-filter-label">Активные · 0/0</span>
                                 </button>
                                 <label class="overview-sort-pill" for="overview-players-sort">
-                                    <span class="visually-hidden" data-i18n="lobby.playersSort">Sort</span>
-                                    <select id="overview-players-sort" aria-label="Sort players" data-i18n-aria-label="lobby.playersSort">
-                                        <option value="last_activity" data-i18n="sort.lastActivityShort">Activity ↓</option>
-                                        <option value="sessions_count" data-i18n="sort.sessionsCountShort">Sessions ↓</option>
-                                        <option value="profit_money" data-i18n="sort.profitShort">Profit ↓</option>
-                                        <option value="name" data-i18n="sort.nameShort">Name ↓</option>
+                                    <span class="visually-hidden" data-i18n="lobby.playersSort">Сортировка</span>
+                                    <select id="overview-players-sort" aria-label="Сортировка" data-i18n-aria-label="lobby.playersSort">
+                                        <option value="last_activity" data-i18n="sort.lastActivityShort">Активность ↓</option>
+                                        <option value="sessions_count" data-i18n="sort.sessionsCountShort">Сессии ↓</option>
+                                        <option value="profit_money" data-i18n="sort.profitShort">Профит ↓</option>
+                                        <option value="name" data-i18n="sort.nameShort">Имя ↓</option>
                                     </select>
                                 </label>
                             </span>
@@ -155,7 +179,7 @@
                         <div id="overview-players-wrap"></div>
                     </details>
 
-                    <div class="panel language-panel">
+                    <div class="panel language-panel" hidden>
                         <label class="language-select-label">
                             <span data-i18n="language.title">Interface Language</span>
                             <select id="language-select">
