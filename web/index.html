@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="theme-color" content="#0b1117" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -88,12 +88,13 @@
                 <section class="screen active" id="screen-lobby">
                     <div class="grid lobby-primary">
                         <div class="panel lobby-connect-panel">
-                            <h2 data-i18n="lobby.connectTitle">Continue Session</h2>
+                            <h2>
+                                <span data-i18n="lobby.connectTitle">Latest Active Session</span>
+                                <span class="status-pill status-active">LIVE</span>
+                            </h2>
 
                             <form id="connect-session-form" onsubmit="return false;">
-                                <select id="active-session-select">
-                                    <option value="" data-i18n="lobby.latestActiveSession">Latest active session</option>
-                                </select>
+                                <select id="active-session-select"></select>
 
                                 <div class="actions">
                                     <button type="button" id="open-workspace-btn" class="lobby-continue-btn">

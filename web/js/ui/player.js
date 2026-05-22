@@ -110,9 +110,9 @@ export function renderPlayersOverview() {
             </div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
-              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, "RUB")}</span>
             </div>
           </div>
+          <strong class="overview-player-profit ${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(profitMoney, "RUB")}</strong>
         </div>
       `;
     })

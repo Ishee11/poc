@@ -6,6 +6,7 @@ import {
   formatDate,
   formatMoney,
   formatNumber,
+  currencySymbol,
   setValue,
 } from "../utils.js";
 
@@ -98,14 +99,18 @@ export function syncSelect() {
     connectPanel.hidden = activeSessions.length === 0;
   }
 
-  const options = [
-    `<option value="">${escapeHtml(t("lobby.latestActiveSession"))}</option>`,
-    ...activeSessions.map((session) => {
+  const options = activeSessions.map((session) => {
       const id = session.session_id || session.id;
-      const label = `${formatDate(session.created_at)} (${statusLabel(session.status || "-")}, BB ${formatNumber(session.big_blind)})`;
+      const chipsOnTable = (Number(session.total_buy_in) || 0) - (Number(session.total_cash_out) || 0);
+      const label = t("lobby.sessionOption", {
+        date: formatCompactDateTime(session.created_at),
+        currencySymbol: currencySymbol(session.currency),
+        chipRate: formatNumber(session.chip_rate),
+        bigBlind: formatNumber(session.big_blind),
+        chips: formatNumber(chipsOnTable),
+      });
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
-    }),
-  ];
+    });
 
   select.innerHTML = options.join("");
 
@@ -158,4 +163,16 @@ function formatBuyInSummary(session) {
   }
 
   return `${chipsText} · ${formatMoney(chips / chipRate, session.currency)}`;
+}
+
+function formatCompactDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatDate(value);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}.${month} ${hours}:${minutes}`;
 }

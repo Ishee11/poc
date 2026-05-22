@@ -685,6 +685,17 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
         var(--panel);
 }
 
+.lobby-connect-panel h2 {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: none;
+}
+
 .lobby-connect-panel[hidden] {
     display: none;
 }
@@ -730,10 +741,11 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .lobby-start-panel {
-    border-color: rgba(246, 183, 57, 0.28);
-    background:
-        linear-gradient(180deg, rgba(246, 183, 57, 0.045), rgba(255, 255, 255, 0.015)),
-        var(--panel);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
 .lobby-start-panel form {
@@ -1366,6 +1378,7 @@ input,
 select {
     width: 100%;
     padding: 13px 14px;
+    font-size: 16px;
     color: var(--text);
     background: rgba(2, 11, 22, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1555,6 +1568,17 @@ body.debug-mode .debug-only {
 .player-row {
     border-left: 3px solid transparent;
     padding-left: 10px;
+}
+
+.player-row .row-main {
+    flex: 1 1 auto;
+}
+
+.overview-player-profit {
+    flex: 0 0 auto;
+    margin-left: auto;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .player-row.is-in-game {
