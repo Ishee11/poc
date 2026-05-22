@@ -307,12 +307,18 @@
                 </section>
 
                 <section class="screen" id="screen-session">
-                    <div class="panel">
+                    <div class="panel session-summary-panel">
                         <div class="toolbar session-toolbar">
-                            <h2 id="workspace-title" class="session-heading">
-                                <span data-i18n="session.title">Session</span>
-                                <span id="workspace-title-date" class="session-heading-date"></span>
-                            </h2>
+                            <div class="session-meta-row">
+                                <span class="session-meta-item">
+                                    <img src="/static/svg/08-calendar-outline-gold.svg" alt="" aria-hidden="true" />
+                                    <span id="workspace-title-date">-</span>
+                                </span>
+                                <span class="session-meta-item">
+                                    <img src="/static/svg/09-clock-outline-gold.svg" alt="" aria-hidden="true" />
+                                    <span id="workspace-title-time">-</span>
+                                </span>
+                            </div>
                             <div class="title-row session-status-row">
                                 <span id="workspace-status" class="session-status">-</span>
                                 <span id="workspace-finished-at" class="session-finished-at" hidden></span>
@@ -365,43 +371,20 @@
                     </div>
 
                     <div class="panel">
-                        <h3 data-i18n="session.players">Players</h3>
+                        <div class="session-players-head">
+                            <h3 data-i18n="session.players">Players</h3>
+                            <div class="session-action-switch" role="group" aria-label="Player action mode">
+                                <button type="button" id="session-action-mode-rebuy" data-session-action-mode="rebuy" data-i18n="session.buyIn">Rebuy</button>
+                                <button type="button" id="session-action-mode-cash-out" data-session-action-mode="cash-out" data-i18n="session.cashOut">Cash-out</button>
+                            </div>
+                        </div>
                         <div id="players-wrap"></div>
-                        <p class="hint top-gap" id="session-player-actions-hint" data-i18n="session.buyInHint">
-                            To add a player to the session, make a Buy-in.
-                        </p>
                         <div class="actions" id="session-player-actions">
-                            <button type="button" id="session-add-existing-player-btn" class="buy-in-action" data-i18n="session.addExistingPlayer">
-                                Add Player to Session
-                            </button>
-                            <button type="button" class="secondary" id="session-add-new-player-btn" data-i18n="session.createNewPlayer">
-                                Create New Player
+                            <button type="button" id="session-add-player-btn" class="session-add-player-btn">
+                                <img src="/static/svg/05-plus-circle-gold.svg" alt="" aria-hidden="true" />
+                                <span data-i18n="session.addPlayerCombined">Add / create player</span>
                             </button>
                         </div>
-                    </div>
-
-                    <div class="panel action-card" id="session-actions-panel">
-                        <h3 data-i18n="session.cashOut">Cash Out</h3>
-                        <p class="hint" data-i18n="session.cashOutHint">
-                            After cash-out, the player is considered settled. Make a buy-in to continue.
-                        </p>
-                        <form id="session-operation-form" onsubmit="return false;">
-                            <label>
-                                <span data-i18n="session.player">Player</span>
-                                <select id="cash-out-player-select">
-                                    <option value="" data-i18n="session.selectPlayer">Select player</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span data-i18n="session.chips">Chips</span>
-                                <input id="cash-out-chips" type="number" min="1" placeholder="Chips" data-i18n-placeholder="session.chips" />
-                            </label>
-
-                            <button type="button" id="cash-out-btn" class="cash-out-action" data-i18n="session.cashOut">
-                                Cash Out
-                            </button>
-                        </form>
                     </div>
 
                     <details class="panel panel-disclosure" id="session-operations-panel">

@@ -136,6 +136,7 @@ export function renderSession() {
   if (!session) return;
 
   const titleDate = document.getElementById("workspace-title-date");
+  const titleTime = document.getElementById("workspace-title-time");
   const finishedAt = document.getElementById("workspace-finished-at");
   const chipRate = document.getElementById("stat-chip-rate");
   const chipRateCard = document.getElementById("stat-chip-rate-card");
@@ -153,13 +154,22 @@ export function renderSession() {
   const debugDeletePanel = document.getElementById("session-delete-debug-panel");
   const playerActions = document.getElementById("session-player-actions");
   const playerActionsHint = document.getElementById("session-player-actions-hint");
-  const actionsPanel = document.getElementById("session-actions-panel");
+  const playerActionSwitch = document.querySelector(".session-action-switch");
   const finishActions = document.getElementById("session-finish-actions");
+  const brandTitle = document.querySelector(".app-brand h1");
   const isActive = session.status === "active";
   const onTable = Number(session.totalChips) || 0;
 
   if (titleDate) {
-    titleDate.textContent = formatDate(session.createdAt);
+    titleDate.textContent = formatSessionDate(session.createdAt);
+  }
+  if (titleTime) {
+    titleTime.textContent = formatSessionTime(session.createdAt);
+  }
+  if (brandTitle) {
+    brandTitle.textContent = session.status === "finished"
+      ? t("session.headerFinished")
+      : t("session.headerActive");
   }
   if (finishedAt) {
     const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
@@ -208,10 +218,9 @@ export function renderSession() {
     finishHint.hidden = true;
     finishHint.textContent = "";
   }
-  renderSessionPlayerMode();
   if (playerActions) playerActions.hidden = !isActive;
   if (playerActionsHint) playerActionsHint.hidden = !isActive;
-  if (actionsPanel) actionsPanel.hidden = !isActive;
+  if (playerActionSwitch) playerActionSwitch.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
 
@@ -223,6 +232,7 @@ export function renderSession() {
 
   bindDebugSessionConfigEditor(chipRateCard);
   bindDebugSessionConfigEditor(bigBlindCard);
+  renderSessionActionMode();
 }
 
 export function renderOperations() {
@@ -310,17 +320,12 @@ export function renderActionPlayerOptions() {
   );
 }
 
-export function renderSessionPlayerMode() {
-  const row = document.getElementById("session-player-mode-row");
-  if (!row) return;
-
-  const isActive = state.session?.status === "active";
-  row.hidden = !isActive;
-  row.querySelectorAll("[data-session-player-mode]").forEach((button) => {
-    const mode = button.getAttribute("data-session-player-mode");
-    const isActiveMode = mode === state.sessionPlayerActionMode;
-    button.classList.toggle("is-active", isActiveMode);
-    button.setAttribute("aria-pressed", isActiveMode ? "true" : "false");
+function renderSessionActionMode() {
+  const mode = state.sessionPlayerActionMode || "rebuy";
+  document.querySelectorAll("[data-session-action-mode]").forEach((button) => {
+    const isActive = button.getAttribute("data-session-action-mode") === mode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 }
 
@@ -786,18 +791,16 @@ export function initSessionActions() {
       await confirmPlayerRebuy(rebuyPlayerId);
       return;
     }
-
     const cashOutPlayerId = button.getAttribute("data-session-cash-out-player");
     if (cashOutPlayerId) {
       await confirmPlayerCashOut(cashOutPlayerId);
       return;
     }
-
-    const sessionPlayerMode = button.getAttribute("data-session-player-mode");
-    if (sessionPlayerMode) {
-      state.sessionPlayerActionMode = sessionPlayerMode === "cash_out" ? "cash_out" : "rebuy";
+    const sessionActionMode = button.getAttribute("data-session-action-mode");
+    if (sessionActionMode) {
+      state.sessionPlayerActionMode = sessionActionMode;
+      renderSessionActionMode();
       renderPlayers();
-      renderSessionPlayerMode();
       return;
     }
 
@@ -808,14 +811,8 @@ export function initSessionActions() {
     }
 
     switch (button.id) {
-      case "cash-out-btn":
-        await confirmCashOut();
-        break;
-      case "session-add-existing-player-btn":
-        await confirmAddExistingPlayer();
-        break;
-      case "session-add-new-player-btn":
-        await confirmAddNewPlayer();
+      case "session-add-player-btn":
+        await confirmAddPlayer();
         break;
       case "finish-session-btn":
         await confirmFinishSession();
@@ -979,25 +976,34 @@ async function confirmPlayerRebuy(playerId) {
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
-async function confirmCashOut() {
-  const playerId = document.getElementById("cash-out-player-select")?.value;
-  const chips = Number(document.getElementById("cash-out-chips")?.value);
-
-  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
+async function confirmPlayerCashOut(playerId) {
   const playerName = findPlayerName(playerId);
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
-      chips: formatNumber(chips),
+      chips: formatNumber(defaultCashOutChips(playerId)),
       name: playerName,
     }),
     confirmText: t("session.cashOut"),
+    fields: [
+      {
+        name: "chips",
+        label: t("session.chips"),
+        type: "number",
+        min: "1",
+        step: 1000,
+        value: defaultCashOutChips(playerId) || "",
+        placeholder: t("session.chips"),
+      },
+    ],
   });
   if (!values) return;
+
+  const chips = Number(values.chips);
+  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
+    showNotice(t("notice.selectPlayerAndChips"), "error");
+    return;
+  }
 
   const res = await cashOut({
     sessionId: state.activeSessionId,
@@ -1010,53 +1016,18 @@ async function confirmCashOut() {
   }
 
   await refreshSessionData();
-  const chipsInput = document.getElementById("cash-out-chips");
-  if (chipsInput) chipsInput.value = "";
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
-async function confirmPlayerCashOut(playerId) {
+function defaultCashOutChips(playerId) {
   const player = state.players.find((item) => (item.player_id || item.id) === playerId);
-  if (!playerId || !player || !player.in_game) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
+  if (!player) return "";
 
-  const playerName = findPlayerName(playerId);
-  const values = await openModal({
-    title: t("modal.confirmCashOutTitle"),
-    description: t("modal.cashOutPlayerDescription", { name: playerName }),
-    confirmText: t("session.cashOut"),
-    fields: [
-      {
-        name: "chips",
-        label: t("session.chips"),
-        type: "number",
-        min: "1",
-        step: 1000,
-        placeholder: t("session.chips"),
-      },
-    ],
-  });
-  if (!values) return;
-
-  const chips = Number(values.chips);
-  if (!Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
-  const res = await cashOut({ sessionId: state.activeSessionId, playerId, chips });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedCashOut")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
+  const chips = (Number(player.buy_in) || 0) - (Number(player.cash_out) || 0);
+  return chips > 0 ? String(chips) : "";
 }
 
-async function confirmAddExistingPlayer() {
+async function confirmAddPlayer() {
   await loadPlayersOverview();
 
   const inGameIds = new Set(
@@ -1068,11 +1039,6 @@ async function confirmAddExistingPlayer() {
     state.overviewPlayersAll.filter((player) => !inGameIds.has(player.player_id)),
   );
 
-  if (!availablePlayers.length) {
-    showNotice(t("notice.noAvailablePlayers"), "info");
-    return;
-  }
-
   const values = await openModal({
     title: t("modal.addPlayerTitle"),
     description: t("modal.addPlayerDescription"),
@@ -1082,10 +1048,19 @@ async function confirmAddExistingPlayer() {
         name: "player_id",
         label: t("session.player"),
         type: "select",
-        options: availablePlayers.map((player) => ({
-          value: player.player_id,
-          label: player.player_name || player.player_id,
-        })),
+        options: [
+          { value: "__new__", label: t("session.newPlayerOption") },
+          ...availablePlayers.map((player) => ({
+            value: player.player_id,
+            label: player.player_name || player.player_id,
+          })),
+        ],
+      },
+      {
+        name: "name",
+        label: t("session.newPlayerName"),
+        type: "text",
+        placeholder: t("lobby.playerNamePlaceholder"),
       },
       {
         name: "chips",
@@ -1106,6 +1081,34 @@ async function confirmAddExistingPlayer() {
     return;
   }
 
+  if (values.player_id === "__new__") {
+    const name = (values.name || "").trim();
+    if (!name) {
+      showNotice(t("notice.enterPlayerAndBuyIn"), "error");
+      return;
+    }
+
+    const createRes = await createPlayer(name);
+    if (!createRes.ok || !createRes.body?.player_id) {
+      showNotice(describeError(createRes, t("error.failedCreatePlayer")), "error");
+      return;
+    }
+
+    const buyInRes = await buyIn({
+      sessionId: state.activeSessionId,
+      playerId: createRes.body.player_id,
+      chips,
+    });
+    if (!buyInRes.ok) {
+      showNotice(describeError(buyInRes, t("error.failedCreateAdd")), "error");
+      return;
+    }
+
+    await Promise.all([refreshSessionData(), loadPlayersOverview()]);
+    showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
+    return;
+  }
+
   const res = await buyIn({
     sessionId: state.activeSessionId,
     playerId: values.player_id,
@@ -1121,57 +1124,6 @@ async function confirmAddExistingPlayer() {
     t("notice.playerAdded", { name: findPlayerName(values.player_id) }),
     "success",
   );
-}
-
-async function confirmAddNewPlayer() {
-  const values = await openModal({
-    title: t("modal.createNewPlayerTitle"),
-    description: t("modal.createNewPlayerDescription"),
-    confirmText: t("modal.createAndAdd"),
-    fields: [
-      {
-        name: "name",
-        label: t("lobby.playerName"),
-        type: "text",
-        placeholder: t("lobby.playerNamePlaceholder"),
-      },
-      {
-        name: "chips",
-        label: t("modal.initialBuyIn"),
-        type: "number",
-        min: "1",
-        step: 1000,
-        placeholder: t("session.chips"),
-      },
-    ],
-  });
-  if (!values) return;
-
-  const name = (values.name || "").trim();
-  const chips = Number(values.chips);
-  if (!name || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.enterPlayerAndBuyIn"), "error");
-    return;
-  }
-
-  const createRes = await createPlayer(name);
-  if (!createRes.ok || !createRes.body?.player_id) {
-    showNotice(describeError(createRes, t("error.failedCreatePlayer")), "error");
-    return;
-  }
-
-  const buyInRes = await buyIn({
-    sessionId: state.activeSessionId,
-    playerId: createRes.body.player_id,
-    chips,
-  });
-  if (!buyInRes.ok) {
-    showNotice(describeError(buyInRes, t("error.failedCreateAdd")), "error");
-    return;
-  }
-
-  await Promise.all([refreshSessionData(), loadPlayersOverview()]);
-  showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
 }
 
 async function confirmFinishSession() {
@@ -1483,6 +1435,27 @@ function findPlayerName(playerId) {
 
   const overview = state.overviewPlayersAll.find((player) => player.player_id === playerId);
   return overview?.player_name || playerId;
+}
+
+function formatSessionDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatDate(value);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+function formatSessionTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 }
 
 function totalMoneyIn(session) {

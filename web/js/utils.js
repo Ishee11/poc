@@ -100,6 +100,10 @@ export function describeError(res, fallback = t("error.fallback")) {
 
 export function setScreen(name) {
   showNotice("");
+  if (name !== "session") {
+    const appTitle = document.querySelector(".app-brand h1");
+    if (appTitle) appTitle.textContent = t("app.title");
+  }
 
   document
     .getElementById("screen-lobby")

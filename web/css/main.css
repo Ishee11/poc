@@ -842,8 +842,21 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     padding: 10px 12px;
     border-radius: 8px;
 
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.018);
+    border: 1px solid rgba(245, 243, 236, 0.055);
+}
+
+.session-summary-panel {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    padding: 0;
+}
+
+.session-summary-panel .stat {
+    background: rgba(9, 13, 10, 0.54);
+    border-color: rgba(245, 243, 236, 0.06);
 }
 
 .session-balance-stat {
@@ -1436,15 +1449,17 @@ button.buy-in-action {
 }
 
 button.rebuy-action {
-    color: #071f36;
-    background: #83bdf1;
-    box-shadow: 0 8px 18px rgba(91, 169, 246, 0.16);
+    color: #f3fff8;
+    border: 1px solid rgba(67, 208, 128, 0.28);
+    background: linear-gradient(180deg, #188c55 0%, #11683f 100%);
+    box-shadow: none;
 }
 
 button.cash-out-action {
-    color: #3a2106;
-    background: #efbe70;
-    box-shadow: 0 8px 18px rgba(246, 173, 85, 0.16);
+    color: #251400;
+    border: 1px solid rgba(255, 215, 111, 0.36);
+    background: linear-gradient(180deg, #ffc34a 0%, #eda521 100%);
+    box-shadow: none;
 }
 
 button:disabled {
@@ -1563,8 +1578,8 @@ body.debug-mode .debug-only {
 }
 
 .player-row {
-    border-left: 3px solid transparent;
-    padding-left: 10px;
+    border-left: 0;
+    padding: 10px 0;
 }
 
 .player-row .row-main {
@@ -1579,12 +1594,11 @@ body.debug-mode .debug-only {
 }
 
 .player-row.is-in-game {
-    border-left-color: rgba(88, 208, 167, 0.62);
-    background: rgba(88, 208, 167, 0.04);
+    background: rgba(255, 255, 255, 0.012);
 }
 
 .player-row.is-settled {
-    border-left-color: rgba(255, 143, 123, 0.38);
+    background: rgba(255, 255, 255, 0.008);
 }
 
 .session-row:last-child,
@@ -1914,21 +1928,30 @@ body.debug-mode .debug-only {
 
 .session-toolbar {
     align-items: flex-start;
+    display: grid;
+    gap: 10px;
 }
 
-.session-heading {
+.session-meta-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 8px;
-    margin-bottom: 0;
+    justify-content: space-between;
+    gap: 12px;
+    color: rgba(245, 243, 236, 0.68);
+    font-size: 0.9rem;
 }
 
-.session-heading-date {
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 0.88em;
-    font-weight: 500;
+.session-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+
+.session-meta-item img {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    object-fit: contain;
 }
 
 .compact-actions {
@@ -1948,6 +1971,10 @@ body.debug-mode .debug-only {
     margin-right: auto;
 }
 
+.session-summary-panel .session-status {
+    display: none;
+}
+
 .session-finished-at {
     color: var(--muted);
     font-size: 0.95rem;
@@ -1964,6 +1991,64 @@ body.debug-mode .debug-only {
     text-transform: uppercase;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.session-players-head {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.session-players-head h3 {
+    margin: 0;
+}
+
+.session-action-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 4px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(245, 243, 236, 0.055);
+}
+
+.session-action-switch[hidden] {
+    display: none;
+}
+
+.session-action-switch button {
+    min-height: 38px;
+    padding: 8px 10px;
+    color: rgba(245, 243, 236, 0.6);
+    background: transparent;
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.session-action-switch button.active {
+    color: #261400;
+    background: linear-gradient(180deg, #ffc34a 0%, #eda521 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.session-add-player-btn {
+    width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: var(--gold);
+    border: 1px solid rgba(246, 183, 57, 0.34);
+    background: rgba(246, 183, 57, 0.055);
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.session-add-player-btn img {
+    width: 21px;
+    height: 21px;
+    object-fit: contain;
 }
 
 .session-status.active {
