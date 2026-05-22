@@ -717,18 +717,20 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .lobby-continue-btn {
     width: 100%;
-    min-height: 56px;
+    min-height: 52px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    color: #ecfff7;
+    color: #f2fff9;
+    border: 1px solid rgba(66, 210, 130, 0.28);
     background:
-        linear-gradient(180deg, rgba(92, 222, 164, 0.95), rgba(19, 126, 76, 0.96)),
-        #15925a;
+        linear-gradient(180deg, rgba(37, 139, 86, 0.96) 0%, rgba(18, 104, 63, 0.98) 52%, rgba(11, 82, 50, 0.98) 100%),
+        #12663e;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 14px 30px rgba(20, 151, 91, 0.25);
+        inset 0 1px 0 rgba(210, 255, 228, 0.16),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+        0 10px 22px rgba(0, 0, 0, 0.24);
 }
 
 .lobby-continue-btn::before {
@@ -741,9 +743,13 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .lobby-continue-btn:hover {
+    background:
+        linear-gradient(180deg, rgba(42, 151, 94, 0.98) 0%, rgba(20, 111, 67, 0.98) 52%, rgba(12, 88, 54, 0.98) 100%),
+        #147045;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.22),
-        0 16px 34px rgba(20, 151, 91, 0.3);
+        inset 0 1px 0 rgba(226, 255, 238, 0.18),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+        0 12px 24px rgba(0, 0, 0, 0.28);
 }
 
 .grid.three {
