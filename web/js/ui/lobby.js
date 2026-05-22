@@ -93,6 +93,11 @@ export function syncSelect() {
   const activeSessions = state.overviewSessions.filter(
     (session) => session.status === "active",
   );
+  const connectPanel = document.querySelector(".lobby-connect-panel");
+  if (connectPanel) {
+    connectPanel.hidden = activeSessions.length === 0;
+  }
+
   const options = [
     `<option value="">${escapeHtml(t("lobby.latestActiveSession"))}</option>`,
     ...activeSessions.map((session) => {

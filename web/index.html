@@ -88,7 +88,7 @@
                 <section class="screen active" id="screen-lobby">
                     <div class="grid lobby-primary">
                         <div class="panel lobby-connect-panel">
-                            <h2 data-i18n="lobby.connectTitle">Connect to Active Session</h2>
+                            <h2 data-i18n="lobby.connectTitle">Continue Session</h2>
 
                             <form id="connect-session-form" onsubmit="return false;">
                                 <select id="active-session-select">
@@ -96,11 +96,8 @@
                                 </select>
 
                                 <div class="actions">
-                                    <button type="button" id="open-workspace-btn" class="secondary" data-i18n="lobby.openWorkspace">
-                                        Open Workspace
-                                    </button>
-                                    <button type="button" id="open-blinds-clock-btn" class="secondary" data-i18n="lobby.openBlindsClock">
-                                        Blind Timer
+                                    <button type="button" id="open-workspace-btn" class="lobby-continue-btn" data-i18n="lobby.openWorkspace">
+                                        Continue Session
                                     </button>
                                 </div>
                             </form>
