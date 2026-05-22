@@ -46,6 +46,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.expenses = [];
   state.players = [];
   state.settlementEditing = false;
+  state.expenseFormOpen = false;
   delete state.settlementDrafts[sessionId];
 
   const res = await getSession(sessionId);
@@ -353,6 +354,7 @@ export function renderExpenseForm() {
   const payersWrap = document.getElementById("expense-payers-wrap");
   const panel = document.getElementById("session-expenses-panel");
   const form = document.getElementById("session-expense-form");
+  const openFormButton = document.getElementById("open-expense-form-btn");
   const closeButton = document.getElementById("close-expenses-btn");
   const lockedHint = document.getElementById("session-expenses-locked-hint");
   const status = document.getElementById("session-expenses-status");
@@ -362,7 +364,8 @@ export function renderExpenseForm() {
   if (panel) panel.hidden = !isActiveOrFinished;
   const expensesClosed = Boolean(state.session?.expensesClosed);
   const canEditExpenses = !expensesClosed || state.debugMode;
-  if (form) form.hidden = !canEditExpenses;
+  if (form) form.hidden = !canEditExpenses || !state.expenseFormOpen;
+  if (openFormButton) openFormButton.hidden = !canEditExpenses || state.expenseFormOpen;
   if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed;
   if (lockedHint) lockedHint.hidden = canEditExpenses || !expensesClosed;
   if (status) {
@@ -372,23 +375,8 @@ export function renderExpenseForm() {
   const players = state.players || [];
   const amount = Number(document.getElementById("expense-amount")?.value);
   const selectedPayerIds = readSelectedExpensePayers(players);
-  const participantRows = players
-    .map((player) => {
-      const id = player.player_id || player.id;
-      const name = player.player_name || player.name || id;
-      return `
-        <label class="expense-check">
-          <span class="expense-check-main">
-            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
-            <span>${escapeHtml(name)}</span>
-          </span>
-          <strong data-expense-share="${escapeHtml(id)}">${formatMoney(0, state.session?.currency)}</strong>
-        </label>
-      `;
-    })
-    .join("");
 
-  participantsWrap.innerHTML = participantRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  participantsWrap.innerHTML = renderExpenseParticipantControls(players, amount);
   payersWrap.innerHTML = renderExpensePayerControls(players, selectedPayerIds, amount);
   bindExpenseSplitInputs();
   updateExpenseParticipantShares();
@@ -406,6 +394,52 @@ function bindExpenseSplitInputs() {
   document.querySelectorAll("[name='expense-participant']").forEach((input) => {
     input.addEventListener("change", updateExpenseParticipantShares);
   });
+}
+
+function renderExpenseParticipantControls(players, amount) {
+  if (!players.length) {
+    return `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  }
+
+  const mode = state.expenseParticipantMode || "all";
+  const modeSwitch = `
+    <div class="expense-participant-mode" role="group" aria-label="${escapeHtml(t("expenses.splitBetween"))}">
+      <button type="button" data-expense-participant-mode="all" class="${mode === "all" ? "active" : ""}" aria-pressed="${mode === "all" ? "true" : "false"}">${escapeHtml(t("expenses.selectAll"))}</button>
+      <button type="button" data-expense-participant-mode="custom" class="${mode === "custom" ? "active" : ""}" aria-pressed="${mode === "custom" ? "true" : "false"}">${escapeHtml(t("expenses.custom"))}</button>
+    </div>
+  `;
+
+  if (mode !== "custom") {
+    return modeSwitch;
+  }
+
+  const shares = calculateEqualShares(amount, players.map((player) => player.player_id || player.id));
+  const participantRows = players
+    .map((player) => {
+      const id = player.player_id || player.id;
+      const name = player.player_name || player.name || id;
+      return `
+        <label class="expense-check">
+          <span class="expense-check-main">
+            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
+            <span>${escapeHtml(name)}</span>
+          </span>
+          <strong data-expense-share="${escapeHtml(id)}">${formatMoney(shares.get(id) || 0, state.session?.currency)}</strong>
+        </label>
+      `;
+    })
+    .join("");
+
+  return `
+    ${modeSwitch}
+    <div class="expense-section-actions expense-participant-actions">
+      <button type="button" class="secondary" id="expense-select-all-btn" data-i18n="expenses.selectAllDetailed">${escapeHtml(t("expenses.selectAllDetailed"))}</button>
+      <button type="button" class="secondary" id="expense-clear-all-btn" data-i18n="expenses.clearAllDetailed">${escapeHtml(t("expenses.clearAllDetailed"))}</button>
+    </div>
+    <div class="expense-participant-list">
+      ${participantRows}
+    </div>
+  `;
 }
 
 function renderExpensePayerControls(players, selectedPayerIds, amount) {
@@ -508,6 +542,9 @@ function calculateEqualShares(amount, participants) {
 }
 
 function selectedExpenseParticipants() {
+  if ((state.expenseParticipantMode || "all") === "all") {
+    return (state.players || []).map((player) => player.player_id || player.id).filter(Boolean);
+  }
   return Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
     .map((input) => input.value)
     .filter(Boolean);
@@ -946,6 +983,12 @@ export function initSessionActions() {
       renderExpenseForm();
       return;
     }
+    const expenseParticipantMode = button.getAttribute("data-expense-participant-mode");
+    if (expenseParticipantMode) {
+      state.expenseParticipantMode = expenseParticipantMode;
+      renderExpenseForm();
+      return;
+    }
 
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
@@ -961,10 +1004,17 @@ export function initSessionActions() {
         await openSessionResults(state.activeSessionId);
         break;
       case "results-save-close-btn":
-        await confirmCloseExpenses();
+        if (state.activeSessionId) {
+          setScreen("session");
+          pushRoute(routeToSession(state.activeSessionId));
+        }
         break;
       case "finish-session-btn":
         await confirmFinishSession();
+        break;
+      case "open-expense-form-btn":
+        state.expenseFormOpen = true;
+        renderExpenseForm();
         break;
       case "add-expense-btn":
         await confirmAddExpense();
@@ -1486,6 +1536,7 @@ async function confirmAddExpense() {
   document.querySelectorAll("[data-expense-payer]").forEach((input) => {
     input.value = "";
   });
+  state.expenseFormOpen = false;
   renderExpenseForm();
   await loadExpenses(state.activeSessionId);
   showNotice(t("notice.expenseAdded"), "success");

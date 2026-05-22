@@ -23,6 +23,8 @@ export const state = {
   players: [],
   sessionPlayerActionMode: "rebuy",
   expensePayerMode: "even",
+  expenseParticipantMode: "all",
+  expenseFormOpen: false,
   operations: [],
   expenses: [],
   settlementDrafts: {},

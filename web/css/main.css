@@ -549,6 +549,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .panel-title-row h3 {
+    flex: 1 1 auto;
     margin: 0;
 }
 
@@ -643,6 +644,18 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     height: 12px;
     margin: 0;
     accent-color: var(--accent);
+}
+
+.summary-count-button {
+    min-width: 36px;
+    min-height: 28px;
+    padding: 3px 9px;
+    color: var(--gold);
+    border: 1px solid rgba(246, 183, 57, 0.24);
+    background: rgba(246, 183, 57, 0.06);
+    box-shadow: none;
+    font-size: 0.88rem;
+    font-weight: 500;
 }
 
 .panel p {
@@ -1742,6 +1755,10 @@ body.debug-mode .debug-only {
     font-weight: 700;
 }
 
+#session-expenses-panel > summary h3 {
+    text-transform: uppercase;
+}
+
 .expense-status-row {
     display: flex;
     align-items: center;
@@ -1772,6 +1789,10 @@ body.debug-mode .debug-only {
     gap: 8px;
 }
 
+.expense-participant-actions {
+    margin: 8px 0;
+}
+
 .expense-section-heading button,
 .expense-section-actions button {
     padding: 8px 12px;
@@ -1782,6 +1803,10 @@ body.debug-mode .debug-only {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
+}
+
+.expense-player-grid {
+    grid-template-columns: 1fr;
 }
 
 .expense-payers-grid {
@@ -1836,6 +1861,31 @@ body.debug-mode .debug-only {
     background: rgba(255, 255, 255, 0.035);
 }
 
+.expense-participant-mode {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(245, 243, 236, 0.055);
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.expense-participant-mode button {
+    min-height: 38px;
+    padding: 8px 10px;
+    color: rgba(245, 243, 236, 0.62);
+    background: transparent;
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.expense-participant-mode button.active {
+    color: #381608;
+    background: #f3bb78;
+}
+
 .expense-payer-mode button {
     min-height: 38px;
     padding: 8px 10px;
@@ -1851,7 +1901,8 @@ body.debug-mode .debug-only {
 }
 
 .expense-payer-select-list,
-.expense-payer-custom-grid {
+.expense-payer-custom-grid,
+.expense-participant-list {
     display: grid;
     gap: 10px;
 }
@@ -2230,6 +2281,25 @@ body.debug-mode .debug-only {
     min-height: 50px;
     color: #381608;
     background: #f3bb78;
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.expense-open-form-btn {
+    width: 100%;
+    min-height: 46px;
+    color: #04261b;
+    background: #65cba7;
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.results-close-bill-btn {
+    width: 100%;
+    min-height: 50px;
+    color: #ffe6df;
+    border: 1px solid rgba(239, 154, 140, 0.28);
+    background: rgba(143, 61, 48, 0.72);
     box-shadow: none;
     font-weight: 500;
 }
