@@ -83,12 +83,25 @@ export async function loadPlayersOverview() {
 
 export function renderPlayersOverview() {
   const wrap = document.getElementById("overview-players-wrap");
-  const count = document.getElementById("overview-players-count");
-  if (!wrap || !count) return;
+  const summary = document.getElementById("overview-players-summary");
+  const filter = document.getElementById("overview-players-filter-label");
+  const filterButton = document.getElementById("overview-players-filter-toggle");
+  if (!wrap) return;
 
-  count.textContent = state.overviewPlayersShowAll
-    ? String(state.overviewPlayers.length)
-    : `${state.overviewPlayers.length}/${state.overviewPlayersAll.length}`;
+  const shown = state.overviewPlayers.length;
+  const total = state.overviewPlayersAll.length;
+  if (summary) {
+    summary.textContent = t("lobby.playersShown", { shown, total });
+  }
+  if (filter) {
+    filter.textContent = state.overviewPlayersShowAll
+      ? t("lobby.filterAllPlayers", { shown, total })
+      : t("lobby.filterActivePlayers", { shown, total });
+  }
+  if (filterButton) {
+    filterButton.classList.toggle("is-active", !state.overviewPlayersShowAll);
+    filterButton.setAttribute("aria-pressed", state.overviewPlayersShowAll ? "false" : "true");
+  }
 
   if (!state.overviewPlayers.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("lobby.noActivePlayers"))}</div>`;

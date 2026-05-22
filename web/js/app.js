@@ -655,6 +655,12 @@ function initPlayersSort() {
   if (!select) return;
 
   select.value = state.overviewPlayersSort;
+  select.closest("label")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  select.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
   select.addEventListener("change", () => {
     state.overviewPlayersSort = select.value || "last_activity";
     sortOverviewPlayers();
@@ -663,18 +669,13 @@ function initPlayersSort() {
 }
 
 function initPlayersOverviewFilters() {
-  const showAll = document.getElementById("overview-players-show-all");
-  if (!showAll) return;
+  const filter = document.getElementById("overview-players-filter-toggle");
+  if (!filter) return;
 
-  showAll.checked = state.overviewPlayersShowAll;
-  showAll.closest("label")?.addEventListener("click", (event) => {
+  filter.addEventListener("click", async (event) => {
+    event.preventDefault();
     event.stopPropagation();
-  });
-  showAll.closest("label")?.addEventListener("keydown", (event) => {
-    event.stopPropagation();
-  });
-  showAll.addEventListener("change", async () => {
-    state.overviewPlayersShowAll = showAll.checked;
+    state.overviewPlayersShowAll = !state.overviewPlayersShowAll;
     await loadPlayersOverview();
   });
 }

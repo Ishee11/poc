@@ -132,26 +132,26 @@
 
                     <details class="panel panel-disclosure" id="overview-players-panel">
                         <summary class="panel-title-row">
-                            <h3 data-i18n="lobby.players">Players</h3>
-                            <span class="summary-actions">
-                                <span class="summary-count" id="overview-players-count">0</span>
-                                <label class="summary-check-label" for="overview-players-show-all">
-                                    <input id="overview-players-show-all" type="checkbox" />
-                                    <span data-i18n="lobby.showAllShort">All</span>
+                            <span class="overview-players-heading">
+                                <h3 data-i18n="lobby.players">Players</h3>
+                                <span class="overview-players-summary" id="overview-players-summary">Shown 0 of 0</span>
+                            </span>
+                            <span class="summary-actions overview-player-controls">
+                                <button type="button" class="overview-filter-pill" id="overview-players-filter-toggle">
+                                    <img src="/static/svg/10-poker-chips-gold.svg" alt="" aria-hidden="true" />
+                                    <span id="overview-players-filter-label">In game · 0/0</span>
+                                </button>
+                                <label class="overview-sort-pill" for="overview-players-sort">
+                                    <span class="visually-hidden" data-i18n="lobby.playersSort">Sort</span>
+                                    <select id="overview-players-sort" aria-label="Sort players" data-i18n-aria-label="lobby.playersSort">
+                                        <option value="last_activity" data-i18n="sort.lastActivityShort">Activity ↓</option>
+                                        <option value="sessions_count" data-i18n="sort.sessionsCountShort">Sessions ↓</option>
+                                        <option value="profit_money" data-i18n="sort.profitShort">Profit ↓</option>
+                                        <option value="name" data-i18n="sort.nameShort">Name ↓</option>
+                                    </select>
                                 </label>
                             </span>
                         </summary>
-                        <div class="panel-inline-toolbar">
-                            <label class="inline-select-label" for="overview-players-sort">
-                                <span data-i18n="lobby.playersSort">Sort</span>
-                                <select id="overview-players-sort">
-                                    <option value="last_activity" data-i18n="sort.lastActivity">Last activity</option>
-                                    <option value="sessions_count" data-i18n="sort.sessionsCount">Sessions count</option>
-                                    <option value="profit_money" data-i18n="sort.profit">Profit</option>
-                                    <option value="name" data-i18n="sort.name">Name</option>
-                                </select>
-                            </label>
-                        </div>
                         <div id="overview-players-wrap"></div>
                     </details>
 
