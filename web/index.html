@@ -18,28 +18,28 @@
                 <div class="app-header-content">
                     <nav class="top-nav top-nav-left" aria-label="Page navigation" data-i18n-aria-label="nav.page">
                         <button type="button" class="secondary app-icon-button nav-session-only" id="session-back-home-btn" aria-label="Back to Home" data-i18n-aria-label="nav.backHome">
-                            <span class="app-nav-icon app-nav-icon-home" aria-hidden="true"></span>
+                            <img class="app-nav-icon" src="/static/svg/01-home-filled-white.svg" alt="" aria-hidden="true" />
                             <span class="visually-hidden" data-i18n="nav.backHome">Back to Home</span>
                         </button>
                         <button type="button" class="secondary app-icon-button nav-player-only" id="player-back-home-btn" aria-label="Back to Home" data-i18n-aria-label="nav.backHome">
-                            <span class="app-nav-icon app-nav-icon-home" aria-hidden="true"></span>
+                            <img class="app-nav-icon" src="/static/svg/01-home-filled-white.svg" alt="" aria-hidden="true" />
                             <span class="visually-hidden" data-i18n="nav.backHome">Back to Home</span>
                         </button>
                         <button type="button" class="secondary app-icon-button nav-players-stats-only" id="players-stats-back-home-btn" aria-label="Back to Home" data-i18n-aria-label="nav.backHome">
-                            <span class="app-nav-icon app-nav-icon-home" aria-hidden="true"></span>
+                            <img class="app-nav-icon" src="/static/svg/01-home-filled-white.svg" alt="" aria-hidden="true" />
                             <span class="visually-hidden" data-i18n="nav.backHome">Back to Home</span>
                         </button>
                         <button type="button" class="secondary app-icon-button nav-account-only" id="account-back-home-btn" aria-label="Back to Home" data-i18n-aria-label="nav.backHome">
-                            <span class="app-nav-icon app-nav-icon-home" aria-hidden="true"></span>
+                            <img class="app-nav-icon" src="/static/svg/01-home-filled-white.svg" alt="" aria-hidden="true" />
                             <span class="visually-hidden" data-i18n="nav.backHome">Back to Home</span>
                         </button>
                         <button type="button" class="secondary app-icon-button nav-blinds-only" id="blinds-back-home-btn" aria-label="Back to Home" data-i18n-aria-label="nav.backHome">
-                            <span class="app-nav-icon app-nav-icon-home" aria-hidden="true"></span>
+                            <img class="app-nav-icon" src="/static/svg/01-home-filled-white.svg" alt="" aria-hidden="true" />
                             <span class="visually-hidden" data-i18n="nav.backHome">Back to Home</span>
                         </button>
                     </nav>
                     <div class="app-brand">
-                        <img class="app-brand-mark" src="/static/assets/poker-mark.png" alt="" aria-hidden="true" />
+                        <img class="app-brand-mark" src="/static/svg/02-spade-filled-gold.svg" alt="" aria-hidden="true" />
                         <div>
                             <h1 data-i18n="app.title">Poker Session Control</h1>
                             <p data-i18n="app.subtitle">Control panel for poker cash games.</p>
@@ -47,7 +47,7 @@
                     </div>
                     <div class="top-nav top-nav-right" aria-label="Tools">
                         <button type="button" class="secondary app-icon-button header-blinds-clock-btn" id="header-blinds-clock-btn" aria-label="Blind Timer" data-i18n-aria-label="lobby.openBlindsClock">
-                            <span class="app-nav-icon app-nav-icon-timer" aria-hidden="true"></span>
+                            <img class="app-nav-icon" src="/static/svg/03-timer-outline-white.svg" alt="" aria-hidden="true" />
                             <span class="visually-hidden" data-i18n="lobby.openBlindsClock">Blind Timer</span>
                         </button>
                     </div>
@@ -96,29 +96,38 @@
                                 </select>
 
                                 <div class="actions">
-                                    <button type="button" id="open-workspace-btn" class="lobby-continue-btn" data-i18n="lobby.openWorkspace">
-                                        Continue Session
+                                    <button type="button" id="open-workspace-btn" class="lobby-continue-btn">
+                                        <img class="button-icon" src="/static/svg/04-play-filled-white.svg" alt="" aria-hidden="true" />
+                                        <span data-i18n="lobby.openWorkspace">Continue Session</span>
                                     </button>
                                 </div>
                             </form>
                         </div>
 
                         <div class="panel lobby-start-panel">
-                            <h2 data-i18n="lobby.startTitle">Start a New Session</h2>
-
                             <form id="start-session-form" onsubmit="return false;">
-                                <label>
-                                    <span id="start-chip-rate-label">Rate</span>
-                                    <input id="start-chip-rate" type="number" min="1" />
-                                </label>
+                                <button type="button" class="lobby-start-toggle" id="start-session-toggle" aria-expanded="false" aria-controls="start-session-settings">
+                                    <img class="lobby-start-icon" src="/static/svg/05-plus-circle-gold.svg" alt="" aria-hidden="true" />
+                                    <span>
+                                        <strong data-i18n="lobby.startTitle">Start a New Session</strong>
+                                        <small data-i18n="lobby.startHint">Create and configure a new session</small>
+                                    </span>
+                                </button>
 
-                                <label>
-                                    <span data-i18n="lobby.bigBlind">BB (big blind size)</span>
-                                    <input id="start-big-blind" type="number" min="1" />
-                                </label>
+                                <div class="lobby-start-settings" id="start-session-settings" hidden>
+                                    <label>
+                                        <span id="start-chip-rate-label">Rate</span>
+                                        <input id="start-chip-rate" type="number" min="1" />
+                                    </label>
 
-                                <div class="actions">
-                                    <button type="submit" data-i18n="lobby.startSession">Start Session</button>
+                                    <label>
+                                        <span data-i18n="lobby.bigBlind">BB (big blind size)</span>
+                                        <input id="start-big-blind" type="number" min="1" />
+                                    </label>
+
+                                    <div class="actions">
+                                        <button type="submit" class="lobby-start-submit" data-i18n="lobby.startSession">Start Session</button>
+                                    </div>
                                 </div>
                             </form>
                         </div>

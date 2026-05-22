@@ -102,8 +102,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   const startForm = document.getElementById("start-session-form");
   const chipInput = document.getElementById("start-chip-rate");
   const bigBlindInput = document.getElementById("start-big-blind");
+  const startToggle = document.getElementById("start-session-toggle");
+  const startSettings = document.getElementById("start-session-settings");
   renderStartChipRateLabel();
   applyLatestSessionDefaults();
+  startToggle?.addEventListener("click", () => {
+    const willOpen = startSettings?.hidden !== false;
+    if (startSettings) {
+      startSettings.hidden = !willOpen;
+    }
+    startToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    startForm?.classList.toggle("is-open", willOpen);
+    if (willOpen) {
+      chipInput?.focus();
+    }
+  });
+
   if (startForm && chipInput && bigBlindInput) {
     startForm.addEventListener("submit", async (event) => {
       event.preventDefault();
