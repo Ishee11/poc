@@ -22,6 +22,7 @@ export const state = {
 
   players: [],
   sessionPlayerActionMode: "rebuy",
+  expensePayerMode: "even",
   operations: [],
   expenses: [],
   settlementDrafts: {},

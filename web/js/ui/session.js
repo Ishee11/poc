@@ -370,6 +370,8 @@ export function renderExpenseForm() {
   }
 
   const players = state.players || [];
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const selectedPayerIds = readSelectedExpensePayers(players);
   const participantRows = players
     .map((player) => {
       const id = player.player_id || player.id;
@@ -386,21 +388,8 @@ export function renderExpenseForm() {
     })
     .join("");
 
-  const payerRows = players
-    .map((player) => {
-      const id = player.player_id || player.id;
-      const name = player.player_name || player.name || id;
-      return `
-        <label class="expense-payer-row">
-          <span>${escapeHtml(name)}</span>
-          <input type="number" min="0" data-expense-payer="${escapeHtml(id)}" placeholder="0" />
-        </label>
-      `;
-    })
-    .join("");
-
   participantsWrap.innerHTML = participantRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
-  payersWrap.innerHTML = payerRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  payersWrap.innerHTML = renderExpensePayerControls(players, selectedPayerIds, amount);
   bindExpenseSplitInputs();
   updateExpenseParticipantShares();
 }
@@ -408,12 +397,98 @@ export function renderExpenseForm() {
 function bindExpenseSplitInputs() {
   const amountInput = document.getElementById("expense-amount");
   if (amountInput) {
-    amountInput.oninput = updateExpenseParticipantShares;
+    amountInput.oninput = () => {
+      updateExpenseParticipantShares();
+      updateExpensePayerShares();
+    };
   }
 
   document.querySelectorAll("[name='expense-participant']").forEach((input) => {
     input.addEventListener("change", updateExpenseParticipantShares);
   });
+}
+
+function renderExpensePayerControls(players, selectedPayerIds, amount) {
+  if (!players.length) {
+    return `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  }
+
+  const mode = state.expensePayerMode || "even";
+  const modeSwitch = `
+    <div class="expense-payer-mode" role="group" aria-label="${escapeHtml(t("expenses.paidBy"))}">
+      <button type="button" data-expense-payer-mode="even" class="${mode === "even" ? "active" : ""}" aria-pressed="${mode === "even" ? "true" : "false"}">${escapeHtml(t("expenses.splitEven"))}</button>
+      <button type="button" data-expense-payer-mode="custom" class="${mode === "custom" ? "active" : ""}" aria-pressed="${mode === "custom" ? "true" : "false"}">${escapeHtml(t("expenses.custom"))}</button>
+    </div>
+  `;
+
+  if (mode === "custom") {
+    return `
+      ${modeSwitch}
+      <div class="expense-payer-custom-grid">
+        ${players
+          .map((player) => {
+            const id = player.player_id || player.id;
+            const name = player.player_name || player.name || id;
+            return `
+              <label class="expense-payer-row">
+                <span>${escapeHtml(name)}</span>
+                <input type="number" min="0" data-expense-payer="${escapeHtml(id)}" placeholder="0" />
+              </label>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
+  const effectiveSelectedIds = selectedPayerIds;
+  const selectedSet = new Set(effectiveSelectedIds);
+  const rows = [...effectiveSelectedIds, ""]
+    .slice(0, players.length)
+    .map((selectedId) => renderExpensePayerSelectRow(players, selectedId, selectedSet, amount))
+    .join("");
+
+  return `
+    ${modeSwitch}
+    <div class="expense-payer-select-list">
+      ${rows}
+    </div>
+  `;
+}
+
+function renderExpensePayerSelectRow(players, selectedId, selectedSet, amount) {
+  const selectedIds = Array.from(selectedSet).filter(Boolean);
+  const shares = calculateEqualShares(Number(amount), selectedIds);
+  const options = [
+    `<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`,
+    ...players
+      .filter((player) => {
+        const id = player.player_id || player.id;
+        return id === selectedId || !selectedSet.has(id);
+      })
+      .map((player) => {
+        const id = player.player_id || player.id;
+        const name = player.player_name || player.name || id;
+        return `<option value="${escapeHtml(id)}" ${id === selectedId ? "selected" : ""}>${escapeHtml(name)}</option>`;
+      }),
+  ].join("");
+
+  return `
+    <label class="expense-payer-select-row">
+      <select class="expense-payer-select" data-expense-payer-select>
+        ${options}
+      </select>
+      <strong data-expense-payer-share="${escapeHtml(selectedId)}">${selectedId ? formatMoney(shares.get(selectedId) || 0, state.session?.currency) : formatMoney(0, state.session?.currency)}</strong>
+    </label>
+  `;
+}
+
+function readSelectedExpensePayers(players) {
+  const playerIds = new Set(players.map((player) => player.player_id || player.id));
+  const selected = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
+    .map((select) => select.value)
+    .filter((id, index, ids) => id && playerIds.has(id) && ids.indexOf(id) === index);
+  return selected;
 }
 
 function calculateEqualShares(amount, participants) {
@@ -455,6 +530,19 @@ function updateExpenseParticipantShares() {
   });
 }
 
+function updateExpensePayerShares() {
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const payerIds = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
+    .map((select) => select.value)
+    .filter((id, index, ids) => id && ids.indexOf(id) === index);
+  const shares = calculateEqualShares(amount, payerIds);
+
+  document.querySelectorAll("[data-expense-payer-share]").forEach((element) => {
+    const playerId = element.getAttribute("data-expense-payer-share");
+    element.textContent = formatMoney(shares.get(playerId) || 0, state.session?.currency);
+  });
+}
+
 function fillEqualExpensePayments() {
   const amount = Number(document.getElementById("expense-amount")?.value);
   const shares = calculateEqualShares(amount, selectedExpenseParticipants());
@@ -469,6 +557,25 @@ function fillEqualExpensePayments() {
     const share = shares.get(playerId) || 0;
     input.value = share > 0 ? String(share) : "";
   });
+}
+
+function collectExpensePayments(amount) {
+  if ((state.expensePayerMode || "even") === "custom") {
+    return Array.from(document.querySelectorAll("[data-expense-payer]"))
+      .map((input) => ({
+        player_id: input.getAttribute("data-expense-payer"),
+        amount: Number(input.value),
+      }))
+      .filter((payment) => payment.player_id && Number.isFinite(payment.amount) && payment.amount > 0);
+  }
+
+  const payerIds = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
+    .map((select) => select.value)
+    .filter((id, index, ids) => id && ids.indexOf(id) === index);
+  return Array.from(calculateEqualShares(amount, payerIds).entries()).map(([player_id, paymentAmount]) => ({
+    player_id,
+    amount: paymentAmount,
+  }));
 }
 
 export function renderExpenses() {
@@ -833,6 +940,12 @@ export function initSessionActions() {
       renderPlayers();
       return;
     }
+    const expensePayerMode = button.getAttribute("data-expense-payer-mode");
+    if (expensePayerMode) {
+      state.expensePayerMode = expensePayerMode;
+      renderExpenseForm();
+      return;
+    }
 
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
@@ -846,6 +959,9 @@ export function initSessionActions() {
         break;
       case "session-open-results-btn":
         await openSessionResults(state.activeSessionId);
+        break;
+      case "results-save-close-btn":
+        await confirmCloseExpenses();
         break;
       case "finish-session-btn":
         await confirmFinishSession();
@@ -907,6 +1023,12 @@ export function initSessionActions() {
         break;
       default:
         break;
+    }
+  });
+
+  document.addEventListener("change", (event) => {
+    if (event.target.closest("[data-expense-payer-select]")) {
+      renderExpenseForm();
     }
   });
 }
@@ -1095,6 +1217,7 @@ async function confirmAddPlayer() {
         label: t("session.newPlayerName"),
         type: "text",
         placeholder: t("lobby.playerNamePlaceholder"),
+        showWhen: { name: "player_id", value: "__new__" },
       },
       {
         name: "chips",
@@ -1338,12 +1461,7 @@ async function confirmAddExpense() {
   const title = (document.getElementById("expense-title")?.value || "").trim();
   const amount = Number(document.getElementById("expense-amount")?.value);
   const participants = selectedExpenseParticipants();
-  const payments = Array.from(document.querySelectorAll("[data-expense-payer]"))
-    .map((input) => ({
-      player_id: input.getAttribute("data-expense-payer"),
-      amount: Number(input.value),
-    }))
-    .filter((payment) => payment.player_id && Number.isFinite(payment.amount) && payment.amount > 0);
+  const payments = collectExpensePayments(amount);
   const paidTotal = payments.reduce((sum, payment) => sum + payment.amount, 0);
 
   if (!title || !Number.isFinite(amount) || amount <= 0 || participants.length === 0 || paidTotal !== amount) {
@@ -1368,7 +1486,7 @@ async function confirmAddExpense() {
   document.querySelectorAll("[data-expense-payer]").forEach((input) => {
     input.value = "";
   });
-  updateExpenseParticipantShares();
+  renderExpenseForm();
   await loadExpenses(state.activeSessionId);
   showNotice(t("notice.expenseAdded"), "success");
 }

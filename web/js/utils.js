@@ -208,6 +208,10 @@ export function openModal({
 
   const fieldMarkup = fields
     .map((field) => {
+      const showWhen = field.showWhen;
+      const conditionalAttrs = showWhen
+        ? ` data-modal-show-when-name="${escapeHtml(showWhen.name)}" data-modal-show-when-value="${escapeHtml(showWhen.value)}"`
+        : "";
       if (field.type === "select") {
         const options = (field.options || [])
           .map(
@@ -217,7 +221,7 @@ export function openModal({
           .join("");
 
         return `
-          <label>
+          <label data-modal-field-wrap="${escapeHtml(field.name)}"${conditionalAttrs}>
             ${escapeHtml(field.label)}
             <select name="${escapeHtml(field.name)}">${options}</select>
           </label>
@@ -225,7 +229,7 @@ export function openModal({
       }
 
       return `
-        <label>
+        <label data-modal-field-wrap="${escapeHtml(field.name)}"${conditionalAttrs}>
           ${escapeHtml(field.label)}
           <span class="${field.step ? "modal-number-stepper" : ""}">
             ${
@@ -285,6 +289,25 @@ export function openModal({
       },
       { once: true },
     );
+
+    const syncConditionalFields = () => {
+      root.querySelectorAll("[data-modal-show-when-name]").forEach((wrap) => {
+        const controlName = wrap.getAttribute("data-modal-show-when-name");
+        const expectedValue = wrap.getAttribute("data-modal-show-when-value");
+        const control = controlName
+          ? Array.from(root.querySelectorAll("input, select, textarea")).find((item) => item.name === controlName)
+          : null;
+        const visible = control && control.value === expectedValue;
+        wrap.hidden = !visible;
+        wrap.querySelectorAll("input, select, textarea").forEach((input) => {
+          input.disabled = !visible;
+        });
+      });
+    };
+
+    root.querySelector("#modal-form")?.addEventListener("input", syncConditionalFields);
+    root.querySelector("#modal-form")?.addEventListener("change", syncConditionalFields);
+    syncConditionalFields();
 
     root.querySelector("#modal-cancel-btn")?.addEventListener("click", () => {
       close(null);
