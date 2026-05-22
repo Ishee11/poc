@@ -703,7 +703,7 @@ export function renderSettlement() {
             ${
               hasAdjustments
                 ? escapeHtml(t("settlement.adjustedMode"))
-                : `<img src="/static/svg/11-calculator-outline-green.svg" alt="${escapeHtml(t("settlement.autoMode"))}" />`
+                : `<img src="/static/svg/12-users-outline-gold.svg" alt="" aria-hidden="true" /><span>${escapeHtml(t("settlement.autoMode"))}</span>`
             }
           </span>
         </div>

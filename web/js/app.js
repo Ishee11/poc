@@ -663,13 +663,18 @@ function initPlayersSort() {
 }
 
 function initPlayersOverviewFilters() {
-  const count = document.getElementById("overview-players-count");
-  if (!count) return;
+  const showAll = document.getElementById("overview-players-show-all");
+  if (!showAll) return;
 
-  count.addEventListener("click", async (event) => {
-    event.preventDefault();
+  showAll.checked = state.overviewPlayersShowAll;
+  showAll.closest("label")?.addEventListener("click", (event) => {
     event.stopPropagation();
-    state.overviewPlayersShowAll = !state.overviewPlayersShowAll;
+  });
+  showAll.closest("label")?.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+  });
+  showAll.addEventListener("change", async () => {
+    state.overviewPlayersShowAll = showAll.checked;
     await loadPlayersOverview();
   });
 }

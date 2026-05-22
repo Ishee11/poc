@@ -1,16 +1,23 @@
 :root {
-    --bg: #020504;
-    --panel: rgba(13, 18, 14, 0.88);
-    --panel-strong: rgba(8, 12, 10, 0.96);
-    --line: rgba(232, 199, 112, 0.14);
-    --text: #edf4ff;
-    --muted: #99aec9;
-    --accent: #58d0a7;
-    --accent-strong: #20a97d;
-    --gold: #f5bd42;
-    --gold-strong: #d48a18;
-    --danger: #ff8d7a;
-    --warning: #ffd07a;
+    --bg: #020706;
+    --bg-deep: #000302;
+    --surface: #0b100d;
+    --surface-soft: rgba(255, 255, 255, 0.035);
+    --surface-strong: rgba(11, 16, 13, 0.94);
+    --panel: rgba(11, 16, 13, 0.9);
+    --panel-strong: rgba(8, 12, 10, 0.97);
+    --line: rgba(255, 255, 255, 0.08);
+    --line-green: rgba(31, 208, 106, 0.35);
+    --line-gold: rgba(246, 183, 57, 0.35);
+    --text: #f4f1ea;
+    --muted: #afa99b;
+    --label: rgba(169, 176, 190, 0.82);
+    --accent: #22d36f;
+    --accent-strong: #18a85a;
+    --gold: #f6b739;
+    --gold-strong: #d99520;
+    --danger: #ff6f61;
+    --warning: #f6b739;
     --shadow: 0 18px 42px rgba(0, 0, 0, 0.44);
     --radius: 12px;
 }
@@ -26,9 +33,9 @@ body {
     color: var(--text);
     font-family: "Segoe UI", "Helvetica Neue", sans-serif;
     background:
-        radial-gradient(circle at 50% 18%, rgba(23, 62, 43, 0.34), transparent 34rem),
-        radial-gradient(circle at 14% 34%, rgba(12, 86, 54, 0.16), transparent 23rem),
-        linear-gradient(160deg, #000000 0%, #040807 45%, #000000 100%);
+        radial-gradient(circle at 50% 13%, rgba(18, 72, 45, 0.2), transparent 23rem),
+        radial-gradient(circle at 50% 38%, rgba(5, 42, 27, 0.1), transparent 18rem),
+        linear-gradient(160deg, #000000 0%, var(--bg) 46%, #000000 100%);
 }
 
 body::before {
@@ -37,9 +44,9 @@ body::before {
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 50% 20%, rgba(77, 199, 135, 0.13), transparent 21rem),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 34%);
-    opacity: 0.9;
+        radial-gradient(circle at 50% 18%, rgba(34, 211, 111, 0.055), transparent 18rem),
+        linear-gradient(180deg, rgba(244, 241, 234, 0.018), transparent 30%);
+    opacity: 0.78;
 }
 
 .app {
@@ -53,8 +60,8 @@ body::before {
     border: 0;
     border-radius: 0;
     background:
-        radial-gradient(circle at 50% 0%, rgba(28, 74, 49, 0.22), transparent 64%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 76%);
+        radial-gradient(circle at 50% 0%, rgba(31, 208, 106, 0.08), transparent 58%),
+        linear-gradient(180deg, rgba(244, 241, 234, 0.018), transparent 76%);
     box-shadow: none;
     overflow: hidden;
     position: relative;
@@ -538,7 +545,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .panel h3 {
     margin: 0 0 14px;
     font-family: inherit;
-    color: rgba(237, 244, 255, 0.82);
+    color: var(--label);
     font-size: 0.82rem;
     font-weight: 600;
     letter-spacing: 0;
@@ -583,7 +590,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     content: "▼";
     margin-left: auto;
     font-size: 0.8rem;
-    color: var(--muted);
+    color: var(--label);
 }
 
 .panel-disclosure:not([open]) summary {
@@ -626,41 +633,25 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .summary-check-label {
-    display: none;
-    align-items: center;
-    gap: 5px;
-    min-height: 24px;
-    padding: 3px 7px;
-    border-radius: 999px;
-    color: var(--muted);
-    font-size: 0.76rem;
-    font-weight: 600;
-    line-height: 1;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-#overview-players-panel[open] .summary-check-label {
     display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    color: rgba(245, 243, 236, 0.78);
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(246, 183, 57, 0.16);
 }
 
 .summary-check-label input {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     margin: 0;
-    accent-color: var(--accent);
-}
-
-.summary-count-button {
-    min-width: 36px;
-    min-height: 28px;
-    padding: 3px 9px;
-    color: var(--gold);
-    border: 1px solid rgba(246, 183, 57, 0.24);
-    background: rgba(246, 183, 57, 0.06);
-    box-shadow: none;
-    font-size: 0.88rem;
-    font-weight: 500;
+    accent-color: var(--gold);
 }
 
 .panel p {
@@ -869,8 +860,9 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     padding: 10px 12px;
     border-radius: 8px;
 
-    background: rgba(255, 255, 255, 0.018);
-    border: 1px solid rgba(245, 243, 236, 0.055);
+    color: var(--text);
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
 }
 
 .session-summary-panel {
@@ -882,8 +874,8 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .session-summary-panel .stat {
-    background: rgba(9, 13, 10, 0.54);
-    border-color: rgba(245, 243, 236, 0.06);
+    background: rgba(11, 16, 13, 0.72);
+    border-color: var(--line);
 }
 
 .session-balance-stat {
@@ -1282,25 +1274,29 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .status-pill.status-active {
-    color: #a7ead2;
-    background: rgba(88, 208, 167, 0.1);
-    border: 1px solid rgba(88, 208, 167, 0.22);
+    color: #b9f0d9;
+    background: rgba(34, 211, 111, 0.09);
+    border: 1px solid rgba(34, 211, 111, 0.24);
 }
 
 .status-pill.status-finished {
-    color: #ffbdaf;
-    background: rgba(255, 143, 123, 0.1);
-    border: 1px solid rgba(255, 143, 123, 0.22);
+    color: #ffb7ad;
+    background: rgba(255, 111, 97, 0.1);
+    border: 1px solid rgba(255, 111, 97, 0.22);
 }
 
 .stat.on-table-warning {
-    border-color: rgba(255, 208, 122, 0.62);
-    background: rgba(255, 208, 122, 0.13);
+    border-color: var(--line-gold);
+    background:
+        linear-gradient(180deg, rgba(246, 183, 57, 0.11), rgba(246, 183, 57, 0.045)),
+        rgba(11, 16, 13, 0.76);
 }
 
 .stat.on-table-emphasis {
-    border-color: rgba(255, 208, 122, 0.34);
-    background: rgba(255, 208, 122, 0.1);
+    border-color: var(--line-gold);
+    background:
+        linear-gradient(180deg, rgba(246, 183, 57, 0.09), rgba(246, 183, 57, 0.035)),
+        rgba(11, 16, 13, 0.74);
 }
 
 .stat.on-table-emphasis #stat-total-chips {
@@ -1309,14 +1305,14 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .stat.on-table-warning #stat-total-chips {
-    color: var(--warning);
+    color: var(--gold);
     font-size: 1.28rem;
     font-weight: 800;
 }
 
 .stat.on-table-clear {
-    border-color: rgba(88, 208, 167, 0.42);
-    background: rgba(88, 208, 167, 0.1);
+    border-color: var(--line-green);
+    background: rgba(34, 211, 111, 0.07);
 }
 
 .debug-editable-stat {
@@ -1345,7 +1341,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     display: inline-flex;
     gap: 6px;
     align-items: center;
-    color: var(--muted);
+    color: var(--label);
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -1417,8 +1413,8 @@ select {
     padding: 13px 14px;
     font-size: 16px;
     color: var(--text);
-    background: rgba(2, 11, 22, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(2, 7, 6, 0.78);
+    border: 1px solid var(--line);
     outline: none;
     transition:
         border-color 0.18s ease,
@@ -1428,8 +1424,8 @@ select {
 
 input:focus,
 select:focus {
-    border-color: rgba(88, 208, 167, 0.75);
-    background: rgba(4, 15, 28, 0.92);
+    border-color: rgba(34, 211, 111, 0.56);
+    background: rgba(3, 11, 8, 0.94);
     transform: translateY(-1px);
 }
 
@@ -1453,7 +1449,7 @@ button:hover {
 
 button.secondary {
     color: var(--text);
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.055);
     box-shadow: none;
 }
 
@@ -1477,8 +1473,8 @@ button.buy-in-action {
 
 button.rebuy-action {
     color: #dff9ec;
-    border: 1px solid rgba(89, 188, 129, 0.28);
-    background: #266b46;
+    border: 1px solid var(--line-green);
+    background: rgba(34, 211, 111, 0.2);
     box-shadow: none;
 }
 
@@ -1641,6 +1637,7 @@ body.debug-mode .debug-only {
 }
 
 .row-title {
+    color: var(--text);
     font-weight: 700;
 }
 
@@ -1960,14 +1957,14 @@ body.debug-mode .debug-only {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 5px;
     min-height: 24px;
-    min-width: 30px;
-    padding: 2px 8px;
-    color: #b8d5f0;
+    padding: 2px 9px;
+    color: var(--gold);
     font-size: 0.78rem;
-    font-weight: 800;
-    background: rgba(131, 189, 241, 0.1);
-    border: 1px solid rgba(131, 189, 241, 0.22);
+    font-weight: 500;
+    background: rgba(246, 183, 57, 0.08);
+    border: 1px solid rgba(246, 183, 57, 0.2);
     border-radius: 999px;
 }
 
@@ -2072,7 +2069,7 @@ body.debug-mode .debug-only {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
-    color: rgba(245, 243, 236, 0.68);
+    color: rgba(244, 241, 234, 0.7);
     font-size: 0.9rem;
 }
 
@@ -2088,6 +2085,7 @@ body.debug-mode .debug-only {
     height: 16px;
     flex: 0 0 auto;
     object-fit: contain;
+    filter: drop-shadow(0 1px 5px rgba(246, 183, 57, 0.22));
 }
 
 .compact-actions {
@@ -2146,8 +2144,8 @@ body.debug-mode .debug-only {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 4px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(245, 243, 236, 0.055);
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
 }
 
 .session-action-switch[hidden] {
@@ -2157,21 +2155,21 @@ body.debug-mode .debug-only {
 .session-action-switch button {
     min-height: 38px;
     padding: 8px 10px;
-    color: rgba(245, 243, 236, 0.6);
+    color: rgba(175, 169, 155, 0.82);
     background: transparent;
     box-shadow: none;
     font-weight: 500;
 }
 
 .session-action-switch button.active {
-    color: #dff9ec;
-    background: #266b46;
+    color: #e7fff3;
+    background: rgba(34, 211, 111, 0.34);
     box-shadow: none;
 }
 
 .session-action-switch #session-action-mode-cash-out.active {
     color: #381608;
-    background: #f3bb78;
+    background: #eab25f;
 }
 
 .session-add-player-btn {
@@ -2359,7 +2357,7 @@ body.debug-mode .debug-only {
 }
 
 .profit-positive {
-    color: #8cffd3;
+    color: #63e6a6;
     font-weight: 800;
 }
 

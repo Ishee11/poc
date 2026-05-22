@@ -134,7 +134,11 @@
                         <summary class="panel-title-row">
                             <h3 data-i18n="lobby.players">Players</h3>
                             <span class="summary-actions">
-                                <button type="button" class="summary-count summary-count-button" id="overview-players-count">0</button>
+                                <span class="summary-count" id="overview-players-count">0</span>
+                                <label class="summary-check-label" for="overview-players-show-all">
+                                    <input id="overview-players-show-all" type="checkbox" />
+                                    <span data-i18n="lobby.showAllShort">All</span>
+                                </label>
                             </span>
                         </summary>
                         <div class="panel-inline-toolbar">
