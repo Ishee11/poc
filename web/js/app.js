@@ -32,6 +32,7 @@ import {
 import {
   initSessionActions,
   openSession,
+  openSessionResults,
   renderActionPlayerOptions,
   renderExpenseForm,
   renderExpenses,
@@ -740,8 +741,13 @@ function defaultStartNumber(field, fallback) {
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {
-  const [, section, rawId] = window.location.pathname.split("/");
+  const [, section, rawId, subSection] = window.location.pathname.split("/");
   const id = rawId ? decodeURIComponent(rawId) : "";
+
+  if (section === "session" && id && subSection === "results") {
+    await openSessionResults(id, { replace: !fromHistory });
+    return;
+  }
 
   if (section === "session" && id) {
     await openSession(id, { replace: !fromHistory });

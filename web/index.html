@@ -387,15 +387,33 @@
                         </div>
                     </div>
 
-                    <details class="panel panel-disclosure" id="session-operations-panel">
-                        <summary class="panel-title-row">
-                            <h3 data-i18n="session.latestOperations">Latest Operations</h3>
-                            <span class="summary-count" id="session-operations-count">0</span>
-                        </summary>
-                        <div id="operations-wrap"></div>
-                    </details>
+                    <button type="button" class="session-open-results-btn" id="session-open-results-btn">
+                        <img src="/static/svg/11-calculator-outline-green.svg" alt="" aria-hidden="true" />
+                        <span>
+                            <strong data-i18n="results.open">Open Results</strong>
+                            <small data-i18n="results.openHint">Go to final settlement</small>
+                        </span>
+                        <img src="/static/svg/07-chevron-right-white.svg" alt="" aria-hidden="true" />
+                    </button>
 
-                    <details class="panel panel-disclosure action-card" id="session-expenses-panel">
+                    <div id="operations-wrap" hidden></div>
+                    <span id="session-operations-count" hidden>0</span>
+
+                    <div class="panel debug-admin-actions" id="session-delete-debug-panel" hidden>
+                        <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
+                            Delete Session
+                        </button>
+                    </div>
+
+                </section>
+
+                <section class="screen" id="screen-results">
+                    <div class="panel" id="session-settlement-panel">
+                        <h3 data-i18n="settlement.title">Итоговые переводы</h3>
+                        <div id="settlement-wrap"></div>
+                    </div>
+
+                    <details class="panel panel-disclosure action-card" id="session-expenses-panel" open>
                         <summary class="panel-title-row">
                             <h3 data-i18n="expenses.title">Счет после игры</h3>
                             <span class="summary-count" id="session-expenses-count">0</span>
@@ -442,15 +460,22 @@
                         <div id="expenses-wrap" class="top-gap"></div>
                     </details>
 
-                    <div class="panel" id="session-settlement-panel">
-                        <h3 data-i18n="settlement.title">Итоговые переводы</h3>
-                        <div id="settlement-wrap"></div>
-                    </div>
-
-                    <div class="panel debug-admin-actions" id="session-delete-debug-panel" hidden>
-                        <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
-                            Delete Session
-                        </button>
+                    <div class="panel results-summary-panel">
+                        <h3 data-i18n="results.balanceTitle">Session Balance</h3>
+                        <div class="results-summary-grid">
+                            <div>
+                                <span data-i18n="session.onTable">Chips on Table</span>
+                                <strong id="results-total-chips">-</strong>
+                            </div>
+                            <div>
+                                <span data-i18n="session.totalBuyIn">Total Buy In</span>
+                                <strong id="results-total-buy-in">-</strong>
+                            </div>
+                            <div>
+                                <span data-i18n="session.totalCashOut">Total Cash Out</span>
+                                <strong id="results-total-cash-out">-</strong>
+                            </div>
+                        </div>
                     </div>
 
                 </section>

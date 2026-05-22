@@ -102,7 +102,7 @@ export function setScreen(name) {
   showNotice("");
   if (name !== "session") {
     const appTitle = document.querySelector(".app-brand h1");
-    if (appTitle) appTitle.textContent = t("app.title");
+    if (appTitle && name !== "results") appTitle.textContent = t("app.title");
   }
 
   document
@@ -112,6 +112,10 @@ export function setScreen(name) {
   document
     .getElementById("screen-session")
     ?.classList.toggle("active", name === "session");
+
+  document
+    .getElementById("screen-results")
+    ?.classList.toggle("active", name === "results");
 
   document
     .getElementById("screen-player")
@@ -145,6 +149,10 @@ export function setBlindsMode(mode = "default") {
 
 export function routeToSession(sessionId) {
   return `/session/${encodeURIComponent(sessionId)}`;
+}
+
+export function routeToSessionResults(sessionId) {
+  return `/session/${encodeURIComponent(sessionId)}/results`;
 }
 
 export function routeToPlayer(playerId) {

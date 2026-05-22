@@ -30,6 +30,7 @@ import {
   replaceRoute,
   routeToHome,
   routeToSession,
+  routeToSessionResults,
   setScreen,
   showNotice,
 } from "../utils.js";
@@ -73,6 +74,21 @@ export async function openSession(sessionId, { replace = false } = {}) {
     replaceRoute(routeToSession(sessionId));
   } else {
     pushRoute(routeToSession(sessionId));
+  }
+}
+
+export async function openSessionResults(sessionId, { replace = false } = {}) {
+  if (!sessionId) return;
+
+  await openSession(sessionId, { replace: true });
+  setScreen("results");
+  const brandTitle = document.querySelector(".app-brand h1");
+  if (brandTitle) brandTitle.textContent = t("results.title");
+  renderResultsSummary();
+  if (replace) {
+    replaceRoute(routeToSessionResults(sessionId));
+  } else {
+    pushRoute(routeToSessionResults(sessionId));
   }
 }
 
@@ -152,6 +168,7 @@ export function renderSession() {
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
   const debugDeletePanel = document.getElementById("session-delete-debug-panel");
+  const resultsButton = document.getElementById("session-open-results-btn");
   const playerActions = document.getElementById("session-player-actions");
   const playerActionsHint = document.getElementById("session-player-actions-hint");
   const playerActionSwitch = document.querySelector(".session-action-switch");
@@ -223,6 +240,7 @@ export function renderSession() {
   if (playerActionSwitch) playerActionSwitch.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
+  if (resultsButton) resultsButton.hidden = !state.session;
 
   document
     .getElementById("debug-reopen-session-btn")
@@ -233,6 +251,7 @@ export function renderSession() {
   bindDebugSessionConfigEditor(chipRateCard);
   bindDebugSessionConfigEditor(bigBlindCard);
   renderSessionActionMode();
+  renderResultsSummary();
 }
 
 export function renderOperations() {
@@ -567,6 +586,17 @@ export function renderSettlement() {
   bindManualSettlementControls();
 }
 
+function renderResultsSummary() {
+  const chips = document.getElementById("results-total-chips");
+  const buyIn = document.getElementById("results-total-buy-in");
+  const cashOut = document.getElementById("results-total-cash-out");
+  if (!chips && !buyIn && !cashOut) return;
+
+  if (chips) chips.textContent = formatNumber(state.session?.totalChips);
+  if (buyIn) buyIn.textContent = formatNumber(state.session?.totalBuyIn);
+  if (cashOut) cashOut.textContent = formatNumber(state.session?.totalCashOut);
+}
+
 async function persistSettlementDraft() {
   const sessionId = state.activeSessionId;
   if (!sessionId) return;
@@ -814,6 +844,9 @@ export function initSessionActions() {
       case "session-add-player-btn":
         await confirmAddPlayer();
         break;
+      case "session-open-results-btn":
+        await openSessionResults(state.activeSessionId);
+        break;
       case "finish-session-btn":
         await confirmFinishSession();
         break;
@@ -1048,6 +1081,7 @@ async function confirmAddPlayer() {
         name: "player_id",
         label: t("session.player"),
         type: "select",
+        value: availablePlayers[0]?.player_id || "__new__",
         options: [
           { value: "__new__", label: t("session.newPlayerOption") },
           ...availablePlayers.map((player) => ({
