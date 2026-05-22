@@ -699,7 +699,13 @@ export function renderSettlement() {
       <div>
         <div class="settlement-heading-row">
           <h4>${escapeHtml(t("settlement.transfers"))}</h4>
-          <span class="settlement-mode-pill">${escapeHtml(t(hasAdjustments ? "settlement.adjustedMode" : "settlement.autoMode"))}</span>
+          <span class="settlement-mode-pill" title="${escapeHtml(t(hasAdjustments ? "settlement.adjustedMode" : "settlement.autoMode"))}">
+            ${
+              hasAdjustments
+                ? escapeHtml(t("settlement.adjustedMode"))
+                : `<img src="/static/svg/11-calculator-outline-green.svg" alt="${escapeHtml(t("settlement.autoMode"))}" />`
+            }
+          </span>
         </div>
         ${
           isEditing || hasAdjustments
@@ -1003,12 +1009,6 @@ export function initSessionActions() {
       case "session-open-results-btn":
         await openSessionResults(state.activeSessionId);
         break;
-      case "results-save-close-btn":
-        if (state.activeSessionId) {
-          setScreen("session");
-          pushRoute(routeToSession(state.activeSessionId));
-        }
-        break;
       case "finish-session-btn":
         await confirmFinishSession();
         break;
@@ -1049,6 +1049,12 @@ export function initSessionActions() {
       case "session-back-home-btn":
         setScreen("lobby");
         pushRoute(routeToHome());
+        break;
+      case "results-back-session-btn":
+        if (state.activeSessionId) {
+          setScreen("session");
+          pushRoute(routeToSession(state.activeSessionId));
+        }
         break;
       case "player-back-home-btn":
         setScreen("lobby");

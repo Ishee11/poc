@@ -388,6 +388,7 @@ body:not([data-screen="lobby"]) .lobby-auth-bar {
 }
 
 body:not([data-screen="session"]) .nav-session-only,
+body:not([data-screen="results"]) .nav-results-only,
 body:not([data-screen="player"]) .nav-player-only,
 body:not([data-screen="players-stats"]) .nav-players-stats-only,
 body:not([data-screen="account"]) .nav-account-only,
@@ -396,7 +397,11 @@ body:not([data-screen="blinds"]) .nav-blinds-only {
 }
 
 body[data-screen="results"] .nav-session-only {
-    display: inline-grid;
+    display: none;
+}
+
+.nav-results-only .app-nav-icon {
+    transform: rotate(180deg);
 }
 
 body[data-screen="lobby"] .top-nav-left,
@@ -1954,7 +1959,9 @@ body.debug-mode .debug-only {
 .settlement-mode-pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     min-height: 24px;
+    min-width: 30px;
     padding: 2px 8px;
     color: #b8d5f0;
     font-size: 0.78rem;
@@ -1962,6 +1969,12 @@ body.debug-mode .debug-only {
     background: rgba(131, 189, 241, 0.1);
     border: 1px solid rgba(131, 189, 241, 0.22);
     border-radius: 999px;
+}
+
+.settlement-mode-pill img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
 }
 
 .settlement-subtitle {
