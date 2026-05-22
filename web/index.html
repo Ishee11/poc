@@ -107,29 +107,13 @@
 
                         <div class="panel lobby-start-panel">
                             <form id="start-session-form" onsubmit="return false;">
-                                <button type="button" class="lobby-start-toggle" id="start-session-toggle" aria-expanded="false" aria-controls="start-session-settings">
+                                <button type="button" class="lobby-start-toggle" id="start-session-toggle">
                                     <img class="lobby-start-icon" src="/static/svg/05-plus-circle-gold.svg" alt="" aria-hidden="true" />
                                     <span>
                                         <strong data-i18n="lobby.startTitle">Start a New Session</strong>
                                         <small data-i18n="lobby.startHint">Create and configure a new session</small>
                                     </span>
                                 </button>
-
-                                <div class="lobby-start-settings" id="start-session-settings" hidden>
-                                    <label>
-                                        <span id="start-chip-rate-label">Rate</span>
-                                        <input id="start-chip-rate" type="number" min="1" />
-                                    </label>
-
-                                    <label>
-                                        <span data-i18n="lobby.bigBlind">BB (big blind size)</span>
-                                        <input id="start-big-blind" type="number" min="1" />
-                                    </label>
-
-                                    <div class="actions">
-                                        <button type="submit" class="lobby-start-submit" data-i18n="lobby.startSession">Start Session</button>
-                                    </div>
-                                </div>
                             </form>
                         </div>
                     </div>

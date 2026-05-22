@@ -741,11 +741,10 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .lobby-start-panel {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
+    border-color: rgba(246, 183, 57, 0.34);
+    background:
+        linear-gradient(180deg, rgba(246, 183, 57, 0.055), rgba(255, 255, 255, 0.012)),
+        var(--panel);
 }
 
 .lobby-start-panel form {
@@ -755,24 +754,22 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .lobby-start-toggle {
     width: 100%;
-    min-height: 66px;
-    padding: 13px 14px;
+    min-height: 48px;
+    padding: 0;
     display: grid;
     grid-template-columns: 30px minmax(0, 1fr);
     gap: 12px;
     align-items: center;
     text-align: left;
     color: var(--gold);
-    border: 1px solid rgba(246, 183, 57, 0.42);
-    border-radius: 8px;
-    background:
-        linear-gradient(180deg, rgba(246, 183, 57, 0.075), rgba(246, 183, 57, 0.022)),
-        rgba(8, 12, 10, 0.72);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
 }
 
 .lobby-start-toggle:hover {
-    box-shadow: 0 0 0 1px rgba(246, 183, 57, 0.16);
+    box-shadow: none;
 }
 
 .lobby-start-icon {

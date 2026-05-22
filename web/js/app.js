@@ -100,31 +100,38 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const startForm = document.getElementById("start-session-form");
-  const chipInput = document.getElementById("start-chip-rate");
-  const bigBlindInput = document.getElementById("start-big-blind");
   const startToggle = document.getElementById("start-session-toggle");
-  const startSettings = document.getElementById("start-session-settings");
   renderStartChipRateLabel();
   applyLatestSessionDefaults();
-  startToggle?.addEventListener("click", () => {
-    const willOpen = startSettings?.hidden !== false;
-    if (startSettings) {
-      startSettings.hidden = !willOpen;
-    }
-    startToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
-    startForm?.classList.toggle("is-open", willOpen);
-    if (willOpen) {
-      chipInput?.focus();
-    }
-  });
-
-  if (startForm && chipInput && bigBlindInput) {
-    startForm.addEventListener("submit", async (event) => {
+  if (startForm && startToggle) {
+    const handleStartSession = async (event) => {
       event.preventDefault();
 
-      const chipRate = Number(chipInput.value);
-      const bigBlind = Number(bigBlindInput.value);
       const currency = defaultCurrency();
+      const values = await openModal({
+        title: t("modal.startTitle"),
+        confirmText: t("lobby.startSession"),
+        fields: [
+          {
+            name: "chip_rate",
+            label: t("lobby.chipRate", { currencySymbol: currencySymbol() }),
+            type: "number",
+            min: 1,
+            value: defaultStartNumber("chip_rate", 1),
+          },
+          {
+            name: "big_blind",
+            label: t("lobby.bigBlind"),
+            type: "number",
+            min: 1,
+            value: defaultStartNumber("big_blind", 1),
+          },
+        ],
+      });
+      if (!values) return;
+
+      const chipRate = Number(values.chip_rate);
+      const bigBlind = Number(values.big_blind);
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
         showNotice(t("notice.validChipRate"), "error");
         return;
@@ -133,17 +140,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         showNotice(t("notice.validBigBlind"), "error");
         return;
       }
-
-      const confirmed = await openModal({
-        title: t("modal.startTitle"),
-        description: t("modal.startDescription", {
-          chipRate,
-          bigBlind,
-          currencySymbol: currencySymbol(),
-        }),
-        confirmText: t("lobby.startSession"),
-      });
-      if (!confirmed) return;
 
       const res = await startSession({ chipRate, bigBlind, currency });
       if (!res.ok || !res.body?.session_id) {
@@ -155,7 +151,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       applyLatestSessionDefaults({ force: true });
       await openSession(res.body.session_id);
       showNotice(t("notice.sessionStarted"), "success");
-    });
+    };
+
+    startToggle.addEventListener("click", handleStartSession);
+    startForm.addEventListener("submit", handleStartSession);
   }
 
 });
@@ -732,6 +731,12 @@ function renderStartChipRateLabel() {
   label.textContent = t("lobby.chipRate", {
     currencySymbol: currencySymbol(),
   });
+}
+
+function defaultStartNumber(field, fallback) {
+  const latest = state.overviewSessions[0];
+  const value = Number(latest?.[field]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {
