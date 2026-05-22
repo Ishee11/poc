@@ -86,6 +86,10 @@ export function initBlindsClock() {
     await openBlindsClock();
   });
 
+  document.getElementById("header-blinds-clock-btn")?.addEventListener("click", async () => {
+    await openBlindsClock();
+  });
+
   document.getElementById("blinds-open-presentation-btn")?.addEventListener("click", async () => {
     await openBlindsClock({ mode: "presentation" });
   });
