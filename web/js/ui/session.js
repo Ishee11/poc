@@ -1367,6 +1367,7 @@ async function confirmFinishSession() {
     title: t("modal.finishTitle"),
     description: t("modal.finishDescription"),
     confirmText: t("session.finish"),
+    confirmClass: "results-close-bill-btn",
   });
   if (!values) return;
 
@@ -1387,6 +1388,7 @@ async function confirmDebugDeleteSession() {
     title: t("modal.deleteSessionTitle"),
     description: t("modal.deleteSessionDescription"),
     confirmText: t("debug.deleteSession"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 
@@ -1430,6 +1432,7 @@ async function confirmDebugUpdateSessionConfig() {
   const values = await openModal({
     title: t("modal.editSessionConfigTitle"),
     confirmText: t("common.save"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "chip_rate",
@@ -1482,6 +1485,7 @@ async function confirmDebugDeleteSessionFinish() {
     title: t("modal.deleteFinishTitle"),
     description: t("modal.deleteFinishDescription"),
     confirmText: t("debug.deleteFinish"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 
@@ -1507,6 +1511,7 @@ async function confirmReverse(operationId) {
       chips: formatNumber(operation.chips),
     }),
     confirmText: t("common.reverse"),
+    confirmClass: "secondary",
   });
   if (!values) return;
 
@@ -1567,6 +1572,7 @@ async function confirmCloseExpenses() {
     title: t("modal.closeExpensesTitle"),
     description: t("modal.closeExpensesDescription"),
     confirmText: t("expenses.closeBill"),
+    confirmClass: "results-close-bill-btn",
   });
   if (!confirmed) return;
 
@@ -1590,6 +1596,7 @@ async function confirmDeleteExpense(expenseId) {
     title: t("modal.deleteExpenseTitle"),
     description: t("modal.deleteExpenseDescription"),
     confirmText: t("common.delete"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 

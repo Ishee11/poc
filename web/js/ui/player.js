@@ -649,6 +649,7 @@ async function confirmDebugRenamePlayer(player) {
   const values = await openModal({
     title: t("modal.renamePlayerTitle"),
     confirmText: t("debug.renamePlayer"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "name",
@@ -687,6 +688,7 @@ async function confirmDebugDeletePlayer(player) {
     title: t("modal.deletePlayerTitle"),
     description: t("modal.deletePlayerDescription", { name: playerName }),
     confirmText: t("debug.deletePlayer"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 
