@@ -1060,6 +1060,7 @@ export function initSessionActions() {
         break;
       case "results-back-session-btn":
         if (state.activeSessionId) {
+          renderSession();
           setScreen("session");
           pushRoute(routeToSession(state.activeSessionId));
         }
