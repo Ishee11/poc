@@ -2376,20 +2376,29 @@ body.debug-mode .debug-only {
 
 .session-add-player-btn {
     width: 100%;
-    min-height: 44px;
-    display: inline-flex;
+    min-height: 48px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 12px;
     align-items: center;
-    justify-content: center;
-    gap: 9px;
-    color: #e7fff3;
+    text-align: left;
+    color: var(--gold);
     border: 0;
-    background: rgba(34, 211, 111, 0.34);
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
-    font-weight: 500;
 }
 
-.session-add-player-btn img {
-    filter: brightness(0) invert(1);
+.session-add-player-btn:hover {
+    box-shadow: none;
+}
+
+.session-add-player-btn strong {
+    display: block;
+    color: var(--gold);
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .session-add-player-btn img {
