@@ -29,6 +29,26 @@
                     >
                         <button
                             type="button"
+                            class="secondary app-icon-button nav-lobby-only"
+                            id="lobby-back-home-btn"
+                            disabled
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
+                        </button>
+                        <button
+                            type="button"
                             class="secondary app-icon-button nav-session-only"
                             id="session-back-home-btn"
                             aria-label="Back to Home"
@@ -143,12 +163,6 @@
                         </button>
                     </nav>
                     <div class="app-brand">
-                        <img
-                            class="app-brand-mark"
-                            src="/static/svg/02-spade-filled-gold.svg"
-                            alt=""
-                            aria-hidden="true"
-                        />
                         <div>
                             <h1 data-i18n="app.title">Poker Session Control</h1>
                             <p data-i18n="app.subtitle">

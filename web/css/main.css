@@ -95,19 +95,6 @@ body::before {
     text-align: left;
 }
 
-.app-brand-mark {
-    width: 25px;
-    height: 25px;
-    flex: 0 0 auto;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 8px rgba(245, 189, 66, 0.42));
-}
-
-body[data-screen="session"] .app-brand-mark,
-body[data-screen="results"] .app-brand-mark {
-    display: none;
-}
-
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -392,6 +379,7 @@ body:not([data-screen="lobby"]) .lobby-auth-bar {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.42));
 }
 
+body:not([data-screen="lobby"]) .nav-lobby-only,
 body:not([data-screen="session"]) .nav-session-only,
 body:not([data-screen="results"]) .nav-results-only,
 body:not([data-screen="player"]) .nav-player-only,
@@ -409,7 +397,6 @@ body[data-screen="results"] .nav-session-only {
     transform: rotate(180deg);
 }
 
-body[data-screen="lobby"] .top-nav-left,
 body[data-screen="blinds"] .header-blinds-clock-btn {
     visibility: hidden;
     pointer-events: none;
