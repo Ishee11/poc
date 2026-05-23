@@ -1153,6 +1153,7 @@ async function confirmPlayerRebuy(playerId) {
       name: playerName,
     }),
     confirmText: t("session.buyIn"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "chips",
@@ -1196,6 +1197,7 @@ async function confirmPlayerCashOut(playerId) {
       name: playerName,
     }),
     confirmText: t("session.cashOut"),
+    confirmClass: "cash-out-action",
     fields: [
       {
         name: "chips",

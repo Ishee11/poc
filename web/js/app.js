@@ -15,6 +15,7 @@ import { state } from "./state.js";
 import {
   applyLatestSessionDefaults,
   firstActiveSessionId,
+  initSessionsFilter,
   loadSessions,
   renderSessions,
   syncSelect,
@@ -58,6 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyUiFeatureFlags();
   initPlayersSort();
   initPlayersOverviewFilters();
+  initSessionsFilter();
   initAdminLoginFooter();
   if (state.authUiEnabled) {
     initAuth();

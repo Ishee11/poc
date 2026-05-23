@@ -348,11 +348,6 @@
                                     >
                                     <strong>
                                         <span id="lobby-latest-chips">-</span>
-                                        <img
-                                            src="/static/svg/10-poker-chips-gold.svg"
-                                            alt=""
-                                            aria-hidden="true"
-                                        />
                                     </strong>
                                 </div>
 
@@ -412,12 +407,30 @@
                     >
                         <summary class="panel-title-row">
                             <h3 data-i18n="lobby.sessions">Сессии</h3>
-                            <span
-                                class="summary-count"
-                                id="overview-sessions-count"
-                                >0</span
-                            >
+                            <span class="summary-count">
+                                <span id="overview-sessions-count">0</span>
+                            </span>
                         </summary>
+                        <div class="overview-player-controls overview-session-controls" id="overview-session-controls">
+                            <button
+                                type="button"
+                                class="overview-filter-pill is-active"
+                                data-session-filter="all"
+                                ><span data-i18n="common.all">Все</span></button
+                            >
+                            <button
+                                type="button"
+                                class="overview-filter-pill"
+                                data-session-filter="active"
+                                ><span data-i18n="common.active">Активные</span></button
+                            >
+                            <button
+                                type="button"
+                                class="overview-filter-pill"
+                                data-session-filter="finished"
+                                ><span data-i18n="common.finished">Завершённые</span></button
+                            >
+                        </div>
                         <div id="overview-sessions-wrap"></div>
                     </details>
 
@@ -429,7 +442,12 @@
                             <span class="overview-players-heading">
                                 <h3 data-i18n="lobby.players">Игроки</h3>
                                 <span
-                                    class="overview-players-summary"
+                                    class="summary-count overview-players-summary-collapsed"
+                                    id="overview-players-summary-collapsed"
+                                    >0</span
+                                >
+                                <span
+                                    class="overview-players-summary overview-players-summary-expanded"
                                     id="overview-players-summary"
                                     >Показано 0 из 0</span
                                 >
@@ -1104,8 +1122,8 @@
                     >
                         <button
                             type="button"
-                            class="warn"
-                            id="finish-session-btn"
+class="results-close-bill-btn"
+                             id="finish-session-btn"
                             data-i18n="session.finish"
                         >
                             Finish Session

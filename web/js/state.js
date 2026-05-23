@@ -14,6 +14,7 @@ export const state = {
   session: null,
 
   overviewSessions: [],
+  overviewSessionsFilter: "all",
   overviewPlayers: [],
   overviewPlayersAll: [],
   overviewPlayersSort: "last_activity",

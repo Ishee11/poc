@@ -40,14 +40,18 @@ export function renderSessions() {
   const count = document.getElementById("overview-sessions-count");
   if (!wrap || !count) return;
 
+  const filtered = state.overviewSessionsFilter === "all"
+    ? state.overviewSessions
+    : state.overviewSessions.filter((s) => s.status === state.overviewSessionsFilter);
+
   count.textContent = String(state.overviewSessions.length);
 
-  if (!state.overviewSessions.length) {
+  if (!filtered.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noSessions"))}</div>`;
     return;
   }
 
-  wrap.innerHTML = state.overviewSessions
+  wrap.innerHTML = filtered
     .map((session) => {
       const id = session.session_id || session.id;
 
@@ -98,10 +102,10 @@ export function syncSelect() {
   const activeSessions = state.overviewSessions.filter(
     (session) => session.status === "active",
   );
-  if (connectPanel) {
-    connectPanel.hidden = false;
-  }
   const latestActiveSession = activeSessions[0] || null;
+  if (connectPanel) {
+    connectPanel.hidden = !latestActiveSession;
+  }
   if (connectForm) connectForm.hidden = !latestActiveSession;
   if (emptyState) emptyState.hidden = Boolean(latestActiveSession);
   if (liveBadge) liveBadge.hidden = !latestActiveSession;
@@ -165,6 +169,23 @@ function renderLatestActiveSession(session) {
 export function firstActiveSessionId() {
   const session = state.overviewSessions.find((item) => item.status === "active");
   return session?.session_id || session?.id || "";
+}
+
+export function initSessionsFilter() {
+  const controls = document.getElementById("overview-session-controls");
+  if (!controls) return;
+
+  controls.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-session-filter]");
+    if (!btn) return;
+
+    controls.querySelectorAll("[data-session-filter]").forEach((el) => {
+      el.classList.toggle("is-active", el === btn);
+    });
+
+    state.overviewSessionsFilter = btn.getAttribute("data-session-filter");
+    renderSessions();
+  });
 }
 
 export function applyLatestSessionDefaults({ force = false } = {}) {

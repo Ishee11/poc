@@ -555,7 +555,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .panel-title-row {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
     margin-bottom: 14px;
 }
@@ -650,11 +650,20 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     text-transform: none;
 }
 
+#overview-players-panel[open] .overview-players-summary-collapsed {
+    display: none;
+}
+
+#overview-players-panel:not([open]) .overview-players-summary-expanded {
+    display: none;
+}
+
 .overview-player-controls {
     flex: 0 0 auto;
 }
 
-#overview-players-panel:not([open]) .overview-player-controls {
+#overview-players-panel:not([open]) .overview-player-controls,
+#overview-sessions-panel:not([open]) .overview-session-controls {
     display: none;
 }
 
@@ -887,10 +896,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     gap: 7px;
     padding: 13px 14px;
     border-radius: 8px;
-    border: 1px solid rgba(246, 183, 57, 0.3);
-    background:
-        linear-gradient(180deg, rgba(246, 183, 57, 0.095), rgba(246, 183, 57, 0.035)),
-        rgba(255, 255, 255, 0.025);
+    background: transparent;
 }
 
 .lobby-latest-chips strong {
@@ -923,25 +929,17 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #f4fff9;
-    border: 1px solid rgba(34, 211, 111, 0.34);
+    color: #e7fff3;
+    border: 0;
     border-radius: 8px;
     font-weight: 500;
-    background:
-        linear-gradient(180deg, rgba(34, 211, 111, 0.6) 0%, rgba(18, 106, 65, 0.92) 100%),
-        #126a41;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.14),
-        0 8px 16px rgba(0, 0, 0, 0.22);
+    background: rgba(34, 211, 111, 0.34);
+    box-shadow: none;
 }
 
 .lobby-continue-btn:hover {
-    background:
-        linear-gradient(180deg, #1a965c 0%, #137346 100%),
-        #147044;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.16),
-        0 9px 18px rgba(0, 0, 0, 0.24);
+    background: rgba(34, 211, 111, 0.5);
+    box-shadow: none;
 }
 
 .lobby-start-panel {
@@ -1652,15 +1650,16 @@ button.danger {
 }
 
 button.buy-in-action {
-    color: #082a1f;
-    background: #65cba7;
+    color: #e7fff3;
+    border: 0;
+    background: rgba(34, 211, 111, 0.34);
     box-shadow: none;
 }
 
 button.rebuy-action {
-    color: #dff9ec;
-    border: 1px solid var(--line-green);
-    background: rgba(34, 211, 111, 0.2);
+    color: #e7fff3;
+    border: 0;
+    background: rgba(34, 211, 111, 0.34);
     box-shadow: none;
 }
 
@@ -2398,7 +2397,6 @@ body.debug-mode .debug-only {
 
 .session-finish-bottom button {
     width: 100%;
-    min-height: 48px;
     font-weight: 500;
 }
 
@@ -2485,8 +2483,8 @@ body.debug-mode .debug-only {
 .expense-open-form-btn {
     width: 100%;
     min-height: 46px;
-    color: #04261b;
-    background: #65cba7;
+    color: #e7fff3;
+    background: rgba(34, 211, 111, 0.34);
     box-shadow: none;
     font-weight: 500;
 }
@@ -2495,7 +2493,7 @@ body.debug-mode .debug-only {
     width: 100%;
     min-height: 50px;
     color: #ffe6df;
-    border: 1px solid rgba(239, 154, 140, 0.28);
+    border: 0;
     background: rgba(143, 61, 48, 0.72);
     box-shadow: none;
     font-weight: 500;

@@ -84,6 +84,7 @@ export async function loadPlayersOverview() {
 export function renderPlayersOverview() {
   const wrap = document.getElementById("overview-players-wrap");
   const summary = document.getElementById("overview-players-summary");
+  const summaryCollapsed = document.getElementById("overview-players-summary-collapsed");
   const filter = document.getElementById("overview-players-filter-label");
   const filterButton = document.getElementById("overview-players-filter-toggle");
   if (!wrap) return;
@@ -92,6 +93,9 @@ export function renderPlayersOverview() {
   const total = state.overviewPlayersAll.length;
   if (summary) {
     summary.textContent = t("lobby.playersShown", { shown, total });
+  }
+  if (summaryCollapsed) {
+    summaryCollapsed.textContent = String(total);
   }
   if (filter) {
     filter.textContent = state.overviewPlayersShowAll

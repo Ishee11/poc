@@ -198,6 +198,7 @@ export function openModal({
   confirmText = t("common.confirm"),
   cancelText = t("common.cancel"),
   showCancel = true,
+  confirmClass = "",
 }) {
   const root = document.getElementById("modal-root");
   if (!root) {
@@ -267,7 +268,7 @@ export function openModal({
               ? `<button type="button" class="secondary" id="modal-cancel-btn">${escapeHtml(cancelText)}</button>`
               : ""
           }
-          <button type="submit" id="modal-confirm-btn">${escapeHtml(confirmText)}</button>
+          <button type="submit" id="modal-confirm-btn" class="${escapeHtml(confirmClass)}">${escapeHtml(confirmText)}</button>
         </div>
       </form>
     </div>
