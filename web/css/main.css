@@ -1742,7 +1742,8 @@ button:disabled {
 }
 
 #player-period-select,
-#player-period-clear {
+#player-period-clear,
+#settlement-add-transfer-btn {
     color: #e7fff3;
     border: 0;
     border-radius: 8px;
@@ -1752,7 +1753,8 @@ button:disabled {
 }
 
 #player-period-select:hover,
-#player-period-clear:hover {
+#player-period-clear:hover,
+#settlement-add-transfer-btn:hover {
     background: rgba(34, 211, 111, 0.5);
     box-shadow: none;
 }
