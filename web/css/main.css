@@ -2337,7 +2337,7 @@ body.debug-mode .debug-only {
 }
 
 .session-players-head h3 {
-    margin: 0 0 8px 0;
+    margin: 0 0 6px 0;
 }
 
 .session-action-switch:not([hidden]) {
@@ -2348,7 +2348,7 @@ body.debug-mode .debug-only {
     border-radius: 8px;
     background: var(--surface-soft);
     border: 1px solid var(--line);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .session-action-switch[hidden] {
