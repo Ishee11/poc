@@ -32,7 +32,8 @@ body {
     overflow-x: hidden;
     color: var(--text);
     font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-    background:
+    background-color: var(--bg);
+    background-image:
         radial-gradient(circle at 50% 13%, rgba(18, 72, 45, 0.2), transparent 23rem),
         radial-gradient(circle at 50% 38%, rgba(5, 42, 27, 0.1), transparent 18rem),
         linear-gradient(160deg, #000000 0%, var(--bg) 46%, #000000 100%);
