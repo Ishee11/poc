@@ -59,9 +59,7 @@ body::before {
     padding: 12px 0;
     border: 0;
     border-radius: 0;
-    background:
-        radial-gradient(circle at 50% 0%, rgba(31, 208, 106, 0.08), transparent 58%),
-        linear-gradient(180deg, rgba(244, 241, 234, 0.018), transparent 76%);
+    background: transparent;
     box-shadow: none;
     overflow: hidden;
     position: relative;
@@ -1083,10 +1081,16 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .session-balance-stat #stat-total-chips {
     font-size: 1.35rem;
     font-weight: 900;
+    color: #F0C978;
 }
 
 .session-config-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.session-config-stats .stat,
+.session-totals-stats .stat {
+    border: 0;
 }
 
 .session-totals-stats {
@@ -1511,7 +1515,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .stat.on-table-warning #stat-total-chips {
-    color: var(--gold);
+    color: #F0C978;
     font-size: 1.28rem;
     font-weight: 800;
 }
@@ -1547,7 +1551,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     display: inline-flex;
     gap: 6px;
     align-items: center;
-    color: var(--label);
+    color: #9B8A72;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2278,7 +2282,7 @@ body.debug-mode .debug-only {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
-    color: rgba(244, 241, 234, 0.7);
+    color: #9B8A72;
     font-size: 0.9rem;
 }
 
@@ -2294,7 +2298,8 @@ body.debug-mode .debug-only {
     height: 16px;
     flex: 0 0 auto;
     object-fit: contain;
-    filter: drop-shadow(0 1px 5px rgba(246, 183, 57, 0.22));
+    filter: none;
+    opacity: 0.7;
 }
 
 .compact-actions {
