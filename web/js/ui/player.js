@@ -441,7 +441,7 @@ export function renderPlayerDetail() {
 
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
-    linkedUser.textContent = `${escapeHtml(playerName)} ${renderPlayerRankBadge(player.rank)}`;
+    linkedUser.innerHTML = `${escapeHtml(playerName)}${renderPlayerRankBadge(player.rank)}`;
     linkedUser.hidden = false;
   }
   renderPlayerHeaderDebugActions(player);
@@ -518,6 +518,7 @@ export function renderPlayerDetail() {
       title: t("player.selectPeriod"),
       confirmText: t("player.applyPeriod"),
       confirmClass: "rebuy-action",
+      fields: [
         {
           name: "from",
           label: t("player.from"),
