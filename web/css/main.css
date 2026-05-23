@@ -1741,6 +1741,22 @@ button:disabled {
     justify-content: space-between;
 }
 
+#player-period-select,
+#player-period-clear {
+    color: #e7fff3;
+    border: 0;
+    border-radius: 8px;
+    font-weight: 500;
+    background: rgba(34, 211, 111, 0.34);
+    box-shadow: none;
+}
+
+#player-period-select:hover,
+#player-period-clear:hover {
+    background: rgba(34, 211, 111, 0.5);
+    box-shadow: none;
+}
+
 .period-summary {
     color: var(--muted);
     overflow-wrap: anywhere;
