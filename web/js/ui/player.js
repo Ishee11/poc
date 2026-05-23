@@ -68,8 +68,6 @@ export async function loadPlayersOverview() {
       profit_money: stat?.profit_money || 0,
       last_activity_at: stat?.last_activity_at || null,
       rank: stat?.rank || { code: "newcomer", label: t("rank.newcomer") },
-      avg_buy_in_per_session: stat?.avg_buy_in_per_session,
-      total_buy_in: stat?.total_buy_in || 0,
     };
   });
 
@@ -85,12 +83,29 @@ export async function loadPlayersOverview() {
 
 export function renderPlayersOverview() {
   const wrap = document.getElementById("overview-players-wrap");
-  const count = document.getElementById("overview-players-count");
-  if (!wrap || !count) return;
+  const summary = document.getElementById("overview-players-summary");
+  const summaryCollapsed = document.getElementById("overview-players-summary-collapsed");
+  const filter = document.getElementById("overview-players-filter-label");
+  const filterButton = document.getElementById("overview-players-filter-toggle");
+  if (!wrap) return;
 
-  count.textContent = state.overviewPlayersShowAll
-    ? String(state.overviewPlayers.length)
-    : `${state.overviewPlayers.length}/${state.overviewPlayersAll.length}`;
+  const shown = state.overviewPlayers.length;
+  const total = state.overviewPlayersAll.length;
+  if (summary) {
+    summary.textContent = t("lobby.playersShown", { shown, total });
+  }
+  if (summaryCollapsed) {
+    summaryCollapsed.textContent = String(total);
+  }
+  if (filter) {
+    filter.textContent = state.overviewPlayersShowAll
+      ? t("lobby.filterAllPlayers", { shown, total })
+      : t("lobby.filterActivePlayers", { shown, total });
+  }
+  if (filterButton) {
+    filterButton.classList.toggle("is-active", !state.overviewPlayersShowAll);
+    filterButton.setAttribute("aria-pressed", state.overviewPlayersShowAll ? "false" : "true");
+  }
 
   if (!state.overviewPlayers.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("lobby.noActivePlayers"))}</div>`;
@@ -102,7 +117,7 @@ export function renderPlayersOverview() {
       const id = player.player_id;
       const profitMoney = Number(player.profit_money) || 0;
       return `
-        <div class="player-row overview-player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
+        <div class="player-row clickable-row" data-open-player="${escapeHtml(id)}" tabindex="0" role="button">
           <div class="row-main">
             <div class="row-title player-name-line">
               <span>${escapeHtml(player.player_name || id)}</span>
@@ -110,9 +125,9 @@ export function renderPlayersOverview() {
             </div>
             <div class="inline-stats">
               <span>${escapeHtml(t("common.sessions"))}: ${formatNumber(player.sessions_count)}</span>
-              <span class="${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${escapeHtml(t("common.profit"))}: ${formatMoney(profitMoney, "RUB")}</span>
             </div>
           </div>
+          <strong class="overview-player-profit ${profitMoney >= 0 ? "profit-positive" : "profit-negative"}">${formatMoney(profitMoney, "RUB")}</strong>
         </div>
       `;
     })
@@ -356,6 +371,7 @@ export function renderPlayers() {
   if (!wrap) return;
 
   const canUseSessionActions = state.session?.status === "active";
+  const sessionActionMode = state.sessionPlayerActionMode || "rebuy";
 
   if (!state.players.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
@@ -367,14 +383,8 @@ export function renderPlayers() {
       const id = player.player_id || player.id;
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
-      const actionMode = state.sessionPlayerActionMode === "cash_out" ? "cash_out" : "rebuy";
-      const canUsePlayerAction =
-        canUseSessionActions && (actionMode === "rebuy" || Boolean(player.in_game));
-      const actionClass = actionMode === "cash_out" ? "cash-out-action" : "rebuy-action";
-      const actionAttr =
-        actionMode === "cash_out" ? "data-session-cash-out-player" : "data-session-rebuy-player";
-      const actionLabel =
-        actionMode === "cash_out" ? t("session.actionModeCashOut") : t("session.actionModeRebuy");
+      const canShowRebuy = canUseSessionActions && sessionActionMode === "rebuy";
+      const canShowCashOut = canUseSessionActions && sessionActionMode === "cash-out" && player.in_game;
       const statusClass = player.in_game ? "player-status in-game" : "player-status settled";
 
       return `
@@ -392,8 +402,13 @@ export function renderPlayers() {
             </div>
           </div>
           ${
-            canUsePlayerAction
-              ? `<button type="button" class="${actionClass} row-action" ${actionAttr}="${escapeHtml(id)}">${escapeHtml(actionLabel)}</button>`
+            canShowRebuy
+              ? `<button type="button" class="rebuy-action row-action" data-session-rebuy-player="${escapeHtml(id)}">${escapeHtml(t("session.buyIn"))}</button>`
+              : ""
+          }
+          ${
+            canShowCashOut
+              ? `<button type="button" class="cash-out-action row-action" data-session-cash-out-player="${escapeHtml(id)}">${escapeHtml(t("session.cashOut"))}</button>`
               : ""
           }
         </div>
@@ -419,21 +434,16 @@ export function renderPlayerDetail() {
 
   const player = detail.player;
   const sessions = detail.sessions || [];
-  const title = document.getElementById("player-screen-title");
+  const brandTitle = document.querySelector(".app-brand h1");
   const id = document.getElementById("player-screen-id");
   const linkedUser = document.getElementById("player-screen-user");
   const playerName = player.player_name || player.name || player.player_id;
 
-  if (title) {
-    title.innerHTML = `
-      <span>${escapeHtml(playerName)}</span>
-      ${renderPlayerRankBadge(player.rank)}
-    `;
-  }
+  if (brandTitle) brandTitle.textContent = playerName;
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
-    linkedUser.textContent = "";
-    linkedUser.hidden = true;
+    linkedUser.innerHTML = `${escapeHtml(playerName)}${renderPlayerRankBadge(player.rank)}`;
+    linkedUser.hidden = false;
   }
   renderPlayerHeaderDebugActions(player);
   renderPlayerDebugActions(player);
@@ -508,6 +518,7 @@ export function renderPlayerDetail() {
     const values = await openModal({
       title: t("player.selectPeriod"),
       confirmText: t("player.applyPeriod"),
+      confirmClass: "rebuy-action",
       fields: [
         {
           name: "from",
@@ -577,6 +588,10 @@ function renderPlayerSessionCards(sessions) {
                 <div class="card-meta-item">
                   <span>${escapeHtml(t("table.profitChips"))}</span>
                   <strong>${formatNumber(session.profit_chips)}</strong>
+                </div>
+                <div class="card-meta-item">
+                  <span>${escapeHtml(t("table.lastActivity"))}</span>
+                  <strong>${escapeHtml(formatDate(session.last_activity_at))}</strong>
                 </div>
               </div>
             </div>
@@ -698,7 +713,6 @@ function bindOpenPlayerButtons(container) {
       await loadPlayerDetail(playerId);
     });
     row.addEventListener("keydown", async (event) => {
-      if (event.target.closest("button")) return;
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       const playerId = row.getAttribute("data-open-player");

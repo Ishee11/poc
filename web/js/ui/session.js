@@ -30,6 +30,7 @@ import {
   replaceRoute,
   routeToHome,
   routeToSession,
+  routeToSessionResults,
   setScreen,
   showNotice,
 } from "../utils.js";
@@ -45,6 +46,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.expenses = [];
   state.players = [];
   state.settlementEditing = false;
+  state.expenseFormOpen = false;
   delete state.settlementDrafts[sessionId];
 
   const res = await getSession(sessionId);
@@ -73,6 +75,21 @@ export async function openSession(sessionId, { replace = false } = {}) {
     replaceRoute(routeToSession(sessionId));
   } else {
     pushRoute(routeToSession(sessionId));
+  }
+}
+
+export async function openSessionResults(sessionId, { replace = false } = {}) {
+  if (!sessionId) return;
+
+  await openSession(sessionId, { replace: true });
+  setScreen("results");
+  const brandTitle = document.querySelector(".app-brand h1");
+  if (brandTitle) brandTitle.textContent = t("results.title");
+  renderResultsSummary();
+  if (replace) {
+    replaceRoute(routeToSessionResults(sessionId));
+  } else {
+    pushRoute(routeToSessionResults(sessionId));
   }
 }
 
@@ -136,7 +153,10 @@ export function renderSession() {
   if (!session) return;
 
   const titleDate = document.getElementById("workspace-title-date");
-  const finishedAt = document.getElementById("workspace-finished-at");
+  const titleTime = document.getElementById("workspace-title-time");
+  const finishedDate = document.getElementById("workspace-finished-date");
+  const finishedTime = document.getElementById("workspace-finished-time");
+  const finishedRow = document.getElementById("workspace-finished-row");
   const chipRate = document.getElementById("stat-chip-rate");
   const chipRateCard = document.getElementById("stat-chip-rate-card");
   const bigBlind = document.getElementById("stat-big-blind");
@@ -151,20 +171,35 @@ export function renderSession() {
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
   const debugDeletePanel = document.getElementById("session-delete-debug-panel");
+  const resultsButton = document.getElementById("session-open-results-btn");
   const playerActions = document.getElementById("session-player-actions");
   const playerActionsHint = document.getElementById("session-player-actions-hint");
-  const actionsPanel = document.getElementById("session-actions-panel");
+  const playerActionSwitch = document.querySelector(".session-action-switch");
   const finishActions = document.getElementById("session-finish-actions");
+  const brandTitle = document.querySelector(".app-brand h1");
   const isActive = session.status === "active";
   const onTable = Number(session.totalChips) || 0;
 
   if (titleDate) {
-    titleDate.textContent = formatDate(session.createdAt);
+    titleDate.textContent = formatSessionDate(session.createdAt);
   }
-  if (finishedAt) {
-    const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
-    finishedAt.hidden = !hasFinishedAt;
-    finishedAt.textContent = hasFinishedAt ? formatDate(session.finishedAt) : "";
+  if (titleTime) {
+    titleTime.textContent = formatSessionTime(session.createdAt);
+  }
+  if (brandTitle) {
+    brandTitle.textContent = session.status === "finished"
+      ? t("session.headerFinished")
+      : t("session.headerActive");
+  }
+  const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
+  if (finishedDate) {
+    finishedDate.textContent = hasFinishedAt ? formatSessionDate(session.finishedAt) : "";
+  }
+  if (finishedTime) {
+    finishedTime.textContent = hasFinishedAt ? formatSessionTime(session.finishedAt) : "";
+  }
+  if (finishedRow) {
+    finishedRow.hidden = !hasFinishedAt;
   }
   if (chipRate) {
     chipRate.textContent = t("session.chipRateValue", {
@@ -208,12 +243,12 @@ export function renderSession() {
     finishHint.hidden = true;
     finishHint.textContent = "";
   }
-  renderSessionPlayerMode();
   if (playerActions) playerActions.hidden = !isActive;
   if (playerActionsHint) playerActionsHint.hidden = !isActive;
-  if (actionsPanel) actionsPanel.hidden = !isActive;
+  if (playerActionSwitch) playerActionSwitch.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
+  if (resultsButton) resultsButton.hidden = !state.session;
 
   document
     .getElementById("debug-reopen-session-btn")
@@ -223,6 +258,8 @@ export function renderSession() {
 
   bindDebugSessionConfigEditor(chipRateCard);
   bindDebugSessionConfigEditor(bigBlindCard);
+  renderSessionActionMode();
+  renderResultsSummary();
 }
 
 export function renderOperations() {
@@ -310,17 +347,12 @@ export function renderActionPlayerOptions() {
   );
 }
 
-export function renderSessionPlayerMode() {
-  const row = document.getElementById("session-player-mode-row");
-  if (!row) return;
-
-  const isActive = state.session?.status === "active";
-  row.hidden = !isActive;
-  row.querySelectorAll("[data-session-player-mode]").forEach((button) => {
-    const mode = button.getAttribute("data-session-player-mode");
-    const isActiveMode = mode === state.sessionPlayerActionMode;
-    button.classList.toggle("is-active", isActiveMode);
-    button.setAttribute("aria-pressed", isActiveMode ? "true" : "false");
+function renderSessionActionMode() {
+  const mode = state.sessionPlayerActionMode || "rebuy";
+  document.querySelectorAll("[data-session-action-mode]").forEach((button) => {
+    const isActive = button.getAttribute("data-session-action-mode") === mode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 }
 
@@ -329,6 +361,7 @@ export function renderExpenseForm() {
   const payersWrap = document.getElementById("expense-payers-wrap");
   const panel = document.getElementById("session-expenses-panel");
   const form = document.getElementById("session-expense-form");
+  const openFormButton = document.getElementById("open-expense-form-btn");
   const closeButton = document.getElementById("close-expenses-btn");
   const lockedHint = document.getElementById("session-expenses-locked-hint");
   const status = document.getElementById("session-expenses-status");
@@ -338,14 +371,57 @@ export function renderExpenseForm() {
   if (panel) panel.hidden = !isActiveOrFinished;
   const expensesClosed = Boolean(state.session?.expensesClosed);
   const canEditExpenses = !expensesClosed || state.debugMode;
-  if (form) form.hidden = !canEditExpenses;
+  if (form) form.hidden = !canEditExpenses || !state.expenseFormOpen;
+  if (openFormButton) openFormButton.hidden = !canEditExpenses || state.expenseFormOpen;
   if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed;
   if (lockedHint) lockedHint.hidden = canEditExpenses || !expensesClosed;
   if (status) {
-    status.textContent = expensesClosed ? t("expenses.closed") : t("expenses.open");
+    status.textContent = expensesClosed ? t("expenses.closed") : "";
+    status.hidden = !expensesClosed;
   }
 
   const players = state.players || [];
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const selectedPayerIds = readSelectedExpensePayers(players);
+
+  participantsWrap.innerHTML = renderExpenseParticipantControls(players, amount);
+  payersWrap.innerHTML = renderExpensePayerControls(players, selectedPayerIds, amount);
+  bindExpenseSplitInputs();
+  updateExpenseParticipantShares();
+}
+
+function bindExpenseSplitInputs() {
+  const amountInput = document.getElementById("expense-amount");
+  if (amountInput) {
+    amountInput.oninput = () => {
+      updateExpenseParticipantShares();
+      updateExpensePayerShares();
+    };
+  }
+
+  document.querySelectorAll("[name='expense-participant']").forEach((input) => {
+    input.addEventListener("change", updateExpenseParticipantShares);
+  });
+}
+
+function renderExpenseParticipantControls(players, amount) {
+  if (!players.length) {
+    return `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
+  }
+
+  const mode = state.expenseParticipantMode || "all";
+  const modeSwitch = `
+    <div class="expense-participant-mode" role="group" aria-label="${escapeHtml(t("expenses.splitBetween"))}">
+      <button type="button" data-expense-participant-mode="all" class="${mode === "all" ? "active" : ""}" aria-pressed="${mode === "all" ? "true" : "false"}">${escapeHtml(t("expenses.selectAll"))}</button>
+      <button type="button" data-expense-participant-mode="custom" class="${mode === "custom" ? "active" : ""}" aria-pressed="${mode === "custom" ? "true" : "false"}">${escapeHtml(t("expenses.custom"))}</button>
+    </div>
+  `;
+
+  if (mode !== "custom") {
+    return modeSwitch;
+  }
+
+  const shares = calculateEqualShares(amount, players.map((player) => player.player_id || player.id));
   const participantRows = players
     .map((player) => {
       const id = player.player_id || player.id;
@@ -356,40 +432,105 @@ export function renderExpenseForm() {
             <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
             <span>${escapeHtml(name)}</span>
           </span>
-          <strong data-expense-share="${escapeHtml(id)}">${formatMoney(0, state.session?.currency)}</strong>
+          <strong data-expense-share="${escapeHtml(id)}">${formatMoney(shares.get(id) || 0, state.session?.currency)}</strong>
         </label>
       `;
     })
     .join("");
 
-  const payerRows = players
-    .map((player) => {
-      const id = player.player_id || player.id;
-      const name = player.player_name || player.name || id;
-      return `
-        <label class="expense-payer-row">
-          <span>${escapeHtml(name)}</span>
-          <input type="number" min="0" data-expense-payer="${escapeHtml(id)}" placeholder="0" />
-        </label>
-      `;
-    })
-    .join("");
-
-  participantsWrap.innerHTML = participantRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
-  payersWrap.innerHTML = payerRows || `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
-  bindExpenseSplitInputs();
-  updateExpenseParticipantShares();
+  return `
+    ${modeSwitch}
+    <div class="expense-section-actions expense-participant-actions">
+      <button type="button" class="secondary" id="expense-select-all-btn" data-i18n="expenses.selectAllDetailed">${escapeHtml(t("expenses.selectAllDetailed"))}</button>
+      <button type="button" class="secondary" id="expense-clear-all-btn" data-i18n="expenses.clearAllDetailed">${escapeHtml(t("expenses.clearAllDetailed"))}</button>
+    </div>
+    <div class="expense-participant-list">
+      ${participantRows}
+    </div>
+  `;
 }
 
-function bindExpenseSplitInputs() {
-  const amountInput = document.getElementById("expense-amount");
-  if (amountInput) {
-    amountInput.oninput = updateExpenseParticipantShares;
+function renderExpensePayerControls(players, selectedPayerIds, amount) {
+  if (!players.length) {
+    return `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
   }
 
-  document.querySelectorAll("[name='expense-participant']").forEach((input) => {
-    input.addEventListener("change", updateExpenseParticipantShares);
-  });
+  const mode = state.expensePayerMode || "even";
+  const modeSwitch = `
+    <div class="expense-payer-mode" role="group" aria-label="${escapeHtml(t("expenses.paidBy"))}">
+      <button type="button" data-expense-payer-mode="even" class="${mode === "even" ? "active" : ""}" aria-pressed="${mode === "even" ? "true" : "false"}">${escapeHtml(t("expenses.splitEven"))}</button>
+      <button type="button" data-expense-payer-mode="custom" class="${mode === "custom" ? "active" : ""}" aria-pressed="${mode === "custom" ? "true" : "false"}">${escapeHtml(t("expenses.custom"))}</button>
+    </div>
+  `;
+
+  if (mode === "custom") {
+    return `
+      ${modeSwitch}
+      <div class="expense-payer-custom-grid">
+        ${players
+          .map((player) => {
+            const id = player.player_id || player.id;
+            const name = player.player_name || player.name || id;
+            return `
+              <label class="expense-payer-row">
+                <span>${escapeHtml(name)}</span>
+                <input type="number" min="0" data-expense-payer="${escapeHtml(id)}" placeholder="0" />
+              </label>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
+  const effectiveSelectedIds = selectedPayerIds;
+  const selectedSet = new Set(effectiveSelectedIds);
+  const rows = [...effectiveSelectedIds, ""]
+    .slice(0, players.length)
+    .map((selectedId) => renderExpensePayerSelectRow(players, selectedId, selectedSet, amount))
+    .join("");
+
+  return `
+    ${modeSwitch}
+    <div class="expense-payer-select-list">
+      ${rows}
+    </div>
+  `;
+}
+
+function renderExpensePayerSelectRow(players, selectedId, selectedSet, amount) {
+  const selectedIds = Array.from(selectedSet).filter(Boolean);
+  const shares = calculateEqualShares(Number(amount), selectedIds);
+  const options = [
+    `<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`,
+    ...players
+      .filter((player) => {
+        const id = player.player_id || player.id;
+        return id === selectedId || !selectedSet.has(id);
+      })
+      .map((player) => {
+        const id = player.player_id || player.id;
+        const name = player.player_name || player.name || id;
+        return `<option value="${escapeHtml(id)}" ${id === selectedId ? "selected" : ""}>${escapeHtml(name)}</option>`;
+      }),
+  ].join("");
+
+  return `
+    <label class="expense-payer-select-row">
+      <select class="expense-payer-select" data-expense-payer-select>
+        ${options}
+      </select>
+      <strong data-expense-payer-share="${escapeHtml(selectedId)}">${selectedId ? formatMoney(shares.get(selectedId) || 0, state.session?.currency) : formatMoney(0, state.session?.currency)}</strong>
+    </label>
+  `;
+}
+
+function readSelectedExpensePayers(players) {
+  const playerIds = new Set(players.map((player) => player.player_id || player.id));
+  const selected = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
+    .map((select) => select.value)
+    .filter((id, index, ids) => id && playerIds.has(id) && ids.indexOf(id) === index);
+  return selected;
 }
 
 function calculateEqualShares(amount, participants) {
@@ -409,6 +550,9 @@ function calculateEqualShares(amount, participants) {
 }
 
 function selectedExpenseParticipants() {
+  if ((state.expenseParticipantMode || "all") === "all") {
+    return (state.players || []).map((player) => player.player_id || player.id).filter(Boolean);
+  }
   return Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
     .map((input) => input.value)
     .filter(Boolean);
@@ -431,6 +575,19 @@ function updateExpenseParticipantShares() {
   });
 }
 
+function updateExpensePayerShares() {
+  const amount = Number(document.getElementById("expense-amount")?.value);
+  const payerIds = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
+    .map((select) => select.value)
+    .filter((id, index, ids) => id && ids.indexOf(id) === index);
+  const shares = calculateEqualShares(amount, payerIds);
+
+  document.querySelectorAll("[data-expense-payer-share]").forEach((element) => {
+    const playerId = element.getAttribute("data-expense-payer-share");
+    element.textContent = formatMoney(shares.get(playerId) || 0, state.session?.currency);
+  });
+}
+
 function fillEqualExpensePayments() {
   const amount = Number(document.getElementById("expense-amount")?.value);
   const shares = calculateEqualShares(amount, selectedExpenseParticipants());
@@ -445,6 +602,25 @@ function fillEqualExpensePayments() {
     const share = shares.get(playerId) || 0;
     input.value = share > 0 ? String(share) : "";
   });
+}
+
+function collectExpensePayments(amount) {
+  if ((state.expensePayerMode || "even") === "custom") {
+    return Array.from(document.querySelectorAll("[data-expense-payer]"))
+      .map((input) => ({
+        player_id: input.getAttribute("data-expense-payer"),
+        amount: Number(input.value),
+      }))
+      .filter((payment) => payment.player_id && Number.isFinite(payment.amount) && payment.amount > 0);
+  }
+
+  const payerIds = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
+    .map((select) => select.value)
+    .filter((id, index, ids) => id && ids.indexOf(id) === index);
+  return Array.from(calculateEqualShares(amount, payerIds).entries()).map(([player_id, paymentAmount]) => ({
+    player_id,
+    amount: paymentAmount,
+  }));
 }
 
 export function renderExpenses() {
@@ -531,7 +707,13 @@ export function renderSettlement() {
       <div>
         <div class="settlement-heading-row">
           <h4>${escapeHtml(t("settlement.transfers"))}</h4>
-          <span class="settlement-mode-pill">${escapeHtml(t(hasAdjustments ? "settlement.adjustedMode" : "settlement.autoMode"))}</span>
+          <span class="settlement-mode-pill" title="${escapeHtml(t(hasAdjustments ? "settlement.adjustedMode" : "settlement.autoMode"))}">
+            ${
+              hasAdjustments
+                ? escapeHtml(t("settlement.adjustedMode"))
+                : `<img src="/static/svg/12-users-outline-gold.svg" alt="" aria-hidden="true" /><span>${escapeHtml(t("settlement.autoMode"))}</span>`
+            }
+          </span>
         </div>
         ${
           isEditing || hasAdjustments
@@ -560,6 +742,17 @@ export function renderSettlement() {
   `;
 
   bindManualSettlementControls();
+}
+
+function renderResultsSummary() {
+  const chips = document.getElementById("results-total-chips");
+  const buyIn = document.getElementById("results-total-buy-in");
+  const cashOut = document.getElementById("results-total-cash-out");
+  if (!chips && !buyIn && !cashOut) return;
+
+  if (chips) chips.textContent = formatNumber(state.session?.totalChips);
+  if (buyIn) buyIn.textContent = formatNumber(state.session?.totalBuyIn);
+  if (cashOut) cashOut.textContent = formatNumber(state.session?.totalCashOut);
 }
 
 async function persistSettlementDraft() {
@@ -786,18 +979,28 @@ export function initSessionActions() {
       await confirmPlayerRebuy(rebuyPlayerId);
       return;
     }
-
     const cashOutPlayerId = button.getAttribute("data-session-cash-out-player");
     if (cashOutPlayerId) {
       await confirmPlayerCashOut(cashOutPlayerId);
       return;
     }
-
-    const sessionPlayerMode = button.getAttribute("data-session-player-mode");
-    if (sessionPlayerMode) {
-      state.sessionPlayerActionMode = sessionPlayerMode === "cash_out" ? "cash_out" : "rebuy";
+    const sessionActionMode = button.getAttribute("data-session-action-mode");
+    if (sessionActionMode) {
+      state.sessionPlayerActionMode = sessionActionMode;
+      renderSessionActionMode();
       renderPlayers();
-      renderSessionPlayerMode();
+      return;
+    }
+    const expensePayerMode = button.getAttribute("data-expense-payer-mode");
+    if (expensePayerMode) {
+      state.expensePayerMode = expensePayerMode;
+      renderExpenseForm();
+      return;
+    }
+    const expenseParticipantMode = button.getAttribute("data-expense-participant-mode");
+    if (expenseParticipantMode) {
+      state.expenseParticipantMode = expenseParticipantMode;
+      renderExpenseForm();
       return;
     }
 
@@ -808,17 +1011,18 @@ export function initSessionActions() {
     }
 
     switch (button.id) {
-      case "cash-out-btn":
-        await confirmCashOut();
+      case "session-add-player-btn":
+        await confirmAddPlayer();
         break;
-      case "session-add-existing-player-btn":
-        await confirmAddExistingPlayer();
-        break;
-      case "session-add-new-player-btn":
-        await confirmAddNewPlayer();
+      case "session-open-results-btn":
+        await openSessionResults(state.activeSessionId);
         break;
       case "finish-session-btn":
         await confirmFinishSession();
+        break;
+      case "open-expense-form-btn":
+        state.expenseFormOpen = true;
+        renderExpenseForm();
         break;
       case "add-expense-btn":
         await confirmAddExpense();
@@ -854,6 +1058,13 @@ export function initSessionActions() {
         setScreen("lobby");
         pushRoute(routeToHome());
         break;
+      case "results-back-session-btn":
+        if (state.activeSessionId) {
+          renderSession();
+          setScreen("session");
+          pushRoute(routeToSession(state.activeSessionId));
+        }
+        break;
       case "player-back-home-btn":
         setScreen("lobby");
         pushRoute(routeToHome());
@@ -877,6 +1088,12 @@ export function initSessionActions() {
         break;
       default:
         break;
+    }
+  });
+
+  document.addEventListener("change", (event) => {
+    if (event.target.closest("[data-expense-payer-select]")) {
+      renderExpenseForm();
     }
   });
 }
@@ -945,6 +1162,7 @@ async function confirmPlayerRebuy(playerId) {
       name: playerName,
     }),
     confirmText: t("session.buyIn"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "chips",
@@ -979,25 +1197,35 @@ async function confirmPlayerRebuy(playerId) {
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
-async function confirmCashOut() {
-  const playerId = document.getElementById("cash-out-player-select")?.value;
-  const chips = Number(document.getElementById("cash-out-chips")?.value);
-
-  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
+async function confirmPlayerCashOut(playerId) {
   const playerName = findPlayerName(playerId);
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
-      chips: formatNumber(chips),
+      chips: formatNumber(defaultCashOutChips(playerId)),
       name: playerName,
     }),
     confirmText: t("session.cashOut"),
+    confirmClass: "cash-out-action",
+    fields: [
+      {
+        name: "chips",
+        label: t("session.chips"),
+        type: "number",
+        min: "1",
+        step: 1000,
+        value: defaultCashOutChips(playerId) || "",
+        placeholder: t("session.chips"),
+      },
+    ],
   });
   if (!values) return;
+
+  const chips = Number(values.chips);
+  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
+    showNotice(t("notice.selectPlayerAndChips"), "error");
+    return;
+  }
 
   const res = await cashOut({
     sessionId: state.activeSessionId,
@@ -1010,53 +1238,18 @@ async function confirmCashOut() {
   }
 
   await refreshSessionData();
-  const chipsInput = document.getElementById("cash-out-chips");
-  if (chipsInput) chipsInput.value = "";
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
-async function confirmPlayerCashOut(playerId) {
+function defaultCashOutChips(playerId) {
   const player = state.players.find((item) => (item.player_id || item.id) === playerId);
-  if (!playerId || !player || !player.in_game) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
+  if (!player) return "";
 
-  const playerName = findPlayerName(playerId);
-  const values = await openModal({
-    title: t("modal.confirmCashOutTitle"),
-    description: t("modal.cashOutPlayerDescription", { name: playerName }),
-    confirmText: t("session.cashOut"),
-    fields: [
-      {
-        name: "chips",
-        label: t("session.chips"),
-        type: "number",
-        min: "1",
-        step: 1000,
-        placeholder: t("session.chips"),
-      },
-    ],
-  });
-  if (!values) return;
-
-  const chips = Number(values.chips);
-  if (!Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
-  const res = await cashOut({ sessionId: state.activeSessionId, playerId, chips });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedCashOut")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
+  const chips = (Number(player.buy_in) || 0) - (Number(player.cash_out) || 0);
+  return chips > 0 ? String(chips) : "";
 }
 
-async function confirmAddExistingPlayer() {
+async function confirmAddPlayer() {
   await loadPlayersOverview();
 
   const inGameIds = new Set(
@@ -1068,24 +1261,31 @@ async function confirmAddExistingPlayer() {
     state.overviewPlayersAll.filter((player) => !inGameIds.has(player.player_id)),
   );
 
-  if (!availablePlayers.length) {
-    showNotice(t("notice.noAvailablePlayers"), "info");
-    return;
-  }
-
   const values = await openModal({
     title: t("modal.addPlayerTitle"),
     description: t("modal.addPlayerDescription"),
     confirmText: t("modal.addToSession"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "player_id",
         label: t("session.player"),
         type: "select",
-        options: availablePlayers.map((player) => ({
-          value: player.player_id,
-          label: player.player_name || player.player_id,
-        })),
+        value: availablePlayers[0]?.player_id || "__new__",
+        options: [
+          { value: "__new__", label: t("session.newPlayerOption") },
+          ...availablePlayers.map((player) => ({
+            value: player.player_id,
+            label: player.player_name || player.player_id,
+          })),
+        ],
+      },
+      {
+        name: "name",
+        label: t("session.newPlayerName"),
+        type: "text",
+        placeholder: t("lobby.playerNamePlaceholder"),
+        showWhen: { name: "player_id", value: "__new__" },
       },
       {
         name: "chips",
@@ -1106,6 +1306,34 @@ async function confirmAddExistingPlayer() {
     return;
   }
 
+  if (values.player_id === "__new__") {
+    const name = (values.name || "").trim();
+    if (!name) {
+      showNotice(t("notice.enterPlayerAndBuyIn"), "error");
+      return;
+    }
+
+    const createRes = await createPlayer(name);
+    if (!createRes.ok || !createRes.body?.player_id) {
+      showNotice(describeError(createRes, t("error.failedCreatePlayer")), "error");
+      return;
+    }
+
+    const buyInRes = await buyIn({
+      sessionId: state.activeSessionId,
+      playerId: createRes.body.player_id,
+      chips,
+    });
+    if (!buyInRes.ok) {
+      showNotice(describeError(buyInRes, t("error.failedCreateAdd")), "error");
+      return;
+    }
+
+    await Promise.all([refreshSessionData(), loadPlayersOverview()]);
+    showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
+    return;
+  }
+
   const res = await buyIn({
     sessionId: state.activeSessionId,
     playerId: values.player_id,
@@ -1121,57 +1349,6 @@ async function confirmAddExistingPlayer() {
     t("notice.playerAdded", { name: findPlayerName(values.player_id) }),
     "success",
   );
-}
-
-async function confirmAddNewPlayer() {
-  const values = await openModal({
-    title: t("modal.createNewPlayerTitle"),
-    description: t("modal.createNewPlayerDescription"),
-    confirmText: t("modal.createAndAdd"),
-    fields: [
-      {
-        name: "name",
-        label: t("lobby.playerName"),
-        type: "text",
-        placeholder: t("lobby.playerNamePlaceholder"),
-      },
-      {
-        name: "chips",
-        label: t("modal.initialBuyIn"),
-        type: "number",
-        min: "1",
-        step: 1000,
-        placeholder: t("session.chips"),
-      },
-    ],
-  });
-  if (!values) return;
-
-  const name = (values.name || "").trim();
-  const chips = Number(values.chips);
-  if (!name || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.enterPlayerAndBuyIn"), "error");
-    return;
-  }
-
-  const createRes = await createPlayer(name);
-  if (!createRes.ok || !createRes.body?.player_id) {
-    showNotice(describeError(createRes, t("error.failedCreatePlayer")), "error");
-    return;
-  }
-
-  const buyInRes = await buyIn({
-    sessionId: state.activeSessionId,
-    playerId: createRes.body.player_id,
-    chips,
-  });
-  if (!buyInRes.ok) {
-    showNotice(describeError(buyInRes, t("error.failedCreateAdd")), "error");
-    return;
-  }
-
-  await Promise.all([refreshSessionData(), loadPlayersOverview()]);
-  showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
 }
 
 async function confirmFinishSession() {
@@ -1352,12 +1529,7 @@ async function confirmAddExpense() {
   const title = (document.getElementById("expense-title")?.value || "").trim();
   const amount = Number(document.getElementById("expense-amount")?.value);
   const participants = selectedExpenseParticipants();
-  const payments = Array.from(document.querySelectorAll("[data-expense-payer]"))
-    .map((input) => ({
-      player_id: input.getAttribute("data-expense-payer"),
-      amount: Number(input.value),
-    }))
-    .filter((payment) => payment.player_id && Number.isFinite(payment.amount) && payment.amount > 0);
+  const payments = collectExpensePayments(amount);
   const paidTotal = payments.reduce((sum, payment) => sum + payment.amount, 0);
 
   if (!title || !Number.isFinite(amount) || amount <= 0 || participants.length === 0 || paidTotal !== amount) {
@@ -1382,7 +1554,8 @@ async function confirmAddExpense() {
   document.querySelectorAll("[data-expense-payer]").forEach((input) => {
     input.value = "";
   });
-  updateExpenseParticipantShares();
+  state.expenseFormOpen = false;
+  renderExpenseForm();
   await loadExpenses(state.activeSessionId);
   showNotice(t("notice.expenseAdded"), "success");
 }
@@ -1483,6 +1656,27 @@ function findPlayerName(playerId) {
 
   const overview = state.overviewPlayersAll.find((player) => player.player_id === playerId);
   return overview?.player_name || playerId;
+}
+
+function formatSessionDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatDate(value);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+function formatSessionTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 }
 
 function totalMoneyIn(session) {

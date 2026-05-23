@@ -6,6 +6,7 @@ import {
   formatDate,
   formatMoney,
   formatNumber,
+  currencySymbol,
   setValue,
 } from "../utils.js";
 
@@ -39,14 +40,18 @@ export function renderSessions() {
   const count = document.getElementById("overview-sessions-count");
   if (!wrap || !count) return;
 
+  const filtered = state.overviewSessionsFilter === "all"
+    ? state.overviewSessions
+    : state.overviewSessions.filter((s) => s.status === state.overviewSessionsFilter);
+
   count.textContent = String(state.overviewSessions.length);
 
-  if (!state.overviewSessions.length) {
+  if (!filtered.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noSessions"))}</div>`;
     return;
   }
 
-  wrap.innerHTML = state.overviewSessions
+  wrap.innerHTML = filtered
     .map((session) => {
       const id = session.session_id || session.id;
 
@@ -87,22 +92,39 @@ async function openSessionFromRow(row) {
 
 export function syncSelect() {
   const select = document.getElementById("active-session-select");
+  const connectPanel = document.querySelector(".lobby-connect-panel");
+  const connectForm = document.getElementById("connect-session-form");
+  const emptyState = document.getElementById("lobby-latest-empty");
+  const liveBadge = document.getElementById("lobby-latest-live-badge");
   if (!select) return;
 
   const current = select.value;
   const activeSessions = state.overviewSessions.filter(
     (session) => session.status === "active",
   );
-  const options = [
-    `<option value="">${escapeHtml(t("lobby.latestActiveSession"))}</option>`,
-    ...activeSessions.map((session) => {
+  const latestActiveSession = activeSessions[0] || null;
+  if (connectPanel) {
+    connectPanel.hidden = !latestActiveSession;
+  }
+  if (connectForm) connectForm.hidden = !latestActiveSession;
+  if (emptyState) emptyState.hidden = Boolean(latestActiveSession);
+  if (liveBadge) liveBadge.hidden = !latestActiveSession;
+
+  const options = activeSessions.map((session) => {
       const id = session.session_id || session.id;
-      const label = `${formatDate(session.created_at)} (${statusLabel(session.status || "-")}, BB ${formatNumber(session.big_blind)})`;
+      const chipsOnTable = (Number(session.total_buy_in) || 0) - (Number(session.total_cash_out) || 0);
+      const label = t("lobby.sessionOption", {
+        date: formatCompactDateTime(session.created_at),
+        currencySymbol: currencySymbol(session.currency),
+        chipRate: formatNumber(session.chip_rate),
+        bigBlind: formatNumber(session.big_blind),
+        chips: formatNumber(chipsOnTable),
+      });
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
-    }),
-  ];
+    });
 
   select.innerHTML = options.join("");
+  renderLatestActiveSession(latestActiveSession);
 
   const currentExists = activeSessions.some((session) => {
     const id = session.session_id || session.id;
@@ -119,9 +141,51 @@ export function syncSelect() {
   }
 }
 
+function renderLatestActiveSession(session) {
+  const date = document.getElementById("lobby-latest-date");
+  const chipRate = document.getElementById("lobby-latest-chip-rate");
+  const bigBlind = document.getElementById("lobby-latest-big-blind");
+  const chips = document.getElementById("lobby-latest-chips");
+  if (!date || !chipRate || !bigBlind || !chips) return;
+
+  if (!session) {
+    date.textContent = "";
+    chipRate.textContent = "-";
+    bigBlind.textContent = "-";
+    chips.textContent = "-";
+    return;
+  }
+
+  const chipsOnTable = (Number(session.total_buy_in) || 0) - (Number(session.total_cash_out) || 0);
+  date.textContent = formatLobbyLatestDateTime(session.created_at);
+  chipRate.textContent = t("session.chipRateValue", {
+    currencySymbol: currencySymbol(session.currency),
+    chips: formatNumber(session.chip_rate),
+  });
+  bigBlind.textContent = formatNumber(session.big_blind);
+  chips.textContent = formatNumber(chipsOnTable).replaceAll(",", " ");
+}
+
 export function firstActiveSessionId() {
   const session = state.overviewSessions.find((item) => item.status === "active");
   return session?.session_id || session?.id || "";
+}
+
+export function initSessionsFilter() {
+  const controls = document.getElementById("overview-session-controls");
+  if (!controls) return;
+
+  controls.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-session-filter]");
+    if (!btn) return;
+
+    controls.querySelectorAll("[data-session-filter]").forEach((el) => {
+      el.classList.toggle("is-active", el === btn);
+    });
+
+    state.overviewSessionsFilter = btn.getAttribute("data-session-filter");
+    renderSessions();
+  });
 }
 
 export function applyLatestSessionDefaults({ force = false } = {}) {
@@ -153,4 +217,29 @@ function formatBuyInSummary(session) {
   }
 
   return `${chipsText} · ${formatMoney(chips / chipRate, session.currency)}`;
+}
+
+function formatCompactDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatDate(value);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}.${month} ${hours}:${minutes}`;
+}
+
+function formatLobbyLatestDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatDate(value);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}.${month}.${year}, ${hours}:${minutes}`;
 }

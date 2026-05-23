@@ -14,6 +14,7 @@ export const state = {
   session: null,
 
   overviewSessions: [],
+  overviewSessionsFilter: "all",
   overviewPlayers: [],
   overviewPlayersAll: [],
   overviewPlayersSort: "last_activity",
@@ -22,6 +23,9 @@ export const state = {
 
   players: [],
   sessionPlayerActionMode: "rebuy",
+  expensePayerMode: "even",
+  expenseParticipantMode: "all",
+  expenseFormOpen: false,
   operations: [],
   expenses: [],
   settlementDrafts: {},

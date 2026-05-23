@@ -15,6 +15,7 @@ import { state } from "./state.js";
 import {
   applyLatestSessionDefaults,
   firstActiveSessionId,
+  initSessionsFilter,
   loadSessions,
   renderSessions,
   syncSelect,
@@ -32,6 +33,7 @@ import {
 import {
   initSessionActions,
   openSession,
+  openSessionResults,
   renderActionPlayerOptions,
   renderExpenseForm,
   renderExpenses,
@@ -57,6 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyUiFeatureFlags();
   initPlayersSort();
   initPlayersOverviewFilters();
+  initSessionsFilter();
   initAdminLoginFooter();
   if (state.authUiEnabled) {
     initAuth();
@@ -100,17 +103,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const startForm = document.getElementById("start-session-form");
-  const chipInput = document.getElementById("start-chip-rate");
-  const bigBlindInput = document.getElementById("start-big-blind");
+  const startToggle = document.getElementById("start-session-toggle");
   renderStartChipRateLabel();
   applyLatestSessionDefaults();
-  if (startForm && chipInput && bigBlindInput) {
-    startForm.addEventListener("submit", async (event) => {
+  if (startForm && startToggle) {
+    const handleStartSession = async (event) => {
       event.preventDefault();
 
-      const chipRate = Number(chipInput.value);
-      const bigBlind = Number(bigBlindInput.value);
       const currency = defaultCurrency();
+      const values = await openModal({
+        title: t("modal.startTitle"),
+        confirmText: t("lobby.startSession"),
+        confirmClass: "rebuy-action",
+        fields: [
+          {
+            name: "chip_rate",
+            label: t("lobby.chipRate", { currencySymbol: currencySymbol() }),
+            type: "number",
+            min: 1,
+            value: defaultStartNumber("chip_rate", 1),
+          },
+          {
+            name: "big_blind",
+            label: t("lobby.bigBlind"),
+            type: "number",
+            min: 1,
+            value: defaultStartNumber("big_blind", 1),
+          },
+        ],
+      });
+      if (!values) return;
+
+      const chipRate = Number(values.chip_rate);
+      const bigBlind = Number(values.big_blind);
       if (!Number.isFinite(chipRate) || chipRate <= 0) {
         showNotice(t("notice.validChipRate"), "error");
         return;
@@ -119,17 +144,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         showNotice(t("notice.validBigBlind"), "error");
         return;
       }
-
-      const confirmed = await openModal({
-        title: t("modal.startTitle"),
-        description: t("modal.startDescription", {
-          chipRate,
-          bigBlind,
-          currencySymbol: currencySymbol(),
-        }),
-        confirmText: t("lobby.startSession"),
-      });
-      if (!confirmed) return;
 
       const res = await startSession({ chipRate, bigBlind, currency });
       if (!res.ok || !res.body?.session_id) {
@@ -141,7 +155,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       applyLatestSessionDefaults({ force: true });
       await openSession(res.body.session_id);
       showNotice(t("notice.sessionStarted"), "success");
-    });
+    };
+
+    startToggle.addEventListener("click", handleStartSession);
+    startForm.addEventListener("submit", handleStartSession);
   }
 
 });
@@ -641,6 +658,12 @@ function initPlayersSort() {
   if (!select) return;
 
   select.value = state.overviewPlayersSort;
+  select.closest("label")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  select.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
   select.addEventListener("change", () => {
     state.overviewPlayersSort = select.value || "last_activity";
     sortOverviewPlayers();
@@ -649,26 +672,15 @@ function initPlayersSort() {
 }
 
 function initPlayersOverviewFilters() {
-  const showAll = document.getElementById("overview-players-show-all");
-  if (showAll) {
-    showAll.checked = state.overviewPlayersShowAll;
-    showAll.closest("label")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-    });
-    showAll.closest("label")?.addEventListener("keydown", (event) => {
-      event.stopPropagation();
-    });
-    showAll.addEventListener("change", async () => {
-      state.overviewPlayersShowAll = showAll.checked;
-      await loadPlayersOverview();
-    });
-  }
+  const filter = document.getElementById("overview-players-filter-toggle");
+  if (!filter) return;
 
-  document
-    .getElementById("open-players-stats-btn")
-    ?.addEventListener("click", async () => {
-      await openPlayersStats();
-    });
+  filter.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    state.overviewPlayersShowAll = !state.overviewPlayersShowAll;
+    await loadPlayersOverview();
+  });
 }
 
 function renderCurrentLanguage() {
@@ -720,9 +732,20 @@ function renderStartChipRateLabel() {
   });
 }
 
+function defaultStartNumber(field, fallback) {
+  const latest = state.overviewSessions[0];
+  const value = Number(latest?.[field]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 async function openInitialRoute({ fromHistory = false } = {}) {
-  const [, section, rawId] = window.location.pathname.split("/");
+  const [, section, rawId, subSection] = window.location.pathname.split("/");
   const id = rawId ? decodeURIComponent(rawId) : "";
+
+  if (section === "session" && id && subSection === "results") {
+    await openSessionResults(id, { replace: !fromHistory });
+    return;
+  }
 
   if (section === "session" && id) {
     await openSession(id, { replace: !fromHistory });

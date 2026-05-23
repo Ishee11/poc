@@ -2,10 +2,16 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
         <meta name="theme-color" content="#0b1117" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="black-translucent"
+        />
         <title>Poker Session Control</title>
 
         <link rel="manifest" href="/manifest.webmanifest" />
@@ -16,29 +22,273 @@
         <div class="app">
             <header class="app-header">
                 <div class="app-header-content">
-                    <div>
-                        <h1 data-i18n="app.title">Poker Session Control</h1>
-                    </div>
-                    <nav class="top-nav" aria-label="Page navigation" data-i18n-aria-label="nav.page">
-                        <button type="button" class="secondary nav-session-only" id="session-back-home-btn" data-i18n="nav.backHome">
-                            Back to Home
+                    <nav
+                        class="top-nav top-nav-left"
+                        aria-label="Page navigation"
+                        data-i18n-aria-label="nav.page"
+                    >
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-lobby-only"
+                            id="lobby-back-home-btn"
+                            disabled
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
                         </button>
-                        <button type="button" class="secondary nav-player-only" id="player-back-session-btn" data-i18n="nav.backSession">
-                            Back to Session
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-session-only"
+                            id="session-back-home-btn"
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
                         </button>
-                        <button type="button" class="secondary nav-player-only" id="player-back-home-btn" data-i18n="nav.backHome">
-                            Back to Home
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-results-only"
+                            id="results-back-session-btn"
+                            aria-label="Back to Session"
+                            data-i18n-aria-label="nav.backSession"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/07-chevron-right-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backSession"
+                                >Back to Session</span
+                            >
                         </button>
-                        <button type="button" class="secondary nav-players-stats-only" id="players-stats-back-home-btn" data-i18n="nav.backHome">
-                            Back to Home
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-player-only"
+                            id="player-back-home-btn"
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
                         </button>
-                        <button type="button" class="secondary nav-account-only" id="account-back-home-btn" data-i18n="nav.backHome">
-                            Back to Home
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-players-stats-only"
+                            id="players-stats-back-home-btn"
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
                         </button>
-                        <button type="button" class="secondary nav-blinds-only" id="blinds-back-home-btn" data-i18n="nav.backHome">
-                            Back to Home
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-account-only"
+                            id="account-back-home-btn"
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
+                        </button>
+                        <button
+                            type="button"
+                            class="secondary app-icon-button nav-blinds-only"
+                            id="blinds-back-home-btn"
+                            aria-label="Back to Home"
+                            data-i18n-aria-label="nav.backHome"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/01-home-filled-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="nav.backHome"
+                                >Back to Home</span
+                            >
                         </button>
                     </nav>
+                    <div class="app-brand">
+                        <div>
+                            <h1 data-i18n="app.title">Poker Session Control</h1>
+                            <p data-i18n="app.subtitle">
+                                Control panel for poker cash games.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="top-nav top-nav-right" aria-label="Tools">
+                        <button
+                            type="button"
+                            class="secondary app-icon-button header-blinds-clock-btn"
+                            id="header-blinds-clock-btn"
+                            aria-label="Blind Timer"
+                            data-i18n-aria-label="lobby.openBlindsClock"
+                        >
+                            <img
+                                class="app-nav-icon"
+                                src="/static/svg/03-timer-outline-white.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="visually-hidden"
+                                data-i18n="lobby.openBlindsClock"
+                                >Blind Timer</span
+                            >
+                        </button>
+                    </div>
+                </div>
+                <div class="lobby-auth-bar">
+                    <label class="guest-player-label" id="guest-player-label">
+                        <span data-i18n="guest.player">Guest player</span>
+                        <select id="guest-player-select">
+                            <option value="" data-i18n="guest.noPlayer">
+                                No player selected
+                            </option>
+                        </select>
+                    </label>
+                    <section
+                        class="auth-panel"
+                        aria-label="Authentication"
+                        data-i18n-aria-label="auth.label"
+                    >
+                        <button
+                            type="button"
+                            class="secondary"
+                            id="auth-show-login-btn"
+                            data-i18n="auth.login"
+                        >
+                            Login
+                        </button>
+                        <form
+                            id="auth-login-form"
+                            class="auth-login-form"
+                            onsubmit="return false;"
+                            hidden
+                        >
+                            <input
+                                id="auth-email"
+                                type="email"
+                                autocomplete="username"
+                                placeholder="Email"
+                                data-i18n-placeholder="auth.email"
+                            />
+                            <input
+                                id="auth-password"
+                                type="password"
+                                autocomplete="current-password"
+                                placeholder="Password"
+                                data-i18n-placeholder="auth.password"
+                            />
+                            <button type="submit" data-i18n="auth.login">
+                                Login
+                            </button>
+                            <div
+                                class="auth-register-row"
+                                id="auth-register-row"
+                                hidden
+                            >
+                                <span data-i18n="auth.noAccount"
+                                    >No account yet?</span
+                                >
+                                <button
+                                    type="button"
+                                    class="secondary"
+                                    id="auth-register-btn"
+                                    data-i18n="auth.register"
+                                >
+                                    Register
+                                </button>
+                            </div>
+                        </form>
+                        <div
+                            id="auth-user-panel"
+                            class="auth-user-panel"
+                            hidden
+                        >
+                            <div>
+                                <div
+                                    class="auth-user-label"
+                                    data-i18n="auth.signedIn"
+                                >
+                                    Signed in
+                                </div>
+                                <div id="auth-user-name" class="auth-user-name">
+                                    -
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                class="secondary"
+                                id="auth-account-btn"
+                                data-i18n="account.title"
+                            >
+                                Account
+                            </button>
+                            <button
+                                type="button"
+                                class="secondary"
+                                id="auth-logout-btn"
+                                data-i18n="auth.logout"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </section>
                 </div>
             </header>
 
@@ -48,113 +298,236 @@
                 <section class="screen active" id="screen-lobby">
                     <div class="grid lobby-primary">
                         <div class="panel lobby-connect-panel">
-                            <h2 data-i18n="lobby.connectTitle">Connect to Active Session</h2>
+                            <h2>
+                                <span data-i18n="lobby.connectTitle"
+                                    >Последняя активная сессия</span
+                                >
+                                <span
+                                    class="status-pill status-active"
+                                    id="lobby-latest-live-badge"
+                                    >LIVE</span
+                                >
+                            </h2>
 
-                            <form id="connect-session-form" onsubmit="return false;">
-                                <select id="active-session-select">
-                                    <option value="" data-i18n="lobby.latestActiveSession">Latest active session</option>
-                                </select>
+                            <div
+                                class="lobby-latest-empty"
+                                id="lobby-latest-empty"
+                                hidden
+                                data-i18n="lobby.noActiveSession"
+                            >
+                                Активной сессии сейчас нет.
+                            </div>
+
+                            <form
+                                id="connect-session-form"
+                                class="lobby-latest-card"
+                                onsubmit="return false;"
+                            >
+                                <select
+                                    id="active-session-select"
+                                    hidden
+                                    aria-hidden="true"
+                                    tabindex="-1"
+                                ></select>
+
+                                <div
+                                    class="lobby-latest-date"
+                                    id="lobby-latest-date"
+                                >
+                                    -
+                                </div>
+
+                                <div class="lobby-latest-info-grid">
+                                    <div class="lobby-latest-info">
+                                        <span data-i18n="session.chipRate"
+                                            >Курс</span
+                                        >
+                                        <strong id="lobby-latest-chip-rate"
+                                            >-</strong
+                                        >
+                                    </div>
+                                    <div class="lobby-latest-info">
+                                        <span data-i18n="session.bigBlind"
+                                            >BB</span
+                                        >
+                                        <strong id="lobby-latest-big-blind"
+                                            >-</strong
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="lobby-latest-chips">
+                                    <span data-i18n="session.onTable"
+                                        >Фишек на столе</span
+                                    >
+                                    <strong>
+                                        <span id="lobby-latest-chips">-</span>
+                                    </strong>
+                                </div>
 
                                 <div class="actions">
-                                    <button type="button" id="open-workspace-btn" class="secondary" data-i18n="lobby.openWorkspace">
-                                        Open Workspace
-                                    </button>
-                                    <button type="button" id="open-blinds-clock-btn" class="secondary" data-i18n="lobby.openBlindsClock">
-                                        Blind Timer
+                                    <button
+                                        type="button"
+                                        id="open-workspace-btn"
+                                        class="lobby-continue-btn"
+                                    >
+                                        <img
+                                            class="button-icon"
+                                            src="/static/svg/04-play-filled-white.svg"
+                                            alt=""
+                                            aria-hidden="true"
+                                        />
+                                        <span data-i18n="lobby.openWorkspace"
+                                            >Продолжить сессию</span
+                                        >
                                     </button>
                                 </div>
                             </form>
                         </div>
 
                         <div class="panel lobby-start-panel">
-                            <h2 data-i18n="lobby.startTitle">Start a New Session</h2>
-
-                            <form id="start-session-form" onsubmit="return false;">
-                                <label>
-                                    <span id="start-chip-rate-label">Rate</span>
-                                    <input id="start-chip-rate" type="number" min="1" />
-                                </label>
-
-                                <label>
-                                    <span data-i18n="lobby.bigBlind">BB (big blind size)</span>
-                                    <input id="start-big-blind" type="number" min="1" />
-                                </label>
-
-                                <div class="actions">
-                                    <button type="submit" data-i18n="lobby.startSession">Start Session</button>
-                                </div>
+                            <form
+                                id="start-session-form"
+                                onsubmit="return false;"
+                            >
+                                <button
+                                    type="button"
+                                    class="lobby-start-toggle"
+                                    id="start-session-toggle"
+                                >
+                                    <img
+                                        class="lobby-start-icon"
+                                        src="/static/svg/05-plus-circle-gold.svg"
+                                        alt=""
+                                        aria-hidden="true"
+                                    />
+                                    <span>
+                                        <strong data-i18n="lobby.startTitle"
+                                            >Начать новую сессию</strong
+                                        >
+                                        <small data-i18n="lobby.startHint"
+                                            >Создать и настроить новую
+                                            сессию</small
+                                        >
+                                    </span>
+                                </button>
                             </form>
                         </div>
                     </div>
 
-                    <details class="panel panel-disclosure" id="overview-sessions-panel">
+                    <details
+                        class="panel panel-disclosure"
+                        id="overview-sessions-panel"
+                    >
                         <summary class="panel-title-row">
-                            <h3 data-i18n="lobby.sessions">Sessions</h3>
-                            <span class="summary-count" id="overview-sessions-count">0</span>
+                            <h3 data-i18n="lobby.sessions">Сессии</h3>
+                            <span class="summary-count">
+                                <span id="overview-sessions-count">0</span>
+                            </span>
                         </summary>
+                        <div class="overview-player-controls overview-session-controls" id="overview-session-controls">
+                            <button
+                                type="button"
+                                class="overview-filter-pill is-active"
+                                data-session-filter="all"
+                                ><span data-i18n="common.all">Все</span></button
+                            >
+                            <button
+                                type="button"
+                                class="overview-filter-pill"
+                                data-session-filter="active"
+                                ><span data-i18n="common.active">Активные</span></button
+                            >
+                            <button
+                                type="button"
+                                class="overview-filter-pill"
+                                data-session-filter="finished"
+                                ><span data-i18n="common.finished">Завершённые</span></button
+                            >
+                        </div>
                         <div id="overview-sessions-wrap"></div>
                     </details>
 
-                    <details class="panel panel-disclosure" id="overview-players-panel">
+                    <details
+                        class="panel panel-disclosure"
+                        id="overview-players-panel"
+                    >
                         <summary class="panel-title-row">
-                            <h3 data-i18n="lobby.players">Players</h3>
-                            <span class="summary-actions">
-                                <span class="summary-count" id="overview-players-count">0</span>
-                                <label class="summary-check-label" for="overview-players-show-all">
-                                    <input id="overview-players-show-all" type="checkbox" />
-                                    <span data-i18n="lobby.showAllPlayers">Show all</span>
+                            <span class="overview-players-heading">
+                                <h3 data-i18n="lobby.players">Игроки</h3>
+                                <span
+                                    class="summary-count overview-players-summary-collapsed"
+                                    id="overview-players-summary-collapsed"
+                                    >0</span
+                                >
+                                <span
+                                    class="overview-players-summary overview-players-summary-expanded"
+                                    id="overview-players-summary"
+                                    >Показано 0 из 0</span
+                                >
+                            </span>
+                            <span
+                                class="summary-actions overview-player-controls"
+                            >
+                                <button
+                                    type="button"
+                                    class="overview-filter-pill"
+                                    id="overview-players-filter-toggle"
+                                >
+                                    <span id="overview-players-filter-label"
+                                        >Активные · 0/0</span
+                                    >
+                                </button>
+                                <label
+                                    class="overview-sort-pill"
+                                    for="overview-players-sort"
+                                >
+                                    <span
+                                        class="visually-hidden"
+                                        data-i18n="lobby.playersSort"
+                                        >Сортировка</span
+                                    >
+                                    <select
+                                        id="overview-players-sort"
+                                        aria-label="Сортировка"
+                                        data-i18n-aria-label="lobby.playersSort"
+                                    >
+                                        <option
+                                            value="last_activity"
+                                            data-i18n="sort.lastActivityShort"
+                                        >
+                                            Активность ↓
+                                        </option>
+                                        <option
+                                            value="sessions_count"
+                                            data-i18n="sort.sessionsCountShort"
+                                        >
+                                            Сессии ↓
+                                        </option>
+                                        <option
+                                            value="profit_money"
+                                            data-i18n="sort.profitShort"
+                                        >
+                                            Профит ↓
+                                        </option>
+                                        <option
+                                            value="name"
+                                            data-i18n="sort.nameShort"
+                                        >
+                                            Имя ↓
+                                        </option>
+                                    </select>
                                 </label>
                             </span>
                         </summary>
-                        <div class="panel-inline-toolbar">
-                            <label class="inline-select-label" for="overview-players-sort">
-                                <span data-i18n="lobby.playersSort">Sort</span>
-                                <select id="overview-players-sort">
-                                    <option value="last_activity" data-i18n="sort.lastActivity">Last activity</option>
-                                    <option value="sessions_count" data-i18n="sort.sessionsCount">Sessions count</option>
-                                    <option value="profit_money" data-i18n="sort.profit">Profit</option>
-                                    <option value="name" data-i18n="sort.name">Name</option>
-                                </select>
-                            </label>
-                            <button type="button" class="secondary" id="open-players-stats-btn" data-i18n="playersStats.open">
-                                Player Stats
-                            </button>
-                        </div>
                         <div id="overview-players-wrap"></div>
                     </details>
 
-                    <div class="lobby-auth-bar lobby-utility-bar">
-                        <label class="guest-player-label" id="guest-player-label">
-                            <span data-i18n="guest.player">Guest player</span>
-                            <select id="guest-player-select">
-                                <option value="" data-i18n="guest.noPlayer">No player selected</option>
-                            </select>
-                        </label>
-                        <section class="auth-panel" aria-label="Authentication" data-i18n-aria-label="auth.label">
-                            <button type="button" class="secondary" id="auth-show-login-btn" data-i18n="auth.login">Login</button>
-                            <form id="auth-login-form" class="auth-login-form" onsubmit="return false;" hidden>
-                                <input id="auth-email" type="email" autocomplete="username" placeholder="Email" data-i18n-placeholder="auth.email" />
-                                <input id="auth-password" type="password" autocomplete="current-password" placeholder="Password" data-i18n-placeholder="auth.password" />
-                                <button type="submit" data-i18n="auth.login">Login</button>
-                                <div class="auth-register-row" id="auth-register-row" hidden>
-                                    <span data-i18n="auth.noAccount">No account yet?</span>
-                                    <button type="button" class="secondary" id="auth-register-btn" data-i18n="auth.register">Register</button>
-                                </div>
-                            </form>
-                            <div id="auth-user-panel" class="auth-user-panel" hidden>
-                                <div>
-                                    <div class="auth-user-label" data-i18n="auth.signedIn">Signed in</div>
-                                    <div id="auth-user-name" class="auth-user-name">-</div>
-                                </div>
-                                <button type="button" class="secondary" id="auth-account-btn" data-i18n="account.title">Account</button>
-                                <button type="button" class="secondary" id="auth-logout-btn" data-i18n="auth.logout">Logout</button>
-                            </div>
-                        </section>
-                    </div>
-
-                    <div class="panel language-panel">
+                    <div class="panel language-panel" hidden>
                         <label class="language-select-label">
-                            <span data-i18n="language.title">Interface Language</span>
+                            <span data-i18n="language.title"
+                                >Interface Language</span
+                            >
                             <select id="language-select">
                                 <option value="ru">Русский</option>
                                 <option value="en">English</option>
@@ -167,86 +540,233 @@
                     <div class="panel blinds-hero-panel">
                         <div class="blinds-hero-head">
                             <h2 data-i18n="blinds.title">Blind Timer</h2>
-                            <span class="status-pill status-active" id="blinds-status">Stopped</span>
+                            <span
+                                class="status-pill status-active"
+                                id="blinds-status"
+                                >Stopped</span
+                            >
                         </div>
-                        <button type="button" class="secondary blinds-presentation-exit-btn" id="blinds-exit-presentation-btn" data-i18n="blinds.exitPresentation">
+                        <button
+                            type="button"
+                            class="secondary blinds-presentation-exit-btn"
+                            id="blinds-exit-presentation-btn"
+                            data-i18n="blinds.exitPresentation"
+                        >
                             Exit Presentation
                         </button>
-                        <div class="blinds-level-flash" id="blinds-level-flash" hidden>
-                            <div class="blinds-level-flash-label" id="blinds-level-flash-label" data-i18n="blinds.levelStarted">Level Started</div>
-                            <div class="blinds-level-flash-level" id="blinds-level-flash-level">-</div>
-                            <div class="blinds-level-flash-blinds" id="blinds-level-flash-blinds">-</div>
+                        <div
+                            class="blinds-level-flash"
+                            id="blinds-level-flash"
+                            hidden
+                        >
+                            <div
+                                class="blinds-level-flash-label"
+                                id="blinds-level-flash-label"
+                                data-i18n="blinds.levelStarted"
+                            >
+                                Level Started
+                            </div>
+                            <div
+                                class="blinds-level-flash-level"
+                                id="blinds-level-flash-level"
+                            >
+                                -
+                            </div>
+                            <div
+                                class="blinds-level-flash-blinds"
+                                id="blinds-level-flash-blinds"
+                            >
+                                -
+                            </div>
                         </div>
-                        <div class="blinds-timer-display" id="blinds-timer">00:00</div>
+                        <div class="blinds-timer-display" id="blinds-timer">
+                            00:00
+                        </div>
                         <div class="blinds-scoreboard">
                             <div class="blinds-score-item">
-                                <div class="blinds-score-label" data-i18n="blinds.currentLevel">Current Level</div>
-                                <div class="blinds-score-value" id="blinds-current-level">-</div>
+                                <div
+                                    class="blinds-score-label"
+                                    data-i18n="blinds.currentLevel"
+                                >
+                                    Current Level
+                                </div>
+                                <div
+                                    class="blinds-score-value"
+                                    id="blinds-current-level"
+                                >
+                                    -
+                                </div>
                             </div>
                             <div class="blinds-score-item">
-                                <div class="blinds-score-label" data-i18n="blinds.currentBlinds">Current Blinds</div>
-                                <div class="blinds-score-value blinds-score-value-strong" id="blinds-current-blinds">-</div>
+                                <div
+                                    class="blinds-score-label"
+                                    data-i18n="blinds.currentBlinds"
+                                >
+                                    Current Blinds
+                                </div>
+                                <div
+                                    class="blinds-score-value blinds-score-value-strong"
+                                    id="blinds-current-blinds"
+                                >
+                                    -
+                                </div>
                             </div>
                             <div class="blinds-score-item">
-                                <div class="blinds-score-label" data-i18n="blinds.nextLevel">Next Level</div>
-                                <div class="blinds-score-value" id="blinds-next-blinds">-</div>
+                                <div
+                                    class="blinds-score-label"
+                                    data-i18n="blinds.nextLevel"
+                                >
+                                    Next Level
+                                </div>
+                                <div
+                                    class="blinds-score-value"
+                                    id="blinds-next-blinds"
+                                >
+                                    -
+                                </div>
                             </div>
                         </div>
                         <div class="actions blinds-primary-actions">
-                            <button type="button" id="blinds-toggle-btn" data-i18n="blinds.start">Start</button>
+                            <button
+                                type="button"
+                                id="blinds-toggle-btn"
+                                data-i18n="blinds.start"
+                            >
+                                Start
+                            </button>
                         </div>
                     </div>
 
                     <div class="grid blinds-workspace-grid">
-                        <div class="panel blinds-structure-panel" id="blinds-structure-panel">
+                        <div
+                            class="panel blinds-structure-panel"
+                            id="blinds-structure-panel"
+                        >
                             <div class="panel-title-row">
-                                <h3 data-i18n="blinds.structure">Blind Structure</h3>
+                                <h3 data-i18n="blinds.structure">
+                                    Blind Structure
+                                </h3>
                                 <div class="blinds-structure-meta">
-                                    <span data-i18n="blinds.totalLevels">Total Levels</span>
+                                    <span data-i18n="blinds.totalLevels"
+                                        >Total Levels</span
+                                    >
                                     <strong id="blinds-total-levels">0</strong>
                                     <span class="blinds-structure-sep">•</span>
-                                    <span data-i18n="blinds.upcomingLevels">Upcoming</span>
-                                    <strong id="blinds-upcoming-levels">0</strong>
+                                    <span data-i18n="blinds.upcomingLevels"
+                                        >Upcoming</span
+                                    >
+                                    <strong id="blinds-upcoming-levels"
+                                        >0</strong
+                                    >
                                 </div>
                             </div>
-                            <div class="blinds-structure-shell" id="blinds-structure-shell" hidden>
-                                <p class="hint" data-i18n="blinds.editHint">Completed levels are locked. Pause the timer to edit the current level; future levels can be edited live.</p>
+                            <div
+                                class="blinds-structure-shell"
+                                id="blinds-structure-shell"
+                                hidden
+                            >
+                                <p class="hint" data-i18n="blinds.editHint">
+                                    Completed levels are locked. Pause the timer
+                                    to edit the current level; future levels can
+                                    be edited live.
+                                </p>
                                 <div class="blinds-editor-grid">
                                     <label class="blinds-level-picker">
-                                        <span data-i18n="blinds.selectedLevel">Selected Level</span>
-                                        <select id="blinds-level-select"></select>
+                                        <span data-i18n="blinds.selectedLevel"
+                                            >Selected Level</span
+                                        >
+                                        <select
+                                            id="blinds-level-select"
+                                        ></select>
                                     </label>
-                                    <div id="blinds-level-lock-hint" class="hint blinds-lock-hint" hidden></div>
-                                    <form id="blinds-level-form" class="blinds-level-form" onsubmit="return false;">
+                                    <div
+                                        id="blinds-level-lock-hint"
+                                        class="hint blinds-lock-hint"
+                                        hidden
+                                    ></div>
+                                    <form
+                                        id="blinds-level-form"
+                                        class="blinds-level-form"
+                                        onsubmit="return false;"
+                                    >
                                         <label>
-                                            <span data-i18n="blinds.smallBlind">SB</span>
-                                            <input id="blinds-level-sb" type="number" min="1" />
+                                            <span data-i18n="blinds.smallBlind"
+                                                >SB</span
+                                            >
+                                            <input
+                                                id="blinds-level-sb"
+                                                type="number"
+                                                min="1"
+                                            />
                                         </label>
                                         <label>
-                                            <span data-i18n="blinds.bigBlind">BB</span>
-                                            <input id="blinds-level-bb" type="number" min="1" />
+                                            <span data-i18n="blinds.bigBlind"
+                                                >BB</span
+                                            >
+                                            <input
+                                                id="blinds-level-bb"
+                                                type="number"
+                                                min="1"
+                                            />
                                         </label>
                                         <label>
-                                            <span data-i18n="blinds.duration">Minutes</span>
-                                            <input id="blinds-level-duration" type="number" min="1" />
+                                            <span data-i18n="blinds.duration"
+                                                >Minutes</span
+                                            >
+                                            <input
+                                                id="blinds-level-duration"
+                                                type="number"
+                                                min="1"
+                                            />
                                         </label>
                                         <label class="blinds-duration-cascade">
-                                            <input id="blinds-apply-duration-next" type="checkbox" />
-                                            <span data-i18n="blinds.applyDurationNext">Apply minutes to this and following levels</span>
+                                            <input
+                                                id="blinds-apply-duration-next"
+                                                type="checkbox"
+                                            />
+                                            <span
+                                                data-i18n="blinds.applyDurationNext"
+                                                >Apply minutes to this and
+                                                following levels</span
+                                            >
                                         </label>
-                                        <div class="actions blinds-editor-actions">
-                                            <button type="button" id="blinds-save-level-btn" data-i18n="common.save">Save</button>
-                                            <button type="button" class="secondary" id="blinds-delete-level-btn" data-i18n="blinds.deleteLevel">Delete</button>
+                                        <div
+                                            class="actions blinds-editor-actions"
+                                        >
+                                            <button
+                                                type="button"
+                                                id="blinds-save-level-btn"
+                                                data-i18n="common.save"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="secondary"
+                                                id="blinds-delete-level-btn"
+                                                data-i18n="blinds.deleteLevel"
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
-                            <div class="blinds-structure-collapsed" id="blinds-structure-collapsed">
+                            <div
+                                class="blinds-structure-collapsed"
+                                id="blinds-structure-collapsed"
+                            >
                                 <label class="blinds-level-picker">
-                                    <span data-i18n="blinds.selectedLevel">Selected Level</span>
-                                    <select id="blinds-level-select-collapsed"></select>
+                                    <span data-i18n="blinds.selectedLevel"
+                                        >Selected Level</span
+                                    >
+                                    <select
+                                        id="blinds-level-select-collapsed"
+                                    ></select>
                                 </label>
-                                <p class="hint" id="blinds-collapsed-summary">-</p>
+                                <p class="hint" id="blinds-collapsed-summary">
+                                    -
+                                </p>
                             </div>
                         </div>
 
@@ -256,32 +776,129 @@
                             </div>
                             <div class="blinds-tools-stack">
                                 <div class="blinds-tool-group">
-                                    <div class="blinds-tool-label" data-i18n="blinds.toolStructure">Structure</div>
-                                    <button type="button" class="secondary" id="blinds-toggle-editor-btn" data-i18n="blinds.editStructure">Edit Structure</button>
-                                    <button type="button" class="secondary" id="blinds-add-level-btn" data-i18n="blinds.addLevel">Add Level</button>
-                                    <button type="button" class="danger" id="blinds-delete-all-levels-btn" data-i18n="blinds.deleteAllLevels">Delete All Levels</button>
+                                    <div
+                                        class="blinds-tool-label"
+                                        data-i18n="blinds.toolStructure"
+                                    >
+                                        Structure
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="secondary"
+                                        id="blinds-toggle-editor-btn"
+                                        data-i18n="blinds.editStructure"
+                                    >
+                                        Edit Structure
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="secondary"
+                                        id="blinds-add-level-btn"
+                                        data-i18n="blinds.addLevel"
+                                    >
+                                        Add Level
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="danger"
+                                        id="blinds-delete-all-levels-btn"
+                                        data-i18n="blinds.deleteAllLevels"
+                                    >
+                                        Delete All Levels
+                                    </button>
                                 </div>
                                 <div class="blinds-tool-group">
-                                    <div class="blinds-tool-label" data-i18n="blinds.toolClock">Clock</div>
-                                    <button type="button" class="secondary" id="blinds-open-presentation-btn" data-i18n="blinds.presentationMode">Presentation Mode</button>
-                                    <button type="button" class="secondary" id="blinds-push-toggle-btn" data-i18n="blinds.enableAlerts">Enable Lock Alerts</button>
-                                    <div class="blinds-push-settings" id="blinds-push-settings">
+                                    <div
+                                        class="blinds-tool-label"
+                                        data-i18n="blinds.toolClock"
+                                    >
+                                        Clock
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="secondary"
+                                        id="blinds-open-presentation-btn"
+                                        data-i18n="blinds.presentationMode"
+                                    >
+                                        Presentation Mode
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="secondary"
+                                        id="blinds-push-toggle-btn"
+                                        data-i18n="blinds.enableAlerts"
+                                    >
+                                        Enable Lock Alerts
+                                    </button>
+                                    <div
+                                        class="blinds-push-settings"
+                                        id="blinds-push-settings"
+                                    >
                                         <label class="blinds-push-setting">
-                                            <input type="checkbox" id="blinds-push-warning-60" checked>
-                                            <span data-i18n="blinds.alert60">Notify at 60 sec</span>
+                                            <input
+                                                type="checkbox"
+                                                id="blinds-push-warning-60"
+                                                checked
+                                            />
+                                            <span data-i18n="blinds.alert60"
+                                                >Notify at 60 sec</span
+                                            >
                                         </label>
                                         <label class="blinds-push-setting">
-                                            <input type="checkbox" id="blinds-push-warning-10" checked>
-                                            <span data-i18n="blinds.alert10">Notify at 10 sec</span>
+                                            <input
+                                                type="checkbox"
+                                                id="blinds-push-warning-10"
+                                                checked
+                                            />
+                                            <span data-i18n="blinds.alert10"
+                                                >Notify at 10 sec</span
+                                            >
                                         </label>
                                     </div>
-                                    <button type="button" class="secondary" id="blinds-push-test-btn" data-i18n="blinds.testAlert">Send Test Alert</button>
-                                    <div class="actions blinds-level-shift-actions">
-                                        <button type="button" class="secondary" id="blinds-previous-level-btn" data-i18n="blinds.previousLevel">Previous Level</button>
-                                        <button type="button" class="secondary" id="blinds-next-level-btn" data-i18n="blinds.nextLevelAction">Next Level</button>
+                                    <button
+                                        type="button"
+                                        class="secondary"
+                                        id="blinds-push-test-btn"
+                                        data-i18n="blinds.testAlert"
+                                    >
+                                        Send Test Alert
+                                    </button>
+                                    <div
+                                        class="actions blinds-level-shift-actions"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="secondary"
+                                            id="blinds-previous-level-btn"
+                                            data-i18n="blinds.previousLevel"
+                                        >
+                                            Previous Level
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="secondary"
+                                            id="blinds-next-level-btn"
+                                            data-i18n="blinds.nextLevelAction"
+                                        >
+                                            Next Level
+                                        </button>
                                     </div>
-                                    <button type="button" class="warn" id="blinds-reset-btn" data-i18n="blinds.resetTimer">Reset Timer</button>
-                                    <button type="button" class="danger" id="blinds-reset-default-btn" data-i18n="blinds.resetDefault">Reset to Default Structure</button>
+                                    <button
+                                        type="button"
+                                        class="warn"
+                                        id="blinds-reset-btn"
+                                        data-i18n="blinds.resetTimer"
+                                    >
+                                        Reset Timer
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="danger"
+                                        id="blinds-reset-default-btn"
+                                        data-i18n="blinds.resetDefault"
+                                    >
+                                        Reset to Default Structure
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -289,181 +906,429 @@
                 </section>
 
                 <section class="screen" id="screen-account">
-                    <div class="panel account-panel" id="account-panel" aria-label="Account" data-i18n-aria-label="account.label">
+                    <div
+                        class="panel account-panel"
+                        id="account-panel"
+                        aria-label="Account"
+                        data-i18n-aria-label="account.label"
+                    >
                         <div class="account-header">
                             <h2 data-i18n="account.title">Account</h2>
-                            <span class="hint" data-i18n="account.hint">Link any free player.</span>
+                            <span class="hint" data-i18n="account.hint"
+                                >Link any free player.</span
+                            >
                         </div>
-                        <div id="account-linked-players" class="account-linked-players"></div>
-                        <form id="account-link-form" class="account-link-form" onsubmit="return false;">
-                            <select id="account-player-select" data-i18n-aria-label="account.selectPlayer">
-                                <option value="" data-i18n="account.selectPlayer">Select player</option>
+                        <div
+                            id="account-linked-players"
+                            class="account-linked-players"
+                        ></div>
+                        <form
+                            id="account-link-form"
+                            class="account-link-form"
+                            onsubmit="return false;"
+                        >
+                            <select
+                                id="account-player-select"
+                                data-i18n-aria-label="account.selectPlayer"
+                            >
+                                <option
+                                    value=""
+                                    data-i18n="account.selectPlayer"
+                                >
+                                    Select player
+                                </option>
                             </select>
-                            <button type="submit" class="secondary" data-i18n="account.linkPlayer">Link</button>
+                            <button
+                                type="submit"
+                                class="secondary"
+                                data-i18n="account.linkPlayer"
+                            >
+                                Link
+                            </button>
                         </form>
                     </div>
                 </section>
 
                 <section class="screen" id="screen-session">
-                    <div class="panel">
+                    <div class="panel session-summary-panel">
                         <div class="toolbar session-toolbar">
-                            <h2 id="workspace-title" class="session-heading">
-                                <span data-i18n="session.title">Session</span>
-                                <span id="workspace-title-date" class="session-heading-date"></span>
-                            </h2>
+                            <div class="session-meta-row">
+                                <span class="session-meta-item">
+                                    <img
+                                        src="/static/svg/08-calendar-outline-gold.svg"
+                                        alt=""
+                                        aria-hidden="true"
+                                    />
+                                    <span id="workspace-title-date">-</span>
+                                </span>
+                                <span class="session-meta-item">
+                                    <img
+                                        src="/static/svg/09-clock-outline-gold.svg"
+                                        alt=""
+                                        aria-hidden="true"
+                                    />
+                                    <span id="workspace-title-time">-</span>
+                                </span>
+                            </div>
+                            <div class="session-meta-row" id="workspace-finished-row" hidden>
+                                <span class="session-meta-item">
+                                    <img
+                                        src="/static/svg/08-calendar-outline-gold.svg"
+                                        alt=""
+                                        aria-hidden="true"
+                                    />
+                                    <span id="workspace-finished-date">-</span>
+                                </span>
+                                <span class="session-meta-item">
+                                    <img
+                                        src="/static/svg/09-clock-outline-gold.svg"
+                                        alt=""
+                                        aria-hidden="true"
+                                    />
+                                    <span id="workspace-finished-time">-</span>
+                                </span>
+                            </div>
                             <div class="title-row session-status-row">
-                                <span id="workspace-status" class="session-status">-</span>
-                                <span id="workspace-finished-at" class="session-finished-at" hidden></span>
+                                <span
+                                    id="workspace-status"
+                                    class="session-status"
+                                    >-</span
+                                >
                             </div>
                         </div>
 
                         <div class="stats session-config-stats">
                             <div class="stat" id="stat-chip-rate-card">
-                                <div class="stat-label" data-i18n="session.chipRate">Chip Rate</div>
+                                <div
+                                    class="stat-label"
+                                    data-i18n="session.chipRate"
+                                >
+                                    Chip Rate
+                                </div>
                                 <div id="stat-chip-rate">-</div>
                             </div>
 
                             <div class="stat" id="stat-big-blind-card">
-                                <div class="stat-label" data-i18n="session.bigBlind">Big Blind</div>
+                                <div
+                                    class="stat-label"
+                                    data-i18n="session.bigBlind"
+                                >
+                                    Big Blind
+                                </div>
                                 <div id="stat-big-blind">-</div>
                             </div>
                         </div>
 
-                        <div class="stat session-balance-stat" id="stat-total-chips-card">
-                            <div class="stat-label" data-i18n="session.onTable">Chips on Table</div>
+                        <div
+                            class="stat session-balance-stat"
+                            id="stat-total-chips-card"
+                        >
+                            <div class="stat-label" data-i18n="session.onTable">
+                                Chips on Table
+                            </div>
                             <div id="stat-total-chips">-</div>
                         </div>
 
                         <div class="stats session-totals-stats">
                             <div class="stat">
-                                <div class="stat-label" data-i18n="session.totalBuyIn">Total Buy In</div>
+                                <div
+                                    class="stat-label"
+                                    data-i18n="session.totalBuyIn"
+                                >
+                                    Total Buy In
+                                </div>
                                 <div id="stat-buy-in">-</div>
                             </div>
 
                             <div class="stat">
-                                <div class="stat-label" data-i18n="session.totalCashOut">Total Cash Out</div>
+                                <div
+                                    class="stat-label"
+                                    data-i18n="session.totalCashOut"
+                                >
+                                    Total Cash Out
+                                </div>
                                 <div id="stat-cash-out">-</div>
                             </div>
                         </div>
 
-                        <div id="finish-session-hint" class="finish-hint" hidden></div>
+                        <div
+                            id="finish-session-hint"
+                            class="finish-hint"
+                            hidden
+                        ></div>
 
-                        <div class="actions compact-actions session-finish-inline" id="session-finish-actions">
-                            <button type="button" class="warn" id="finish-session-btn" data-i18n="session.finish">
-                                Finish Session
-                            </button>
-                        </div>
-
-                        <div class="stats top-gap" id="session-money-panel" hidden>
+                        <div
+                            class="stats top-gap"
+                            id="session-money-panel"
+                            hidden
+                        >
                             <div class="stat money-stat">
-                                <div class="stat-label" data-i18n="session.totalMoneyIn">Total Money In</div>
+                                <div
+                                    class="stat-label"
+                                    data-i18n="session.totalMoneyIn"
+                                >
+                                    Total Money In
+                                </div>
                                 <div id="stat-total-money">-</div>
                             </div>
                         </div>
+                    </div>
 
+                    <div
+                        class="session-action-switch"
+                        role="group"
+                        aria-label="Player action mode"
+                    >
+                        <button
+                            type="button"
+                            id="session-action-mode-rebuy"
+                            data-session-action-mode="rebuy"
+                            data-i18n="session.buyIn"
+                        >
+                            Rebuy
+                        </button>
+                        <button
+                            type="button"
+                            id="session-action-mode-cash-out"
+                            data-session-action-mode="cash-out"
+                            data-i18n="session.cashOut"
+                        >
+                            Cash-out
+                        </button>
                     </div>
 
                     <div class="panel">
-                        <h3 data-i18n="session.players">Players</h3>
-                        <div class="session-player-mode-row" id="session-player-mode-row">
-                            <span class="stat-label" data-i18n="session.actionMode">Player action</span>
-                            <div class="segmented-control" role="group" aria-label="Player action" data-i18n-aria-label="session.actionMode">
-                                <button type="button" id="session-player-mode-rebuy" data-session-player-mode="rebuy" data-i18n="session.actionModeRebuy">Rebuy</button>
-                                <button type="button" id="session-player-mode-cash-out" data-session-player-mode="cash_out" data-i18n="session.actionModeCashOut">Cash-out</button>
-                            </div>
-                        </div>
                         <div id="players-wrap"></div>
-                        <p class="hint top-gap" id="session-player-actions-hint" data-i18n="session.buyInHint">
-                            To add a player to the session, make a Buy-in.
-                        </p>
-                        <div class="actions" id="session-player-actions">
-                            <button type="button" id="session-add-existing-player-btn" class="buy-in-action" data-i18n="session.addExistingPlayer">
-                                Add Player to Session
-                            </button>
-                            <button type="button" class="secondary" id="session-add-new-player-btn" data-i18n="session.createNewPlayer">
-                                Create New Player
-                            </button>
-                        </div>
                     </div>
 
-                    <details class="panel panel-disclosure" id="session-operations-panel">
-                        <summary class="panel-title-row">
-                            <h3 data-i18n="session.latestOperations">Latest Operations</h3>
-                            <span class="summary-count" id="session-operations-count">0</span>
-                        </summary>
-                        <div id="operations-wrap"></div>
-                    </details>
+                    <div class="actions" id="session-player-actions">
+                        <button
+                            type="button"
+                            id="session-add-player-btn"
+                            class="session-add-player-btn"
+                        >
+                            <img
+                                class="lobby-start-icon"
+                                src="/static/svg/05-plus-circle-gold.svg"
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <span>
+                                <strong data-i18n="session.addPlayerCombined"
+                                    >Add / create player</strong
+                                >
+                            </span>
+                        </button>
+                    </div>
 
-                    <details class="panel panel-disclosure action-card" id="session-expenses-panel">
-                        <summary class="panel-title-row">
-                            <h3 data-i18n="expenses.title">Счет после игры</h3>
-                            <span class="summary-count" id="session-expenses-count">0</span>
-                        </summary>
-                        <div class="expense-status-row">
-                            <span id="session-expenses-status" class="muted"></span>
-                            <button type="button" class="secondary" id="close-expenses-btn" data-i18n="expenses.closeBill">Закрыть счет</button>
-                        </div>
-                        <p class="hint" id="session-expenses-locked-hint" data-i18n="expenses.closedHint" hidden>
-                            Счет закрыт. Изменения может вносить только админ.
-                        </p>
-                        <form id="session-expense-form" onsubmit="return false;">
-                            <div class="field-group">
-                                <label>
-                                    <span data-i18n="expenses.name">Позиция</span>
-                                    <input id="expense-title" type="text" placeholder="Кальяны" data-i18n-placeholder="expenses.namePlaceholder" />
-                                </label>
-                                <label>
-                                    <span data-i18n="expenses.amount">Сумма</span>
-                                    <input id="expense-amount" type="number" min="1" placeholder="0" />
-                                </label>
-                            </div>
-                            <div>
-                                <div class="expense-section-heading">
-                                    <div class="expense-section-label" data-i18n="expenses.splitBetween">Делить между</div>
-                                    <div class="expense-section-actions">
-                                        <button type="button" class="secondary" id="expense-select-all-btn" data-i18n="expenses.selectAll">Все</button>
-                                        <button type="button" class="secondary" id="expense-clear-all-btn" data-i18n="expenses.clearAll">Никого</button>
-                                    </div>
-                                </div>
-                                <div class="expense-player-grid" id="expense-participants-wrap"></div>
-                            </div>
-                            <div>
-                                <div class="expense-section-heading">
-                                    <div class="expense-section-label" data-i18n="expenses.paidBy">Кто оплатил</div>
-                                    <button type="button" class="secondary" id="expense-split-even-btn" data-i18n="expenses.splitEven">Поровну</button>
-                                </div>
-                                <div class="expense-payers-grid" id="expense-payers-wrap"></div>
-                            </div>
-                            <div class="actions">
-                                <button type="button" id="add-expense-btn" data-i18n="expenses.add">Добавить расход</button>
-                            </div>
-                        </form>
-                        <div id="expenses-wrap" class="top-gap"></div>
-                    </details>
+                    <button
+                        type="button"
+                        class="session-open-results-btn"
+                        id="session-open-results-btn"
+                    >
+                        <img
+                            src="/static/svg/11-calculator-outline-green.svg"
+                            alt=""
+                            aria-hidden="true"
+                        />
+                        <span>
+                            <strong data-i18n="results.open"
+                                >Open Results</strong
+                            >
+                            <small data-i18n="results.openHint"
+                                >Go to final settlement</small
+                            >
+                        </span>
+                        <img
+                            src="/static/svg/07-chevron-right-white.svg"
+                            alt=""
+                            aria-hidden="true"
+                        />
+                    </button>
+                    <div
+                        class="actions session-finish-bottom"
+                        id="session-finish-actions"
+                    >
+                        <button
+                            type="button"
+class="results-close-bill-btn"
+                             id="finish-session-btn"
+                            data-i18n="session.finish"
+                        >
+                            Finish Session
+                        </button>
+                    </div>
 
+                    <div id="operations-wrap" hidden></div>
+                    <span id="session-operations-count" hidden>0</span>
+
+                    <div
+                        class="panel debug-admin-actions"
+                        id="session-delete-debug-panel"
+                        hidden
+                    >
+                        <button
+                            type="button"
+                            class="danger"
+                            id="debug-delete-session-btn"
+                            data-i18n="debug.deleteSession"
+                        >
+                            Delete Session
+                        </button>
+                    </div>
+                </section>
+
+                <section class="screen" id="screen-results">
                     <div class="panel" id="session-settlement-panel">
                         <h3 data-i18n="settlement.title">Итоговые переводы</h3>
                         <div id="settlement-wrap"></div>
                     </div>
 
-                    <div class="panel debug-admin-actions" id="session-delete-debug-panel" hidden>
-                        <button type="button" class="danger" id="debug-delete-session-btn" data-i18n="debug.deleteSession">
-                            Delete Session
-                        </button>
-                    </div>
+                    <details
+                        class="panel panel-disclosure action-card"
+                        id="session-expenses-panel"
+                    >
+                        <summary class="panel-title-row">
+                            <h3 data-i18n="expenses.title">Счет после игры</h3>
+                            <span
+                                class="summary-count"
+                                id="session-expenses-count"
+                                >0</span
+                            >
+                        </summary>
+                        <div class="expense-status-row">
+                            <span
+                                id="session-expenses-status"
+                                class="muted"
+                            ></span>
+                        </div>
+                        <p
+                            class="hint"
+                            id="session-expenses-locked-hint"
+                            data-i18n="expenses.closedHint"
+                            hidden
+                        >
+                            Счет закрыт. Изменения может вносить только админ.
+                        </p>
+                        <div id="expenses-wrap"></div>
+                        <div class="actions">
+                            <button
+                                type="button"
+                                class="expense-open-form-btn"
+                                id="open-expense-form-btn"
+                                data-i18n="expenses.add"
+                            >
+                                Добавить расход
+                            </button>
+                        </div>
+                        <form
+                            id="session-expense-form"
+                            onsubmit="return false;"
+                        >
+                            <div class="field-group">
+                                <label>
+                                    <span data-i18n="expenses.name"
+                                        >Позиция</span
+                                    >
+                                    <input
+                                        id="expense-title"
+                                        type="text"
+                                        placeholder="Кальяны"
+                                        data-i18n-placeholder="expenses.namePlaceholder"
+                                    />
+                                </label>
+                                <label>
+                                    <span data-i18n="expenses.amount"
+                                        >Сумма</span
+                                    >
+                                    <input
+                                        id="expense-amount"
+                                        type="number"
+                                        min="1"
+                                        placeholder="0"
+                                    />
+                                </label>
+                            </div>
+                            <div>
+                                <div class="expense-section-heading">
+                                    <div
+                                        class="expense-section-label"
+                                        data-i18n="expenses.splitBetween"
+                                    >
+                                        Делить между
+                                    </div>
+                                </div>
+                                <div
+                                    class="expense-player-grid"
+                                    id="expense-participants-wrap"
+                                ></div>
+                            </div>
+                            <div>
+                                <div class="expense-section-heading">
+                                    <div
+                                        class="expense-section-label"
+                                        data-i18n="expenses.paidBy"
+                                    >
+                                        Кто оплатил
+                                    </div>
+                                </div>
+                                <div
+                                    class="expense-payers-grid"
+                                    id="expense-payers-wrap"
+                                ></div>
+                            </div>
+                            <div class="actions">
+                                <button
+                                    type="button"
+                                    id="add-expense-btn"
+                                    data-i18n="expenses.saveItem"
+                                >
+                                    Сохранить позицию
+                                </button>
+                            </div>
+                        </form>
+                    </details>
 
+                    <button
+                        type="button"
+                        class="results-close-bill-btn"
+                        id="close-expenses-btn"
+                        data-i18n="expenses.closeBill"
+                    >
+                        Закрыть счет
+                    </button>
                 </section>
 
                 <section class="screen" id="screen-player">
                     <div class="panel">
                         <div class="toolbar">
                             <div>
-                                <h2 id="player-screen-title" data-i18n="player.title">Player</h2>
-                                <div id="player-screen-user" class="muted"></div>
-                                <div id="player-screen-id" class="muted debug-only"></div>
+                                <h2
+                                    id="player-screen-title"
+                                    data-i18n="player.title"
+                                >
+                                    Player
+                                </h2>
+                                <div
+                                    id="player-screen-user"
+                                    class="muted"
+                                ></div>
+                                <div
+                                    id="player-screen-id"
+                                    class="muted debug-only"
+                                ></div>
                             </div>
-                            <div class="actions debug-only" id="player-header-debug-actions" hidden>
-                                <button type="button" class="secondary" id="debug-rename-player-btn" data-i18n="debug.renamePlayer">
+                            <div
+                                class="actions debug-only"
+                                id="player-header-debug-actions"
+                                hidden
+                            >
+                                <button
+                                    type="button"
+                                    class="secondary"
+                                    id="debug-rename-player-btn"
+                                    data-i18n="debug.renamePlayer"
+                                >
                                     Rename Player
                                 </button>
                             </div>
@@ -471,13 +1336,26 @@
                     </div>
 
                     <div class="panel">
-                        <div id="player-detail-wrap" class="empty" data-i18n="player.dataPlaceholder">
+                        <div
+                            id="player-detail-wrap"
+                            class="empty"
+                            data-i18n="player.dataPlaceholder"
+                        >
                             Player data will appear here
                         </div>
                     </div>
 
-                    <div class="panel debug-admin-actions" id="player-debug-actions" hidden>
-                        <button type="button" class="danger" id="debug-delete-player-btn" data-i18n="debug.deletePlayer">
+                    <div
+                        class="panel debug-admin-actions"
+                        id="player-debug-actions"
+                        hidden
+                    >
+                        <button
+                            type="button"
+                            class="danger"
+                            id="debug-delete-player-btn"
+                            data-i18n="debug.deletePlayer"
+                        >
                             Delete Player
                         </button>
                     </div>
@@ -487,14 +1365,23 @@
                     <div class="panel">
                         <div class="toolbar">
                             <div>
-                                <h2 data-i18n="playersStats.title">Player Statistics</h2>
-                                <div class="muted" id="players-stats-summary"></div>
+                                <h2 data-i18n="playersStats.title">
+                                    Player Statistics
+                                </h2>
+                                <div
+                                    class="muted"
+                                    id="players-stats-summary"
+                                ></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="panel">
-                        <div id="players-stats-wrap" class="empty" data-i18n="playersStats.placeholder">
+                        <div
+                            id="players-stats-wrap"
+                            class="empty"
+                            data-i18n="playersStats.placeholder"
+                        >
                             Player statistics will appear here
                         </div>
                     </div>
@@ -502,17 +1389,53 @@
             </main>
 
             <footer class="admin-login-footer">
-                <details class="admin-login-disclosure" id="admin-login-disclosure">
+                <details
+                    class="admin-login-disclosure"
+                    id="admin-login-disclosure"
+                >
                     <summary data-i18n="adminLogin.summary">Admin</summary>
-                    <section class="admin-login-panel" aria-label="Admin login" data-i18n-aria-label="adminLogin.label">
-                        <form id="admin-login-form" class="admin-login-form" onsubmit="return false;">
-                            <input id="admin-login-email" type="email" autocomplete="username" placeholder="Email" data-i18n-placeholder="auth.email" />
-                            <input id="admin-login-password" type="password" autocomplete="current-password" placeholder="Password" data-i18n-placeholder="auth.password" />
-                            <button type="submit" data-i18n="auth.login">Login</button>
+                    <section
+                        class="admin-login-panel"
+                        aria-label="Admin login"
+                        data-i18n-aria-label="adminLogin.label"
+                    >
+                        <form
+                            id="admin-login-form"
+                            class="admin-login-form"
+                            onsubmit="return false;"
+                        >
+                            <input
+                                id="admin-login-email"
+                                type="email"
+                                autocomplete="username"
+                                placeholder="Email"
+                                data-i18n-placeholder="auth.email"
+                            />
+                            <input
+                                id="admin-login-password"
+                                type="password"
+                                autocomplete="current-password"
+                                placeholder="Password"
+                                data-i18n-placeholder="auth.password"
+                            />
+                            <button type="submit" data-i18n="auth.login">
+                                Login
+                            </button>
                         </form>
-                        <div id="admin-login-user-panel" class="admin-login-user-panel" hidden>
+                        <div
+                            id="admin-login-user-panel"
+                            class="admin-login-user-panel"
+                            hidden
+                        >
                             <span id="admin-login-user-name">-</span>
-                            <button type="button" class="secondary" id="admin-login-logout-btn" data-i18n="auth.logout">Logout</button>
+                            <button
+                                type="button"
+                                class="secondary"
+                                id="admin-login-logout-btn"
+                                data-i18n="auth.logout"
+                            >
+                                Logout
+                            </button>
                         </div>
                     </section>
                 </details>

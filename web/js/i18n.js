@@ -1,5 +1,5 @@
 const STORAGE_KEY = "poker-ui-language";
-const DEFAULT_LANGUAGE = "en";
+const DEFAULT_LANGUAGE = "ru";
 const SUPPORTED_LANGUAGES = new Set(["en", "ru"]);
 
 let currentLanguage = detectLanguage();
@@ -34,11 +34,15 @@ const translations = {
     "account.selectPlayer": "Select player",
     "account.linkPlayer": "Link",
     "account.unlinkPlayer": "Unlink",
-    "lobby.connectTitle": "Connect to Active Session",
+    "lobby.connectTitle": "Latest Active Session",
     "lobby.latestActiveSession": "Latest active session",
-    "lobby.openWorkspace": "Open Workspace",
+    "lobby.sessionOption":
+      "{date} · 1{currencySymbol}={chipRate} · BB {bigBlind} · table {chips}",
+    "lobby.openWorkspace": "Continue Session",
+    "lobby.noActiveSession": "No active session right now.",
     "lobby.openBlindsClock": "Blind Timer",
     "lobby.startTitle": "Start a New Session",
+    "lobby.startHint": "Create and configure a new session",
     "lobby.chipRate": "Rate (1 {currencySymbol} for N chips)",
     "lobby.currency": "Currency",
     "lobby.bigBlind": "BB (big blind size)",
@@ -51,7 +55,12 @@ const translations = {
     "lobby.players": "Players",
     "lobby.playersSort": "Sort",
     "lobby.showAllPlayers": "Show all",
-    "lobby.noActivePlayers": "No players with 2+ sessions in the last 3 months.",
+    "lobby.showAllShort": "All",
+    "lobby.playersShown": "Shown {shown} of {total}",
+    "lobby.filterActivePlayers": "In game · {shown}/{total}",
+    "lobby.filterAllPlayers": "All · {shown}/{total}",
+    "lobby.noActivePlayers":
+      "No players with 2+ sessions in the last 3 months.",
     "playersStats.open": "Player Stats",
     "playersStats.title": "Player Statistics",
     "playersStats.placeholder": "Player statistics will appear here",
@@ -79,9 +88,21 @@ const translations = {
     "session.totalMoneyIn": "Total Money In",
     "session.addExistingPlayer": "Add Player to Session",
     "session.createNewPlayer": "Create New Player",
+    "session.addPlayerCombined": "Add / create player",
+    "session.newPlayerOption": "New player",
+    "session.newPlayerName": "New player name",
+    "session.headerActive": "Active Session",
+    "session.headerFinished": "Finished Session",
+    "results.open": "Open Results",
+    "results.openHint": "Go to final settlement",
+    "results.title": "Final Results",
+    "results.balanceTitle": "Session Balance",
+    "results.saveClose": "Save and close results",
+    "results.saveReturn": "Save and return to session",
     "session.players": "Players",
     "session.actions": "Actions",
-    "session.actionsHint": "Cash-out is available only for players currently in game.",
+    "session.actionsHint":
+      "Cash-out is available only for players currently in game.",
     "session.buyInHint":
       "Add an existing player through Buy-in or create a new player here.",
     "session.actionMode": "Player action",
@@ -95,20 +116,25 @@ const translations = {
     "session.buyIn": "Rebuy",
     "session.cashOut": "Cash-out",
     "session.latestOperations": "Latest Operations",
-    "expenses.title": "Post-game bill",
+    "expenses.title": "Session expenses",
     "expenses.name": "Item",
     "expenses.namePlaceholder": "Hookahs",
     "expenses.amount": "Amount",
     "expenses.splitBetween": "Split between",
     "expenses.selectAll": "All",
     "expenses.clearAll": "None",
+    "expenses.selectAllDetailed": "Select all",
+    "expenses.clearAllDetailed": "Clear selection",
     "expenses.paidBy": "Paid by",
     "expenses.splitEven": "Evenly",
+    "expenses.custom": "Custom",
     "expenses.closeBill": "Close bill",
     "expenses.closed": "Closed",
     "expenses.open": "Open",
-    "expenses.closedHint": "The bill is closed. Only an admin can make changes.",
+    "expenses.closedHint":
+      "The bill is closed. Only an admin can make changes.",
     "expenses.add": "Add expense",
+    "expenses.saveItem": "Save item",
     "expenses.empty": "No expenses yet",
     "settlement.title": "Final Transfers",
     "settlement.balances": "Balances",
@@ -117,7 +143,7 @@ const translations = {
     "settlement.fixedTransfers": "Fixed transfers",
     "settlement.noFixedTransfers": "No fixed transfers yet",
     "settlement.remainingTransfers": "Remaining auto transfers",
-    "settlement.autoMode": "Auto",
+    "settlement.autoMode": "Auto calculation",
     "settlement.adjustedMode": "Adjusted",
     "settlement.edit": "Edit",
     "settlement.done": "Done",
@@ -126,7 +152,8 @@ const translations = {
     "settlement.from": "From",
     "settlement.to": "To",
     "settlement.amount": "Amount",
-    "settlement.manualHint": "Fixed transfers are applied first, then the remainder is calculated automatically. Changes are saved on this device.",
+    "settlement.manualHint":
+      "Fixed transfers are applied first, then the remainder is calculated automatically. Changes are saved on this device.",
     "settlement.removeTransfer": "Remove transfer",
     "blinds.title": "Blind Timer",
     "blinds.description":
@@ -153,7 +180,8 @@ const translations = {
     "blinds.editHint":
       "Completed levels are locked. Pause the timer to edit the current level; future levels can be edited live.",
     "blinds.maintenance": "Maintenance",
-    "blinds.resetHint": "Reset returns the timer to the first level and stops the clock.",
+    "blinds.resetHint":
+      "Reset returns the timer to the first level and stops the clock.",
     "blinds.maintenanceHint":
       "Dangerous actions are separated from the live timer so they are harder to hit by mistake.",
     "blinds.toolStructure": "Structure",
@@ -181,7 +209,8 @@ const translations = {
     "blinds.noLevels": "No levels yet",
     "blinds.levelCurrent": "current",
     "blinds.levelLocked": "locked",
-    "blinds.lockedCurrentLevelWhileRunning": "Pause the timer to edit the current level.",
+    "blinds.lockedCurrentLevelWhileRunning":
+      "Pause the timer to edit the current level.",
     "blinds.lockedCompletedLevel": "Completed levels cannot be edited.",
     "blinds.statusStopped": "Stopped",
     "blinds.statusRunning": "Running",
@@ -197,7 +226,8 @@ const translations = {
     "blinds.eventFinished": "Structure Finished",
     "blinds.levelValue": "Level {level}",
     "blinds.resetTitle": "Reset Timer",
-    "blinds.resetDescription": "Reset the clock to the first level and stop it?",
+    "blinds.resetDescription":
+      "Reset the clock to the first level and stop it?",
     "blinds.resetDefaultTitle": "Reset Structure",
     "blinds.resetDefaultDescription":
       "Replace all blind levels with the default structure and reset the timer?",
@@ -226,12 +256,16 @@ const translations = {
     "player.hint.sessions": "Number of sessions in the selected period.",
     "player.hint.totalBuyIn": "Total chips bought in by this player.",
     "player.hint.totalCashOut": "Total chips cashed out by this player.",
-    "player.hint.totalBuyInMoney": "Total buy-in converted to money by each session rate.",
-    "player.hint.totalCashOutMoney": "Total cash-out converted to money by each session rate.",
+    "player.hint.totalBuyInMoney":
+      "Total buy-in converted to money by each session rate.",
+    "player.hint.totalCashOutMoney":
+      "Total cash-out converted to money by each session rate.",
     "player.hint.pnl": "PnL = Cash-out amount - Buy-in amount.",
-    "player.hint.avgProfitPerSession": "Average profit per session = Total PnL / Sessions count.",
+    "player.hint.avgProfitPerSession":
+      "Average profit per session = Total PnL / Sessions count.",
     "player.hint.roi": "ROI = Total PnL / Total buy-in amount * 100.",
-    "player.hint.avgBuyInPerSession": "Average buy-in per session in chips = Total buy-in chips / Sessions count.",
+    "player.hint.avgBuyInPerSession":
+      "Average buy-in per session in chips = Total buy-in chips / Sessions count.",
     "table.session": "Session",
     "table.player": "Player",
     "table.status": "Status",
@@ -255,6 +289,10 @@ const translations = {
     "common.players": "Players",
     "common.sessions": "Sessions",
     "common.profit": "Profit",
+    "common.total": "Total",
+    "common.all": "All",
+    "common.active": "Active",
+    "common.finished": "Finished",
     "rank.newcomer": "Newcomer",
     "rank.fish": "Fish",
     "rank.positive": "Up",
@@ -277,6 +315,10 @@ const translations = {
     "sort.sessionsCount": "Sessions count",
     "sort.profit": "Profit",
     "sort.name": "Name",
+    "sort.lastActivityShort": "Activity ↓",
+    "sort.sessionsCountShort": "Sessions ↓",
+    "sort.profitShort": "Profit ↓",
+    "sort.nameShort": "Name ↓",
     "status.active": "Active",
     "status.finished": "Finished",
     "operation.buy_in": "Buy in",
@@ -315,7 +357,8 @@ const translations = {
       "This player already cashed out. Add them again through Buy-in if needed.",
     "notice.enterPlayerAndBuyIn":
       "Enter player name and a valid initial buy in.",
-    "notice.playerCreatedAndAdded": "Player {name} created and added to session.",
+    "notice.playerCreatedAndAdded":
+      "Player {name} created and added to session.",
     "notice.cannotFinish":
       "Cannot finish session yet. Remaining chips on table: {chips}.",
     "notice.sessionFinished": "Session finished.",
@@ -332,19 +375,23 @@ const translations = {
     "notice.blindsLevelAutoChanged": "Level changed to {level}.",
     "notice.pushEnabled": "Lock screen alerts enabled.",
     "notice.pushDisabled": "Lock screen alerts disabled.",
-    "notice.pushUnsupported": "This device does not support web push in the current mode.",
-    "notice.pushRequiresHomeScreen": "On iPhone, install the app to Home Screen and open it from the icon first.",
+    "notice.pushUnsupported":
+      "This device does not support web push in the current mode.",
+    "notice.pushRequiresHomeScreen":
+      "On iPhone, install the app to Home Screen and open it from the icon first.",
     "notice.pushPermissionDenied": "Notification permission was denied.",
-    "notice.pushUnavailable": "Push notifications are not configured on the server.",
+    "notice.pushUnavailable":
+      "Push notifications are not configured on the server.",
     "notice.pushSettingsSaved": "Alert settings saved.",
-    "notice.pushSubscriptionMissing": "Push subscription is missing. Enable alerts again.",
+    "notice.pushSubscriptionMissing":
+      "Push subscription is missing. Enable alerts again.",
     "hint.finishBlocked":
       "Cannot finish session yet: cash out or reverse operations until ON TABLE becomes 0.",
     "modal.startTitle": "Start Session",
     "modal.startDescription":
       "Start a new session with rate 1 {currencySymbol} = {chipRate} chips and BB {bigBlind}?",
     "modal.createPlayerTitle": "Create Player",
-    "modal.createPlayerDescription": "Create player \"{name}\"?",
+    "modal.createPlayerDescription": 'Create player "{name}"?',
     "modal.confirmBuyInTitle": "Confirm Buy In",
     "modal.confirmBuyInDescription": "Add {chips} chips for {name}?",
     "modal.confirmCashOutTitle": "Confirm Cash Out",
@@ -394,7 +441,8 @@ const translations = {
     "error.failedDeleteExpense": "Failed to delete expense",
     "error.failedCloseExpenses": "Failed to close bill",
     "error.failedSaveSettlementTransfers": "Failed to save transfers",
-    "error.session_expenses_closed": "The bill is closed. Only an admin can make changes.",
+    "error.session_expenses_closed":
+      "The bill is closed. Only an admin can make changes.",
     "error.failedRefresh": "Failed to refresh session",
     "error.failedDeletePlayer": "Failed to delete player",
     "error.failedDeleteSession": "Failed to delete session",
@@ -417,7 +465,8 @@ const translations = {
       "Session is not balanced yet. Remaining chips on table: {chips}.",
     "error.invalid_request_id": "Request ID is missing.",
     "error.invalid_chips": "Enter a chip amount greater than zero.",
-    "error.invalid_cash_out": "Cash out is not valid for the current table state.",
+    "error.invalid_cash_out":
+      "Cash out is not valid for the current table state.",
     "error.invalid_operation": "This operation cannot be performed.",
     "error.invalid_settlement_transfer": "Enter valid transfer details.",
     "error.player_not_found": "Selected player does not exist.",
@@ -431,7 +480,8 @@ const translations = {
     "error.forbidden": "Access denied.",
     "error.invalid_player_id": "Select a valid player.",
     "error.player_already_linked": "This player is already linked.",
-    "error.user_player_not_linked": "This player is not linked to your account.",
+    "error.user_player_not_linked":
+      "This player is not linked to your account.",
     "error.rate_limited": "Too many login attempts. Try again later.",
     "error.session_not_active": "Session is not active anymore.",
     "error.session_finished": "Session is already finished.",
@@ -445,7 +495,8 @@ const translations = {
     "error.blind_clock_not_paused": "Blind timer is not paused.",
     "error.blind_clock_finished": "Blind timer is already finished.",
     "error.invalid_blind_clock_level": "Enter valid blind levels.",
-    "error.blind_clock_levels_locked": "Completed or active levels cannot be changed right now.",
+    "error.blind_clock_levels_locked":
+      "Completed or active levels cannot be changed right now.",
     "error.push_disabled": "Push notifications are disabled on the server.",
     "error.invalid_push_subscription": "Push subscription is invalid.",
   },
@@ -477,11 +528,15 @@ const translations = {
     "account.selectPlayer": "Выберите игрока",
     "account.linkPlayer": "Привязать",
     "account.unlinkPlayer": "Отвязать",
-    "lobby.connectTitle": "Открыть активную сессию",
+    "lobby.connectTitle": "Последняя активная сессия",
     "lobby.latestActiveSession": "Последняя активная сессия",
-    "lobby.openWorkspace": "Открыть сессию",
+    "lobby.sessionOption":
+      "{date} · 1{currencySymbol}={chipRate} · BB {bigBlind} · стол {chips}",
+    "lobby.openWorkspace": "Продолжить сессию",
+    "lobby.noActiveSession": "Активной сессии сейчас нет.",
     "lobby.openBlindsClock": "Таймер блайндов",
     "lobby.startTitle": "Начать новую сессию",
+    "lobby.startHint": "Создать и настроить новую сессию",
     "lobby.chipRate": "Курс (1 {currencySymbol} за N фишек)",
     "lobby.currency": "Валюта",
     "lobby.bigBlind": "BB (размер большого блайнда)",
@@ -494,6 +549,10 @@ const translations = {
     "lobby.players": "Игроки",
     "lobby.playersSort": "Сортировка",
     "lobby.showAllPlayers": "Показать всех",
+    "lobby.showAllShort": "Все",
+    "lobby.playersShown": "Показано {shown} из {total}",
+    "lobby.filterActivePlayers": "Активные · {shown}/{total}",
+    "lobby.filterAllPlayers": "Все · {shown}/{total}",
     "lobby.noActivePlayers": "Нет игроков с 2+ сессиями за последние 3 месяца.",
     "playersStats.open": "Статистика игроков",
     "playersStats.title": "Статистика игроков",
@@ -522,6 +581,17 @@ const translations = {
     "session.totalMoneyIn": "Всего внесено деньгами",
     "session.addExistingPlayer": "Добавить игрока в сессию",
     "session.createNewPlayer": "Новый игрок",
+    "session.addPlayerCombined": "Добавить / создать игрока",
+    "session.newPlayerOption": "Новый игрок",
+    "session.newPlayerName": "Имя нового игрока",
+    "session.headerActive": "Активная сессия",
+    "session.headerFinished": "Завершенная сессия",
+    "results.open": "Открыть расчеты",
+    "results.openHint": "Перейти к итоговым расчетам",
+    "results.title": "Итоговые расчеты",
+    "results.balanceTitle": "Итоговый баланс сессии",
+    "results.saveClose": "Сохранить и закрыть расчеты",
+    "results.saveReturn": "Сохранить и вернуться в сессию",
     "session.players": "Игроки",
     "session.actions": "Действия",
     "session.actionsHint":
@@ -536,23 +606,27 @@ const translations = {
     "session.player": "Игрок",
     "session.selectPlayer": "Выберите игрока",
     "session.chips": "Фишки",
-    "session.buyIn": "Rebuy",
-    "session.cashOut": "Cash-out",
+    "session.buyIn": "Ребай",
+    "session.cashOut": "Кэшаут",
     "session.latestOperations": "Последние операции",
-    "expenses.title": "Счет после игры",
+    "expenses.title": "Расходы на сессию",
     "expenses.name": "Позиция",
     "expenses.namePlaceholder": "Кальяны",
     "expenses.amount": "Сумма",
     "expenses.splitBetween": "Делить между",
     "expenses.selectAll": "Все",
     "expenses.clearAll": "Никого",
+    "expenses.selectAllDetailed": "Выделить всех",
+    "expenses.clearAllDetailed": "Снять выделение",
     "expenses.paidBy": "Кто оплатил",
     "expenses.splitEven": "Поровну",
+    "expenses.custom": "Настроить",
     "expenses.closeBill": "Закрыть счет",
     "expenses.closed": "Закрыт",
     "expenses.open": "Открыт",
     "expenses.closedHint": "Счет закрыт. Изменения может вносить только админ.",
     "expenses.add": "Добавить расход",
+    "expenses.saveItem": "Сохранить позицию",
     "expenses.empty": "Расходов пока нет",
     "settlement.title": "Итоговые переводы",
     "settlement.balances": "Балансы",
@@ -561,7 +635,7 @@ const translations = {
     "settlement.fixedTransfers": "Зафиксированные переводы",
     "settlement.noFixedTransfers": "Зафиксированных переводов пока нет",
     "settlement.remainingTransfers": "Остаток по авторасчету",
-    "settlement.autoMode": "Авто",
+    "settlement.autoMode": "Авторасчет",
     "settlement.adjustedMode": "С учетом правок",
     "settlement.edit": "Изменить",
     "settlement.done": "Готово",
@@ -570,7 +644,8 @@ const translations = {
     "settlement.from": "Кто переводит",
     "settlement.to": "Кому переводит",
     "settlement.amount": "Сумма",
-    "settlement.manualHint": "Зафиксированные переводы применяются первыми, затем остаток считается автоматически. Изменения сохраняются на этом устройстве.",
+    "settlement.manualHint":
+      "Зафиксированные переводы применяются первыми, затем остаток считается автоматически. Изменения сохраняются на этом устройстве.",
     "settlement.removeTransfer": "Удалить перевод",
     "blinds.title": "Таймер блайндов",
     "blinds.description":
@@ -597,7 +672,8 @@ const translations = {
     "blinds.editHint":
       "Завершенные уровни заблокированы. Текущий уровень редактируется на паузе, будущие можно менять во время игры.",
     "blinds.maintenance": "Сервис",
-    "blinds.resetHint": "Сброс возвращает таймер к первому уровню и останавливает отсчет.",
+    "blinds.resetHint":
+      "Сброс возвращает таймер к первому уровню и останавливает отсчет.",
     "blinds.maintenanceHint":
       "Опасные действия вынесены отдельно от живого таймера, чтобы по ним было сложнее нажать случайно.",
     "blinds.toolStructure": "Структура",
@@ -625,7 +701,8 @@ const translations = {
     "blinds.noLevels": "Уровни пока не добавлены",
     "blinds.levelCurrent": "текущий",
     "blinds.levelLocked": "заблокирован",
-    "blinds.lockedCurrentLevelWhileRunning": "Поставьте таймер на паузу, чтобы редактировать текущий уровень.",
+    "blinds.lockedCurrentLevelWhileRunning":
+      "Поставьте таймер на паузу, чтобы редактировать текущий уровень.",
     "blinds.lockedCompletedLevel": "Завершенные уровни редактировать нельзя.",
     "blinds.statusStopped": "Остановлен",
     "blinds.statusRunning": "Идет",
@@ -641,7 +718,8 @@ const translations = {
     "blinds.eventFinished": "Структура завершена",
     "blinds.levelValue": "Уровень {level}",
     "blinds.resetTitle": "Сбросить таймер",
-    "blinds.resetDescription": "Сбросить таймер к первому уровню и остановить его?",
+    "blinds.resetDescription":
+      "Сбросить таймер к первому уровню и остановить его?",
     "blinds.resetDefaultTitle": "Сбросить структуру",
     "blinds.resetDefaultDescription":
       "Заменить все уровни на структуру по умолчанию и сбросить таймер?",
@@ -670,12 +748,16 @@ const translations = {
     "player.hint.sessions": "Количество сессий в выбранном периоде.",
     "player.hint.totalBuyIn": "Сколько фишек игрок внес суммарно.",
     "player.hint.totalCashOut": "Сколько фишек игрок вывел суммарно.",
-    "player.hint.totalBuyInMoney": "Сумма бай-инов в деньгах с пересчетом по курсу каждой сессии.",
-    "player.hint.totalCashOutMoney": "Сумма кэш-аутов в деньгах с пересчетом по курсу каждой сессии.",
+    "player.hint.totalBuyInMoney":
+      "Сумма бай-инов в деньгах с пересчетом по курсу каждой сессии.",
+    "player.hint.totalCashOutMoney":
+      "Сумма кэш-аутов в деньгах с пересчетом по курсу каждой сессии.",
     "player.hint.pnl": "PnL = сумма кэш-аутов - сумма бай-инов.",
-    "player.hint.avgProfitPerSession": "Средний профит на сессию = общий PnL / количество сессий.",
+    "player.hint.avgProfitPerSession":
+      "Средний профит на сессию = общий PnL / количество сессий.",
     "player.hint.roi": "ROI = общий PnL / сумма бай-инов * 100.",
-    "player.hint.avgBuyInPerSession": "Средний бай-ин на сессию в фишках = сумма бай-инов фишками / количество сессий.",
+    "player.hint.avgBuyInPerSession":
+      "Средний бай-ин на сессию в фишках = сумма бай-инов фишками / количество сессий.",
     "table.session": "Сессия",
     "table.player": "Игрок",
     "table.status": "Статус",
@@ -699,6 +781,10 @@ const translations = {
     "common.players": "Игроки",
     "common.sessions": "Сессии",
     "common.profit": "Профит",
+    "common.total": "Всего",
+    "common.all": "Все",
+    "common.active": "Активные",
+    "common.finished": "Завершённые",
     "rank.newcomer": "Новичок",
     "rank.fish": "Рыба",
     "rank.positive": "В плюсе",
@@ -721,6 +807,10 @@ const translations = {
     "sort.sessionsCount": "По числу сессий",
     "sort.profit": "По профиту",
     "sort.name": "По имени",
+    "sort.lastActivityShort": "Активность ↓",
+    "sort.sessionsCountShort": "Сессии ↓",
+    "sort.profitShort": "Профит ↓",
+    "sort.nameShort": "Имя ↓",
     "status.active": "Активна",
     "status.finished": "Завершена",
     "operation.buy_in": "Бай-ин",
@@ -741,7 +831,8 @@ const translations = {
     "notice.accountPlayerUnlinked": "Игрок отвязан от вашего аккаунта.",
     "notice.enterPlayerName": "Введите имя игрока.",
     "notice.playerCreated": "Игрок {name} создан.",
-    "notice.selectPlayerAndChips": "Выберите игрока и введите количество фишек.",
+    "notice.selectPlayerAndChips":
+      "Выберите игрока и введите количество фишек.",
     "notice.buyInRecorded": "Бай-ин записан для {name}.",
     "notice.cashOutRecorded": "Кэш-аут записан для {name}.",
     "notice.invalidExpense":
@@ -775,12 +866,15 @@ const translations = {
     "notice.blindsLevelAutoChanged": "Начался уровень {level}.",
     "notice.pushEnabled": "Уведомления на заблокированном экране включены.",
     "notice.pushDisabled": "Уведомления на заблокированном экране выключены.",
-    "notice.pushUnsupported": "На этом устройстве или в текущем режиме web push недоступен.",
-    "notice.pushRequiresHomeScreen": "На iPhone сначала добавьте сайт на экран домой и откройте его с иконки.",
+    "notice.pushUnsupported":
+      "На этом устройстве или в текущем режиме web push недоступен.",
+    "notice.pushRequiresHomeScreen":
+      "На iPhone сначала добавьте сайт на экран домой и откройте его с иконки.",
     "notice.pushPermissionDenied": "Доступ к уведомлениям запрещен.",
     "notice.pushUnavailable": "Push-уведомления не настроены на сервере.",
     "notice.pushSettingsSaved": "Настройки уведомлений сохранены.",
-    "notice.pushSubscriptionMissing": "Подписка на push потеряна. Включите уведомления заново.",
+    "notice.pushSubscriptionMissing":
+      "Подписка на push потеряна. Включите уведомления заново.",
     "hint.finishBlocked":
       "Сессию пока нельзя завершить: сделайте кэш-аут или отмените операции, пока НА СТОЛЕ не станет 0.",
     "modal.startTitle": "Начать сессию",
@@ -792,7 +886,8 @@ const translations = {
     "modal.confirmBuyInDescription": "Добавить {chips} фишек для {name}?",
     "modal.confirmCashOutTitle": "Подтвердить кэш-аут",
     "modal.confirmCashOutDescription": "Вывести {chips} фишек для {name}?",
-    "modal.cashOutPlayerDescription": "Введите количество фишек для кэшаута игрока {name}.",
+    "modal.cashOutPlayerDescription":
+      "Введите количество фишек для кэшаута игрока {name}.",
     "modal.addPlayerTitle": "Добавить игрока в сессию",
     "modal.addPlayerDescription":
       "Игрок появится в сессии после первого бай-ина. Это соответствует текущей логике бэкенда.",
@@ -830,14 +925,16 @@ const translations = {
     "error.failedBuyIn": "Не удалось применить бай-ин",
     "error.failedCashOut": "Не удалось применить кэш-аут",
     "error.failedAddPlayer": "Не удалось добавить игрока в сессию",
-    "error.failedCreateAdd": "Игрок создан, но добавить его в сессию не удалось",
+    "error.failedCreateAdd":
+      "Игрок создан, но добавить его в сессию не удалось",
     "error.failedFinish": "Не удалось завершить сессию",
     "error.failedReverse": "Не удалось отменить операцию",
     "error.failedExpense": "Не удалось сохранить расход",
     "error.failedDeleteExpense": "Не удалось удалить расход",
     "error.failedCloseExpenses": "Не удалось закрыть счет",
     "error.failedSaveSettlementTransfers": "Не удалось сохранить переводы",
-    "error.session_expenses_closed": "Счет закрыт. Изменения может вносить только админ.",
+    "error.session_expenses_closed":
+      "Счет закрыт. Изменения может вносить только админ.",
     "error.failedRefresh": "Не удалось обновить сессию",
     "error.failedDeletePlayer": "Не удалось удалить игрока",
     "error.failedDeleteSession": "Не удалось удалить сессию",
@@ -848,7 +945,8 @@ const translations = {
     "error.registerFailed": "Не удалось зарегистрироваться",
     "error.logoutFailed": "Не удалось выйти",
     "error.failedLoadAccount": "Не удалось загрузить личный кабинет",
-    "error.failedLoadAvailablePlayers": "Не удалось загрузить свободных игроков",
+    "error.failedLoadAvailablePlayers":
+      "Не удалось загрузить свободных игроков",
     "error.failedLinkPlayer": "Не удалось привязать игрока",
     "error.failedUnlinkPlayer": "Не удалось отвязать игрока",
     "notice.playerDeleted": "Игрок удален.",
@@ -860,7 +958,8 @@ const translations = {
       "Сессия пока не сбалансирована. Осталось фишек на столе: {chips}.",
     "error.invalid_request_id": "Отсутствует ID запроса.",
     "error.invalid_chips": "Введите количество фишек больше нуля.",
-    "error.invalid_cash_out": "Кэш-аут недопустим для текущего состояния стола.",
+    "error.invalid_cash_out":
+      "Кэш-аут недопустим для текущего состояния стола.",
     "error.invalid_operation": "Эту операцию нельзя выполнить.",
     "error.invalid_settlement_transfer": "Введите корректные данные перевода.",
     "error.player_not_found": "Выбранный игрок не найден.",
@@ -883,7 +982,8 @@ const translations = {
     "error.blind_clock_not_paused": "Таймер блайндов не на паузе.",
     "error.blind_clock_finished": "Таймер блайндов уже завершен.",
     "error.invalid_blind_clock_level": "Введите корректные уровни блайндов.",
-    "error.blind_clock_levels_locked": "Завершенные или активные уровни сейчас менять нельзя.",
+    "error.blind_clock_levels_locked":
+      "Завершенные или активные уровни сейчас менять нельзя.",
     "error.push_disabled": "Push-уведомления выключены на сервере.",
     "error.invalid_push_subscription": "Подписка на push некорректна.",
     "error.session_not_active": "Сессия больше не активна.",
@@ -922,7 +1022,9 @@ export function onLanguageChange(listener) {
 
 export function t(key, params = {}) {
   const template =
-    translations[currentLanguage]?.[key] ?? translations[DEFAULT_LANGUAGE][key] ?? key;
+    translations[currentLanguage]?.[key] ??
+    translations[DEFAULT_LANGUAGE][key] ??
+    key;
 
   return Object.entries(params).reduce(
     (result, [name, value]) => result.replaceAll(`{${name}}`, String(value)),
@@ -964,18 +1066,7 @@ export function applyTranslations(root = document) {
 }
 
 function detectLanguage() {
-  const saved = loadSavedLanguage();
-  if (SUPPORTED_LANGUAGES.has(saved)) {
-    return saved;
-  }
-
-  const languages = navigator.languages?.length
-    ? navigator.languages
-    : [navigator.language || DEFAULT_LANGUAGE];
-
-  return languages.some((language) => language.toLowerCase().startsWith("ru"))
-    ? "ru"
-    : DEFAULT_LANGUAGE;
+  return DEFAULT_LANGUAGE;
 }
 
 function loadSavedLanguage() {
