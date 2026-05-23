@@ -154,7 +154,9 @@ export function renderSession() {
 
   const titleDate = document.getElementById("workspace-title-date");
   const titleTime = document.getElementById("workspace-title-time");
-  const finishedAt = document.getElementById("workspace-finished-at");
+  const finishedDate = document.getElementById("workspace-finished-date");
+  const finishedTime = document.getElementById("workspace-finished-time");
+  const finishedRow = document.getElementById("workspace-finished-row");
   const chipRate = document.getElementById("stat-chip-rate");
   const chipRateCard = document.getElementById("stat-chip-rate-card");
   const bigBlind = document.getElementById("stat-big-blind");
@@ -189,10 +191,15 @@ export function renderSession() {
       ? t("session.headerFinished")
       : t("session.headerActive");
   }
-  if (finishedAt) {
-    const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
-    finishedAt.hidden = !hasFinishedAt;
-    finishedAt.textContent = hasFinishedAt ? formatDate(session.finishedAt) : "";
+  const hasFinishedAt = session.status === "finished" && Boolean(session.finishedAt);
+  if (finishedDate) {
+    finishedDate.textContent = hasFinishedAt ? formatSessionDate(session.finishedAt) : "";
+  }
+  if (finishedTime) {
+    finishedTime.textContent = hasFinishedAt ? formatSessionTime(session.finishedAt) : "";
+  }
+  if (finishedRow) {
+    finishedRow.hidden = !hasFinishedAt;
   }
   if (chipRate) {
     chipRate.textContent = t("session.chipRateValue", {
