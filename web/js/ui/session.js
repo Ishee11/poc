@@ -1265,6 +1265,7 @@ async function confirmAddPlayer() {
     title: t("modal.addPlayerTitle"),
     description: t("modal.addPlayerDescription"),
     confirmText: t("modal.addToSession"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "player_id",
