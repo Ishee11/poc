@@ -2377,16 +2377,18 @@ body.debug-mode .debug-only {
 .session-add-player-btn {
     width: 100%;
     min-height: 48px;
-    padding: 0;
+    padding: 12px 14px;
     display: grid;
     grid-template-columns: 30px minmax(0, 1fr);
     gap: 12px;
     align-items: center;
     text-align: left;
     color: var(--gold);
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    border: 1px solid rgba(246, 183, 57, 0.34);
+    border-radius: 8px;
+    background:
+        linear-gradient(180deg, rgba(246, 183, 57, 0.055), rgba(255, 255, 255, 0.012)),
+        var(--panel);
     box-shadow: none;
 }
 
