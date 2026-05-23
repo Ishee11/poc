@@ -2336,23 +2336,19 @@ body.debug-mode .debug-only {
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.session-players-head {
-    display: grid;
-    gap: 12px;
-    margin-bottom: 14px;
-}
-
 .session-players-head h3 {
     margin: 0;
 }
 
-.session-action-switch {
+.session-action-switch:not([hidden]) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
     padding: 4px;
     border-radius: 8px;
     background: var(--surface-soft);
     border: 1px solid var(--line);
+    margin-bottom: 8px;
 }
 
 .session-action-switch[hidden] {
