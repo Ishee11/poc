@@ -439,16 +439,10 @@ export function renderPlayerDetail() {
   const linkedUser = document.getElementById("player-screen-user");
   const playerName = player.player_name || player.name || player.player_id;
 
-  if (title) {
-    title.innerHTML = `
-      <span>${escapeHtml(playerName)}</span>
-      ${renderPlayerRankBadge(player.rank)}
-    `;
-  }
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
-    linkedUser.textContent = "";
-    linkedUser.hidden = true;
+    linkedUser.textContent = `${escapeHtml(playerName)} ${renderPlayerRankBadge(player.rank)}`;
+    linkedUser.hidden = false;
   }
   renderPlayerHeaderDebugActions(player);
   renderPlayerDebugActions(player);
@@ -523,7 +517,7 @@ export function renderPlayerDetail() {
     const values = await openModal({
       title: t("player.selectPeriod"),
       confirmText: t("player.applyPeriod"),
-      fields: [
+      confirmClass: "rebuy-action",
         {
           name: "from",
           label: t("player.from"),
