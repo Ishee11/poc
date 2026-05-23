@@ -1091,6 +1091,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 .session-config-stats .stat,
 .session-totals-stats .stat {
     border: 0;
+    background: transparent;
 }
 
 .session-totals-stats {
