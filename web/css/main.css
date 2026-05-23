@@ -1871,6 +1871,13 @@ body.debug-mode .debug-only {
     gap: 8px;
 }
 
+#player-screen-user {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
 .player-rank {
     display: inline-flex;
     align-items: center;

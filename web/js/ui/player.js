@@ -434,11 +434,12 @@ export function renderPlayerDetail() {
 
   const player = detail.player;
   const sessions = detail.sessions || [];
-  const title = document.getElementById("player-screen-title");
+  const brandTitle = document.querySelector(".app-brand h1");
   const id = document.getElementById("player-screen-id");
   const linkedUser = document.getElementById("player-screen-user");
   const playerName = player.player_name || player.name || player.player_id;
 
+  if (brandTitle) brandTitle.textContent = playerName;
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
     linkedUser.innerHTML = `${escapeHtml(playerName)}${renderPlayerRankBadge(player.rank)}`;
