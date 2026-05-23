@@ -114,6 +114,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const values = await openModal({
         title: t("modal.startTitle"),
         confirmText: t("lobby.startSession"),
+        confirmClass: "rebuy-action",
         fields: [
           {
             name: "chip_rate",

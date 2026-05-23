@@ -634,20 +634,20 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 .overview-players-heading {
     min-width: 0;
-    display: grid;
-    gap: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
 }
 
 .overview-players-heading h3 {
     margin: 0;
 }
 
-.overview-players-summary {
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 400;
-    line-height: 1.2;
-    text-transform: none;
+#overview-players-panel[open] .overview-players-heading {
+    display: grid;
+    gap: 4px;
 }
 
 #overview-players-panel[open] .overview-players-summary-collapsed {
@@ -656,6 +656,14 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 
 #overview-players-panel:not([open]) .overview-players-summary-expanded {
     display: none;
+}
+
+.overview-players-summary {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+    line-height: 1.2;
+    text-transform: none;
 }
 
 .overview-player-controls {
@@ -1244,6 +1252,20 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     min-width: 140px;
 }
 
+#blinds-toggle-btn:not(.secondary) {
+    color: #e7fff3;
+    border: 0;
+    background: rgba(34, 211, 111, 0.34);
+    box-shadow: none;
+}
+
+#blinds-save-level-btn {
+    color: #e7fff3;
+    border: 0;
+    background: rgba(34, 211, 111, 0.34);
+    box-shadow: none;
+}
+
 .blinds-workspace-grid {
     grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.7fr);
     align-items: start;
@@ -1639,14 +1661,16 @@ button.secondary {
 
 button.warn {
     color: #381608;
-    background: #f3bb78;
+    border: 0;
+    background: rgba(243, 187, 120, 0.7);
     box-shadow: none;
 }
 
 button.danger {
-    color: #330f0f;
-    background: #ef9a8c;
-    box-shadow: 0 8px 18px rgba(255, 143, 123, 0.16);
+    color: #ffe6df;
+    border: 0;
+    background: rgba(143, 61, 48, 0.72);
+    box-shadow: none;
 }
 
 button.buy-in-action {
@@ -2364,11 +2388,15 @@ body.debug-mode .debug-only {
     align-items: center;
     justify-content: center;
     gap: 9px;
-    color: var(--gold);
-    border: 1px solid rgba(246, 183, 57, 0.34);
-    background: rgba(246, 183, 57, 0.055);
+    color: #e7fff3;
+    border: 0;
+    background: rgba(34, 211, 111, 0.34);
     box-shadow: none;
     font-weight: 500;
+}
+
+.session-add-player-btn img {
+    filter: brightness(0) invert(1);
 }
 
 .session-add-player-btn img {
@@ -2480,7 +2508,8 @@ body.debug-mode .debug-only {
     font-weight: 500;
 }
 
-.expense-open-form-btn {
+.expense-open-form-btn,
+#add-expense-btn {
     width: 100%;
     min-height: 46px;
     color: #e7fff3;
