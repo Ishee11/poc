@@ -376,7 +376,8 @@ export function renderExpenseForm() {
   if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed;
   if (lockedHint) lockedHint.hidden = canEditExpenses || !expensesClosed;
   if (status) {
-    status.textContent = expensesClosed ? t("expenses.closed") : t("expenses.open");
+    status.textContent = expensesClosed ? t("expenses.closed") : "";
+    status.hidden = !expensesClosed;
   }
 
   const players = state.players || [];
