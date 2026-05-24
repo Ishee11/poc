@@ -949,37 +949,18 @@ function renderPlayerSelect(selectId, players) {
 }
 
 export function initSessionActions() {
-  const setLoading = (button, isLoading) => {
-    if (isLoading) {
-      button.classList.add("loading");
-      button.disabled = true;
-    } else {
-      button.classList.remove("loading");
-      button.disabled = false;
-    }
-  };
-
-  const withLoading = async (button, fn) => {
-    setLoading(button, true);
-    try {
-      await fn();
-    } finally {
-      setLoading(button, false);
-    }
-  };
-
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("button");
     if (!button) return;
 
     const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
     if (rebuyPlayerId) {
-      await withLoading(button, () => confirmPlayerRebuy(rebuyPlayerId));
+      await confirmPlayerRebuy(rebuyPlayerId);
       return;
     }
     const cashOutPlayerId = button.getAttribute("data-session-cash-out-player");
     if (cashOutPlayerId) {
-      await withLoading(button, () => confirmPlayerCashOut(cashOutPlayerId));
+      await confirmPlayerCashOut(cashOutPlayerId);
       return;
     }
     const sessionActionMode = button.getAttribute("data-session-action-mode");
@@ -1004,29 +985,29 @@ export function initSessionActions() {
 
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
-      await withLoading(button, () => deleteManualSettlementTransfer(deleteSettlementTransferId));
+      await deleteManualSettlementTransfer(deleteSettlementTransferId);
       return;
     }
 
     switch (button.id) {
       case "session-add-player-btn":
-        await withLoading(button, () => confirmAddPlayer());
+        await confirmAddPlayer();
         break;
       case "session-open-results-btn":
-        await withLoading(button, () => openSessionResults(state.activeSessionId));
+        await openSessionResults(state.activeSessionId);
         break;
       case "finish-session-btn":
-        await withLoading(button, () => confirmFinishSession());
+        await confirmFinishSession();
         break;
       case "open-expense-form-btn":
         state.expenseFormOpen = true;
         renderExpenseForm();
         break;
       case "add-expense-btn":
-        await withLoading(button, () => confirmAddExpense());
+        await confirmAddExpense();
         break;
       case "close-expenses-btn":
-        await withLoading(button, () => confirmCloseExpenses());
+        await confirmCloseExpenses();
         break;
       case "expense-select-all-btn":
         setExpenseParticipantsChecked(true);
@@ -1038,19 +1019,19 @@ export function initSessionActions() {
         fillEqualExpensePayments();
         break;
       case "settlement-edit-btn":
-        await withLoading(button, () => enableManualSettlement());
+        await enableManualSettlement();
         break;
       case "settlement-done-btn":
         closeManualSettlement();
         break;
       case "settlement-reset-auto-btn":
-        await withLoading(button, () => resetSettlementToAuto());
+        await resetSettlementToAuto();
         break;
       case "settlement-add-transfer-btn":
-        await withLoading(button, () => addManualSettlementTransfer());
+        await addManualSettlementTransfer();
         break;
       case "debug-delete-session-btn":
-        await withLoading(button, () => confirmDebugDeleteSession());
+        await confirmDebugDeleteSession();
         break;
       case "session-back-home-btn":
         setScreen("lobby");
@@ -1191,7 +1172,7 @@ async function confirmPlayerRebuy(playerId) {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
@@ -1235,7 +1216,7 @@ async function confirmPlayerCashOut(playerId) {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
@@ -1327,7 +1308,7 @@ async function confirmAddPlayer() {
       return;
     }
 
-    await Promise.all([refreshSessionPartial(), loadPlayersOverview()]);
+    await Promise.all([refreshSessionData(), loadPlayersOverview()]);
     showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
     return;
   }
@@ -1342,7 +1323,7 @@ async function confirmAddPlayer() {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(
     t("notice.playerAdded", { name: findPlayerName(values.player_id) }),
     "success",
@@ -1375,7 +1356,7 @@ async function confirmFinishSession() {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.sessionFinished"), "success");
 }
 
@@ -1472,7 +1453,7 @@ async function confirmDebugUpdateSessionConfig() {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.sessionConfigUpdated"), "success");
 }
 
@@ -1493,7 +1474,7 @@ async function confirmDebugDeleteSessionFinish() {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.finishDeleted"), "success");
 }
 
@@ -1519,7 +1500,7 @@ async function confirmReverse(operationId) {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.operationReversed"), "success");
 }
 
@@ -1580,7 +1561,7 @@ async function confirmCloseExpenses() {
     return;
   }
 
-  await refreshSessionPartial();
+  await refreshSessionData();
   showNotice(t("notice.expensesClosed"), "success");
 }
 
@@ -1608,57 +1589,31 @@ async function confirmDeleteExpense(expenseId) {
   showNotice(t("notice.expenseDeleted"), "success");
 }
 
-async function refreshSessionPartial() {
-    const id = state.activeSessionId;
-    if (!id) return;
-
-    const res = await getSession(id);
-    if (!res.ok || !res.body) {
-        showNotice(describeError(res, t("error.failedRefresh")), "error");
-        return;
-    }
-
-    hydrateSession(res.body);
-    renderSession();
-
-    await Promise.all([
-        loadPlayers(id),
-        loadOperations(id),
-        loadExpenses(id),
-        loadSettlementTransfers(id),
-    ]);
-    renderActionPlayerOptions();
-    renderExpenseForm();
-    renderSettlement();
-}
-
-// Keep original for cases that truly need a full reload (e.g., after creating a new session)
 async function refreshSessionData() {
-    const id = state.activeSessionId;
-    if (!id) return;
+  const id = state.activeSessionId;
+  if (!id) return;
 
-    const res = await getSession(id);
-    if (!res.ok || !res.body) {
-        showNotice(describeError(res, t("error.failedRefresh")), "error");
-        return;
-    }
+  const res = await getSession(id);
+  if (!res.ok || !res.body) {
+    showNotice(describeError(res, t("error.failedRefresh")), "error");
+    return;
+  }
 
-    hydrateSession(res.body);
-    renderSession();
+  hydrateSession(res.body);
+  renderSession();
 
-    await Promise.all([
-        loadPlayers(id),
-        loadOperations(id),
-        loadExpenses(id),
-        loadSettlementTransfers(id),
-        loadSessions(),
-        loadPlayersOverview(),
-    ]);
-    renderActionPlayerOptions();
-    renderExpenseForm();
-    renderSettlement();
+  await Promise.all([
+    loadPlayers(id),
+    loadOperations(id),
+    loadExpenses(id),
+    loadSettlementTransfers(id),
+    loadSessions(),
+    loadPlayersOverview(),
+  ]);
+  renderActionPlayerOptions();
+  renderExpenseForm();
+  renderSettlement();
 }
-
 
 function hydrateSession(raw) {
   state.session = {
