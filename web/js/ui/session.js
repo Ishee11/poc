@@ -1656,12 +1656,12 @@ async function refreshSessionData() {
     loadOperations(id),
     loadExpenses(id),
     loadSettlementTransfers(id),
-    loadSessions(),
-    loadPlayersOverview(),
   ]);
   renderActionPlayerOptions();
   renderExpenseForm();
   renderSettlement();
+
+  Promise.allSettled([loadSessions(), loadPlayersOverview()]);
 }
 
 function hydrateSession(raw) {
