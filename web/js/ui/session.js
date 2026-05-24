@@ -9,6 +9,7 @@ import {
   debugUpdateSessionConfig,
   deleteExpense,
   finishSession,
+  getCurrentUser,
   getExpenses,
   getSettlementTransfers,
   getSession,
@@ -55,6 +56,32 @@ export async function openSession(sessionId, { replace = false } = {}) {
     return;
   }
 
+  state.session = res.body;
+  renderSession();
+  renderActionPlayerOptions();
+  renderExpenseForm();
+  renderExpenses();
+  renderSettlement();
+  setScreen("session");
+
+  await Promise.all([
+    loadPlayers(sessionId),
+    loadOperations(sessionId),
+    loadExpenses(sessionId),
+    loadSettlementTransfers(sessionId),
+  ]);
+
+  renderSession();
+  renderActionPlayerOptions();
+  renderExpenseForm();
+  renderExpenses();
+  renderSettlement();
+
+  if (replace) {
+    replaceRoute(routeToSession(sessionId));
+  } else {
+    pushRoute(routeToSession(sessionId));
+  }
 }
 
 export async function openSessionResults(sessionId, { replace = false } = {}) {
@@ -1373,6 +1400,17 @@ async function confirmDebugDeleteSession() {
 
   const res = await debugDeleteSession(state.activeSessionId);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const me = await getCurrentUser();
+      if (!me.ok || me.body?.user?.role !== "admin") {
+        state.authUser = null;
+        state.debugMode = false;
+        showNotice(t("error.adminRequired"), "error");
+        renderSession();
+        return;
+      }
+    }
+
     showNotice(describeError(res, t("error.failedDeleteSession")), "error");
     return;
   }
@@ -1470,6 +1508,17 @@ async function confirmDebugDeleteSessionFinish() {
 
   const res = await debugDeleteSessionFinish(state.activeSessionId);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const me = await getCurrentUser();
+      if (!me.ok || me.body?.user?.role !== "admin") {
+        state.authUser = null;
+        state.debugMode = false;
+        showNotice(t("error.adminRequired"), "error");
+        renderSession();
+        return;
+      }
+    }
+
     showNotice(describeError(res, t("error.failedDeleteFinish")), "error");
     return;
   }
