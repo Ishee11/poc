@@ -55,27 +55,6 @@ export async function openSession(sessionId, { replace = false } = {}) {
     return;
   }
 
-  hydrateSession(res.body);
-  renderSession();
-  renderOperations();
-  renderActionPlayerOptions();
-
-  await Promise.all([
-    loadPlayers(sessionId),
-    loadOperations(sessionId),
-    loadExpenses(sessionId),
-    loadSettlementTransfers(sessionId),
-  ]);
-  renderActionPlayerOptions();
-  renderExpenseForm();
-  renderExpenses();
-  renderSettlement();
-  setScreen("session");
-  if (replace) {
-    replaceRoute(routeToSession(sessionId));
-  } else {
-    pushRoute(routeToSession(sessionId));
-  }
 }
 
 export async function openSessionResults(sessionId, { replace = false } = {}) {
@@ -1753,7 +1732,7 @@ function settlementBalances() {
 
     const shares = calculateEqualShares(Number(expense.amount) || 0, participants);
     for (const playerId of participants) {
-      balances.set(playerId, (balances.get(playerId) || 0) - (shares.get(playerId) || 0));
+      balances.set(playerId, (balances.get(playerId) || 0) - (shares.get(playerId) || 0)));
     }
 
     for (const payment of expense.payments || []) {
