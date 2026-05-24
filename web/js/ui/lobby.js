@@ -11,7 +11,7 @@ import {
 } from "../utils.js";
 
 export async function loadSessions() {
-  const res = await getSessions({ guest_player_id: state.authUser ? "" : state.guestPlayerId });
+  const res = await getSessions({ guestPlayerId: state.authUser ? "" : state.guestPlayerId });
 
   if (!res.ok) {
     console.error("loadSessions failed:", res.text);
