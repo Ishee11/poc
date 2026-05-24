@@ -1112,11 +1112,9 @@ async function withBusyButton(button, action) {
   }
   if (button.disabled || button.dataset.loading === "true") return;
 
-  const originalLabel = button.textContent;
   button.disabled = true;
   button.dataset.loading = "true";
   button.setAttribute("aria-busy", "true");
-  button.textContent = "⏳ " + originalLabel;
 
   try {
     await action();
@@ -1124,7 +1122,6 @@ async function withBusyButton(button, action) {
     button.disabled = false;
     button.dataset.loading = "false";
     button.setAttribute("aria-busy", "false");
-    button.textContent = originalLabel;
   }
 }
 
