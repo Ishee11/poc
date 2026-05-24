@@ -174,11 +174,9 @@ export function getSession(sessionId) {
   return request(`/sessions?session_id=${sessionId}`);
 }
 
-export function getSessions({ guest_player_id, guestPlayerId } = {}) {
-  // Accept both snake_case and camelCase for backward compatibility
-  const id = guest_player_id ?? guestPlayerId;
+export function getSessions({ guestPlayerId } = {}) {
   const params = new URLSearchParams();
-  if (id) params.set("guest_player_id", id);
+  if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
 
   const suffix = params.toString() ? `?${params.toString()}` : "";
   return request(`/stats/sessions${suffix}`);
