@@ -1159,8 +1159,16 @@ class="results-close-bill-btn"
                         </button>
                     </div>
 
-                    <div id="operations-wrap"></div>
-                    <span id="session-operations-count" hidden>0</span>
+                    <div class="panel collapsible" id="operations-panel">
+                        <div class="panel-header" id="operations-toggle" data-toggle-operations>
+                            <h3 data-i18n="session.recentOperations">Recent Operations</h3>
+                            <span id="session-operations-count" class="badge">0</span>
+                            <button type="button" class="toggle-btn" aria-label="Toggle operations">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                        </div>
+                        <div id="operations-wrap" hidden></div>
+                    </div>
 
                     <div
                         class="panel debug-admin-actions"
