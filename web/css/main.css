@@ -1686,6 +1686,29 @@ button.cash-out-action {
     box-shadow: none;
 }
 
+button[data-loading="true"] {
+    opacity: 0.8;
+}
+
+button[data-loading="true"]::after {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: button-spin 0.7s linear infinite;
+    vertical-align: -2px;
+}
+
+@keyframes button-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
