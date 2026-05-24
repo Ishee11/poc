@@ -56,7 +56,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
     return;
   }
 
-  state.session = res.body;
+  hydrateSession(res.body);
   renderSession();
   renderActionPlayerOptions();
   renderExpenseForm();
