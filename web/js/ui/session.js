@@ -970,37 +970,18 @@ function renderPlayerSelect(selectId, players) {
 }
 
 export function initSessionActions() {
-  const setLoading = (button, isLoading) => {
-    if (isLoading) {
-      button.classList.add("loading");
-      button.disabled = true;
-    } else {
-      button.classList.remove("loading");
-      button.disabled = false;
-    }
-  };
-
-  const withLoading = async (button, fn) => {
-    setLoading(button, true);
-    try {
-      await fn();
-    } finally {
-      setLoading(button, false);
-    }
-  };
-
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("button");
     if (!button) return;
 
     const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
     if (rebuyPlayerId) {
-      await withLoading(button, () => confirmPlayerRebuy(rebuyPlayerId));
+      await confirmPlayerRebuy(rebuyPlayerId);
       return;
     }
     const cashOutPlayerId = button.getAttribute("data-session-cash-out-player");
     if (cashOutPlayerId) {
-      await withLoading(button, () => confirmPlayerCashOut(cashOutPlayerId));
+      await confirmPlayerCashOut(cashOutPlayerId);
       return;
     }
     const sessionActionMode = button.getAttribute("data-session-action-mode");
@@ -1025,29 +1006,29 @@ export function initSessionActions() {
 
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
-      await withLoading(button, () => deleteManualSettlementTransfer(deleteSettlementTransferId));
+      await deleteManualSettlementTransfer(deleteSettlementTransferId);
       return;
     }
 
     switch (button.id) {
       case "session-add-player-btn":
-        await withLoading(button, () => confirmAddPlayer());
+        await confirmAddPlayer();
         break;
       case "session-open-results-btn":
-        await withLoading(button, () => openSessionResults(state.activeSessionId));
+        await openSessionResults(state.activeSessionId);
         break;
       case "finish-session-btn":
-        await withLoading(button, () => confirmFinishSession());
+        await confirmFinishSession();
         break;
       case "open-expense-form-btn":
         state.expenseFormOpen = true;
         renderExpenseForm();
         break;
       case "add-expense-btn":
-        await withLoading(button, () => confirmAddExpense());
+        await confirmAddExpense();
         break;
       case "close-expenses-btn":
-        await withLoading(button, () => confirmCloseExpenses());
+        await confirmCloseExpenses();
         break;
       case "expense-select-all-btn":
         setExpenseParticipantsChecked(true);
@@ -1059,19 +1040,19 @@ export function initSessionActions() {
         fillEqualExpensePayments();
         break;
       case "settlement-edit-btn":
-        await withLoading(button, () => enableManualSettlement());
+        await enableManualSettlement();
         break;
       case "settlement-done-btn":
         closeManualSettlement();
         break;
       case "settlement-reset-auto-btn":
-        await withLoading(button, () => resetSettlementToAuto());
+        await resetSettlementToAuto();
         break;
       case "settlement-add-transfer-btn":
-        await withLoading(button, () => addManualSettlementTransfer());
+        await addManualSettlementTransfer();
         break;
       case "debug-delete-session-btn":
-        await withLoading(button, () => confirmDebugDeleteSession());
+        await confirmDebugDeleteSession();
         break;
       case "session-back-home-btn":
         setScreen("lobby");
