@@ -19,6 +19,7 @@ export const state = {
   overviewPlayersAll: [],
   overviewPlayersSort: "last_activity",
   overviewPlayersShowAll: false,
+  overviewActiveRecentPlayerIds: new Set(),
   playersStatsRows: [],
 
   players: [],

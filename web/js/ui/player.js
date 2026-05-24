@@ -59,6 +59,8 @@ export async function loadPlayersOverview() {
       .map((item) => item.player_id),
   );
 
+  state.overviewActiveRecentPlayerIds = activeRecentPlayerIds;
+
   state.overviewPlayersAll = players.map((player) => {
     const stat = statsById.get(player.player_id);
     return {
@@ -71,11 +73,15 @@ export async function loadPlayersOverview() {
     };
   });
 
+  applyPlayersOverviewFilter();
+}
+
+
+export function applyPlayersOverviewFilter() {
+  const activeIds = state.overviewActiveRecentPlayerIds || new Set();
   state.overviewPlayers = state.overviewPlayersShowAll
     ? [...state.overviewPlayersAll]
-    : state.overviewPlayersAll.filter((player) =>
-        activeRecentPlayerIds.has(player.player_id),
-      );
+    : state.overviewPlayersAll.filter((player) => activeIds.has(player.player_id));
 
   sortOverviewPlayers();
   renderPlayersOverview();
