@@ -1191,7 +1191,7 @@ async function confirmPlayerRebuy(playerId) {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
 }
 
@@ -1235,7 +1235,7 @@ async function confirmPlayerCashOut(playerId) {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
 }
 
@@ -1327,7 +1327,7 @@ async function confirmAddPlayer() {
       return;
     }
 
-    await Promise.all([refreshSessionData(), loadPlayersOverview()]);
+    await Promise.all([refreshSessionPartial(), loadPlayersOverview()]);
     showNotice(t("notice.playerCreatedAndAdded", { name }), "success");
     return;
   }
@@ -1342,7 +1342,7 @@ async function confirmAddPlayer() {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(
     t("notice.playerAdded", { name: findPlayerName(values.player_id) }),
     "success",
@@ -1375,7 +1375,7 @@ async function confirmFinishSession() {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.sessionFinished"), "success");
 }
 
@@ -1472,7 +1472,7 @@ async function confirmDebugUpdateSessionConfig() {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.sessionConfigUpdated"), "success");
 }
 
@@ -1493,7 +1493,7 @@ async function confirmDebugDeleteSessionFinish() {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.finishDeleted"), "success");
 }
 
@@ -1519,7 +1519,7 @@ async function confirmReverse(operationId) {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.operationReversed"), "success");
 }
 
@@ -1580,7 +1580,7 @@ async function confirmCloseExpenses() {
     return;
   }
 
-  await partialRefreshSessionData();
+  await refreshSessionPartial();
   showNotice(t("notice.expensesClosed"), "success");
 }
 
@@ -1608,41 +1608,56 @@ async function confirmDeleteExpense(expenseId) {
   showNotice(t("notice.expenseDeleted"), "success");
 }
 
-async function partialRefreshSessionData() {
-  const id = state.activeSessionId;
-  if (!id) return;
+async function refreshSessionPartial() {
+    const id = state.activeSessionId;
+    if (!id) return;
 
-  // Refresh session metadata
-  const res = await getSession(id);
-  if (!res.ok || !res.body) {
-    showNotice(describeError(res, t("error.failedRefresh")), "error");
-    return;
-  }
-  hydrateSession(res.body);
-  renderSession();
+    const res = await getSession(id);
+    if (!res.ok || !res.body) {
+        showNotice(describeError(res, t("error.failedRefresh")), "error");
+        return;
+    }
 
-  // Load only essential data for UI updates
-  await Promise.all([
-    loadPlayers(id),
-    loadOperations(id),
-    loadExpenses(id),
-    loadSettlementTransfers(id),
-  ]);
-  renderActionPlayerOptions();
-  renderExpenseForm();
-  renderSettlement();
+    hydrateSession(res.body);
+    renderSession();
+
+    await Promise.all([
+        loadPlayers(id),
+        loadOperations(id),
+        loadExpenses(id),
+        loadSettlementTransfers(id),
+    ]);
+    renderActionPlayerOptions();
+    renderExpenseForm();
+    renderSettlement();
 }
 
+// Keep original for cases that truly need a full reload (e.g., after creating a new session)
 async function refreshSessionData() {
-  // Full refresh after significant changes (e.g., session finish)
-  const id = state.activeSessionId;
-  if (!id) return;
+    const id = state.activeSessionId;
+    if (!id) return;
 
-  const res = await getSession(id);
-  if (!res.ok || !res.body) {
-    showNotice(describeError(res, t("error.failedRefresh")), "error");
-    return;
-  }
+    const res = await getSession(id);
+    if (!res.ok || !res.body) {
+        showNotice(describeError(res, t("error.failedRefresh")), "error");
+        return;
+    }
+
+    hydrateSession(res.body);
+    renderSession();
+
+    await Promise.all([
+        loadPlayers(id),
+        loadOperations(id),
+        loadExpenses(id),
+        loadSettlementTransfers(id),
+        loadSessions(),
+        loadPlayersOverview(),
+    ]);
+    renderActionPlayerOptions();
+    renderExpenseForm();
+    renderSettlement();
+}
 
 
 function hydrateSession(raw) {
