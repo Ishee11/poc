@@ -9,6 +9,7 @@ import {
   debugUpdateSessionConfig,
   deleteExpense,
   finishSession,
+  getCurrentUser,
   getExpenses,
   getSettlementTransfers,
   getSession,
@@ -1399,6 +1400,17 @@ async function confirmDebugDeleteSession() {
 
   const res = await debugDeleteSession(state.activeSessionId);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const me = await getCurrentUser();
+      if (!me.ok || me.body?.user?.role !== "admin") {
+        state.authUser = null;
+        state.debugMode = false;
+        showNotice(t("error.adminRequired"), "error");
+        renderSession();
+        return;
+      }
+    }
+
     showNotice(describeError(res, t("error.failedDeleteSession")), "error");
     return;
   }
@@ -1496,6 +1508,17 @@ async function confirmDebugDeleteSessionFinish() {
 
   const res = await debugDeleteSessionFinish(state.activeSessionId);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const me = await getCurrentUser();
+      if (!me.ok || me.body?.user?.role !== "admin") {
+        state.authUser = null;
+        state.debugMode = false;
+        showNotice(t("error.adminRequired"), "error");
+        renderSession();
+        return;
+      }
+    }
+
     showNotice(describeError(res, t("error.failedDeleteFinish")), "error");
     return;
   }
