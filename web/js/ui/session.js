@@ -1010,20 +1010,6 @@ export function initSessionActions() {
       return;
     }
 
-    const toggleOperations = event.target.closest("[data-toggle-operations]");
-    if (toggleOperations) {
-      const wrap = document.getElementById("operations-wrap");
-      const icon = toggleOperations.querySelector(".toggle-icon");
-      if (wrap) {
-        wrap.hidden = !wrap.hidden;
-        if (icon) {
-          icon.textContent = wrap.hidden ? "▼" : "▲";
-        }
-        toggleOperations.classList.toggle("collapsed", wrap.hidden);
-      }
-      return;
-    }
-
     switch (button.id) {
       case "session-add-player-btn":
         await confirmAddPlayer();
