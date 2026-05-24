@@ -55,6 +55,32 @@ export async function openSession(sessionId, { replace = false } = {}) {
     return;
   }
 
+  state.session = res.body;
+  renderSession();
+  renderActionPlayerOptions();
+  renderExpenseForm();
+  renderExpenses();
+  renderSettlement();
+  setScreen("session");
+
+  await Promise.all([
+    loadPlayers(sessionId),
+    loadOperations(sessionId),
+    loadExpenses(sessionId),
+    loadSettlementTransfers(sessionId),
+  ]);
+
+  renderSession();
+  renderActionPlayerOptions();
+  renderExpenseForm();
+  renderExpenses();
+  renderSettlement();
+
+  if (replace) {
+    replaceRoute(routeToSession(sessionId));
+  } else {
+    pushRoute(routeToSession(sessionId));
+  }
 }
 
 export async function openSessionResults(sessionId, { replace = false } = {}) {
