@@ -22,6 +22,7 @@ import {
 } from "./ui/lobby.js";
 import {
   loadPlayerDetail,
+  applyPlayersOverviewFilter,
   loadPlayersOverview,
   openPlayersStats,
   renderPlayerDetail,
@@ -679,7 +680,7 @@ function initPlayersOverviewFilters() {
     event.preventDefault();
     event.stopPropagation();
     state.overviewPlayersShowAll = !state.overviewPlayersShowAll;
-    await loadPlayersOverview();
+    applyPlayersOverviewFilter();
   });
 }
 

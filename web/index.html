@@ -1159,8 +1159,18 @@ class="results-close-bill-btn"
                         </button>
                     </div>
 
-                    <div id="operations-wrap" hidden></div>
-                    <span id="session-operations-count" hidden>0</span>
+                    <details
+                        class="panel panel-disclosure"
+                        id="operations-panel"
+                    >
+                        <summary class="panel-title-row">
+                            <h3 data-i18n="session.latestOperations">Recent Operations</h3>
+                            <span class="summary-count">
+                                <span id="session-operations-count">0</span>
+                            </span>
+                        </summary>
+                        <div id="operations-wrap"></div>
+                    </details>
 
                     <div
                         class="panel debug-admin-actions"

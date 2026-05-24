@@ -9,6 +9,7 @@ import {
   debugUpdateSessionConfig,
   deleteExpense,
   finishSession,
+  getCurrentUser,
   getExpenses,
   getSettlementTransfers,
   getSession,
@@ -57,8 +58,11 @@ export async function openSession(sessionId, { replace = false } = {}) {
 
   hydrateSession(res.body);
   renderSession();
-  renderOperations();
   renderActionPlayerOptions();
+  renderExpenseForm();
+  renderExpenses();
+  renderSettlement();
+  setScreen("session");
 
   await Promise.all([
     loadPlayers(sessionId),
@@ -66,11 +70,13 @@ export async function openSession(sessionId, { replace = false } = {}) {
     loadExpenses(sessionId),
     loadSettlementTransfers(sessionId),
   ]);
+
+  renderSession();
   renderActionPlayerOptions();
   renderExpenseForm();
   renderExpenses();
   renderSettlement();
-  setScreen("session");
+
   if (replace) {
     replaceRoute(routeToSession(sessionId));
   } else {
@@ -976,12 +982,12 @@ export function initSessionActions() {
 
     const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
     if (rebuyPlayerId) {
-      await confirmPlayerRebuy(rebuyPlayerId);
+      await withBusyButton(button, () => confirmPlayerRebuy(rebuyPlayerId));
       return;
     }
     const cashOutPlayerId = button.getAttribute("data-session-cash-out-player");
     if (cashOutPlayerId) {
-      await confirmPlayerCashOut(cashOutPlayerId);
+      await withBusyButton(button, () => confirmPlayerCashOut(cashOutPlayerId));
       return;
     }
     const sessionActionMode = button.getAttribute("data-session-action-mode");
@@ -1006,29 +1012,29 @@ export function initSessionActions() {
 
     const deleteSettlementTransferId = button.getAttribute("data-delete-settlement-transfer");
     if (deleteSettlementTransferId) {
-      await deleteManualSettlementTransfer(deleteSettlementTransferId);
+      await withBusyButton(button, () => deleteManualSettlementTransfer(deleteSettlementTransferId));
       return;
     }
 
     switch (button.id) {
       case "session-add-player-btn":
-        await confirmAddPlayer();
+        await withBusyButton(button, () => confirmAddPlayer());
         break;
       case "session-open-results-btn":
-        await openSessionResults(state.activeSessionId);
+        await withBusyButton(button, () => openSessionResults(state.activeSessionId));
         break;
       case "finish-session-btn":
-        await confirmFinishSession();
+        await withBusyButton(button, () => confirmFinishSession());
         break;
       case "open-expense-form-btn":
         state.expenseFormOpen = true;
         renderExpenseForm();
         break;
       case "add-expense-btn":
-        await confirmAddExpense();
+        await withBusyButton(button, () => confirmAddExpense());
         break;
       case "close-expenses-btn":
-        await confirmCloseExpenses();
+        await withBusyButton(button, () => confirmCloseExpenses());
         break;
       case "expense-select-all-btn":
         setExpenseParticipantsChecked(true);
@@ -1040,19 +1046,19 @@ export function initSessionActions() {
         fillEqualExpensePayments();
         break;
       case "settlement-edit-btn":
-        await enableManualSettlement();
+        await withBusyButton(button, () => enableManualSettlement());
         break;
       case "settlement-done-btn":
         closeManualSettlement();
         break;
       case "settlement-reset-auto-btn":
-        await resetSettlementToAuto();
+        await withBusyButton(button, () => resetSettlementToAuto());
         break;
       case "settlement-add-transfer-btn":
-        await addManualSettlementTransfer();
+        await withBusyButton(button, () => addManualSettlementTransfer());
         break;
       case "debug-delete-session-btn":
-        await confirmDebugDeleteSession();
+        await withBusyButton(button, () => confirmDebugDeleteSession());
         break;
       case "session-back-home-btn":
         setScreen("lobby");
@@ -1096,6 +1102,27 @@ export function initSessionActions() {
       renderExpenseForm();
     }
   });
+}
+
+
+async function withBusyButton(button, action) {
+  if (!button) {
+    await action();
+    return;
+  }
+  if (button.disabled || button.dataset.loading === "true") return;
+
+  button.disabled = true;
+  button.dataset.loading = "true";
+  button.setAttribute("aria-busy", "true");
+
+  try {
+    await action();
+  } finally {
+    button.disabled = false;
+    button.dataset.loading = "false";
+    button.setAttribute("aria-busy", "false");
+  }
 }
 
 function focusSessionAction(controlId) {
@@ -1367,6 +1394,7 @@ async function confirmFinishSession() {
     title: t("modal.finishTitle"),
     description: t("modal.finishDescription"),
     confirmText: t("session.finish"),
+    confirmClass: "results-close-bill-btn",
   });
   if (!values) return;
 
@@ -1387,11 +1415,23 @@ async function confirmDebugDeleteSession() {
     title: t("modal.deleteSessionTitle"),
     description: t("modal.deleteSessionDescription"),
     confirmText: t("debug.deleteSession"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 
   const res = await debugDeleteSession(state.activeSessionId);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const me = await getCurrentUser();
+      if (!me.ok || me.body?.user?.role !== "admin") {
+        state.authUser = null;
+        state.debugMode = false;
+        showNotice(t("error.adminRequired"), "error");
+        renderSession();
+        return;
+      }
+    }
+
     showNotice(describeError(res, t("error.failedDeleteSession")), "error");
     return;
   }
@@ -1430,6 +1470,7 @@ async function confirmDebugUpdateSessionConfig() {
   const values = await openModal({
     title: t("modal.editSessionConfigTitle"),
     confirmText: t("common.save"),
+    confirmClass: "rebuy-action",
     fields: [
       {
         name: "chip_rate",
@@ -1482,11 +1523,23 @@ async function confirmDebugDeleteSessionFinish() {
     title: t("modal.deleteFinishTitle"),
     description: t("modal.deleteFinishDescription"),
     confirmText: t("debug.deleteFinish"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 
   const res = await debugDeleteSessionFinish(state.activeSessionId);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const me = await getCurrentUser();
+      if (!me.ok || me.body?.user?.role !== "admin") {
+        state.authUser = null;
+        state.debugMode = false;
+        showNotice(t("error.adminRequired"), "error");
+        renderSession();
+        return;
+      }
+    }
+
     showNotice(describeError(res, t("error.failedDeleteFinish")), "error");
     return;
   }
@@ -1507,6 +1560,7 @@ async function confirmReverse(operationId) {
       chips: formatNumber(operation.chips),
     }),
     confirmText: t("common.reverse"),
+    confirmClass: "secondary",
   });
   if (!values) return;
 
@@ -1567,6 +1621,7 @@ async function confirmCloseExpenses() {
     title: t("modal.closeExpensesTitle"),
     description: t("modal.closeExpensesDescription"),
     confirmText: t("expenses.closeBill"),
+    confirmClass: "results-close-bill-btn",
   });
   if (!confirmed) return;
 
@@ -1590,6 +1645,7 @@ async function confirmDeleteExpense(expenseId) {
     title: t("modal.deleteExpenseTitle"),
     description: t("modal.deleteExpenseDescription"),
     confirmText: t("common.delete"),
+    confirmClass: "danger",
   });
   if (!confirmed) return;
 
@@ -1621,12 +1677,12 @@ async function refreshSessionData() {
     loadOperations(id),
     loadExpenses(id),
     loadSettlementTransfers(id),
-    loadSessions(),
-    loadPlayersOverview(),
   ]);
   renderActionPlayerOptions();
   renderExpenseForm();
   renderSettlement();
+
+  Promise.allSettled([loadSessions(), loadPlayersOverview()]);
 }
 
 function hydrateSession(raw) {

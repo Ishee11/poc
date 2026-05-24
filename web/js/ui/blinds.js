@@ -160,6 +160,7 @@ export function initBlindsClock() {
       title: t("blinds.resetTitle"),
       description: t("blinds.resetDescription"),
       confirmText: t("blinds.resetTimer"),
+      confirmClass: "secondary",
     });
     if (!confirmed) return;
 
@@ -176,6 +177,7 @@ export function initBlindsClock() {
       title: t("blinds.resetDefaultTitle"),
       description: t("blinds.resetDefaultDescription"),
       confirmText: t("blinds.resetDefault"),
+      confirmClass: "secondary",
     });
     if (!confirmed) return;
 
@@ -238,6 +240,7 @@ export function initBlindsClock() {
         level: selectedLevelIndex + 1,
       }),
       confirmText: t("blinds.deleteLevel"),
+      confirmClass: "danger",
     });
     if (!confirmed) return;
 
@@ -261,6 +264,7 @@ export function initBlindsClock() {
       title: t("blinds.deleteAllLevelsTitle"),
       description: t("blinds.deleteAllLevelsDescription"),
       confirmText: t("blinds.deleteAllLevels"),
+      confirmClass: "danger",
     });
     if (!confirmed) return;
 
