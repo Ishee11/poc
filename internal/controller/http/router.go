@@ -19,7 +19,13 @@ func NewRouter(h *Handler) http.Handler {
 		panic(err)
 	}
 
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+	staticHandler := http.FileServer(http.FS(sub))
+
+mux.Handle("/static/", http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    // Disable client‑side caching in development
+    w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+    staticHandler.ServeHTTP(w, r)
+})))
 	mux.HandleFunc("/sw.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 		http.ServeFileFS(w, r, sub, "sw.js")
