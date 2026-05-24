@@ -52,7 +52,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setSessionCookie(w, result.Token, result.ExpiresAt)
+	h.setSessionCookie(w, r, result.Token, result.ExpiresAt)
 	slog.InfoContext(
 		r.Context(),
 		"auth_register_success",
@@ -111,7 +111,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setSessionCookie(w, result.Token, result.ExpiresAt)
+	h.setSessionCookie(w, r, result.Token, result.ExpiresAt)
 	slog.InfoContext(
 		r.Context(),
 		"auth_login_success",
@@ -147,7 +147,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.clearSessionCookie(w)
+	h.clearSessionCookie(w, r)
 	slog.InfoContext(
 		r.Context(),
 		"auth_logout",
@@ -192,29 +192,39 @@ func (h *AuthHandler) sessionToken(r *http.Request) string {
 	return cookie.Value
 }
 
-func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time) {
+func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expiresAt time.Time) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.cookie.Name,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   h.cookie.Secure,
+		Secure:   h.shouldUseSecureCookie(r),
 		SameSite: h.cookie.SameSite,
 		Expires:  expiresAt,
 		MaxAge:   int(h.cookie.MaxAge.Seconds()),
 	})
 }
 
-func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter) {
+func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.cookie.Name,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   h.cookie.Secure,
+		Secure:   h.shouldUseSecureCookie(r),
 		SameSite: h.cookie.SameSite,
 		MaxAge:   -1,
 	})
+}
+
+func (h *AuthHandler) shouldUseSecureCookie(r *http.Request) bool {
+	if !h.cookie.Secure {
+		return false
+	}
+	if r.TLS != nil {
+		return true
+	}
+	return r.Header.Get("X-Forwarded-Proto") == "https"
 }
 
 func authUserResponse(principal usecase.AuthPrincipal) AuthUserResponse {
