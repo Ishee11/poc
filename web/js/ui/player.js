@@ -1,6 +1,6 @@
 import {
-  debugDeletePlayer,
-  debugRenamePlayer,
+  adminDeletePlayer,
+  adminRenamePlayer,
   getPlayerStats,
   getPlayers,
   getPlayersStats,
@@ -433,8 +433,8 @@ export function renderPlayerDetail() {
   if (!detail || !detail.player) {
     wrap.className = "empty";
     wrap.textContent = t("common.noData");
-    renderPlayerHeaderDebugActions(null);
-    renderPlayerDebugActions(null);
+    renderPlayerHeaderAdminActions(null);
+    renderPlayerAdminActions(null);
     return;
   }
 
@@ -451,8 +451,8 @@ export function renderPlayerDetail() {
     linkedUser.innerHTML = `${escapeHtml(playerName)}${renderPlayerRankBadge(player.rank)}`;
     linkedUser.hidden = false;
   }
-  renderPlayerHeaderDebugActions(player);
-  renderPlayerDebugActions(player);
+  renderPlayerHeaderAdminActions(player);
+  renderPlayerAdminActions(player);
 
   const rows = sessions
     .map(
@@ -618,43 +618,43 @@ function renderPlayerRankBadge(rank) {
   return `<span class="player-rank player-rank-${escapeHtml(rank.code)}">${escapeHtml(label)}</span>`;
 }
 
-function renderPlayerHeaderDebugActions(player) {
-  const actions = document.getElementById("player-header-debug-actions");
+function renderPlayerHeaderAdminActions(player) {
+  const actions = document.getElementById("player-header-admin-actions");
   if (!actions) return;
 
-  actions.hidden = !state.debugMode || !player;
-  actions.querySelector("#debug-rename-player-btn")?.replaceWith(
-    actions.querySelector("#debug-rename-player-btn").cloneNode(true),
+  actions.hidden = !state.adminMode || !player;
+  actions.querySelector("#admin-rename-player-btn")?.replaceWith(
+    actions.querySelector("#admin-rename-player-btn").cloneNode(true),
   );
   actions
-    .querySelector("#debug-rename-player-btn")
+    .querySelector("#admin-rename-player-btn")
     ?.addEventListener("click", async () => {
-      await confirmDebugRenamePlayer(player);
+      await confirmAdminRenamePlayer(player);
     });
 }
 
-function renderPlayerDebugActions(player) {
-  const actions = document.getElementById("player-debug-actions");
+function renderPlayerAdminActions(player) {
+  const actions = document.getElementById("player-admin-actions");
   if (!actions) return;
 
-  actions.hidden = !state.debugMode || !player;
-  actions.querySelector("#debug-delete-player-btn")?.replaceWith(
-    actions.querySelector("#debug-delete-player-btn").cloneNode(true),
+  actions.hidden = !state.adminMode || !player;
+  actions.querySelector("#admin-delete-player-btn")?.replaceWith(
+    actions.querySelector("#admin-delete-player-btn").cloneNode(true),
   );
   actions
-    .querySelector("#debug-delete-player-btn")
+    .querySelector("#admin-delete-player-btn")
     ?.addEventListener("click", async () => {
-      await confirmDebugDeletePlayer(player);
+      await confirmAdminDeletePlayer(player);
     });
 }
 
-async function confirmDebugRenamePlayer(player) {
-  if (!state.debugMode || !player?.player_id) return;
+async function confirmAdminRenamePlayer(player) {
+  if (!state.adminMode || !player?.player_id) return;
 
   const playerName = player.player_name || player.name || player.player_id;
   const values = await openModal({
     title: t("modal.renamePlayerTitle"),
-    confirmText: t("debug.renamePlayer"),
+    confirmText: t("admin.renamePlayer"),
     confirmClass: "rebuy-action",
     fields: [
       {
@@ -673,7 +673,7 @@ async function confirmDebugRenamePlayer(player) {
     return;
   }
 
-  const res = await debugRenamePlayer(player.player_id, name);
+  const res = await adminRenamePlayer(player.player_id, name);
   if (!res.ok) {
     showNotice(describeError(res, t("error.failedRenamePlayer")), "error");
     return;
@@ -686,19 +686,19 @@ async function confirmDebugRenamePlayer(player) {
   showNotice(t("notice.playerRenamed"), "success");
 }
 
-async function confirmDebugDeletePlayer(player) {
-  if (!state.debugMode || !player?.player_id) return;
+async function confirmAdminDeletePlayer(player) {
+  if (!state.adminMode || !player?.player_id) return;
 
   const playerName = player.player_name || player.name || player.player_id;
   const confirmed = await openModal({
     title: t("modal.deletePlayerTitle"),
     description: t("modal.deletePlayerDescription", { name: playerName }),
-    confirmText: t("debug.deletePlayer"),
+    confirmText: t("admin.deletePlayer"),
     confirmClass: "danger",
   });
   if (!confirmed) return;
 
-  const res = await debugDeletePlayer(player.player_id);
+  const res = await adminDeletePlayer(player.player_id);
   if (!res.ok) {
     showNotice(describeError(res, t("error.failedDeletePlayer")), "error");
     return;

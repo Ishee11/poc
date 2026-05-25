@@ -1513,14 +1513,14 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     background: rgba(34, 211, 111, 0.07);
 }
 
-.debug-editable-stat {
+.admin-editable-stat {
     cursor: pointer;
     outline: 1px dashed rgba(127, 240, 202, 0.28);
     outline-offset: -4px;
 }
 
-.debug-editable-stat:hover,
-.debug-editable-stat:focus-visible {
+.admin-editable-stat:hover,
+.admin-editable-stat:focus-visible {
     border-color: rgba(127, 240, 202, 0.55);
     background: rgba(127, 240, 202, 0.08);
     outline: 2px solid rgba(127, 240, 202, 0.32);
@@ -1750,7 +1750,7 @@ button:disabled {
     margin-top: 14px;
 }
 
-.debug-admin-actions {
+.admin-actions {
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid rgba(255, 143, 123, 0.22);
@@ -1785,11 +1785,11 @@ button:disabled {
     overflow-wrap: anywhere;
 }
 
-.debug-only {
+.admin-only {
     display: none;
 }
 
-body.debug-mode .debug-only {
+body.admin-mode .admin-only {
     display: flex;
 }
 
@@ -2588,7 +2588,7 @@ body.debug-mode .debug-only {
     font-size: 1.15rem;
 }
 
-.session-status .status-debug-action {
+.session-status .status-admin-action {
     padding: 5px 8px;
     border-radius: 8px;
     font-size: 0.72rem;

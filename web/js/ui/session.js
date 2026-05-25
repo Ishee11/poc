@@ -4,9 +4,9 @@ import {
   closeExpenses,
   createPlayer,
   createExpense,
-  debugDeleteSessionFinish,
-  debugDeleteSession,
-  debugUpdateSessionConfig,
+  adminDeleteSessionFinish,
+  adminDeleteSession,
+  adminUpdateSessionConfig,
   deleteExpense,
   finishSession,
   getCurrentUser,
@@ -176,7 +176,7 @@ export function renderSession() {
   const status = document.getElementById("workspace-status");
   const finishButton = document.getElementById("finish-session-btn");
   const finishHint = document.getElementById("finish-session-hint");
-  const debugDeletePanel = document.getElementById("session-delete-debug-panel");
+  const adminDeletePanel = document.getElementById("session-delete-admin-panel");
   const resultsButton = document.getElementById("session-open-results-btn");
   const playerActions = document.getElementById("session-player-actions");
   const playerActionsHint = document.getElementById("session-player-actions-hint");
@@ -224,8 +224,8 @@ export function renderSession() {
     status.innerHTML = `
       <span>${escapeHtml(statusLabel(session.status))}</span>
       ${
-        state.debugMode && session.status === "finished"
-          ? `<button type="button" class="secondary status-debug-action" id="debug-reopen-session-btn">${escapeHtml(t("debug.deleteFinish"))}</button>`
+        state.adminMode && session.status === "finished"
+          ? `<button type="button" class="secondary status-admin-action" id="admin-reopen-session-btn">${escapeHtml(t("admin.deleteFinish"))}</button>`
           : ""
       }
     `;
@@ -238,10 +238,10 @@ export function renderSession() {
   }
   [chipRateCard, bigBlindCard].forEach((card) => {
     if (!card) return;
-    card.classList.toggle("debug-editable-stat", state.debugMode);
-    card.setAttribute("tabindex", state.debugMode ? "0" : "-1");
-    card.setAttribute("role", state.debugMode ? "button" : "presentation");
-    card.setAttribute("title", state.debugMode ? t("debug.editSessionConfig") : "");
+    card.classList.toggle("admin-editable-stat", state.adminMode);
+    card.setAttribute("tabindex", state.adminMode ? "0" : "-1");
+    card.setAttribute("role", state.adminMode ? "button" : "presentation");
+    card.setAttribute("title", state.adminMode ? t("admin.editSessionConfig") : "");
   });
   if (finishButton) finishButton.disabled = !isActive;
   if (finishActions) finishActions.hidden = !isActive;
@@ -253,17 +253,17 @@ export function renderSession() {
   if (playerActionsHint) playerActionsHint.hidden = !isActive;
   if (playerActionSwitch) playerActionSwitch.hidden = !isActive;
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
-  if (debugDeletePanel) debugDeletePanel.hidden = !state.debugMode;
+  if (adminDeletePanel) adminDeletePanel.hidden = !state.adminMode;
   if (resultsButton) resultsButton.hidden = !state.session;
 
   document
-    .getElementById("debug-reopen-session-btn")
+    .getElementById("admin-reopen-session-btn")
     ?.addEventListener("click", async () => {
-      await confirmDebugDeleteSessionFinish();
+      await confirmAdminDeleteSessionFinish();
     });
 
-  bindDebugSessionConfigEditor(chipRateCard);
-  bindDebugSessionConfigEditor(bigBlindCard);
+  bindAdminSessionConfigEditor(chipRateCard);
+  bindAdminSessionConfigEditor(bigBlindCard);
   renderSessionActionMode();
   renderResultsSummary();
 }
@@ -376,7 +376,7 @@ export function renderExpenseForm() {
   const isActiveOrFinished = state.session?.status === "active" || state.session?.status === "finished";
   if (panel) panel.hidden = !isActiveOrFinished;
   const expensesClosed = Boolean(state.session?.expensesClosed);
-  const canEditExpenses = !expensesClosed || state.debugMode;
+  const canEditExpenses = !expensesClosed || state.adminMode;
   if (form) form.hidden = !canEditExpenses || !state.expenseFormOpen;
   if (openFormButton) openFormButton.hidden = !canEditExpenses || state.expenseFormOpen;
   if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed;
@@ -640,7 +640,7 @@ export function renderExpenses() {
     return;
   }
 
-  const canEditExpenses = !state.session?.expensesClosed || state.debugMode;
+  const canEditExpenses = !state.session?.expensesClosed || state.adminMode;
   wrap.innerHTML = state.expenses
     .map((expense) => {
       const participants = (expense.participants || []).map(findPlayerName).join(", ");
@@ -1057,8 +1057,8 @@ export function initSessionActions() {
       case "settlement-add-transfer-btn":
         await withBusyButton(button, () => addManualSettlementTransfer());
         break;
-      case "debug-delete-session-btn":
-        await withBusyButton(button, () => confirmDebugDeleteSession());
+      case "admin-delete-session-btn":
+        await withBusyButton(button, () => confirmAdminDeleteSession());
         break;
       case "session-back-home-btn":
         setScreen("lobby");
@@ -1408,24 +1408,24 @@ async function confirmFinishSession() {
   showNotice(t("notice.sessionFinished"), "success");
 }
 
-async function confirmDebugDeleteSession() {
-  if (!state.debugMode || !state.activeSessionId) return;
+async function confirmAdminDeleteSession() {
+  if (!state.adminMode || !state.activeSessionId) return;
 
   const confirmed = await openModal({
     title: t("modal.deleteSessionTitle"),
     description: t("modal.deleteSessionDescription"),
-    confirmText: t("debug.deleteSession"),
+    confirmText: t("admin.deleteSession"),
     confirmClass: "danger",
   });
   if (!confirmed) return;
 
-  const res = await debugDeleteSession(state.activeSessionId);
+  const res = await adminDeleteSession(state.activeSessionId);
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
       const me = await getCurrentUser();
       if (!me.ok || me.body?.user?.role !== "admin") {
         state.authUser = null;
-        state.debugMode = false;
+        state.adminMode = false;
         showNotice(t("error.adminRequired"), "error");
         renderSession();
         return;
@@ -1447,14 +1447,14 @@ async function confirmDebugDeleteSession() {
   showNotice(t("notice.sessionDeleted"), "success");
 }
 
-function bindDebugSessionConfigEditor(card) {
+function bindAdminSessionConfigEditor(card) {
   if (!card) return;
   const freshCard = card.cloneNode(true);
   card.replaceWith(freshCard);
-  if (!state.debugMode) return;
+  if (!state.adminMode) return;
 
   const openEditor = async () => {
-    await confirmDebugUpdateSessionConfig();
+    await confirmAdminUpdateSessionConfig();
   };
   freshCard.addEventListener("click", openEditor);
   freshCard.addEventListener("keydown", async (event) => {
@@ -1464,8 +1464,8 @@ function bindDebugSessionConfigEditor(card) {
   });
 }
 
-async function confirmDebugUpdateSessionConfig() {
-  if (!state.debugMode || !state.activeSessionId || !state.session) return;
+async function confirmAdminUpdateSessionConfig() {
+  if (!state.adminMode || !state.activeSessionId || !state.session) return;
 
   const values = await openModal({
     title: t("modal.editSessionConfigTitle"),
@@ -1502,7 +1502,7 @@ async function confirmDebugUpdateSessionConfig() {
     return;
   }
 
-  const res = await debugUpdateSessionConfig(state.activeSessionId, {
+  const res = await adminUpdateSessionConfig(state.activeSessionId, {
     chipRate,
     bigBlind,
     currency,
@@ -1516,24 +1516,24 @@ async function confirmDebugUpdateSessionConfig() {
   showNotice(t("notice.sessionConfigUpdated"), "success");
 }
 
-async function confirmDebugDeleteSessionFinish() {
-  if (!state.debugMode || !state.activeSessionId) return;
+async function confirmAdminDeleteSessionFinish() {
+  if (!state.adminMode || !state.activeSessionId) return;
 
   const confirmed = await openModal({
     title: t("modal.deleteFinishTitle"),
     description: t("modal.deleteFinishDescription"),
-    confirmText: t("debug.deleteFinish"),
+    confirmText: t("admin.deleteFinish"),
     confirmClass: "danger",
   });
   if (!confirmed) return;
 
-  const res = await debugDeleteSessionFinish(state.activeSessionId);
+  const res = await adminDeleteSessionFinish(state.activeSessionId);
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
       const me = await getCurrentUser();
       if (!me.ok || me.body?.user?.role !== "admin") {
         state.authUser = null;
-        state.debugMode = false;
+        state.adminMode = false;
         showNotice(t("error.adminRequired"), "error");
         renderSession();
         return;
@@ -1575,7 +1575,7 @@ async function confirmReverse(operationId) {
 }
 
 async function confirmAddExpense() {
-  if (state.session?.expensesClosed && !state.debugMode) {
+  if (state.session?.expensesClosed && !state.adminMode) {
     showNotice(t("notice.expensesClosed"), "error");
     return;
   }
@@ -1636,7 +1636,7 @@ async function confirmCloseExpenses() {
 }
 
 async function confirmDeleteExpense(expenseId) {
-  if (state.session?.expensesClosed && !state.debugMode) {
+  if (state.session?.expensesClosed && !state.adminMode) {
     showNotice(t("notice.expensesClosed"), "error");
     return;
   }

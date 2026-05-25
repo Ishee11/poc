@@ -1,6 +1,6 @@
 export const state = {
   authUiEnabled: false,
-  debugMode: false,
+  adminMode: false,
   authUser: null,
   authChecked: false,
   authLoginOpen: false,
