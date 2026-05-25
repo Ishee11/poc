@@ -2698,8 +2698,8 @@ th {
 .notice {
     padding: 14px 16px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    background: var(--surface);
     color: var(--text);
     line-height: 1.5;
     position: sticky;
@@ -2708,18 +2708,21 @@ th {
 }
 
 .notice.success {
-    border-color: rgba(88, 208, 167, 0.32);
-    background: rgba(88, 208, 167, 0.12);
+    border-color: #58d0a7;
+    background: #1a3a2e;
+    color: #d4f5e8;
 }
 
 .notice.error {
-    border-color: rgba(255, 143, 123, 0.32);
-    background: rgba(255, 143, 123, 0.12);
+    border-color: #ff8f7b;
+    background: #3d1e1a;
+    color: #ffd5cc;
 }
 
 .notice.info {
-    border-color: rgba(157, 193, 255, 0.24);
-    background: rgba(157, 193, 255, 0.1);
+    border-color: #9dc1ff;
+    background: #1a2740;
+    color: #d4e5ff;
 }
 
 pre {

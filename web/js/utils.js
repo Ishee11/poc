@@ -59,9 +59,16 @@ export function generateRequestId(prefix = "req") {
     .slice(2, 8)}`;
 }
 
+let noticeTimer = null;
+
 export function showNotice(message, kind = "info") {
   const el = document.getElementById("page-notice");
   if (!el) return;
+
+  if (noticeTimer) {
+    clearTimeout(noticeTimer);
+    noticeTimer = null;
+  }
 
   if (!message) {
     el.hidden = true;
@@ -73,6 +80,13 @@ export function showNotice(message, kind = "info") {
   el.hidden = false;
   el.textContent = message;
   el.className = `notice ${kind}`;
+
+  noticeTimer = setTimeout(() => {
+    el.hidden = true;
+    el.textContent = "";
+    el.className = "notice";
+    noticeTimer = null;
+  }, 5000);
 }
 
 export function describeError(res, fallback = t("error.fallback")) {
