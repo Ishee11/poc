@@ -1513,14 +1513,14 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     background: rgba(34, 211, 111, 0.07);
 }
 
-.debug-editable-stat {
+.admin-editable-stat {
     cursor: pointer;
     outline: 1px dashed rgba(127, 240, 202, 0.28);
     outline-offset: -4px;
 }
 
-.debug-editable-stat:hover,
-.debug-editable-stat:focus-visible {
+.admin-editable-stat:hover,
+.admin-editable-stat:focus-visible {
     border-color: rgba(127, 240, 202, 0.55);
     background: rgba(127, 240, 202, 0.08);
     outline: 2px solid rgba(127, 240, 202, 0.32);
@@ -1750,7 +1750,7 @@ button:disabled {
     margin-top: 14px;
 }
 
-.debug-admin-actions {
+.admin-actions {
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid rgba(255, 143, 123, 0.22);
@@ -1785,11 +1785,11 @@ button:disabled {
     overflow-wrap: anywhere;
 }
 
-.debug-only {
+.admin-only {
     display: none;
 }
 
-body.debug-mode .debug-only {
+body.admin-mode .admin-only {
     display: flex;
 }
 
@@ -2588,7 +2588,7 @@ body.debug-mode .debug-only {
     font-size: 1.15rem;
 }
 
-.session-status .status-debug-action {
+.session-status .status-admin-action {
     padding: 5px 8px;
     border-radius: 8px;
     font-size: 0.72rem;
@@ -2698,8 +2698,8 @@ th {
 .notice {
     padding: 14px 16px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    background: var(--surface);
     color: var(--text);
     line-height: 1.5;
     position: sticky;
@@ -2708,18 +2708,21 @@ th {
 }
 
 .notice.success {
-    border-color: rgba(88, 208, 167, 0.32);
-    background: rgba(88, 208, 167, 0.12);
+    border-color: #58d0a7;
+    background: #1a3a2e;
+    color: #d4f5e8;
 }
 
 .notice.error {
-    border-color: rgba(255, 143, 123, 0.32);
-    background: rgba(255, 143, 123, 0.12);
+    border-color: #ff8f7b;
+    background: #3d1e1a;
+    color: #ffd5cc;
 }
 
 .notice.info {
-    border-color: rgba(157, 193, 255, 0.24);
-    background: rgba(157, 193, 255, 0.1);
+    border-color: #9dc1ff;
+    background: #1a2740;
+    color: #d4e5ff;
 }
 
 pre {

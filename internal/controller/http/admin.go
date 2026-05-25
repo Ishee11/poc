@@ -7,7 +7,7 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
-func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
@@ -36,7 +36,7 @@ func (h *DebugHandler) RenamePlayer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
@@ -65,7 +65,7 @@ func (h *DebugHandler) UpdateSessionConfig(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
@@ -88,7 +88,7 @@ func (h *DebugHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
@@ -111,7 +111,7 @@ func (h *DebugHandler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 		return
@@ -134,7 +134,7 @@ func (h *DebugHandler) DeleteSessionFinish(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *DebugHandler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+func (h *AdminHandler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 	cookie, err := r.Cookie(h.cookie.Name)
 	if err != nil || cookie.Value == "" {
 		writeError(w, r, entity.ErrUnauthorized)

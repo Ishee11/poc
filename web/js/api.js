@@ -318,16 +318,16 @@ export function getPlayerStats(playerId, { from, to } = {}) {
   return request(`/stats/player?${params.toString()}`);
 }
 
-export function debugDeletePlayer(playerId) {
+export function adminDeletePlayer(playerId) {
   const params = new URLSearchParams({ player_id: playerId });
-  return request(`/debug/player?${params.toString()}`, {
+  return request(`/admin/player?${params.toString()}`, {
     method: "DELETE",
   });
 }
 
-export function debugUpdateSessionConfig(sessionId, { chipRate, bigBlind, currency }) {
+export function adminUpdateSessionConfig(sessionId, { chipRate, bigBlind, currency }) {
   const params = new URLSearchParams({ session_id: sessionId });
-  return request(`/debug/session/config?${params.toString()}`, {
+  return request(`/admin/session/config?${params.toString()}`, {
     method: "PATCH",
     body: JSON.stringify({
       chip_rate: chipRate,
@@ -337,24 +337,24 @@ export function debugUpdateSessionConfig(sessionId, { chipRate, bigBlind, curren
   });
 }
 
-export function debugRenamePlayer(playerId, name) {
+export function adminRenamePlayer(playerId, name) {
   const params = new URLSearchParams({ player_id: playerId });
-  return request(`/debug/player/rename?${params.toString()}`, {
+  return request(`/admin/player/rename?${params.toString()}`, {
     method: "PATCH",
     body: JSON.stringify({ name }),
   });
 }
 
-export function debugDeleteSession(sessionId) {
+export function adminDeleteSession(sessionId) {
   const params = new URLSearchParams({ session_id: sessionId });
-  return request(`/debug/session?${params.toString()}`, {
+  return request(`/admin/session?${params.toString()}`, {
     method: "DELETE",
   });
 }
 
-export function debugDeleteSessionFinish(sessionId) {
+export function adminDeleteSessionFinish(sessionId) {
   const params = new URLSearchParams({ session_id: sessionId });
-  return request(`/debug/session/finish?${params.toString()}`, {
+  return request(`/admin/session/finish?${params.toString()}`, {
     method: "DELETE",
   });
 }

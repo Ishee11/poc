@@ -994,6 +994,12 @@
                                     class="session-status"
                                     >-</span
                                 >
+                                <button
+                                    type="button"
+                                    class="secondary status-admin-action"
+                                    id="admin-reopen-session-btn"
+                                    hidden
+                                ></button>
                             </div>
                         </div>
 
@@ -1097,10 +1103,6 @@
                         </button>
                     </div>
 
-                    <div class="panel">
-                        <div id="players-wrap"></div>
-                    </div>
-
                     <div class="actions" id="session-player-actions">
                         <button
                             type="button"
@@ -1119,6 +1121,10 @@
                                 >
                             </span>
                         </button>
+                    </div>
+
+                    <div class="panel">
+                        <div id="players-wrap"></div>
                     </div>
 
                     <button
@@ -1173,15 +1179,15 @@ class="results-close-bill-btn"
                     </details>
 
                     <div
-                        class="panel debug-admin-actions"
-                        id="session-delete-debug-panel"
+                        class="panel admin-actions"
+                        id="session-delete-admin-panel"
                         hidden
                     >
                         <button
                             type="button"
                             class="danger"
-                            id="debug-delete-session-btn"
-                            data-i18n="debug.deleteSession"
+                            id="admin-delete-session-btn"
+                            data-i18n="admin.deleteSession"
                         >
                             Delete Session
                         </button>
@@ -1325,19 +1331,19 @@ class="results-close-bill-btn"
                                 ></div>
                                 <div
                                     id="player-screen-id"
-                                    class="muted debug-only"
+                                    class="muted admin-only"
                                 ></div>
                             </div>
                             <div
-                                class="actions debug-only"
-                                id="player-header-debug-actions"
+                                class="actions admin-only"
+                                id="player-header-admin-actions"
                                 hidden
                             >
                                 <button
                                     type="button"
                                     class="secondary"
-                                    id="debug-rename-player-btn"
-                                    data-i18n="debug.renamePlayer"
+                                    id="admin-rename-player-btn"
+                                    data-i18n="admin.renamePlayer"
                                 >
                                     Rename Player
                                 </button>
@@ -1356,15 +1362,15 @@ class="results-close-bill-btn"
                     </div>
 
                     <div
-                        class="panel debug-admin-actions"
-                        id="player-debug-actions"
+                        class="panel admin-actions"
+                        id="player-admin-actions"
                         hidden
                     >
                         <button
                             type="button"
                             class="danger"
-                            id="debug-delete-player-btn"
-                            data-i18n="debug.deletePlayer"
+                            id="admin-delete-player-btn"
+                            data-i18n="admin.deletePlayer"
                         >
                             Delete Player
                         </button>
@@ -1428,7 +1434,7 @@ class="results-close-bill-btn"
                                 placeholder="Password"
                                 data-i18n-placeholder="auth.password"
                             />
-                            <button type="submit" data-i18n="auth.login">
+                            <button type="submit" class="rebuy-action" data-i18n="auth.login">
                                 Login
                             </button>
                         </form>

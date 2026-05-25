@@ -7,13 +7,13 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
-type DebugAdminRepository struct{}
+type AdminRepository struct{}
 
-func NewDebugAdminRepository() *DebugAdminRepository {
-	return &DebugAdminRepository{}
+func NewAdminRepository() *AdminRepository {
+	return &AdminRepository{}
 }
 
-func (r *DebugAdminRepository) RenamePlayer(tx usecase.Tx, playerID entity.PlayerID, name string) error {
+func (r *AdminRepository) RenamePlayer(tx usecase.Tx, playerID entity.PlayerID, name string) error {
 	tag, err := tx.Exec(context.Background(), `
 		UPDATE players
 		SET name = $2
@@ -29,7 +29,7 @@ func (r *DebugAdminRepository) RenamePlayer(tx usecase.Tx, playerID entity.Playe
 	return nil
 }
 
-func (r *DebugAdminRepository) UpdateSessionConfig(tx usecase.Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error {
+func (r *AdminRepository) UpdateSessionConfig(tx usecase.Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error {
 	tag, err := tx.Exec(context.Background(), `
 		UPDATE sessions
 		SET chip_rate = $2,
@@ -47,7 +47,7 @@ func (r *DebugAdminRepository) UpdateSessionConfig(tx usecase.Tx, sessionID enti
 	return nil
 }
 
-func (r *DebugAdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.PlayerID) error {
+func (r *AdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.PlayerID) error {
 	ctx := context.Background()
 
 	rows, err := tx.Query(ctx, `
@@ -126,7 +126,7 @@ func (r *DebugAdminRepository) DeletePlayer(tx usecase.Tx, playerID entity.Playe
 	return nil
 }
 
-func (r *DebugAdminRepository) DeleteSession(tx usecase.Tx, sessionID entity.SessionID) error {
+func (r *AdminRepository) DeleteSession(tx usecase.Tx, sessionID entity.SessionID) error {
 	ctx := context.Background()
 
 	if _, err := tx.Exec(ctx, `DELETE FROM operations WHERE session_id = $1`, sessionID); err != nil {
@@ -144,7 +144,7 @@ func (r *DebugAdminRepository) DeleteSession(tx usecase.Tx, sessionID entity.Ses
 	return nil
 }
 
-func (r *DebugAdminRepository) DeleteSessionFinish(tx usecase.Tx, sessionID entity.SessionID) error {
+func (r *AdminRepository) DeleteSessionFinish(tx usecase.Tx, sessionID entity.SessionID) error {
 	ctx := context.Background()
 
 	tag, err := tx.Exec(ctx, `

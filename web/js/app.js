@@ -193,7 +193,7 @@ function initAdminLoginFooter() {
         await logout();
         state.authUser = null;
         state.authChecked = true;
-        syncDebugMode();
+        syncAdminMode();
         renderAdminLoginFooter();
         showNotice(t("error.adminRequired"), "error");
         return;
@@ -205,7 +205,7 @@ function initAdminLoginFooter() {
       form.reset();
       renderAuthPanel();
       renderAdminLoginFooter();
-      syncDebugMode();
+      syncAdminMode();
       if (state.authUiEnabled) await loadAccount();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
@@ -226,7 +226,7 @@ function initAdminLoginFooter() {
       clearAccount();
       renderAuthPanel();
       renderAdminLoginFooter();
-      syncDebugMode();
+      syncAdminMode();
       showNotice(t("notice.logoutSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -238,7 +238,7 @@ async function loadCurrentAdminUser() {
   state.authChecked = true;
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAdminLoginFooter();
-  syncDebugMode();
+  syncAdminMode();
 }
 
 function initAuth() {
@@ -279,7 +279,7 @@ function initAuth() {
       form.reset();
       renderAuthPanel();
       renderAdminLoginFooter();
-      syncDebugMode();
+      syncAdminMode();
       await loadAccount();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
@@ -300,7 +300,7 @@ function initAuth() {
       clearAccount();
       renderAuthPanel();
       renderAdminLoginFooter();
-      syncDebugMode();
+      syncAdminMode();
       await loadGuestPlayers();
       if (window.location.pathname === "/account") {
         setScreen("lobby");
@@ -338,7 +338,7 @@ function initAuth() {
       form?.reset();
       renderAuthPanel();
       renderAdminLoginFooter();
-      syncDebugMode();
+      syncAdminMode();
       await loadAccount();
       showNotice(t("notice.registrationSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
@@ -352,7 +352,7 @@ async function loadCurrentUser() {
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAuthPanel();
   renderAdminLoginFooter();
-  syncDebugMode();
+  syncAdminMode();
   if (state.authUser) {
     await loadAccount();
   } else {
@@ -785,12 +785,16 @@ async function openInitialRoute({ fromHistory = false } = {}) {
   if (!fromHistory) replaceRoute(routeToHome());
 }
 
-function syncDebugMode() {
-  state.debugMode = state.authUser?.role === "admin";
-  document.body.classList.toggle("debug-mode", state.debugMode);
+function syncAdminMode() {
+  state.adminMode = state.authUser?.role === "admin";
+  document.body.classList.toggle("admin-mode", state.adminMode);
   if (state.session) {
+    renderSession();
+    renderOperations();
+    renderActionPlayerOptions();
     renderExpenseForm();
     renderExpenses();
+    renderSettlement();
   }
 }
 

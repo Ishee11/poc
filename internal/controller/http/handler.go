@@ -16,7 +16,7 @@ type Handler struct {
 	Push      *PushHandler
 	Player    *PlayerHandler
 	Stats     *StatsHandler
-	Debug     *DebugHandler
+	Admin     *AdminHandler
 }
 
 type AuthCookieConfig struct {
@@ -60,12 +60,12 @@ func NewHandler(
 	getStatsSessions *usecase.GetStatsSessionsUseCase,
 	getStatsPlayers *usecase.GetStatsPlayersUseCase,
 
-	// debug admin
-	renameDebugPlayer *usecase.RenameDebugPlayerUseCase,
-	updateDebugSessionConfig *usecase.UpdateDebugSessionConfigUseCase,
-	deleteDebugPlayer *usecase.DeleteDebugPlayerUseCase,
-	deleteDebugSession *usecase.DeleteDebugSessionUseCase,
-	deleteDebugSessionFinish *usecase.DeleteDebugSessionFinishUseCase,
+	// admin
+	renameAdminPlayer *usecase.AdminRenamePlayerUseCase,
+	updateAdminSessionConfig *usecase.AdminUpdateSessionConfigUseCase,
+	deleteAdminPlayer *usecase.AdminDeletePlayerUseCase,
+	deleteAdminSession *usecase.AdminDeleteSessionUseCase,
+	deleteAdminSessionFinish *usecase.AdminDeleteSessionFinishUseCase,
 ) *Handler {
 
 	return &Handler{
@@ -112,12 +112,12 @@ func NewHandler(
 			authUC:             authUC,
 			cookie:             authCookie,
 		},
-		Debug: &DebugHandler{
-			renamePlayerUC:        renameDebugPlayer,
-			updateSessionConfigUC: updateDebugSessionConfig,
-			deletePlayerUC:        deleteDebugPlayer,
-			deleteSessionUC:       deleteDebugSession,
-			deleteSessionFinishUC: deleteDebugSessionFinish,
+		Admin: &AdminHandler{
+			renamePlayerUC:        renameAdminPlayer,
+			updateSessionConfigUC: updateAdminSessionConfig,
+			deletePlayerUC:        deleteAdminPlayer,
+			deleteSessionUC:       deleteAdminSession,
+			deleteSessionFinishUC: deleteAdminSessionFinish,
 			authUC:                authUC,
 			cookie:                authCookie,
 		},
@@ -175,12 +175,12 @@ type StatsHandler struct {
 	cookie             AuthCookieConfig
 }
 
-type DebugHandler struct {
-	renamePlayerUC        *usecase.RenameDebugPlayerUseCase
-	updateSessionConfigUC *usecase.UpdateDebugSessionConfigUseCase
-	deletePlayerUC        *usecase.DeleteDebugPlayerUseCase
-	deleteSessionUC       *usecase.DeleteDebugSessionUseCase
-	deleteSessionFinishUC *usecase.DeleteDebugSessionFinishUseCase
+type AdminHandler struct {
+	renamePlayerUC        *usecase.AdminRenamePlayerUseCase
+	updateSessionConfigUC *usecase.AdminUpdateSessionConfigUseCase
+	deletePlayerUC        *usecase.AdminDeletePlayerUseCase
+	deleteSessionUC       *usecase.AdminDeleteSessionUseCase
+	deleteSessionFinishUC *usecase.AdminDeleteSessionFinishUseCase
 	authUC                *usecase.AuthService
 	cookie                AuthCookieConfig
 }
