@@ -36,6 +36,7 @@ let runtimeRemainingSeconds = 0;
 let runtimeTickAtMs = 0;
 let tickerId = null;
 let resyncId = null;
+let isTicking = false;
 let lastAlertedLevel = null;
 let lastCountdownAlertKey = "";
 let audioContext = null;
@@ -54,6 +55,10 @@ let pushSettings = {
 const PUSH_SETTINGS_STORAGE_KEY = "blindsPushSettings";
 
 export function initBlindsClock() {
+  if (tickerId) window.clearInterval(tickerId);
+  if (resyncId) window.clearInterval(resyncId);
+  if (audioContext) { audioContext.close(); audioContext = null; audioWarmupDone = false; }
+
   if (!tickerId) {
     tickerId = window.setInterval(() => {
       if (document.body.dataset.screen !== "blinds") return;
@@ -628,6 +633,8 @@ function applyClockState(body, { announceLevelChange = true } = {}) {
 
 function tickRuntime() {
   if (!clockState) return;
+  if (isTicking) return;
+  isTicking = true;
 
   const now = Date.now();
   const elapsedSeconds = Math.floor((now - runtimeTickAtMs) / 1000);
@@ -667,6 +674,7 @@ function tickRuntime() {
   runtimeRemainingSeconds = Math.max(remaining, 0);
   runtimeLevelIndex = levelIndex;
   maybePlayCountdownWarning();
+  isTicking = false;
 }
 
 function maybePlayCountdownWarning() {

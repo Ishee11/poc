@@ -306,6 +306,35 @@ export function openModal({
       { once: true },
     );
 
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    const trapFocus = (event) => {
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(root.querySelectorAll(focusableSelector));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    const handleKeydown = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        close(null);
+        return;
+      }
+      trapFocus(event);
+    };
+
+    root.addEventListener("keydown", handleKeydown);
+
     const syncConditionalFields = () => {
       root.querySelectorAll("[data-modal-show-when-name]").forEach((wrap) => {
         const controlName = wrap.getAttribute("data-modal-show-when-name");
@@ -324,6 +353,11 @@ export function openModal({
     root.querySelector("#modal-form")?.addEventListener("input", syncConditionalFields);
     root.querySelector("#modal-form")?.addEventListener("change", syncConditionalFields);
     syncConditionalFields();
+
+    window.setTimeout(() => {
+      const firstFocusable = root.querySelector(focusableSelector);
+      if (firstFocusable instanceof HTMLElement) firstFocusable.focus();
+    }, 0);
 
     root.querySelector("#modal-cancel-btn")?.addEventListener("click", () => {
       close(null);

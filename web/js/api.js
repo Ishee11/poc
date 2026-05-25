@@ -19,7 +19,9 @@ async function request(path, options = {}) {
     if (text) {
       try {
         body = JSON.parse(text);
-      } catch {}
+      } catch {
+        console.error("API: failed to parse JSON response from", path, text.slice(0, 200));
+      }
     }
 
     return {

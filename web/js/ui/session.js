@@ -1690,7 +1690,7 @@ async function refreshSessionData() {
   renderExpenseForm();
   renderSettlement();
 
-  Promise.allSettled([loadSessions(), loadPlayersOverview()]);
+  await Promise.allSettled([loadSessions(), loadPlayersOverview()]);
 }
 
 function hydrateSession(raw) {
