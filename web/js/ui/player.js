@@ -23,6 +23,8 @@ import {
   setValue,
   showNotice,
   withLoading,
+  playerId,
+  playerName as getPlayerName,
 } from "../utils.js";
 
 export async function loadPlayers(sessionId) {
@@ -388,8 +390,8 @@ export function renderPlayers() {
 
   wrap.innerHTML = state.players
     .map((player) => {
-      const id = player.player_id || player.id;
-      const name = player.player_name || player.name || id;
+      const id = playerId(player);
+      const name = getPlayerName(player);
       const profitMoney = Number(player.profit_money) || 0;
       const canShowRebuy = canUseSessionActions && sessionActionMode === "rebuy";
       const noChips = Number(state.session.totalChips) <= 0;
@@ -446,9 +448,9 @@ export function renderPlayerDetail() {
   const brandTitle = document.querySelector(".app-brand h1");
   const id = document.getElementById("player-screen-id");
   const linkedUser = document.getElementById("player-screen-user");
-  const playerName = player.player_name || player.name || player.player_id;
+  const pName = getPlayerName(player);
 
-  if (brandTitle) brandTitle.textContent = playerName;
+  if (brandTitle) brandTitle.textContent = pName;
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
     linkedUser.innerHTML = `${escapeHtml(playerName)}${renderPlayerRankBadge(player.rank)}`;
@@ -660,7 +662,7 @@ function renderPlayerAdminActions(player) {
 async function confirmAdminRenamePlayer(player) {
   if (!state.adminMode || !player?.player_id) return;
 
-  const playerName = player.player_name || player.name || player.player_id;
+  const pName = getPlayerName(player);
   const values = await openModal({
     title: t("modal.renamePlayerTitle"),
     confirmText: t("admin.renamePlayer"),
@@ -670,7 +672,7 @@ async function confirmAdminRenamePlayer(player) {
         name: "name",
         label: t("lobby.playerName"),
         type: "text",
-        value: playerName,
+        value: pName,
       },
     ],
   });
@@ -698,10 +700,10 @@ async function confirmAdminRenamePlayer(player) {
 async function confirmAdminDeletePlayer(player) {
   if (!state.adminMode || !player?.player_id) return;
 
-  const playerName = player.player_name || player.name || player.player_id;
+  const pName = getPlayerName(player);
   const confirmed = await openModal({
     title: t("modal.deletePlayerTitle"),
-    description: t("modal.deletePlayerDescription", { name: playerName }),
+    description: t("modal.deletePlayerDescription", { name: pName }),
     confirmText: t("admin.deletePlayer"),
     confirmClass: "danger",
   });
@@ -722,20 +724,22 @@ async function confirmAdminDeletePlayer(player) {
 }
 
 function bindOpenPlayerButtons(container) {
-  container.querySelectorAll("[data-open-player]").forEach((row) => {
-    row.addEventListener("click", async (event) => {
-      if (event.target.closest("button")) return;
-      const playerId = row.getAttribute("data-open-player");
-      if (!playerId) return;
-      await loadPlayerDetail(playerId);
-    });
-    row.addEventListener("keydown", async (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      const playerId = row.getAttribute("data-open-player");
-      if (!playerId) return;
-      await loadPlayerDetail(playerId);
-    });
+  container.addEventListener("click", async (event) => {
+    const row = event.target.closest("[data-open-player]");
+    if (!row) return;
+    if (event.target.closest("button")) return;
+    const playerId = row.getAttribute("data-open-player");
+    if (!playerId) return;
+    await loadPlayerDetail(playerId);
+  });
+  container.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const row = event.target.closest("[data-open-player]");
+    if (!row) return;
+    event.preventDefault();
+    const playerId = row.getAttribute("data-open-player");
+    if (!playerId) return;
+    await loadPlayerDetail(playerId);
   });
 }
 

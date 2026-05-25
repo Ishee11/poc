@@ -35,6 +35,8 @@ import {
   setScreen,
   showNotice,
   withLoading,
+  playerId,
+  playerName,
 } from "../utils.js";
 import { loadSessions } from "./lobby.js";
 import { loadPlayers, loadPlayersOverview, renderPlayers } from "./player.js";
@@ -429,11 +431,11 @@ function renderExpenseParticipantControls(players, amount) {
     return modeSwitch;
   }
 
-  const shares = calculateEqualShares(amount, players.map((player) => player.player_id || player.id));
+  const shares = calculateEqualShares(amount, players.map((player) => playerId(player)));
   const participantRows = players
     .map((player) => {
-      const id = player.player_id || player.id;
-      const name = player.player_name || player.name || id;
+      const id = playerId(player);
+      const name = playerName(player);
       return `
         <label class="expense-check">
           <span class="expense-check-main">
@@ -477,8 +479,8 @@ function renderExpensePayerControls(players, selectedPayerIds, amount) {
       <div class="expense-payer-custom-grid">
         ${players
           .map((player) => {
-            const id = player.player_id || player.id;
-            const name = player.player_name || player.name || id;
+            const id = playerId(player);
+            const name = playerName(player);
             return `
               <label class="expense-payer-row">
                 <span>${escapeHtml(name)}</span>
@@ -513,12 +515,12 @@ function renderExpensePayerSelectRow(players, selectedId, selectedSet, amount) {
     `<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`,
     ...players
       .filter((player) => {
-        const id = player.player_id || player.id;
+        const id = playerId(player);
         return id === selectedId || !selectedSet.has(id);
       })
       .map((player) => {
-        const id = player.player_id || player.id;
-        const name = player.player_name || player.name || id;
+        const id = playerId(player);
+        const name = playerName(player);
         return `<option value="${escapeHtml(id)}" ${id === selectedId ? "selected" : ""}>${escapeHtml(name)}</option>`;
       }),
   ].join("");
@@ -534,7 +536,7 @@ function renderExpensePayerSelectRow(players, selectedId, selectedSet, amount) {
 }
 
 function readSelectedExpensePayers(players) {
-  const playerIds = new Set(players.map((player) => player.player_id || player.id));
+  const playerIds = new Set(players.map((player) => playerId(player)));
   const selected = Array.from(document.querySelectorAll("[data-expense-payer-select]"))
     .map((select) => select.value)
     .filter((id, index, ids) => id && playerIds.has(id) && ids.indexOf(id) === index);
@@ -559,7 +561,7 @@ function calculateEqualShares(amount, participants) {
 
 function selectedExpenseParticipants() {
   if ((state.expenseParticipantMode || "all") === "all") {
-    return (state.players || []).map((player) => player.player_id || player.id).filter(Boolean);
+    return (state.players || []).map((player) => playerId(player)).filter(Boolean);
   }
   return Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
     .map((input) => input.value)
@@ -854,8 +856,8 @@ function renderManualSettlementAddRow() {
 function renderSettlementPlayerOptions(selectedId) {
   const options = [`<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`];
   for (const player of state.players || []) {
-    const id = player.player_id || player.id;
-    const name = player.player_name || player.name || id;
+    const id = playerId(player);
+    const name = playerName(player);
     options.push(
       `<option value="${escapeHtml(id)}" ${id === selectedId ? "selected" : ""}>${escapeHtml(name)}</option>`,
     );
@@ -919,6 +921,13 @@ function closeManualSettlement() {
   renderSettlement();
 }
 
+window.addEventListener("beforeunload", (event) => {
+  if (state.settlementEditing) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
+
 async function resetSettlementToAuto() {
   if (!state.activeSessionId) return;
   delete state.settlementDrafts[state.activeSessionId];
@@ -957,15 +966,15 @@ function renderPlayerSelect(selectId, players) {
   const options = [
     `<option value="">${escapeHtml(t("session.selectPlayer"))}</option>`,
     ...players.map((player) => {
-      const id = player.player_id || player.id;
-      const name = player.player_name || player.name || id;
+      const id = playerId(player);
+      const name = playerName(player);
       return `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`;
     }),
   ];
 
   select.innerHTML = options.join("");
   const exists = players.some((player) => {
-    const id = player.player_id || player.id;
+    const id = playerId(player);
     return id === current;
   });
   if (exists) {
@@ -1291,7 +1300,7 @@ async function confirmAddPlayer() {
   const inGameIds = new Set(
     state.players
       .filter((player) => player.in_game)
-      .map((player) => player.player_id || player.id),
+      .map((player) => playerId(player)),
   );
   const availablePlayers = sortPlayersByLastActivity(
     state.overviewPlayersAll.filter((player) => !inGameIds.has(player.player_id)),
@@ -1710,17 +1719,17 @@ function hydrateSession(raw) {
   };
 }
 
-function findPlayerName(playerId) {
+function findPlayerName(pid) {
   const inSession = state.players.find((player) => {
-    const id = player.player_id || player.id;
-    return id === playerId;
+    const id = playerId(player);
+    return id === pid;
   });
   if (inSession) {
-    return inSession.player_name || inSession.name || playerId;
+    return inSession.player_name || inSession.name || pid;
   }
 
-  const overview = state.overviewPlayersAll.find((player) => player.player_id === playerId);
-  return overview?.player_name || playerId;
+  const overview = state.overviewPlayersAll.find((player) => player.player_id === pid);
+  return overview?.player_name || pid;
 }
 
 function formatSessionDate(value) {
@@ -1756,7 +1765,7 @@ function totalMoneyIn(session) {
 function settlementBalances() {
   const balances = new Map();
   for (const player of state.players || []) {
-    const id = player.player_id || player.id;
+    const id = playerId(player);
     balances.set(id, Number(player.profit_money) || 0);
   }
 

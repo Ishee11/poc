@@ -165,7 +165,7 @@ function renderLatestActiveSession(session) {
     chips: formatNumber(session.chip_rate),
   });
   bigBlind.textContent = formatNumber(session.big_blind);
-  chips.textContent = formatNumber(chipsOnTable).replaceAll(",", " ");
+  chips.textContent = formatNumber(chipsOnTable);
 }
 
 export function firstActiveSessionId() {

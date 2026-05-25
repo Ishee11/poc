@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSessionActions();
   initBlindsClock();
   initLanguageSelect();
-  const removeLanguageChangeListener = onLanguageChange(renderCurrentLanguage);
+  onLanguageChange(renderCurrentLanguage);
 
   if (state.authUiEnabled) {
     await loadCurrentUser();
@@ -437,7 +437,7 @@ async function loadGuestPlayers() {
   const res = await getUnlinkedPlayers({ limit: 200 });
   state.guestPlayers = res.ok && Array.isArray(res.body?.players) ? res.body.players : [];
   const selectedExists = state.guestPlayers.some((player) => {
-    const id = player.player_id || player.id || "";
+    const id = playerId(player);
     return id === state.guestPlayerId;
   });
   if (state.guestPlayerId && !selectedExists) {
@@ -455,7 +455,7 @@ function renderGuestPlayerSelect() {
     <option value="">${escapeHtml(t("guest.noPlayer"))}</option>
     ${state.guestPlayers
       .map((player) => {
-        const id = player.player_id || player.id || "";
+        const id = playerId(player);
         return `<option value="${escapeHtml(id)}">${escapeHtml(player.name)}</option>`;
       })
       .join("")}
@@ -615,7 +615,7 @@ function renderAccountPanel() {
     linked.innerHTML = state.accountPlayers
       .map(
         (player) => {
-          const id = player.player_id || player.id || "";
+          const id = playerId(player);
           return `
           <div class="account-player-row">
             <span>${escapeHtml(player.name)}</span>
@@ -631,7 +631,7 @@ function renderAccountPanel() {
     <option value="">${escapeHtml(t("account.selectPlayer"))}</option>
     ${state.accountAvailablePlayers
       .map((player) => {
-        const id = player.player_id || player.id || "";
+        const id = playerId(player);
         return `<option value="${escapeHtml(id)}">${escapeHtml(player.name)}</option>`;
       })
       .join("")}

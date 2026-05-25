@@ -65,20 +65,21 @@ export function apiDelete(path, body) {
 export function login({ email, password }) {
   return request("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, request_id: rid() }),
   });
 }
 
 export function register({ email, password }) {
   return request("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, request_id: rid() }),
   });
 }
 
 export function logout() {
   return request("/auth/logout", {
     method: "POST",
+    body: JSON.stringify({ request_id: rid() }),
   });
 }
 
@@ -104,7 +105,7 @@ export function getAccountAvailablePlayers({ limit, offset } = {}) {
 export function linkAccountPlayer(playerId) {
   return request("/account/players", {
     method: "POST",
-    body: JSON.stringify({ player_id: playerId }),
+    body: JSON.stringify({ player_id: playerId, request_id: rid() }),
   });
 }
 
@@ -112,6 +113,7 @@ export function unlinkAccountPlayer(playerId) {
   const params = new URLSearchParams({ player_id: playerId });
   return request(`/account/players?${params.toString()}`, {
     method: "DELETE",
+    body: JSON.stringify({ request_id: rid() }),
   });
 }
 

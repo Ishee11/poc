@@ -523,6 +523,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     border: 1px solid var(--line);
     background: var(--panel);
     backdrop-filter: blur(10px);
+    will-change: transform;
     box-shadow: var(--shadow);
     min-width: 0;
 }
@@ -3436,4 +3437,12 @@ pre {
 @keyframes skeleton-pulse {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

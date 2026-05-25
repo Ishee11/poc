@@ -12,7 +12,7 @@ export function setValue(id, val) {
 
 export function formatNumber(v) {
   const n = Number(v);
-  return Number.isFinite(n) ? n.toLocaleString() : "-";
+  return Number.isFinite(n) ? n.toLocaleString("ru-RU") : "-";
 }
 
 export function formatMoney(value, currency) {
@@ -42,6 +42,14 @@ export function formatDate(v, { seconds = false } = {}) {
         minute: "2-digit",
         ...(seconds ? { second: "2-digit" } : {}),
       });
+}
+
+export function playerId(player) {
+  return player?.player_id || player?.id || "";
+}
+
+export function playerName(player) {
+  return player?.player_name || player?.name || playerId(player);
 }
 
 export function escapeHtml(str) {
