@@ -26,6 +26,7 @@ import {
   setBlindsMode,
   setScreen,
   showNotice,
+  withLoading,
 } from "../utils.js";
 
 let clockState = null;
@@ -36,6 +37,7 @@ let runtimeRemainingSeconds = 0;
 let runtimeTickAtMs = 0;
 let tickerId = null;
 let resyncId = null;
+let isTicking = false;
 let lastAlertedLevel = null;
 let lastCountdownAlertKey = "";
 let audioContext = null;
@@ -53,7 +55,17 @@ let pushSettings = {
 };
 const PUSH_SETTINGS_STORAGE_KEY = "blindsPushSettings";
 
+let initAbortController = null;
+
 export function initBlindsClock() {
+  if (initAbortController) initAbortController.abort();
+  initAbortController = new AbortController();
+  const { signal } = initAbortController;
+
+  if (tickerId) window.clearInterval(tickerId);
+  if (resyncId) window.clearInterval(resyncId);
+  if (audioContext) { audioContext.close(); audioContext = null; audioWarmupDone = false; }
+
   if (!tickerId) {
     tickerId = window.setInterval(() => {
       if (document.body.dataset.screen !== "blinds") return;
@@ -74,59 +86,59 @@ export function initBlindsClock() {
       void unlockAudio();
       await refreshBlindClock({ silent: true });
     }
-  });
+  }, { signal });
 
   document.addEventListener("pointerdown", () => {
     if (document.body.dataset.screen === "blinds") {
       void unlockAudio();
     }
-  });
+  }, { signal });
 
   document.getElementById("open-blinds-clock-btn")?.addEventListener("click", async () => {
     await openBlindsClock();
-  });
+  }, { signal });
 
   document.getElementById("header-blinds-clock-btn")?.addEventListener("click", async () => {
     await openBlindsClock();
-  });
+  }, { signal });
 
   document.getElementById("blinds-open-presentation-btn")?.addEventListener("click", async () => {
     await openBlindsClock({ mode: "presentation" });
-  });
+  }, { signal });
 
   document.getElementById("blinds-exit-presentation-btn")?.addEventListener("click", async () => {
     await openBlindsClock({ mode: "default" });
-  });
+  }, { signal });
 
   document.getElementById("blinds-push-toggle-btn")?.addEventListener("click", async () => {
     await togglePushSubscription();
-  });
+  }, { signal });
 
   document.getElementById("blinds-push-test-btn")?.addEventListener("click", async () => {
     await sendPushTest();
-  });
+  }, { signal });
 
   document.getElementById("blinds-push-warning-60")?.addEventListener("change", async (event) => {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     await updatePushSettings({ notifyWarning60: target.checked });
-  });
+  }, { signal });
 
   document.getElementById("blinds-push-warning-10")?.addEventListener("change", async (event) => {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     await updatePushSettings({ notifyWarning10: target.checked });
-  });
+  }, { signal });
 
   document.getElementById("blinds-back-home-btn")?.addEventListener("click", () => {
     setScreen("lobby");
     pushRoute("/");
-  });
+  }, { signal });
 
   document.getElementById("blinds-toggle-editor-btn")?.addEventListener("click", () => {
     editorOpen = !editorOpen;
     renderBlindsClock({ updateEditor: true });
-  });
+  }, { signal });
 
   document.getElementById("blinds-toggle-btn")?.addEventListener("click", async () => {
     const action = currentToggleAction();
@@ -153,7 +165,7 @@ export function initBlindsClock() {
       eventTone: action === "pause" ? "warning" : "success",
       errorMessage: t("error.internal_error"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-reset-btn")?.addEventListener("click", async () => {
     const confirmed = await openModal({
@@ -170,7 +182,7 @@ export function initBlindsClock() {
       eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-reset-default-btn")?.addEventListener("click", async () => {
     const confirmed = await openModal({
@@ -187,7 +199,7 @@ export function initBlindsClock() {
       eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-previous-level-btn")?.addEventListener("click", async () => {
     await unlockAudio();
@@ -197,7 +209,7 @@ export function initBlindsClock() {
       eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-next-level-btn")?.addEventListener("click", async () => {
     await unlockAudio();
@@ -207,7 +219,7 @@ export function initBlindsClock() {
       eventTone: "warning",
       errorMessage: t("error.internal_error"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-add-level-btn")?.addEventListener("click", async () => {
     if (!clockState) return;
@@ -229,7 +241,7 @@ export function initBlindsClock() {
         selectedLevelIndex = Math.max((body?.levels?.length || levels.length) - 1, 0);
       },
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-delete-level-btn")?.addEventListener("click", async () => {
     if (!clockState?.levels?.[selectedLevelIndex]) return;
@@ -257,7 +269,7 @@ export function initBlindsClock() {
         selectedLevelIndex = Math.max(Math.min(selectedLevelIndex, levels.length - 1), 0);
       },
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-delete-all-levels-btn")?.addEventListener("click", async () => {
     const confirmed = await openModal({
@@ -273,7 +285,7 @@ export function initBlindsClock() {
       successMessage: t("notice.blindsAllLevelsDeleted"),
       errorMessage: t("error.blind_clock_has_no_levels"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-save-level-btn")?.addEventListener("click", async () => {
     if (!clockState?.levels?.[selectedLevelIndex]) return;
@@ -321,14 +333,14 @@ export function initBlindsClock() {
       successMessage: t("notice.blindsLevelSaved", { level: selectedLevelIndex + 1 }),
       errorMessage: t("error.invalid_blind_clock_level"),
     });
-  });
+  }, { signal });
 
   document.getElementById("blinds-level-select")?.addEventListener("change", (event) => {
     const target = event.currentTarget;
     if (!(target instanceof HTMLSelectElement)) return;
     selectedLevelIndex = clampLevelIndex(Number(target.value), clockState?.levels?.length || 0);
     renderBlindsClock({ updateEditor: true });
-  });
+  }, { signal });
 }
 
 export async function openBlindsClock({ replace = false, mode = "default" } = {}) {
@@ -628,6 +640,8 @@ function applyClockState(body, { announceLevelChange = true } = {}) {
 
 function tickRuntime() {
   if (!clockState) return;
+  if (isTicking) return;
+  isTicking = true;
 
   const now = Date.now();
   const elapsedSeconds = Math.floor((now - runtimeTickAtMs) / 1000);
@@ -667,6 +681,7 @@ function tickRuntime() {
   runtimeRemainingSeconds = Math.max(remaining, 0);
   runtimeLevelIndex = levelIndex;
   maybePlayCountdownWarning();
+  isTicking = false;
 }
 
 function maybePlayCountdownWarning() {
@@ -774,6 +789,14 @@ function currentToggleAction() {
   return "start";
 }
 
+let swRegistrationPromise = null;
+function getSwRegistration() {
+  if (!swRegistrationPromise) {
+    swRegistrationPromise = navigator.serviceWorker.register("/sw.js");
+  }
+  return swRegistrationPromise;
+}
+
 async function refreshPushState() {
   pushSupported = supportsWebPush();
   pushSettings = loadStoredPushSettings();
@@ -788,7 +811,7 @@ async function refreshPushState() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const registration = await getSwRegistration();
     const subscription = await registration.pushManager.getSubscription();
     pushSubscribed = Boolean(subscription);
     if (subscription) {
@@ -826,7 +849,7 @@ async function togglePushSubscription() {
   renderBlindsClock({ updateEditor: false });
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const registration = await getSwRegistration();
     let subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
@@ -903,7 +926,7 @@ async function updatePushSettings(nextSettings) {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const registration = await getSwRegistration();
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       pushSubscribed = false;

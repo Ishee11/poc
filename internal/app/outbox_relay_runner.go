@@ -29,6 +29,13 @@ func NewOutboxRelayRunner(relay *usecase.OutboxRelay, interval time.Duration, ba
 	}
 }
 
+func (r *OutboxRelayRunner) Close() error {
+	if r != nil && r.relay != nil {
+		return r.relay.Close()
+	}
+	return nil
+}
+
 func (r *OutboxRelayRunner) Start(ctx context.Context) {
 	if r == nil {
 		return

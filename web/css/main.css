@@ -523,6 +523,7 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
     border: 1px solid var(--line);
     background: var(--panel);
     backdrop-filter: blur(10px);
+    will-change: transform;
     box-shadow: var(--shadow);
     min-width: 0;
 }
@@ -2421,8 +2422,7 @@ body.admin-mode .admin-only {
     width: 100%;
     min-height: 48px;
     padding: 12px 14px;
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
+    display: flex;
     gap: 12px;
     align-items: center;
     text-align: left;
@@ -3413,5 +3413,35 @@ pre {
 
     #results-spoiler > #results-wrap {
         margin-top: 12px;
+    }
+}
+
+/* is-loading skeleton pulse */
+.is-loading {
+    position: relative;
+    min-height: 40px;
+}
+
+.is-loading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+@keyframes skeleton-pulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }

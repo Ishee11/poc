@@ -66,6 +66,13 @@ func NewOutboxRelay(
 	}
 }
 
+func (r *OutboxRelay) Close() error {
+	if closer, ok := r.publisher.(interface{ Close() error }); ok {
+		return closer.Close()
+	}
+	return nil
+}
+
 func (r *OutboxRelay) DispatchOnce(ctx context.Context, limit int) (OutboxDispatchResult, error) {
 	if limit <= 0 {
 		limit = 100

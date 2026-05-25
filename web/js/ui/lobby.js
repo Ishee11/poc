@@ -8,10 +8,12 @@ import {
   formatNumber,
   currencySymbol,
   setValue,
+  withLoading,
 } from "../utils.js";
 
 export async function loadSessions() {
-  const res = await getSessions({ guestPlayerId: state.authUser ? "" : state.guestPlayerId });
+  const res = await withLoading("#overview-sessions-wrap", () =>
+    getSessions({ guestPlayerId: state.authUser ? "" : state.guestPlayerId }));
 
   if (!res.ok) {
     console.error("loadSessions failed:", res.text);
@@ -163,7 +165,7 @@ function renderLatestActiveSession(session) {
     chips: formatNumber(session.chip_rate),
   });
   bigBlind.textContent = formatNumber(session.big_blind);
-  chips.textContent = formatNumber(chipsOnTable).replaceAll(",", " ");
+  chips.textContent = formatNumber(chipsOnTable);
 }
 
 export function firstActiveSessionId() {
