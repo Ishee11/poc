@@ -278,7 +278,7 @@ func TestOutboxRepository_FetchPendingAndMarkPublished_Integration(t *testing.T)
 	})
 }
 
-func TestDebugAdminRepository_DeleteSessionFinishRemovesSessionFinishedOutbox(t *testing.T) {
+func TestAdminRepository_DeleteSessionFinishRemovesSessionFinishedOutbox(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)
 
@@ -310,7 +310,7 @@ func TestDebugAdminRepository_DeleteSessionFinishRemovesSessionFinishedOutbox(t 
 			t.Fatalf("save operation outbox event: %v", err)
 		}
 
-		if err := NewDebugAdminRepository().DeleteSessionFinish(tx, "s1"); err != nil {
+		if err := NewAdminRepository().DeleteSessionFinish(tx, "s1"); err != nil {
 			t.Fatalf("delete session finish: %v", err)
 		}
 

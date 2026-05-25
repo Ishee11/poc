@@ -8,14 +8,13 @@ import (
 )
 
 type Config struct {
-	DatabaseURL   string
-	HTTPPort      string
-	LogLevel      string
-	DebugEnabled  bool
-	Tracing       TracingConfig
-	Auth          AuthConfig
-	Push          PushConfig
-	Kafka         KafkaConfig
+	DatabaseURL string
+	HTTPPort    string
+	LogLevel    string
+	Tracing     TracingConfig
+	Auth        AuthConfig
+	Push        PushConfig
+	Kafka       KafkaConfig
 }
 
 type TracingConfig struct {
@@ -69,10 +68,9 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		DatabaseURL:   os.Getenv("DATABASE_URL"),
-		HTTPPort:      getEnv("HTTP_PORT", "8080"),
-		LogLevel:      getEnv("LOG_LEVEL", "info"),
-		DebugEnabled:  getBoolEnv("DEBUG_ENABLED", false),
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+		HTTPPort:    getEnv("HTTP_PORT", "8080"),
+		LogLevel:    getEnv("LOG_LEVEL", "info"),
 		Tracing: TracingConfig{
 			ServiceName:  getEnv("OTEL_SERVICE_NAME", "poker-app"),
 			OTLPEndpoint: strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),

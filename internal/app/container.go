@@ -31,7 +31,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	idempotencyRepo := postgres.NewIdempotencyRepository()
 	statsRepo := postgres.NewStatsRepository(db.Pool)
 	playerRepo := postgres.NewPlayerRepository()
-	debugAdminRepo := postgres.NewDebugAdminRepository()
+	adminRepo := postgres.NewAdminRepository()
 	authRepo := postgres.NewAuthRepository()
 	userPlayerLinkRepo := postgres.NewUserPlayerLinkRepository()
 	blindClockRepo := postgres.NewBlindClockRepository()
@@ -175,28 +175,28 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		sessionRepo,
 	)
 
-	renameDebugPlayerUC := usecase.NewRenameDebugPlayerUseCase(
-		debugAdminRepo,
+	renameAdminPlayerUC := usecase.NewAdminRenamePlayerUseCase(
+		adminRepo,
 		txManager,
 	)
 
-	updateDebugSessionConfigUC := usecase.NewUpdateDebugSessionConfigUseCase(
-		debugAdminRepo,
+	updateAdminSessionConfigUC := usecase.NewAdminUpdateSessionConfigUseCase(
+		adminRepo,
 		txManager,
 	)
 
-	deleteDebugPlayerUC := usecase.NewDeleteDebugPlayerUseCase(
-		debugAdminRepo,
+	deleteAdminPlayerUC := usecase.NewAdminDeletePlayerUseCase(
+		adminRepo,
 		txManager,
 	)
 
-	deleteDebugSessionUC := usecase.NewDeleteDebugSessionUseCase(
-		debugAdminRepo,
+	deleteAdminSessionUC := usecase.NewAdminDeleteSessionUseCase(
+		adminRepo,
 		txManager,
 	)
 
-	deleteDebugSessionFinishUC := usecase.NewDeleteDebugSessionFinishUseCase(
-		debugAdminRepo,
+	deleteAdminSessionFinishUC := usecase.NewAdminDeleteSessionFinishUseCase(
+		adminRepo,
 		txManager,
 	)
 
@@ -297,16 +297,16 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		getStatsSessionsUC,
 		getStatsPlayersUC,
 
-		// debug admin
-		renameDebugPlayerUC,
-		updateDebugSessionConfigUC,
-		deleteDebugPlayerUC,
-		deleteDebugSessionUC,
-		deleteDebugSessionFinishUC,
+		// admin
+		renameAdminPlayerUC,
+		updateAdminSessionConfigUC,
+		deleteAdminPlayerUC,
+		deleteAdminSessionUC,
+		deleteAdminSessionFinishUC,
 	)
 
 	// ===== Router =====
-	router := httpcontroller.NewRouter(handler, cfg.DebugEnabled)
+	router := httpcontroller.NewRouter(handler)
 	pushNotifier := NewBlindClockPushNotifier(db.Pool, blindClockRepo, pushRepo, cfg.Push)
 
 	return &Container{

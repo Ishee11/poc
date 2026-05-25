@@ -135,7 +135,7 @@ type StatsRepository interface {
 	ListPlayerSessions(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) ([]PlayerSessionStat, error)
 }
 
-type DebugAdminRepository interface {
+type AdminRepository interface {
 	RenamePlayer(tx Tx, playerID entity.PlayerID, name string) error
 	UpdateSessionConfig(tx Tx, sessionID entity.SessionID, chipRate int64, bigBlind int64, currency entity.Currency) error
 	DeletePlayer(tx Tx, playerID entity.PlayerID) error
