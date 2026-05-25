@@ -10,7 +10,7 @@ import (
 	_ "github.com/ishee11/poc/docs"
 )
 
-func NewRouter(h *Handler) http.Handler {
+func NewRouter(h *Handler, debugEnabled bool) http.Handler {
 	mux := http.NewServeMux()
 
 	// ===== STATIC =====
@@ -107,12 +107,14 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/stats/sessions", h.Stats.GetStatsSessions)
 	mux.HandleFunc("/stats/players", h.Stats.GetStatsPlayers)
 
-	// ===== TEMP DEBUG ADMIN =====
-	mux.HandleFunc("/debug/player", h.Debug.DeletePlayer)
-	mux.HandleFunc("/debug/player/rename", h.Debug.RenamePlayer)
-	mux.HandleFunc("/debug/session", h.Debug.DeleteSession)
-	mux.HandleFunc("/debug/session/config", h.Debug.UpdateSessionConfig)
-	mux.HandleFunc("/debug/session/finish", h.Debug.DeleteSessionFinish)
+	// ===== DEBUG ADMIN (guarded by DEBUG_ENABLED) =====
+	if debugEnabled {
+		mux.HandleFunc("/debug/player", h.Debug.DeletePlayer)
+		mux.HandleFunc("/debug/player/rename", h.Debug.RenamePlayer)
+		mux.HandleFunc("/debug/session", h.Debug.DeleteSession)
+		mux.HandleFunc("/debug/session/config", h.Debug.UpdateSessionConfig)
+		mux.HandleFunc("/debug/session/finish", h.Debug.DeleteSessionFinish)
+	}
 
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux

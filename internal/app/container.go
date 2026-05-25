@@ -306,7 +306,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	)
 
 	// ===== Router =====
-	router := httpcontroller.NewRouter(handler)
+	router := httpcontroller.NewRouter(handler, cfg.DebugEnabled)
 	pushNotifier := NewBlindClockPushNotifier(db.Pool, blindClockRepo, pushRepo, cfg.Push)
 
 	return &Container{
