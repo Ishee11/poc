@@ -453,7 +453,7 @@ export function renderPlayerDetail() {
   if (brandTitle) brandTitle.textContent = pName;
   if (id) id.textContent = `ID: ${player.player_id}`;
   if (linkedUser) {
-    linkedUser.innerHTML = `${escapeHtml(playerName)}${renderPlayerRankBadge(player.rank)}`;
+    linkedUser.innerHTML = `${escapeHtml(pName)}${renderPlayerRankBadge(player.rank)}`;
     linkedUser.hidden = false;
   }
   renderPlayerHeaderAdminActions(player);
