@@ -390,7 +390,8 @@ export function renderPlayers() {
       const name = player.player_name || player.name || id;
       const profitMoney = Number(player.profit_money) || 0;
       const canShowRebuy = canUseSessionActions && sessionActionMode === "rebuy";
-      const canShowCashOut = canUseSessionActions && sessionActionMode === "cash-out" && player.in_game;
+      const noChips = Number(state.session.totalChips) <= 0;
+      const canShowCashOut = canUseSessionActions && sessionActionMode === "cash-out" && player.in_game && !noChips;
       const statusClass = player.in_game ? "player-status in-game" : "player-status settled";
 
       return `

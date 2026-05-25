@@ -347,6 +347,14 @@ export function renderActionPlayerOptions() {
 }
 
 function renderSessionActionMode() {
+  const noChips = Number(state.session.totalChips) <= 0;
+  const cashOutBtn = document.getElementById("session-action-mode-cash-out");
+  if (cashOutBtn) cashOutBtn.hidden = noChips;
+
+  if (noChips && state.sessionPlayerActionMode === "cash-out") {
+    state.sessionPlayerActionMode = "rebuy";
+  }
+
   const mode = state.sessionPlayerActionMode || "rebuy";
   document.querySelectorAll("[data-session-action-mode]").forEach((button) => {
     const isActive = button.getAttribute("data-session-action-mode") === mode;
