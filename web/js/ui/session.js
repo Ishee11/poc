@@ -221,15 +221,14 @@ export function renderSession() {
     totalMoney.textContent = formatMoney(totalMoneyIn(session), session.currency);
   }
   if (status) {
-    status.innerHTML = `
-      <span>${escapeHtml(statusLabel(session.status))}</span>
-      ${
-        state.adminMode && session.status === "finished"
-          ? `<button type="button" class="secondary status-admin-action" id="admin-reopen-session-btn">${escapeHtml(t("admin.deleteFinish"))}</button>`
-          : ""
-      }
-    `;
+    status.innerHTML = `<span>${escapeHtml(statusLabel(session.status))}</span>`;
     status.className = `session-status ${session.status}`;
+  }
+  const reopenBtn = document.getElementById("admin-reopen-session-btn");
+  if (reopenBtn) {
+    const isVisible = state.adminMode && session.status === "finished";
+    reopenBtn.hidden = !isVisible;
+    reopenBtn.textContent = t("admin.deleteFinish");
   }
   if (totalChipsCard) {
     totalChipsCard.classList.add("on-table-emphasis");
@@ -255,12 +254,6 @@ export function renderSession() {
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (adminDeletePanel) adminDeletePanel.hidden = !state.adminMode;
   if (resultsButton) resultsButton.hidden = !state.session;
-
-  document
-    .getElementById("admin-reopen-session-btn")
-    ?.addEventListener("click", async () => {
-      await confirmAdminDeleteSessionFinish();
-    });
 
   bindAdminSessionConfigEditor(chipRateCard);
   bindAdminSessionConfigEditor(bigBlindCard);
@@ -1060,6 +1053,9 @@ export function initSessionActions() {
       case "admin-delete-session-btn":
         await withBusyButton(button, () => confirmAdminDeleteSession());
         break;
+      case "admin-reopen-session-btn":
+        await withBusyButton(button, () => confirmAdminDeleteSessionFinish());
+        break;
       case "session-back-home-btn":
         setScreen("lobby");
         pushRoute(routeToHome());
@@ -1226,10 +1222,17 @@ async function confirmPlayerRebuy(playerId) {
 
 async function confirmPlayerCashOut(playerId) {
   const playerName = findPlayerName(playerId);
+  const maxChips = Number(state.session.totalChips) || 0;
+  if (maxChips <= 0) {
+    showNotice(t("notice.noChipsToCashOut"), "error");
+    return;
+  }
+  const defaultChips = String(Math.min(1000, maxChips));
+
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
-      chips: formatNumber(defaultCashOutChips(playerId)),
+      chips: formatNumber(maxChips),
       name: playerName,
     }),
     confirmText: t("session.cashOut"),
@@ -1240,8 +1243,9 @@ async function confirmPlayerCashOut(playerId) {
         label: t("session.chips"),
         type: "number",
         min: "1",
+        max: String(maxChips),
         step: 1000,
-        value: defaultCashOutChips(playerId) || "",
+        value: defaultChips,
         placeholder: t("session.chips"),
       },
     ],
@@ -1251,6 +1255,10 @@ async function confirmPlayerCashOut(playerId) {
   const chips = Number(values.chips);
   if (!playerId || !Number.isFinite(chips) || chips <= 0) {
     showNotice(t("notice.selectPlayerAndChips"), "error");
+    return;
+  }
+  if (chips > maxChips) {
+    showNotice(t("notice.cashOutExceedsBalance"), "error");
     return;
   }
 
@@ -1266,14 +1274,6 @@ async function confirmPlayerCashOut(playerId) {
 
   await refreshSessionData();
   showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
-}
-
-function defaultCashOutChips(playerId) {
-  const player = state.players.find((item) => (item.player_id || item.id) === playerId);
-  if (!player) return "";
-
-  const chips = (Number(player.buy_in) || 0) - (Number(player.cash_out) || 0);
-  return chips > 0 ? String(chips) : "";
 }
 
 async function confirmAddPlayer() {
@@ -1320,7 +1320,7 @@ async function confirmAddPlayer() {
         type: "number",
         min: "1",
         step: 1000,
-        value: lastBuyInChipsForRebuy("") || "",
+        value: "1000",
         placeholder: t("session.chips"),
       },
     ],

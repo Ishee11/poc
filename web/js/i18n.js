@@ -343,6 +343,8 @@ const translations = {
       "Select a player and enter a valid chip amount.",
     "notice.buyInRecorded": "Buy in recorded for {name}.",
     "notice.cashOutRecorded": "Cash out recorded for {name}.",
+    "notice.noChipsToCashOut": "This player has no chips on the table to cash out.",
+    "notice.cashOutExceedsBalance": "Cash out amount exceeds the player's chips on the table.",
     "notice.invalidExpense":
       "Enter an item, amount, participants, and payer amounts. Paid total must equal amount.",
     "notice.expenseAdded": "Expense added.",
@@ -835,6 +837,8 @@ const translations = {
       "Выберите игрока и введите количество фишек.",
     "notice.buyInRecorded": "Бай-ин записан для {name}.",
     "notice.cashOutRecorded": "Кэш-аут записан для {name}.",
+    "notice.noChipsToCashOut": "У этого игрока нет фишек на столе для кэш-аута.",
+    "notice.cashOutExceedsBalance": "Сумма кэш-аута превышает количество фишек игрока на столе.",
     "notice.invalidExpense":
       "Введите позицию, сумму, участников и суммы оплат. Сумма оплат должна совпадать с расходом.",
     "notice.expenseAdded": "Расход добавлен.",

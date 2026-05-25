@@ -500,23 +500,29 @@ export function renderPlayerDetail() {
         </div>
       </div>
       ${renderCurrencyStats(player.money_by_currency || [])}
-      ${renderPlayerSessionCards(sessions)}
-      <div class="table-wrap desktop-only">
-        <table>
-          <thead>
-            <tr>
-              <th>${escapeHtml(t("table.session"))}</th>
-              <th>${escapeHtml(t("table.status"))}</th>
-              <th>${escapeHtml(t("table.buyIn"))}</th>
-              <th>${escapeHtml(t("table.cashOut"))}</th>
-              <th>${escapeHtml(t("table.profitChips"))}</th>
-              <th>${escapeHtml(t("table.profit"))}</th>
-              <th>${escapeHtml(t("table.lastActivity"))}</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      ${sessions.length ? `
+      <details class="disclosure player-sessions-disclosure">
+        <summary>${escapeHtml(t("player.sessions"))} (${sessions.length})</summary>
+        <div class="disclosure-body">
+          ${renderPlayerSessionCards(sessions)}
+          <div class="table-wrap desktop-only">
+            <table>
+              <thead>
+                <tr>
+                  <th>${escapeHtml(t("table.session"))}</th>
+                  <th>${escapeHtml(t("table.status"))}</th>
+                  <th>${escapeHtml(t("table.buyIn"))}</th>
+                  <th>${escapeHtml(t("table.cashOut"))}</th>
+                  <th>${escapeHtml(t("table.profitChips"))}</th>
+                  <th>${escapeHtml(t("table.profit"))}</th>
+                  <th>${escapeHtml(t("table.lastActivity"))}</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      </details>` : ""}
     </div>
   `;
 

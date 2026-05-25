@@ -243,6 +243,7 @@ export function openModal({
               type="${escapeHtml(field.type || "text")}"
               value="${escapeHtml(field.value ?? "")}"
               ${field.min != null ? `min="${escapeHtml(field.min)}"` : ""}
+              ${field.max != null ? `max="${escapeHtml(field.max)}"` : ""}
               ${field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : ""}
             />
             ${
@@ -324,8 +325,9 @@ export function openModal({
         if (!input || !Number.isFinite(delta)) return;
 
         const current = Number(input.value) || 0;
-        const min = input.min === "" ? 0 : Number(input.min);
-        const next = Math.max(Number.isFinite(min) ? min : 0, current + delta);
+        const min = input.getAttribute("min") === null ? 0 : Number(input.getAttribute("min"));
+        const max = input.getAttribute("max") === null ? Infinity : Number(input.getAttribute("max"));
+        const next = Math.max(min, Math.min(max, current + delta));
         input.value = String(next);
         input.dispatchEvent(new Event("input", { bubbles: true }));
       });

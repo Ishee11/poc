@@ -994,6 +994,12 @@
                                     class="session-status"
                                     >-</span
                                 >
+                                <button
+                                    type="button"
+                                    class="secondary status-admin-action"
+                                    id="admin-reopen-session-btn"
+                                    hidden
+                                ></button>
                             </div>
                         </div>
 
@@ -1097,10 +1103,6 @@
                         </button>
                     </div>
 
-                    <div class="panel">
-                        <div id="players-wrap"></div>
-                    </div>
-
                     <div class="actions" id="session-player-actions">
                         <button
                             type="button"
@@ -1119,6 +1121,10 @@
                                 >
                             </span>
                         </button>
+                    </div>
+
+                    <div class="panel">
+                        <div id="players-wrap"></div>
                     </div>
 
                     <button
@@ -1428,7 +1434,7 @@ class="results-close-bill-btn"
                                 placeholder="Password"
                                 data-i18n-placeholder="auth.password"
                             />
-                            <button type="submit" data-i18n="auth.login">
+                            <button type="submit" class="rebuy-action" data-i18n="auth.login">
                                 Login
                             </button>
                         </form>
