@@ -789,8 +789,12 @@ function syncAdminMode() {
   state.adminMode = state.authUser?.role === "admin";
   document.body.classList.toggle("admin-mode", state.adminMode);
   if (state.session) {
+    renderSession();
+    renderOperations();
+    renderActionPlayerOptions();
     renderExpenseForm();
     renderExpenses();
+    renderSettlement();
   }
 }
 
