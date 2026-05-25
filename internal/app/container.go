@@ -78,6 +78,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 
 	buyInUC := usecase.NewBuyInUseCase(
 		helper,
+		sessionRepo,
 		txManager,
 		idempotencyRepo,
 		outboxRepo,

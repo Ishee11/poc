@@ -197,9 +197,5 @@ func getEnv(key, def string) string {
 }
 
 func normalizePushSubject(value string) string {
-	value = strings.TrimSpace(value)
-	if strings.HasPrefix(strings.ToLower(value), "mailto:") {
-		return strings.TrimSpace(value[len("mailto:"):])
-	}
-	return value
+	return strings.TrimSpace(value)
 }

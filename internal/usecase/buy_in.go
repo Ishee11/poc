@@ -8,6 +8,7 @@ import (
 
 type BuyInUseCase struct {
 	helper          *Helper
+	sessionLocker   SessionLocker
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
 	outboxWriter    OutboxWriter
@@ -15,12 +16,14 @@ type BuyInUseCase struct {
 
 func NewBuyInUseCase(
 	helper *Helper,
+	sessionLocker SessionLocker,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
 	outboxWriter OutboxWriter,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
 		helper:          helper,
+		sessionLocker:   sessionLocker,
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
 		outboxWriter:    outboxWriter,
@@ -37,7 +40,7 @@ func (uc *BuyInUseCase) Execute(ctx context.Context, cmd command.BuyInCommand) e
 
 func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
 	// 1. блокируем сессию
-	session, err := uc.helper.sessionReader.FindByID(tx, cmd.SessionID)
+	session, err := uc.sessionLocker.FindByIDForUpdate(tx, cmd.SessionID)
 	if err != nil {
 		return err
 	}

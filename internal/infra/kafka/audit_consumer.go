@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	kafkago "github.com/segmentio/kafka-go"
@@ -40,7 +41,11 @@ func (c *AuditConsumer) Run(ctx context.Context) error {
 
 		event, err := auditEventFromMessage(msg)
 		if err != nil {
-			return err
+			slog.Warn("skipping malformed audit message", "err", err, "offset", msg.Offset)
+			if commitErr := c.reader.CommitMessages(ctx, msg); commitErr != nil {
+				return commitErr
+			}
+			continue
 		}
 
 		if err := c.handler.Save(ctx, event); err != nil {

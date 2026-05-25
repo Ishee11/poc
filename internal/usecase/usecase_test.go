@@ -453,7 +453,7 @@ func TestBuyInUseCase(t *testing.T) {
 
 	helper := newHelperForStore(store, &sequenceOperationIDGen{next: "op1"}, sequencePlayerIDGen{})
 	outbox := &fakeOutboxRepo{}
-	uc := NewBuyInUseCase(helper, fakeTxManager{}, newFakeIdempotencyRepo(), outbox)
+	uc := NewBuyInUseCase(helper, fakeSessionRepo{store: store}, fakeTxManager{}, newFakeIdempotencyRepo(), outbox)
 
 	err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
 	if err != nil {

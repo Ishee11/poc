@@ -45,6 +45,7 @@ func Run() error {
 	}
 	if container.OutboxRelay != nil {
 		container.OutboxRelay.Start(ctx)
+		defer container.OutboxRelay.Close()
 	}
 
 	// http server

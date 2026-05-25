@@ -10,7 +10,7 @@ import (
 
 type FinishSessionUseCase struct {
 	projection      ProjectionRepository
-	sessionReader   SessionReader
+	sessionLocker   SessionLocker
 	sessionWriter   SessionWriter
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
@@ -19,7 +19,7 @@ type FinishSessionUseCase struct {
 
 func NewFinishSessionUseCase(
 	projection ProjectionRepository,
-	sessionReader SessionReader,
+	sessionLocker SessionLocker,
 	sessionWriter SessionWriter,
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
@@ -27,7 +27,7 @@ func NewFinishSessionUseCase(
 ) *FinishSessionUseCase {
 	return &FinishSessionUseCase{
 		projection:      projection,
-		sessionReader:   sessionReader,
+		sessionLocker:   sessionLocker,
 		sessionWriter:   sessionWriter,
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
@@ -44,7 +44,7 @@ func (uc *FinishSessionUseCase) Execute(ctx context.Context, cmd command.FinishS
 }
 
 func (uc *FinishSessionUseCase) execute(tx Tx, cmd command.FinishSessionCommand) error {
-	session, err := uc.sessionReader.FindByID(tx, cmd.SessionID)
+	session, err := uc.sessionLocker.FindByIDForUpdate(tx, cmd.SessionID)
 	if err != nil {
 		return err
 	}
