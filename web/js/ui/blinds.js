@@ -26,6 +26,7 @@ import {
   setBlindsMode,
   setScreen,
   showNotice,
+  withLoading,
 } from "../utils.js";
 
 let clockState = null;
@@ -54,7 +55,13 @@ let pushSettings = {
 };
 const PUSH_SETTINGS_STORAGE_KEY = "blindsPushSettings";
 
+let initAbortController = null;
+
 export function initBlindsClock() {
+  if (initAbortController) initAbortController.abort();
+  initAbortController = new AbortController();
+  const { signal } = initAbortController;
+
   if (tickerId) window.clearInterval(tickerId);
   if (resyncId) window.clearInterval(resyncId);
   if (audioContext) { audioContext.close(); audioContext = null; audioWarmupDone = false; }
@@ -79,13 +86,13 @@ export function initBlindsClock() {
       void unlockAudio();
       await refreshBlindClock({ silent: true });
     }
-  });
+  }, { signal });
 
   document.addEventListener("pointerdown", () => {
     if (document.body.dataset.screen === "blinds") {
       void unlockAudio();
     }
-  });
+  }, { signal });
 
   document.getElementById("open-blinds-clock-btn")?.addEventListener("click", async () => {
     await openBlindsClock();
@@ -782,6 +789,14 @@ function currentToggleAction() {
   return "start";
 }
 
+let swRegistrationPromise = null;
+function getSwRegistration() {
+  if (!swRegistrationPromise) {
+    swRegistrationPromise = navigator.serviceWorker.register("/sw.js");
+  }
+  return swRegistrationPromise;
+}
+
 async function refreshPushState() {
   pushSupported = supportsWebPush();
   pushSettings = loadStoredPushSettings();
@@ -796,7 +811,7 @@ async function refreshPushState() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const registration = await getSwRegistration();
     const subscription = await registration.pushManager.getSubscription();
     pushSubscribed = Boolean(subscription);
     if (subscription) {
@@ -834,7 +849,7 @@ async function togglePushSubscription() {
   renderBlindsClock({ updateEditor: false });
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const registration = await getSwRegistration();
     let subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
@@ -911,7 +926,7 @@ async function updatePushSettings(nextSettings) {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const registration = await getSwRegistration();
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       pushSubscribed = false;

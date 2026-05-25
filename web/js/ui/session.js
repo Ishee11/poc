@@ -34,6 +34,7 @@ import {
   routeToSessionResults,
   setScreen,
   showNotice,
+  withLoading,
 } from "../utils.js";
 import { loadSessions } from "./lobby.js";
 import { loadPlayers, loadPlayersOverview, renderPlayers } from "./player.js";
@@ -102,7 +103,7 @@ export async function openSessionResults(sessionId, { replace = false } = {}) {
 export async function loadExpenses(sessionId) {
   if (!sessionId) return;
 
-  const res = await getExpenses(sessionId);
+  const res = await withLoading("#expenses-wrap", () => getExpenses(sessionId));
   if (!res.ok) {
     console.error("loadExpenses failed:", res.text);
     state.expenses = [];
@@ -141,7 +142,7 @@ async function loadSettlementTransfers(sessionId) {
 export async function loadOperations(sessionId) {
   if (!sessionId) return;
 
-  const res = await getSessionOperations(sessionId);
+  const res = await withLoading("#operations-wrap", () => getSessionOperations(sessionId));
   if (!res.ok) {
     console.error("loadOperations failed:", res.text);
     state.operations = [];

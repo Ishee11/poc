@@ -42,21 +42,21 @@ export function apiGet(path) {
 export function apiPost(path, body) {
   return request(path, {
     method: "POST",
-    body: body == null ? undefined : JSON.stringify(body),
+    body: body == null ? undefined : JSON.stringify({ ...body, request_id: rid() }),
   });
 }
 
 export function apiPut(path, body) {
   return request(path, {
     method: "PUT",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, request_id: rid() }),
   });
 }
 
 export function apiDelete(path, body) {
   return request(path, {
     method: "DELETE",
-    body: body == null ? undefined : JSON.stringify(body),
+    body: body == null ? undefined : JSON.stringify({ ...body, request_id: rid() }),
   });
 }
 
@@ -158,6 +158,7 @@ export function startSession({ sessionId, chipRate, bigBlind, currency }) {
       chip_rate: chipRate,
       big_blind: bigBlind,
       currency,
+      request_id: rid(),
     }),
   });
 }
@@ -233,6 +234,7 @@ export function createExpense({ sessionId, title, amount, participants, payments
       amount,
       participants,
       payments,
+      request_id: rid(),
     }),
   });
 }
@@ -240,7 +242,7 @@ export function createExpense({ sessionId, title, amount, participants, payments
 export function closeExpenses(sessionId) {
   return request("/expenses/close", {
     method: "POST",
-    body: JSON.stringify({ session_id: sessionId }),
+    body: JSON.stringify({ session_id: sessionId, request_id: rid() }),
   });
 }
 
@@ -248,6 +250,7 @@ export function deleteExpense(expenseId) {
   const params = new URLSearchParams({ expense_id: expenseId });
   return request(`/expenses?${params.toString()}`, {
     method: "DELETE",
+    body: JSON.stringify({ request_id: rid() }),
   });
 }
 
@@ -261,6 +264,7 @@ export function saveSettlementTransfers(sessionId, transfers) {
     body: JSON.stringify({
       session_id: sessionId,
       transfers,
+      request_id: rid(),
     }),
   });
 }
@@ -324,6 +328,7 @@ export function adminDeletePlayer(playerId) {
   const params = new URLSearchParams({ player_id: playerId });
   return request(`/admin/player?${params.toString()}`, {
     method: "DELETE",
+    body: JSON.stringify({ request_id: rid() }),
   });
 }
 
@@ -335,6 +340,7 @@ export function adminUpdateSessionConfig(sessionId, { chipRate, bigBlind, curren
       chip_rate: chipRate,
       big_blind: bigBlind,
       currency,
+      request_id: rid(),
     }),
   });
 }
@@ -343,7 +349,7 @@ export function adminRenamePlayer(playerId, name) {
   const params = new URLSearchParams({ player_id: playerId });
   return request(`/admin/player/rename?${params.toString()}`, {
     method: "PATCH",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, request_id: rid() }),
   });
 }
 
@@ -351,6 +357,7 @@ export function adminDeleteSession(sessionId) {
   const params = new URLSearchParams({ session_id: sessionId });
   return request(`/admin/session?${params.toString()}`, {
     method: "DELETE",
+    body: JSON.stringify({ request_id: rid() }),
   });
 }
 
@@ -358,6 +365,7 @@ export function adminDeleteSessionFinish(sessionId) {
   const params = new URLSearchParams({ session_id: sessionId });
   return request(`/admin/session/finish?${params.toString()}`, {
     method: "DELETE",
+    body: JSON.stringify({ request_id: rid() }),
   });
 }
 

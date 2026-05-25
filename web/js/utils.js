@@ -201,6 +201,16 @@ export function routeToHome() {
   return "/";
 }
 
+export async function withLoading(selector, fn) {
+  const el = typeof selector === "string" ? document.querySelector(selector) : selector;
+  if (el) el.classList.add("is-loading");
+  try {
+    return await fn();
+  } finally {
+    if (el) el.classList.remove("is-loading");
+  }
+}
+
 function currentPath() {
   return `${window.location.pathname}${window.location.search}`;
 }

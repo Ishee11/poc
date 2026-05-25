@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSessionActions();
   initBlindsClock();
   initLanguageSelect();
-  onLanguageChange(renderCurrentLanguage);
+  const removeLanguageChangeListener = onLanguageChange(renderCurrentLanguage);
 
   if (state.authUiEnabled) {
     await loadCurrentUser();

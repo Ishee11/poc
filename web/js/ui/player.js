@@ -22,12 +22,13 @@ import {
   setScreen,
   setValue,
   showNotice,
+  withLoading,
 } from "../utils.js";
 
 export async function loadPlayers(sessionId) {
   if (!sessionId) return;
 
-  const res = await getSessionPlayers(sessionId);
+  const res = await withLoading("#players-wrap", () => getSessionPlayers(sessionId));
   if (!res.ok) {
     console.error("loadPlayers failed:", res.text);
     state.players = [];
@@ -43,11 +44,12 @@ export async function loadPlayers(sessionId) {
 
 export async function loadPlayersOverview() {
   const recentFrom = recentPlayersCutoffDate();
-  const [playersRes, statsRes, recentStatsRes] = await Promise.all([
-    getPlayers({ limit: 1000 }),
-    getPlayersStats({ limit: 1000 }),
-    getPlayersStats({ limit: 1000, from: recentFrom }),
-  ]);
+  const [playersRes, statsRes, recentStatsRes] = await withLoading("#overview-players-wrap", () =>
+    Promise.all([
+      getPlayers({ limit: 1000 }),
+      getPlayersStats({ limit: 1000 }),
+      getPlayersStats({ limit: 1000, from: recentFrom }),
+    ]));
 
   const players = Array.isArray(playersRes.body) ? playersRes.body : [];
   const stats = Array.isArray(statsRes.body) ? statsRes.body : [];
