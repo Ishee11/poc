@@ -58,6 +58,7 @@ body::before {
 
 .app-header {
     padding: 12px 0;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -837,14 +838,28 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 .lobby-latest-empty {
-    min-height: 102px;
+    min-height: 160px;
     display: grid;
     place-items: center;
-    padding: 16px;
+    gap: 12px;
+    padding: 24px 16px;
     color: var(--muted);
     border-radius: 8px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.025);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.15);
+    font-size: 0.92rem;
+    text-align: center;
+}
+
+.lobby-empty-icon {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    opacity: 0.35;
+}
+
+.lobby-connect-panel:has(.lobby-latest-empty:not([hidden])) h2 {
+    display: none;
 }
 
 .lobby-latest-date {
@@ -3037,6 +3052,7 @@ pre {
 
     .app-header {
         padding: 12px;
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
     }
 
     .app-header-content {

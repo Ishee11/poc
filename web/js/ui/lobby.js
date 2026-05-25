@@ -94,7 +94,6 @@ async function openSessionFromRow(row) {
 
 export function syncSelect() {
   const select = document.getElementById("active-session-select");
-  const connectPanel = document.querySelector(".lobby-connect-panel");
   const connectForm = document.getElementById("connect-session-form");
   const emptyState = document.getElementById("lobby-latest-empty");
   const liveBadge = document.getElementById("lobby-latest-live-badge");
@@ -105,9 +104,6 @@ export function syncSelect() {
     (session) => session.status === "active",
   );
   const latestActiveSession = activeSessions[0] || null;
-  if (connectPanel) {
-    connectPanel.hidden = !latestActiveSession;
-  }
   if (connectForm) connectForm.hidden = !latestActiveSession;
   if (emptyState) emptyState.hidden = Boolean(latestActiveSession);
   if (liveBadge) liveBadge.hidden = !latestActiveSession;
