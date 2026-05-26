@@ -560,12 +560,12 @@ function calculateEqualShares(amount, participants) {
 }
 
 function selectedExpenseParticipants() {
-  if ((state.expenseParticipantMode || "all") === "all") {
-    return (state.players || []).map((player) => playerId(player)).filter(Boolean);
+  const participantInputs = Array.from(document.querySelectorAll("[name='expense-participant']"));
+  if (participantInputs.length > 0) {
+    return participantInputs.filter((input) => input.checked).map((input) => input.value).filter(Boolean);
   }
-  return Array.from(document.querySelectorAll("[name='expense-participant']:checked"))
-    .map((input) => input.value)
-    .filter(Boolean);
+
+  return (state.players || []).map((player) => playerId(player)).filter(Boolean);
 }
 
 function setExpenseParticipantsChecked(checked) {
@@ -1114,6 +1114,11 @@ export function initSessionActions() {
   document.addEventListener("change", (event) => {
     if (event.target.closest("[data-expense-payer-select]")) {
       renderExpenseForm();
+      return;
+    }
+
+    if (event.target.matches("[name=\'expense-participant\']")) {
+      updateExpenseParticipantShares();
     }
   });
 }
