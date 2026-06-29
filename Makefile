@@ -67,6 +67,10 @@ test: ### run test
 	go test -v -race -covermode atomic -coverprofile=coverage.txt ./internal/...
 .PHONY: test
 
+web-check: ### run static web checks
+	node scripts/check-web.mjs
+.PHONY: web-check
+
 migrate-create:  ### create new migration
 	migrate create -ext sql -dir internal/infra/postgres/migrations '$(word 2,$(MAKECMDGOALS))'
 .PHONY: migrate-create
@@ -79,5 +83,5 @@ bin-deps: ### install tools
 	GOBIN=$(LOCAL_BIN) go install tool
 .PHONY: bin-deps
 
-pre-commit: swag-v1 format linter-golangci test ### run pre-commit
+pre-commit: swag-v1 format linter-golangci test web-check ### run pre-commit
 .PHONY: pre-commit

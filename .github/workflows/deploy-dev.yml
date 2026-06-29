@@ -5,7 +5,31 @@ on:
     branches: ["dev"]
 
 jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+          args: --timeout=5m
+
+      - name: Run Go tests
+        run: go test ./...
+
+      - name: Run web checks
+        run: node scripts/check-web.mjs
+
   deploy-dev:
+    needs: checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
