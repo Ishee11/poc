@@ -111,6 +111,9 @@ func Load() (*Config, error) {
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
+	if err := validatePushConfig(&cfg.Push); err != nil {
+		return nil, err
+	}
 
 	return cfg, nil
 }
@@ -197,5 +200,12 @@ func getEnv(key, def string) string {
 }
 
 func normalizePushSubject(value string) string {
-	return strings.TrimSpace(value)
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(strings.ToLower(value), "mailto:") {
+		return strings.TrimSpace(value[len("mailto:"):])
+	}
+	if strings.HasPrefix(strings.ToLower(value), "https:") {
+		return "https:" + value[len("https:"):]
+	}
+	return value
 }

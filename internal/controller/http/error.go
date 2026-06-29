@@ -159,6 +159,9 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrInvalidPushSubscription):
 		return apiError{status: http.StatusBadRequest, code: "invalid_push_subscription"}
 
+	case errors.Is(err, entity.ErrPushDeliveryFailed):
+		return apiError{status: http.StatusBadGateway, code: "push_delivery_failed"}
+
 	case errors.Is(err, entity.ErrUnbalancedSession):
 		return apiError{status: http.StatusConflict, code: "unbalanced_session"}
 
