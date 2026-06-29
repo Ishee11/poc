@@ -501,6 +501,8 @@ const translations = {
       "Completed or active levels cannot be changed right now.",
     "error.push_disabled": "Push notifications are disabled on the server.",
     "error.invalid_push_subscription": "Push subscription is invalid.",
+    "error.push_delivery_failed":
+      "Push delivery failed. Check the server VAPID keys and push subject.",
   },
   ru: {
     "app.title": "Poker Session Control",
@@ -990,6 +992,8 @@ const translations = {
       "Завершенные или активные уровни сейчас менять нельзя.",
     "error.push_disabled": "Push-уведомления выключены на сервере.",
     "error.invalid_push_subscription": "Подписка на push некорректна.",
+    "error.push_delivery_failed":
+      "Push-доставка не прошла. Проверьте VAPID-ключи и subject на сервере.",
     "error.session_not_active": "Сессия больше не активна.",
     "error.session_finished": "Сессия уже завершена.",
     "error.operation_not_found": "Операция не найдена.",

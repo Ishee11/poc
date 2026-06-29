@@ -50,6 +50,7 @@ var (
 
 	ErrPushDisabled            = errors.New("push disabled")
 	ErrInvalidPushSubscription = errors.New("invalid push subscription")
+	ErrPushDeliveryFailed      = errors.New("push delivery failed")
 )
 
 func (e *SessionNotBalancedError) Is(target error) bool {

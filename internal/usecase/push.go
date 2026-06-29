@@ -97,11 +97,13 @@ func (s *BlindClockPushService) Subscribe(input BlindClockPushSubscriptionInput)
 		UpdatedAt:       now,
 	}
 
+	if s.sender != nil {
+		if err := s.sender.SendTest(subscription); err != nil {
+			return fmt.Errorf("%w: %v", entity.ErrPushDeliveryFailed, err)
+		}
+	}
 	if err := s.repo.UpsertSubscription(subscription); err != nil {
 		return err
-	}
-	if s.sender != nil {
-		_ = s.sender.SendTest(subscription)
 	}
 
 	return nil
