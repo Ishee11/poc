@@ -15,6 +15,12 @@ export const state = {
 
   localRuntimeStatus: "uninitialized",
   localRuntimeError: "",
+  sessionDataSource: "none",
+  sessionCachedAt: null,
+  sessionRefreshStatus: "idle",
+  sessionLocalRevision: 0,
+  sessionExpensesCached: false,
+  sessionSettlementsCached: false,
 
   overviewSessions: [],
   overviewSessionsFilter: "all",

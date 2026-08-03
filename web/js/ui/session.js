@@ -14,10 +14,16 @@ import {
   getSettlementTransfers,
   getSession,
   getSessionOperations,
+  getSessionPlayers,
   reverseOperation,
   saveSettlementTransfers,
 } from "../api.js";
 import { operationLabel, statusLabel, t } from "../i18n.js";
+import { readSessionSnapshot, writeServerSnapshot } from "../offline-db.js";
+import {
+  hydrateCachedSession,
+  refreshSessionSnapshot,
+} from "../session-cache.js";
 import { state } from "../state.js";
 import {
   describeError,
@@ -45,46 +51,97 @@ export async function openSession(sessionId, { replace = false } = {}) {
   if (!sessionId) return;
 
   state.activeSessionId = sessionId;
+  resetVisibleSessionState(sessionId);
+  state.settlementEditing = false;
+  state.expenseFormOpen = false;
+
+  let cached = false;
+  try {
+    cached = await hydrateCachedSession({
+      sessionId,
+      state,
+      readSnapshot: readSessionSnapshot,
+      onHydrated: renderSessionSlice,
+    });
+  } catch (error) {
+    console.warn("Cached session hydration is unavailable; continuing online-only", error);
+  }
+
+  if (cached) {
+    showSessionRoute(sessionId, replace);
+    void refreshSessionFromServer(sessionId);
+    return;
+  }
+
+  state.sessionRefreshStatus = "refreshing";
+  const result = await refreshSessionFromServer(sessionId);
+  if (result.status !== "fresh") {
+    if (state.activeSessionId === sessionId) {
+      showNotice(t("error.failedLoadSession"), "error");
+    }
+    return;
+  }
+  showSessionRoute(sessionId, replace);
+}
+
+function resetVisibleSessionState(sessionId) {
   state.session = null;
   state.operations = [];
   state.expenses = [];
   state.players = [];
-  state.settlementEditing = false;
-  state.expenseFormOpen = false;
+  state.sessionDataSource = "none";
+  state.sessionCachedAt = null;
+  state.sessionRefreshStatus = "idle";
+  state.sessionLocalRevision = 0;
+  state.sessionExpensesCached = false;
+  state.sessionSettlementsCached = false;
   delete state.settlementDrafts[sessionId];
+}
 
-  const res = await getSession(sessionId);
-  if (!res.ok || !res.body) {
-    showNotice(describeError(res, t("error.failedLoadSession")), "error");
-    return;
-  }
-
-  hydrateSession(res.body);
+function renderSessionSlice() {
   renderSession();
+  renderPlayers();
+  renderOperations();
   renderActionPlayerOptions();
   renderExpenseForm();
   renderExpenses();
   renderSettlement();
+}
+
+function showSessionRoute(sessionId, replace) {
+  renderSessionSlice();
   setScreen("session");
-
-  await Promise.all([
-    loadPlayers(sessionId),
-    loadOperations(sessionId),
-    loadExpenses(sessionId),
-    loadSettlementTransfers(sessionId),
-  ]);
-
-  renderSession();
-  renderActionPlayerOptions();
-  renderExpenseForm();
-  renderExpenses();
-  renderSettlement();
-
   if (replace) {
     replaceRoute(routeToSession(sessionId));
   } else {
     pushRoute(routeToSession(sessionId));
   }
+}
+
+async function refreshSessionFromServer(sessionId) {
+  return refreshSessionSnapshot({
+    sessionId,
+    state,
+    loadResults: async () => {
+      const [sessionResult, playersResult, operationsResult, expensesResult, settlementsResult] =
+        await Promise.all([
+          getSession(sessionId),
+          getSessionPlayers(sessionId),
+          getSessionOperations(sessionId),
+          getExpenses(sessionId),
+          getSettlementTransfers(sessionId),
+        ]);
+      return {
+        sessionResult,
+        playersResult,
+        operationsResult,
+        expensesResult,
+        settlementsResult,
+      };
+    },
+    writeSnapshot: writeServerSnapshot,
+    onApplied: renderSessionSlice,
+  });
 }
 
 export async function openSessionResults(sessionId, { replace = false } = {}) {
@@ -108,13 +165,12 @@ export async function loadExpenses(sessionId) {
   const res = await withLoading("#expenses-wrap", () => getExpenses(sessionId));
   if (!res.ok) {
     console.error("loadExpenses failed:", res.text);
-    state.expenses = [];
-    renderExpenses();
-    renderSettlement();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   state.expenses = Array.isArray(res.body) ? res.body : [];
+  state.sessionExpensesCached = true;
   renderExpenses();
   renderSettlement();
 }
@@ -125,11 +181,10 @@ async function loadSettlementTransfers(sessionId) {
   const res = await getSettlementTransfers(sessionId);
   if (!res.ok) {
     console.error("loadSettlementTransfers failed:", res.text);
-    delete state.settlementDrafts[sessionId];
-    renderSettlement();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   const transfers = Array.isArray(res.body)
     ? res.body.map(normalizeSettlementTransfer).filter(Boolean)
     : [];
@@ -138,6 +193,7 @@ async function loadSettlementTransfers(sessionId) {
   } else {
     delete state.settlementDrafts[sessionId];
   }
+  state.sessionSettlementsCached = true;
   renderSettlement();
 }
 
@@ -147,11 +203,10 @@ export async function loadOperations(sessionId) {
   const res = await withLoading("#operations-wrap", () => getSessionOperations(sessionId));
   if (!res.ok) {
     console.error("loadOperations failed:", res.text);
-    state.operations = [];
-    renderOperations();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   state.operations = Array.isArray(res.body) ? res.body : [];
   renderOperations();
   renderPlayers();
@@ -1686,42 +1741,13 @@ async function refreshSessionData() {
   const id = state.activeSessionId;
   if (!id) return;
 
-  const res = await getSession(id);
-  if (!res.ok || !res.body) {
-    showNotice(describeError(res, t("error.failedRefresh")), "error");
+  const result = await refreshSessionFromServer(id);
+  if (result.status === "failed") {
+    showNotice(t("error.failedRefresh"), "error");
     return;
   }
 
-  hydrateSession(res.body);
-  renderSession();
-
-  await Promise.all([
-    loadPlayers(id),
-    loadOperations(id),
-    loadExpenses(id),
-    loadSettlementTransfers(id),
-  ]);
-  renderActionPlayerOptions();
-  renderExpenseForm();
-  renderSettlement();
-
   await Promise.allSettled([loadSessions(), loadPlayersOverview()]);
-}
-
-function hydrateSession(raw) {
-  state.session = {
-    id: raw.session_id,
-    status: raw.status,
-    chipRate: raw.chip_rate,
-    bigBlind: raw.big_blind,
-    currency: raw.currency || "RUB",
-    createdAt: raw.created_at,
-    finishedAt: raw.finished_at,
-    expensesClosed: Boolean(raw.expenses_closed),
-    totalBuyIn: raw.total_buy_in,
-    totalCashOut: raw.total_cash_out,
-    totalChips: raw.total_chips,
-  };
 }
 
 function findPlayerName(pid) {

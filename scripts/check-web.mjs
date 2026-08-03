@@ -307,7 +307,11 @@ checkJSImports(jsFiles);
 checkReferencedAssets();
 checkTranslations();
 
-for (const testFile of ["scripts/offline-db.test.mjs", "scripts/network-contract.test.mjs"]) {
+for (const testFile of [
+  "scripts/offline-db.test.mjs",
+  "scripts/network-contract.test.mjs",
+  "scripts/session-cache.test.mjs",
+]) {
   const result = spawnSync(process.execPath, [testFile], { cwd: root, encoding: "utf8" });
   if (result.status !== 0) {
     addError(

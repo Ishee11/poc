@@ -80,8 +80,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     await loadCurrentAdminUser();
   }
-  await Promise.all([loadSessions(), loadPlayersOverview()]);
-  await openInitialRoute();
+  if (isSessionRoute()) {
+    const routePromise = openInitialRoute();
+    void Promise.all([loadSessions(), loadPlayersOverview()]).catch((error) => {
+      console.error("Background lobby refresh failed:", error);
+    });
+    await routePromise;
+  } else {
+    await Promise.all([loadSessions(), loadPlayersOverview()]);
+    await openInitialRoute();
+  }
 
   window.addEventListener("popstate", () => {
     openInitialRoute({ fromHistory: true });
@@ -730,6 +738,11 @@ function renderCurrentLanguage() {
   if (document.body.dataset.screen === "blinds") {
     renderBlindsClock();
   }
+}
+
+function isSessionRoute() {
+  const [, section, rawId] = window.location.pathname.split("/");
+  return section === "session" && Boolean(rawId);
 }
 
 function defaultCurrency() {
