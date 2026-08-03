@@ -307,6 +307,17 @@ checkJSImports(jsFiles);
 checkReferencedAssets();
 checkTranslations();
 
+const offlineDBTests = spawnSync(
+  process.execPath,
+  ["scripts/offline-db.test.mjs"],
+  { cwd: root, encoding: "utf8" },
+);
+if (offlineDBTests.status !== 0) {
+  addError(
+    `Offline DB tests failed:\n${offlineDBTests.stderr || offlineDBTests.stdout || "unknown error"}`,
+  );
+}
+
 if (errors.length > 0) {
   console.error(errors.map((error) => `- ${error}`).join("\n"));
   process.exit(1);

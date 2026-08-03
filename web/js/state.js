@@ -13,6 +13,9 @@ export const state = {
   activeSessionId: "",
   session: null,
 
+  localRuntimeStatus: "uninitialized",
+  localRuntimeError: "",
+
   overviewSessions: [],
   overviewSessionsFilter: "all",
   overviewPlayers: [],

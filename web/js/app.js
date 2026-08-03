@@ -11,6 +11,7 @@ import {
   unlinkAccountPlayer,
 } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
+import { initializeLocalDatabase } from "./offline-db.js";
 import { state } from "./state.js";
 import {
   applyLatestSessionDefaults,
@@ -57,6 +58,7 @@ import {
 
 document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
+  initializeLocalRuntime();
   applyUiFeatureFlags();
   initPlayersSort();
   initPlayersOverviewFilters();
@@ -163,6 +165,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 });
+
+function initializeLocalRuntime() {
+  state.localRuntimeStatus = "initializing";
+  state.localRuntimeError = "";
+  void initializeLocalDatabase()
+    .then(() => {
+      state.localRuntimeStatus = "available";
+    })
+    .catch((error) => {
+      state.localRuntimeStatus = "unavailable";
+      state.localRuntimeError = error instanceof Error ? error.message : "IndexedDB unavailable";
+      console.warn("Local session runtime is unavailable; continuing online-only", error);
+    });
+}
 
 function applyUiFeatureFlags() {
   document.body.classList.toggle("auth-ui-disabled", !state.authUiEnabled);
