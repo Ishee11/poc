@@ -131,3 +131,93 @@ test("ignores structurally invalid persisted records", async () => {
   );
   assert.equal(await database.readSessionSnapshot("session-1"), null);
 });
+
+test("claims FIFO commands one at a time and recovers an expired sending lease", async () => {
+  const factory = new FakeIndexedDBFactory();
+  const database = client(factory, "replay-claim");
+  await database.writeProjectedSnapshotWithCommand(snapshot("session-1", 1), command(2));
+  await database.writeProjectedSnapshotWithCommand(snapshot("session-1", 2), command(1));
+
+  const first = await database.claimNextReplayCommand({
+    now: "2026-08-03T00:00:10Z",
+    leaseTimeoutMs: 30_000,
+  });
+  assert.equal(first.command.request_id, "request-1");
+  assert.equal(first.command.status, "sending");
+
+  const concurrent = await database.claimNextReplayCommand({
+    now: "2026-08-03T00:00:20Z",
+    leaseTimeoutMs: 30_000,
+  });
+  assert.equal(concurrent.command, null);
+
+  const recovered = await database.claimNextReplayCommand({
+    now: "2026-08-03T00:00:41Z",
+    leaseTimeoutMs: 30_000,
+  });
+  assert.equal(recovered.command.request_id, "request-1");
+  assert.equal(recovered.command.attempts, 0);
+});
+
+test("reconciliation atomically preserves the command on failure and releases FIFO on success", async () => {
+  const factory = new FakeIndexedDBFactory();
+  const database = client(factory, "replay-reconcile");
+  await database.writeProjectedSnapshotWithCommand(snapshot("session-1", 1), command(1));
+  await database.writeProjectedSnapshotWithCommand(snapshot("session-1", 2), command(2));
+  await database.claimNextReplayCommand({
+    now: "2026-08-03T00:00:10Z",
+    leaseTimeoutMs: 30_000,
+  });
+
+  factory.failNextPut("session_snapshots");
+  await assert.rejects(
+    database.reconcileOutboxCommand({
+      requestId: "request-1",
+      sessionId: "session-1",
+      snapshot: snapshot("session-1", 2),
+      expectedLocalRevision: 2,
+      completedAt: "2026-08-03T00:00:11Z",
+    }),
+    /Injected session_snapshots put failure/,
+  );
+  assert.deepEqual(await database.countPendingAndBlockedCommands("session-1"), {
+    pending: 2,
+    blocked: 0,
+  });
+
+  assert.equal(
+    await database.reconcileOutboxCommand({
+      requestId: "request-1",
+      sessionId: "session-1",
+      snapshot: snapshot("session-1", 2),
+      expectedLocalRevision: 2,
+      acknowledgement: { operation_id: "server-operation-1" },
+      completedAt: "2026-08-03T00:00:12Z",
+    }),
+    true,
+  );
+  assert.deepEqual(
+    (await database.listPendingCommands("session-1")).map((item) => item.request_id),
+    ["request-2"],
+  );
+});
+
+test("keeps blocked optimistic commands available for snapshot projection", async () => {
+  const factory = new FakeIndexedDBFactory();
+  const database = client(factory, "blocked-projection");
+  await database.writeProjectedSnapshotWithCommand(
+    snapshot("session-1", 1),
+    command(1, { status: "conflict", last_error_kind: "domain" }),
+  );
+
+  assert.deepEqual(
+    (await database.listSessionProjectionCommands("session-1")).map((item) => item.request_id),
+    ["request-1"],
+  );
+  assert.deepEqual(
+    await database.listSessionProjectionCommands("session-1", {
+      excludeRequestId: "request-1",
+    }),
+    [],
+  );
+});

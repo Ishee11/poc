@@ -21,6 +21,10 @@ export const state = {
   sessionLocalRevision: 0,
   sessionExpensesCached: false,
   sessionSettlementsCached: false,
+  sessionReplayStatus: "idle",
+  sessionPendingCount: 0,
+  sessionBlockedCount: 0,
+  sessionLastSuccessfulReplayAt: null,
 
   overviewSessions: [],
   overviewSessionsFilter: "all",

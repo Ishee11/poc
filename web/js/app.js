@@ -1,4 +1,6 @@
 import {
+  buyIn,
+  cashOut,
   getAccount,
   getAccountAvailablePlayers,
   getCurrentUser,
@@ -11,7 +13,15 @@ import {
   unlinkAccountPlayer,
 } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
-import { initializeLocalDatabase } from "./offline-db.js";
+import {
+  blockOutboxCommand,
+  claimNextReplayCommand,
+  countPendingAndBlockedCommands,
+  initializeLocalDatabase,
+  retryOutboxCommand,
+} from "./offline-db.js";
+import { createOutboxReplay } from "./offline-sync.js";
+import { SESSION_REPLAY_REQUEST_EVENT } from "./session-projection.js";
 import { state } from "./state.js";
 import {
   applyLatestSessionDefaults,
@@ -36,6 +46,7 @@ import {
   initSessionActions,
   openSession,
   openSessionResults,
+  reconcileReplayedSessionCommand,
   renderActionPlayerOptions,
   renderExpenseForm,
   renderExpenses,
@@ -55,6 +66,34 @@ import {
   setScreen,
   showNotice,
 } from "./utils.js";
+
+const sessionOutboxReplay = createOutboxReplay({
+  store: {
+    claimNextReplayCommand,
+    retryOutboxCommand,
+    blockOutboxCommand,
+    countPendingAndBlockedCommands,
+  },
+  send: (command) => {
+    const input = {
+      sessionId: command.session_id,
+      playerId: command.payload.player_id,
+      chips: command.payload.chips,
+      requestId: command.request_id,
+    };
+    return command.kind === "buy_in" ? buyIn(input) : cashOut(input);
+  },
+  reconcile: reconcileReplayedSessionCommand,
+  isActive: () => document.visibilityState !== "hidden",
+  onStatus: ({ status, pendingCount, blockedCount, lastSuccessfulReplayAt }) => {
+    state.sessionReplayStatus = status;
+    state.sessionPendingCount = pendingCount;
+    state.sessionBlockedCount = blockedCount;
+    state.sessionLastSuccessfulReplayAt = lastSuccessfulReplayAt;
+  },
+});
+
+let replayLifecycleInitialized = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
@@ -180,12 +219,30 @@ function initializeLocalRuntime() {
   void initializeLocalDatabase()
     .then(() => {
       state.localRuntimeStatus = "available";
+      initializeReplayLifecycle();
+      void sessionOutboxReplay.requestReplay();
     })
     .catch((error) => {
       state.localRuntimeStatus = "unavailable";
       state.localRuntimeError = error instanceof Error ? error.message : "IndexedDB unavailable";
       console.warn("Local session runtime is unavailable; continuing online-only", error);
     });
+}
+
+function initializeReplayLifecycle() {
+  if (replayLifecycleInitialized) return;
+  replayLifecycleInitialized = true;
+  window.addEventListener(SESSION_REPLAY_REQUEST_EVENT, () => {
+    void sessionOutboxReplay.requestReplay();
+  });
+  window.addEventListener("online", () => {
+    void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
+    }
+  });
 }
 
 function applyUiFeatureFlags() {

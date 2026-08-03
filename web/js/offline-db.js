@@ -42,6 +42,12 @@ function isOptionalTimestamp(value) {
   return value === null || isTimestamp(value);
 }
 
+function timestampMilliseconds(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function isValidSessionSnapshot(snapshot) {
   return (
     isRecord(snapshot) &&
@@ -410,6 +416,243 @@ export function createLocalDatabaseClient({
     return commands.filter((command) => command.status === "pending");
   }
 
+  async function listSessionProjectionCommands(sessionId, { excludeRequestId = "" } = {}) {
+    const commands = await listSessionCommands(sessionId);
+    return commands.filter(
+      (command) =>
+        command.request_id !== excludeRequestId &&
+        (command.kind === "buy_in" || command.kind === "cash_out"),
+    );
+  }
+
+  async function claimNextReplayCommand({
+    now = new Date().toISOString(),
+    leaseTimeoutMs,
+    allowEarlyRetry = false,
+  }) {
+    const nowMs = timestampMilliseconds(now);
+    if (nowMs === null) throw new TypeError("A valid replay timestamp is required");
+    if (!Number.isFinite(leaseTimeoutMs) || leaseTimeoutMs <= 0) {
+      throw new TypeError("leaseTimeoutMs must be a positive finite number");
+    }
+
+    const result = await runTransaction([STORE_OUTBOX], "readwrite", async (transaction) => {
+      const store = transaction.objectStore(STORE_OUTBOX);
+      const records = (await requestResult(store.getAll())).filter(isValidOutboxCommand);
+      const sessions = new Map();
+
+      for (const record of records) {
+        let command = record;
+        const lastAttemptMs = timestampMilliseconds(command.last_attempt_at);
+        if (
+          command.status === "sending" &&
+          lastAttemptMs !== null &&
+          lastAttemptMs <= nowMs - leaseTimeoutMs
+        ) {
+          command = { ...command, status: "pending" };
+          await requestResult(store.put(command));
+        }
+        const sessionCommands = sessions.get(command.session_id) || [];
+        sessionCommands.push(command);
+        sessions.set(command.session_id, sessionCommands);
+      }
+
+      const candidates = [];
+      let nextAttemptAt = null;
+      let blockedErrorKind = null;
+      for (const sessionCommands of sessions.values()) {
+        sessionCommands.sort((left, right) => left.sequence - right.sequence);
+        const command = sessionCommands[0];
+        if (command.status === "blocked" || command.status === "conflict") {
+          blockedErrorKind ||= command.last_error_kind;
+          continue;
+        }
+        if (command.status !== "pending") continue;
+
+        const commandNextAttemptMs = timestampMilliseconds(command.next_attempt_at);
+        if (
+          !allowEarlyRetry &&
+          commandNextAttemptMs !== null &&
+          commandNextAttemptMs > nowMs
+        ) {
+          if (nextAttemptAt === null || commandNextAttemptMs < nextAttemptAt) {
+            nextAttemptAt = commandNextAttemptMs;
+          }
+          continue;
+        }
+        candidates.push(command);
+      }
+
+      candidates.sort((left, right) => {
+        const createdDifference =
+          (timestampMilliseconds(left.created_at) || 0) -
+          (timestampMilliseconds(right.created_at) || 0);
+        if (createdDifference !== 0) return createdDifference;
+        const sessionDifference = left.session_id.localeCompare(right.session_id);
+        return sessionDifference || left.sequence - right.sequence;
+      });
+
+      const selected = candidates[0];
+      if (!selected) {
+        return { command: null, nextAttemptAt, blockedErrorKind };
+      }
+      const claimed = {
+        ...selected,
+        status: "sending",
+        last_attempt_at: now,
+      };
+      await requestResult(store.put(claimed));
+      return { command: claimed, nextAttemptAt: null, blockedErrorKind: null };
+    });
+
+    if (result.command) {
+      emitChange({
+        type: "outbox_command_sending",
+        sessionId: result.command.session_id,
+        requestId: result.command.request_id,
+      });
+    }
+    return result;
+  }
+
+  async function retryOutboxCommand({
+    requestId,
+    attempts,
+    lastAttemptAt,
+    nextAttemptAt,
+    errorKind,
+    errorDetails = null,
+  }) {
+    if (!isIdentifier(requestId) || !Number.isInteger(attempts) || attempts <= 0) {
+      throw new TypeError("A request id and positive attempts count are required");
+    }
+    const updated = await runTransaction([STORE_OUTBOX], "readwrite", async (transaction) => {
+      const store = transaction.objectStore(STORE_OUTBOX);
+      const command = await requestResult(store.get(requestId));
+      if (!isValidOutboxCommand(command)) return null;
+      const next = {
+        ...command,
+        status: "pending",
+        attempts,
+        last_attempt_at: lastAttemptAt,
+        next_attempt_at: nextAttemptAt,
+        last_error_kind: errorKind,
+        last_error_details: errorDetails,
+      };
+      requireValidCommand(next);
+      await requestResult(store.put(next));
+      return next;
+    });
+    if (updated) {
+      emitChange({
+        type: "outbox_command_retry_scheduled",
+        sessionId: updated.session_id,
+        requestId: updated.request_id,
+      });
+    }
+    return updated;
+  }
+
+  async function blockOutboxCommand({
+    requestId,
+    attempts,
+    lastAttemptAt,
+    errorKind,
+    errorDetails = null,
+    conflict = false,
+  }) {
+    if (!isIdentifier(requestId) || !Number.isInteger(attempts) || attempts <= 0) {
+      throw new TypeError("A request id and positive attempts count are required");
+    }
+    const updated = await runTransaction([STORE_OUTBOX], "readwrite", async (transaction) => {
+      const store = transaction.objectStore(STORE_OUTBOX);
+      const command = await requestResult(store.get(requestId));
+      if (!isValidOutboxCommand(command)) return null;
+      const next = {
+        ...command,
+        status: conflict ? "conflict" : "blocked",
+        attempts,
+        last_attempt_at: lastAttemptAt,
+        next_attempt_at: null,
+        last_error_kind: errorKind,
+        last_error_details: errorDetails,
+      };
+      requireValidCommand(next);
+      await requestResult(store.put(next));
+      return next;
+    });
+    if (updated) {
+      emitChange({
+        type: "outbox_command_blocked",
+        sessionId: updated.session_id,
+        requestId: updated.request_id,
+      });
+    }
+    return updated;
+  }
+
+  async function reconcileOutboxCommand({
+    requestId,
+    sessionId,
+    snapshot,
+    expectedLocalRevision,
+    acknowledgement = null,
+    completedAt = new Date().toISOString(),
+  }) {
+    requireValidSnapshot(snapshot);
+    if (!isIdentifier(requestId) || snapshot.session_id !== sessionId) {
+      throw new TypeError("Reconciliation identity does not match the snapshot");
+    }
+    if (!Number.isInteger(expectedLocalRevision) || expectedLocalRevision < 0) {
+      throw new TypeError("Expected local revision must be a non-negative integer");
+    }
+
+    const reconciled = await runTransaction(
+      [STORE_SESSION_SNAPSHOTS, STORE_OUTBOX, STORE_SYNC_STATE],
+      "readwrite",
+      async (transaction) => {
+        const snapshots = transaction.objectStore(STORE_SESSION_SNAPSHOTS);
+        const outbox = transaction.objectStore(STORE_OUTBOX);
+        const syncState = transaction.objectStore(STORE_SYNC_STATE);
+        const [currentSnapshot, command, commands] = await Promise.all([
+          requestResult(snapshots.get(sessionId)),
+          requestResult(outbox.get(requestId)),
+          requestResult(outbox.getAll()),
+        ]);
+        if (
+          !isValidSessionSnapshot(currentSnapshot) ||
+          currentSnapshot.local_revision !== expectedLocalRevision ||
+          !isValidOutboxCommand(command) ||
+          command.session_id !== sessionId
+        ) {
+          return false;
+        }
+
+        await requestResult(snapshots.put(snapshot));
+        await requestResult(outbox.delete(requestId));
+        const pendingCount = commands.filter(
+          (item) =>
+            isValidOutboxCommand(item) &&
+            item.request_id !== requestId &&
+            (item.status === "pending" || item.status === "sending"),
+        ).length;
+        await requestResult(syncState.put({
+          key: "last_successful_replay",
+          request_id: requestId,
+          session_id: sessionId,
+          acknowledgement,
+          completed_at: completedAt,
+        }));
+        await requestResult(syncState.put({ key: "pending_count", value: pendingCount }));
+        return true;
+      },
+    );
+    if (reconciled) {
+      emitChange({ type: "outbox_command_reconciled", sessionId, requestId });
+    }
+    return reconciled;
+  }
+
   async function nextSessionCommandSequence(sessionId) {
     if (!isIdentifier(sessionId)) {
       throw new TypeError("A session id is required");
@@ -464,6 +707,11 @@ export function createLocalDatabaseClient({
     writeProjectedSnapshotWithCommand,
     deleteSessionSnapshot,
     listPendingCommands,
+    listSessionProjectionCommands,
+    claimNextReplayCommand,
+    retryOutboxCommand,
+    blockOutboxCommand,
+    reconcileOutboxCommand,
     nextSessionCommandSequence,
     countPendingAndBlockedCommands,
     subscribeLocalRuntimeChanges,
@@ -481,6 +729,11 @@ export const writeProjectedSnapshotWithCommand =
   defaultClient.writeProjectedSnapshotWithCommand;
 export const deleteSessionSnapshot = defaultClient.deleteSessionSnapshot;
 export const listPendingCommands = defaultClient.listPendingCommands;
+export const listSessionProjectionCommands = defaultClient.listSessionProjectionCommands;
+export const claimNextReplayCommand = defaultClient.claimNextReplayCommand;
+export const retryOutboxCommand = defaultClient.retryOutboxCommand;
+export const blockOutboxCommand = defaultClient.blockOutboxCommand;
+export const reconcileOutboxCommand = defaultClient.reconcileOutboxCommand;
 export const nextSessionCommandSequence = defaultClient.nextSessionCommandSequence;
 export const countPendingAndBlockedCommands = defaultClient.countPendingAndBlockedCommands;
 export const subscribeLocalRuntimeChanges = defaultClient.subscribeLocalRuntimeChanges;

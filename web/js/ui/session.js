@@ -20,8 +20,9 @@ import {
 import { operationLabel, statusLabel, t } from "../i18n.js";
 import {
   nextSessionCommandSequence,
-  listPendingCommands,
+  listSessionProjectionCommands,
   readSessionSnapshot,
+  reconcileOutboxCommand,
   writeProjectedSnapshotWithCommand,
   writeServerSnapshotIfRevision,
 } from "../offline-db.js";
@@ -33,6 +34,7 @@ import {
   applySessionSnapshot,
   hydrateCachedSession,
   refreshSessionSnapshot,
+  snapshotFromServerResults,
   snapshotFromState,
 } from "../session-cache.js";
 import {
@@ -202,7 +204,7 @@ async function refreshSessionFromServer(sessionId) {
           getSessionOperations(sessionId),
           getExpenses(sessionId),
           getSettlementTransfers(sessionId),
-          listPendingCommands(sessionId),
+          listSessionProjectionCommands(sessionId),
         ]);
       return {
         sessionResult,
@@ -218,6 +220,59 @@ async function refreshSessionFromServer(sessionId) {
       reapplyPendingSessionCommands(snapshot, results.pendingCommands),
     onApplied: renderSessionSlice,
   });
+}
+
+export async function reconcileReplayedSessionCommand(command, response) {
+  const sessionId = command.session_id;
+  const previousSnapshot = await readSessionSnapshot(sessionId);
+  if (!previousSnapshot) throw new Error("Cached session snapshot is unavailable");
+
+  const [
+    sessionResult,
+    playersResult,
+    operationsResult,
+    expensesResult,
+    settlementsResult,
+    pendingCommands,
+  ] = await Promise.all([
+    getSession(sessionId),
+    getSessionPlayers(sessionId),
+    getSessionOperations(sessionId),
+    getExpenses(sessionId),
+    getSettlementTransfers(sessionId),
+    listSessionProjectionCommands(sessionId, { excludeRequestId: command.request_id }),
+  ]);
+  const serverSnapshot = snapshotFromServerResults({
+    sessionId,
+    sessionResult,
+    playersResult,
+    operationsResult,
+    expensesResult,
+    settlementsResult,
+    previousSnapshot,
+    cachedAt: new Date().toISOString(),
+    localRevision: previousSnapshot.local_revision,
+  });
+  if (!serverSnapshot) throw new Error("Server refresh after replay failed");
+
+  const reconciledSnapshot = reapplyPendingSessionCommands(
+    serverSnapshot,
+    pendingCommands,
+  );
+  const reconciled = await reconcileOutboxCommand({
+    requestId: command.request_id,
+    sessionId,
+    snapshot: reconciledSnapshot,
+    expectedLocalRevision: previousSnapshot.local_revision,
+    acknowledgement: response.body,
+  });
+  if (!reconciled) return false;
+
+  if (state.activeSessionId === sessionId) {
+    applySessionSnapshot(state, reconciledSnapshot, "server");
+    renderSessionSlice();
+  }
+  return true;
 }
 
 export async function openSessionResults(sessionId, { replace = false } = {}) {
