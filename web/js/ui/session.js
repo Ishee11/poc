@@ -528,7 +528,17 @@ export function renderExpenseForm() {
   const amount = Number(document.getElementById("expense-amount")?.value);
   const selectedPayerIds = readSelectedExpensePayers(players);
 
-  participantsWrap.innerHTML = renderExpenseParticipantControls(players, amount);
+  // When switching to custom mode, default to all players selected
+  const initialParticipantIds =
+    (state.expenseParticipantMode || "all") === "custom"
+      ? players.map((player) => playerId(player)).filter(Boolean)
+      : [];
+
+  participantsWrap.innerHTML = renderExpenseParticipantControls(
+    players,
+    initialParticipantIds,
+    amount,
+  );
   payersWrap.innerHTML = renderExpensePayerControls(players, selectedPayerIds, amount);
   bindExpenseSplitInputs();
   updateExpenseParticipantShares();
@@ -548,7 +558,7 @@ function bindExpenseSplitInputs() {
   });
 }
 
-function renderExpenseParticipantControls(players, amount) {
+function renderExpenseParticipantControls(players, selectedParticipantIds, amount) {
   if (!players.length) {
     return `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
   }
@@ -565,15 +575,17 @@ function renderExpenseParticipantControls(players, amount) {
     return modeSwitch;
   }
 
-  const shares = calculateEqualShares(amount, players.map((player) => playerId(player)));
+  const shares = calculateEqualShares(amount, selectedParticipantIds);
+  const selectedSet = new Set(selectedParticipantIds);
   const participantRows = players
     .map((player) => {
       const id = playerId(player);
       const name = playerName(player);
+      const isChecked = selectedSet.has(id);
       return `
         <label class="expense-check">
           <span class="expense-check-main">
-            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
+            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" ${isChecked ? "checked" : ""} />
             <span>${escapeHtml(name)}</span>
           </span>
           <strong data-expense-share="${escapeHtml(id)}">${formatMoney(shares.get(id) || 0, state.session?.currency)}</strong>
