@@ -122,7 +122,12 @@ export function snapshotFromState(state, sessionId = state.activeSessionId) {
   return snapshot;
 }
 
-export function applySessionSnapshot(state, snapshot, source) {
+export function applySessionSnapshot(
+  state,
+  snapshot,
+  source,
+  { refreshStatus = source === "server" ? "fresh" : "refreshing" } = {},
+) {
   if (!isValidSessionSnapshot(snapshot)) return false;
 
   state.session = { ...snapshot.session };
@@ -143,7 +148,7 @@ export function applySessionSnapshot(state, snapshot, source) {
   state.sessionDataSource = source;
   state.sessionCachedAt = snapshot.cached_at;
   state.sessionLocalRevision = snapshot.local_revision;
-  state.sessionRefreshStatus = source === "server" ? "fresh" : "refreshing";
+  state.sessionRefreshStatus = refreshStatus;
   return true;
 }
 
@@ -167,6 +172,7 @@ export async function refreshSessionSnapshot({
   state,
   loadResults,
   writeSnapshot,
+  transformSnapshot = (snapshot) => snapshot,
   onApplied,
   now = () => new Date().toISOString(),
 }) {
@@ -183,7 +189,7 @@ export async function refreshSessionSnapshot({
     if (isCurrentRefresh(state, token)) state.sessionRefreshStatus = "failed";
     return { status: "failed", snapshot: null, error };
   }
-  const snapshot = snapshotFromServerResults({
+  let snapshot = snapshotFromServerResults({
     sessionId,
     ...results,
     previousSnapshot,
@@ -195,10 +201,17 @@ export async function refreshSessionSnapshot({
     if (isCurrentRefresh(state, token)) state.sessionRefreshStatus = "failed";
     return { status: "failed", snapshot: null };
   }
+  try {
+    snapshot = transformSnapshot(snapshot, results);
+  } catch (error) {
+    if (isCurrentRefresh(state, token)) state.sessionRefreshStatus = "failed";
+    return { status: "failed", snapshot: null, error };
+  }
   if (!isCurrentRefresh(state, token)) return { status: "stale", snapshot: null };
 
   try {
-    await writeSnapshot(snapshot);
+    const written = await writeSnapshot(snapshot, token.localRevision);
+    if (written === false) return { status: "stale", snapshot: null };
   } catch (error) {
     if (isCurrentRefresh(state, token)) state.sessionRefreshStatus = "failed";
     return { status: "failed", snapshot: null, error };

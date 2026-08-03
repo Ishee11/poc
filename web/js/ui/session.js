@@ -1,6 +1,5 @@
 import {
   buyIn,
-  cashOut,
   closeExpenses,
   createPlayer,
   createExpense,
@@ -19,11 +18,30 @@ import {
   saveSettlementTransfers,
 } from "../api.js";
 import { operationLabel, statusLabel, t } from "../i18n.js";
-import { readSessionSnapshot, writeServerSnapshot } from "../offline-db.js";
 import {
+  nextSessionCommandSequence,
+  listPendingCommands,
+  readSessionSnapshot,
+  writeProjectedSnapshotWithCommand,
+  writeServerSnapshotIfRevision,
+} from "../offline-db.js";
+import {
+  serializeBuyInCommand,
+  serializeCashOutCommand,
+} from "../network-contract.js";
+import {
+  applySessionSnapshot,
   hydrateCachedSession,
   refreshSessionSnapshot,
+  snapshotFromState,
 } from "../session-cache.js";
+import {
+  createPendingCommand,
+  createSingleFlightCommitter,
+  commitProjectedSessionCommand,
+  reapplyPendingSessionCommands,
+  SESSION_REPLAY_REQUEST_EVENT,
+} from "../session-projection.js";
 import { state } from "../state.js";
 import {
   describeError,
@@ -46,6 +64,53 @@ import {
 } from "../utils.js";
 import { loadSessions } from "./lobby.js";
 import { loadPlayers, loadPlayersOverview, renderPlayers } from "./player.js";
+
+const commitLocalSessionCommand = createSingleFlightCommitter(
+  async ({ kind, sessionId, playerId, chips }) => {
+    const serialized = kind === "buy_in"
+      ? serializeBuyInCommand({ sessionId, playerId, chips })
+      : serializeCashOutCommand({ sessionId, playerId, chips });
+    const sequence = await nextSessionCommandSequence(sessionId);
+    const currentSnapshot = snapshotFromState(state, sessionId);
+    if (!currentSnapshot || state.activeSessionId !== sessionId) {
+      throw new Error("Current session snapshot is unavailable");
+    }
+
+    const createdAt = new Date().toISOString();
+    const provisionalOperationId = `local-${serialized.requestId}`;
+    const { projectionCommand, outboxCommand } = createPendingCommand({
+      kind,
+      sessionId,
+      playerId,
+      chips,
+      requestId: serialized.requestId,
+      sequence,
+      createdAt,
+      provisionalOperationId,
+      payload: serialized.payload,
+    });
+    return commitProjectedSessionCommand({
+      snapshot: currentSnapshot,
+      projectionCommand,
+      outboxCommand,
+      persist: writeProjectedSnapshotWithCommand,
+      onCommitted: (nextSnapshot) => {
+        if (state.activeSessionId !== sessionId) return;
+        applySessionSnapshot(state, nextSnapshot, "cache", {
+          refreshStatus: state.sessionRefreshStatus,
+        });
+        renderSessionSlice();
+      },
+      requestReplay: () => {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+            detail: { sessionId, requestId: serialized.requestId },
+          }),
+        );
+      },
+    });
+  },
+);
 
 export async function openSession(sessionId, { replace = false } = {}) {
   if (!sessionId) return;
@@ -123,13 +188,21 @@ async function refreshSessionFromServer(sessionId) {
     sessionId,
     state,
     loadResults: async () => {
-      const [sessionResult, playersResult, operationsResult, expensesResult, settlementsResult] =
+      const [
+        sessionResult,
+        playersResult,
+        operationsResult,
+        expensesResult,
+        settlementsResult,
+        pendingCommands,
+      ] =
         await Promise.all([
           getSession(sessionId),
           getSessionPlayers(sessionId),
           getSessionOperations(sessionId),
           getExpenses(sessionId),
           getSettlementTransfers(sessionId),
+          listPendingCommands(sessionId),
         ]);
       return {
         sessionResult,
@@ -137,9 +210,12 @@ async function refreshSessionFromServer(sessionId) {
         operationsResult,
         expensesResult,
         settlementsResult,
+        pendingCommands,
       };
     },
-    writeSnapshot: writeServerSnapshot,
+    writeSnapshot: writeServerSnapshotIfRevision,
+    transformSnapshot: (snapshot, results) =>
+      reapplyPendingSessionCommands(snapshot, results.pendingCommands),
     onApplied: renderSessionSlice,
   });
 }
@@ -341,13 +417,16 @@ export function renderOperations() {
   const operationRows = state.operations
     .map((operation) => {
       const playerName = findPlayerName(operation.player_id);
+      const syncStatus = operation.sync_status || "confirmed";
+      const isPending = syncStatus === "pending";
       const reversible =
         state.session?.status === "active" &&
         operation.type !== "reversal" &&
+        !isPending &&
         !reversedTargets.has(operation.id);
 
       return `
-        <div class="operation-row">
+        <div class="operation-row ${isPending ? "operation-pending" : ""}" data-sync-status="${escapeHtml(syncStatus)}">
           <div class="row-main">
             <div class="row-title">
               <span class="operation-type ${escapeHtml(operation.type)}">${escapeHtml(operationLabel(operation.type))}</span>
@@ -1256,6 +1335,7 @@ async function confirmPlayerRebuy(playerId) {
 
   const playerName = findPlayerName(playerId);
   const chips = lastBuyInChipsForRebuy(playerId);
+  const sessionId = state.activeSessionId;
   const values = await openModal({
     title: t("modal.confirmBuyInTitle"),
     description: t("modal.confirmBuyInDescription", {
@@ -1275,27 +1355,29 @@ async function confirmPlayerRebuy(playerId) {
         placeholder: t("session.chips"),
       },
     ],
+    onConfirm: async (confirmedValues) => {
+      const nextChips = Number(confirmedValues.chips);
+      if (!Number.isFinite(nextChips) || nextChips <= 0) {
+        showNotice(t("notice.selectPlayerAndChips"), "error");
+        return false;
+      }
+      try {
+        await commitLocalSessionCommand(sessionId, {
+          kind: "buy_in",
+          sessionId,
+          playerId,
+          chips: nextChips,
+        });
+        return true;
+      } catch (error) {
+        console.error("Local buy-in commit failed:", error);
+        showNotice(t("error.localSessionSaveFailed"), "error");
+        return false;
+      }
+    },
   });
   if (!values) return;
-
-  const nextChips = Number(values.chips);
-  if (!Number.isFinite(nextChips) || nextChips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
-  const res = await buyIn({
-    sessionId: state.activeSessionId,
-    playerId,
-    chips: nextChips,
-  });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedBuyIn")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
+  showNotice(t("notice.buyInSavedLocally", { name: playerName }), "success");
 }
 
 async function confirmPlayerCashOut(playerId) {
@@ -1307,6 +1389,7 @@ async function confirmPlayerCashOut(playerId) {
   }
   const defaultChips = String(Math.min(1000, maxChips));
 
+  const sessionId = state.activeSessionId;
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
@@ -1327,31 +1410,33 @@ async function confirmPlayerCashOut(playerId) {
         placeholder: t("session.chips"),
       },
     ],
+    onConfirm: async (confirmedValues) => {
+      const chips = Number(confirmedValues.chips);
+      if (!playerId || !Number.isFinite(chips) || chips <= 0) {
+        showNotice(t("notice.selectPlayerAndChips"), "error");
+        return false;
+      }
+      if (chips > (Number(state.session?.totalChips) || 0)) {
+        showNotice(t("notice.cashOutExceedsBalance"), "error");
+        return false;
+      }
+      try {
+        await commitLocalSessionCommand(sessionId, {
+          kind: "cash_out",
+          sessionId,
+          playerId,
+          chips,
+        });
+        return true;
+      } catch (error) {
+        console.error("Local cash-out commit failed:", error);
+        showNotice(t("error.localSessionSaveFailed"), "error");
+        return false;
+      }
+    },
   });
   if (!values) return;
-
-  const chips = Number(values.chips);
-  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-  if (chips > maxChips) {
-    showNotice(t("notice.cashOutExceedsBalance"), "error");
-    return;
-  }
-
-  const res = await cashOut({
-    sessionId: state.activeSessionId,
-    playerId,
-    chips,
-  });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedCashOut")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
+  showNotice(t("notice.cashOutSavedLocally", { name: playerName }), "success");
 }
 
 async function confirmAddPlayer() {

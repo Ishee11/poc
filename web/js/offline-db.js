@@ -316,6 +316,42 @@ export function createLocalDatabaseClient({
     return snapshot;
   }
 
+  async function writeServerSnapshotIfRevision(
+    snapshot,
+    expectedLocalRevision,
+    syncStateUpdates,
+  ) {
+    requireValidSnapshot(snapshot);
+    if (!Number.isInteger(expectedLocalRevision) || expectedLocalRevision < 0) {
+      throw new TypeError("Expected local revision must be a non-negative integer");
+    }
+    const updates = normalizeSyncStateUpdates(syncStateUpdates);
+    const stores = [STORE_SESSION_SNAPSHOTS];
+    if (updates.length > 0) stores.push(STORE_SYNC_STATE);
+
+    const written = await runTransaction(stores, "readwrite", async (transaction) => {
+      const snapshotStore = transaction.objectStore(STORE_SESSION_SNAPSHOTS);
+      const current = await requestResult(snapshotStore.get(snapshot.session_id));
+      const currentRevision = isValidSessionSnapshot(current)
+        ? current.local_revision
+        : 0;
+      if (currentRevision !== expectedLocalRevision) return false;
+
+      await requestResult(snapshotStore.put(snapshot));
+      if (updates.length > 0) {
+        const syncStateStore = transaction.objectStore(STORE_SYNC_STATE);
+        for (const update of updates) {
+          await requestResult(syncStateStore.put(update));
+        }
+      }
+      return true;
+    });
+    if (written) {
+      emitChange({ type: "server_snapshot_written", sessionId: snapshot.session_id });
+    }
+    return written;
+  }
+
   async function writeProjectedSnapshotWithCommand(snapshot, command, syncStateUpdates) {
     requireValidSnapshot(snapshot);
     requireValidCommand(command);
@@ -374,6 +410,17 @@ export function createLocalDatabaseClient({
     return commands.filter((command) => command.status === "pending");
   }
 
+  async function nextSessionCommandSequence(sessionId) {
+    if (!isIdentifier(sessionId)) {
+      throw new TypeError("A session id is required");
+    }
+    const commands = await listSessionCommands(sessionId);
+    return commands.reduce(
+      (maximum, command) => Math.max(maximum, command.sequence),
+      0,
+    ) + 1;
+  }
+
   async function countPendingAndBlockedCommands(sessionId) {
     const records = isIdentifier(sessionId)
       ? await listSessionCommands(sessionId)
@@ -413,9 +460,11 @@ export function createLocalDatabaseClient({
     close,
     readSessionSnapshot,
     writeServerSnapshot,
+    writeServerSnapshotIfRevision,
     writeProjectedSnapshotWithCommand,
     deleteSessionSnapshot,
     listPendingCommands,
+    nextSessionCommandSequence,
     countPendingAndBlockedCommands,
     subscribeLocalRuntimeChanges,
   });
@@ -427,9 +476,11 @@ export const initializeLocalDatabase = defaultClient.open;
 export const closeLocalDatabase = defaultClient.close;
 export const readSessionSnapshot = defaultClient.readSessionSnapshot;
 export const writeServerSnapshot = defaultClient.writeServerSnapshot;
+export const writeServerSnapshotIfRevision = defaultClient.writeServerSnapshotIfRevision;
 export const writeProjectedSnapshotWithCommand =
   defaultClient.writeProjectedSnapshotWithCommand;
 export const deleteSessionSnapshot = defaultClient.deleteSessionSnapshot;
 export const listPendingCommands = defaultClient.listPendingCommands;
+export const nextSessionCommandSequence = defaultClient.nextSessionCommandSequence;
 export const countPendingAndBlockedCommands = defaultClient.countPendingAndBlockedCommands;
 export const subscribeLocalRuntimeChanges = defaultClient.subscribeLocalRuntimeChanges;

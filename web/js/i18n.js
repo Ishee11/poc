@@ -343,6 +343,8 @@ const translations = {
       "Select a player and enter a valid chip amount.",
     "notice.buyInRecorded": "Buy in recorded for {name}.",
     "notice.cashOutRecorded": "Cash out recorded for {name}.",
+    "notice.buyInSavedLocally": "Buy in saved locally for {name} and queued for sync.",
+    "notice.cashOutSavedLocally": "Cash out saved locally for {name} and queued for sync.",
     "notice.noChipsToCashOut": "This player has no chips on the table to cash out.",
     "notice.cashOutExceedsBalance": "Cash out amount exceeds the player's chips on the table.",
     "notice.invalidExpense":
@@ -435,6 +437,7 @@ const translations = {
     "error.failedLoadSession": "Failed to load session",
     "error.failedBuyIn": "Failed to apply buy in",
     "error.failedCashOut": "Failed to apply cash out",
+    "error.localSessionSaveFailed": "Failed to save the action on this device. Nothing was queued.",
     "error.failedAddPlayer": "Failed to add player to session",
     "error.failedCreateAdd": "Player created, but add to session failed",
     "error.failedFinish": "Failed to finish session",
@@ -839,6 +842,8 @@ const translations = {
       "Выберите игрока и введите количество фишек.",
     "notice.buyInRecorded": "Бай-ин записан для {name}.",
     "notice.cashOutRecorded": "Кэш-аут записан для {name}.",
+    "notice.buyInSavedLocally": "Бай-ин для {name} сохранён на устройстве и ожидает синхронизации.",
+    "notice.cashOutSavedLocally": "Кэш-аут для {name} сохранён на устройстве и ожидает синхронизации.",
     "notice.noChipsToCashOut": "У этого игрока нет фишек на столе для кэш-аута.",
     "notice.cashOutExceedsBalance": "Сумма кэш-аута превышает количество фишек игрока на столе.",
     "notice.invalidExpense":
@@ -930,6 +935,7 @@ const translations = {
     "error.failedLoadSession": "Не удалось загрузить сессию",
     "error.failedBuyIn": "Не удалось применить бай-ин",
     "error.failedCashOut": "Не удалось применить кэш-аут",
+    "error.localSessionSaveFailed": "Не удалось сохранить действие на устройстве. В очередь ничего не добавлено.",
     "error.failedAddPlayer": "Не удалось добавить игрока в сессию",
     "error.failedCreateAdd":
       "Игрок создан, но добавить его в сессию не удалось",
