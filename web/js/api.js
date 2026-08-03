@@ -1,63 +1,56 @@
+import {
+  createRequestClient,
+  createRequestId,
+  serializeBuyInCommand,
+  serializeCashOutCommand,
+  serializeReverseOperationCommand,
+} from "./network-contract.js";
+
 const API = window.location.origin;
 
 // ===== core =====
 
-async function request(path, options = {}) {
-  try {
-    const res = await fetch(API + path, {
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      ...options,
-    });
+const request = createRequestClient({ baseURL: API });
 
-    const text = await res.text();
-
-    let body = null;
-    if (text) {
-      try {
-        body = JSON.parse(text);
-      } catch {
-        console.error("API: failed to parse JSON response from", path, text.slice(0, 200));
-      }
-    }
-
-    return {
-      ok: res.ok,
-      status: res.status,
-      body,
-      text,
-    };
-  } catch (e) {
-    return { ok: false, status: 0, body: null, text: String(e) };
-  }
+function withRequestId(resultPromise, requestId) {
+  return resultPromise.then((result) => ({ ...result, requestId }));
 }
 
-export function apiGet(path) {
-  return request(path);
+export function apiGet(path, { timeoutMs } = {}) {
+  return request(path, { timeoutMs });
 }
 
-export function apiPost(path, body) {
-  return request(path, {
-    method: "POST",
-    body: body == null ? undefined : JSON.stringify({ ...body, request_id: rid() }),
-  });
+export function apiPost(path, body, { requestId = rid(), timeoutMs } = {}) {
+  return withRequestId(
+    request(path, {
+      method: "POST",
+      timeoutMs,
+      body: body == null ? undefined : JSON.stringify({ ...body, request_id: requestId }),
+    }),
+    requestId,
+  );
 }
 
-export function apiPut(path, body) {
-  return request(path, {
-    method: "PUT",
-    body: JSON.stringify({ ...body, request_id: rid() }),
-  });
+export function apiPut(path, body, { requestId = rid(), timeoutMs } = {}) {
+  return withRequestId(
+    request(path, {
+      method: "PUT",
+      timeoutMs,
+      body: JSON.stringify({ ...(body || {}), request_id: requestId }),
+    }),
+    requestId,
+  );
 }
 
-export function apiDelete(path, body) {
-  return request(path, {
-    method: "DELETE",
-    body: body == null ? undefined : JSON.stringify({ ...body, request_id: rid() }),
-  });
+export function apiDelete(path, body, { requestId = rid(), timeoutMs } = {}) {
+  return withRequestId(
+    request(path, {
+      method: "DELETE",
+      timeoutMs,
+      body: body == null ? undefined : JSON.stringify({ ...body, request_id: requestId }),
+    }),
+    requestId,
+  );
 }
 
 // ===== auth =====
@@ -120,34 +113,7 @@ export function unlinkAccountPlayer(playerId) {
 // ===== utils =====
 
 function rid() {
-  if (
-    typeof globalThis.crypto !== "undefined" &&
-    typeof globalThis.crypto.randomUUID === "function"
-  ) {
-    return globalThis.crypto.randomUUID();
-  }
-
-  if (
-    typeof globalThis.crypto !== "undefined" &&
-    typeof globalThis.crypto.getRandomValues === "function"
-  ) {
-    const bytes = new Uint8Array(16);
-    globalThis.crypto.getRandomValues(bytes);
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
-    return [
-      hex.slice(0, 4).join(""),
-      hex.slice(4, 6).join(""),
-      hex.slice(6, 8).join(""),
-      hex.slice(8, 10).join(""),
-      hex.slice(10, 16).join(""),
-    ].join("-");
-  }
-
-  return `req-${Date.now().toString(36)}-${Math.random()
-    .toString(36)
-    .slice(2, 12)}`;
+  return createRequestId();
 }
 
 // ===== sessions =====
@@ -273,38 +239,37 @@ export function saveSettlementTransfers(sessionId, transfers) {
 
 // ===== operations =====
 
-export function buyIn({ sessionId, playerId, chips }) {
-  return request("/operations/buy-in", {
-    method: "POST",
-    body: JSON.stringify({
-      session_id: sessionId,
-      player_id: playerId,
-      chips,
-      request_id: rid(),
+export function buyIn({ sessionId, playerId, chips, requestId }) {
+  const command = serializeBuyInCommand({ sessionId, playerId, chips, requestId });
+  return withRequestId(
+    request("/operations/buy-in", {
+      method: "POST",
+      body: JSON.stringify(command.payload),
     }),
-  });
+    command.requestId,
+  );
 }
 
-export function cashOut({ sessionId, playerId, chips }) {
-  return request("/operations/cash-out", {
-    method: "POST",
-    body: JSON.stringify({
-      session_id: sessionId,
-      player_id: playerId,
-      chips,
-      request_id: rid(),
+export function cashOut({ sessionId, playerId, chips, requestId }) {
+  const command = serializeCashOutCommand({ sessionId, playerId, chips, requestId });
+  return withRequestId(
+    request("/operations/cash-out", {
+      method: "POST",
+      body: JSON.stringify(command.payload),
     }),
-  });
+    command.requestId,
+  );
 }
 
-export function reverseOperation({ operationId }) {
-  return request("/operations/reverse", {
-    method: "POST",
-    body: JSON.stringify({
-      target_operation_id: operationId,
-      request_id: rid(),
+export function reverseOperation({ operationId, requestId }) {
+  const command = serializeReverseOperationCommand({ operationId, requestId });
+  return withRequestId(
+    request("/operations/reverse", {
+      method: "POST",
+      body: JSON.stringify(command.payload),
     }),
-  });
+    command.requestId,
+  );
 }
 
 // ===== players =====
