@@ -4,6 +4,7 @@ import {
   retryPolicy,
   serializeBuyInCommand,
   serializeCashOutCommand,
+  serializeReverseOperationCommand,
 } from "./network-contract.js";
 
 export const SENDING_LEASE_MS = 30_000;
@@ -43,21 +44,29 @@ export function validatePersistedSessionCommand(command) {
   if (command?.status !== "sending") {
     throw new TypeError("Command is not leased for sending");
   }
-  const input = {
-    sessionId: command.session_id,
-    playerId: command.payload?.player_id,
-    chips: command.payload?.chips,
-    requestId: command.request_id,
-  };
+  const input = command.kind === "reverse_operation"
+    ? {
+        operationId: command.payload?.target_operation_id,
+        requestId: command.request_id,
+      }
+    : {
+        sessionId: command.session_id,
+        playerId: command.payload?.player_id,
+        chips: command.payload?.chips,
+        requestId: command.request_id,
+      };
   const serialized = command.kind === "buy_in"
     ? serializeBuyInCommand(input)
     : command.kind === "cash_out"
       ? serializeCashOutCommand(input)
-      : null;
+      : command.kind === "reverse_operation"
+        ? serializeReverseOperationCommand(input)
+        : null;
   if (!serialized) throw new TypeError("Unsupported replay command kind");
   if (
     serialized.requestId !== command.request_id ||
-    serialized.payload.session_id !== command.session_id ||
+    (command.kind !== "reverse_operation" &&
+      serialized.payload.session_id !== command.session_id) ||
     canonicalRecord(serialized.payload) !== canonicalRecord(command.payload)
   ) {
     throw new TypeError("Persisted command payload does not match its identity");
@@ -85,8 +94,13 @@ function serverErrorDetails(result) {
   const body = result?.body;
   return {
     status: Number(result?.status) || 0,
-    code: typeof body?.code === "string" ? body.code : null,
+    code: typeof body?.code === "string"
+      ? body.code
+      : typeof body?.error === "string"
+        ? body.error
+        : null,
     message: typeof body?.message === "string" ? body.message : null,
+    details: body?.details ?? null,
   };
 }
 

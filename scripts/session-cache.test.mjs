@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   hydrateCachedSession,
   refreshSessionSnapshot,
+  refreshSessionSnapshotWithRebase,
 } from "../web/js/session-cache.js";
 
 function snapshot(sessionId = "session-1", overrides = {}) {
@@ -228,4 +229,37 @@ test("newer local revision invalidates an older server refresh", async () => {
   gate.resolve(serverResults());
   assert.equal((await refresh).status, "stale");
   assert.equal(writes, 0);
+});
+
+test("revision-aware refresh retries and rebases after a newer local command", async () => {
+  const state = runtimeState();
+  state.sessionLocalRevision = 4;
+  let loads = 0;
+  let persisted;
+
+  const result = await refreshSessionSnapshotWithRebase({
+    sessionId: "session-1",
+    state,
+    loadResults: async () => {
+      loads += 1;
+      if (loads === 1) state.sessionLocalRevision = 5;
+      return serverResults();
+    },
+    transformSnapshot: (serverSnapshot) => ({
+      ...serverSnapshot,
+      operations: [{ id: "local-newer", sync_status: "pending" }],
+    }),
+    writeSnapshot: async (nextSnapshot, expectedRevision) => {
+      assert.equal(expectedRevision, 5);
+      persisted = nextSnapshot;
+      return true;
+    },
+  });
+
+  assert.equal(result.status, "fresh");
+  assert.equal(loads, 2);
+  assert.equal(persisted.local_revision, 5);
+  assert.deepEqual(persisted.operations, [
+    { id: "local-newer", sync_status: "pending" },
+  ]);
 });

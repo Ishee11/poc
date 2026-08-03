@@ -9,6 +9,7 @@ import {
   login,
   logout,
   register,
+  reverseOperation,
   startSession,
   unlinkAccountPlayer,
 } from "./api.js";
@@ -81,7 +82,12 @@ const sessionOutboxReplay = createOutboxReplay({
       chips: command.payload.chips,
       requestId: command.request_id,
     };
-    return command.kind === "buy_in" ? buyIn(input) : cashOut(input);
+    if (command.kind === "buy_in") return buyIn(input);
+    if (command.kind === "cash_out") return cashOut(input);
+    return reverseOperation({
+      operationId: command.payload.target_operation_id,
+      requestId: command.request_id,
+    });
   },
   reconcile: reconcileReplayedSessionCommand,
   isActive: () => document.visibilityState !== "hidden",
@@ -232,8 +238,10 @@ function initializeLocalRuntime() {
 function initializeReplayLifecycle() {
   if (replayLifecycleInitialized) return;
   replayLifecycleInitialized = true;
-  window.addEventListener(SESSION_REPLAY_REQUEST_EVENT, () => {
-    void sessionOutboxReplay.requestReplay();
+  window.addEventListener(SESSION_REPLAY_REQUEST_EVENT, (event) => {
+    void sessionOutboxReplay.requestReplay({
+      allowEarlyRetry: event.detail?.allowEarlyRetry === true,
+    });
   });
   window.addEventListener("online", () => {
     void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });

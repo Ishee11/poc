@@ -421,8 +421,177 @@ export function createLocalDatabaseClient({
     return commands.filter(
       (command) =>
         command.request_id !== excludeRequestId &&
-        (command.kind === "buy_in" || command.kind === "cash_out"),
+        (command.kind === "buy_in" ||
+          command.kind === "cash_out" ||
+          command.kind === "reverse_operation"),
     );
+  }
+
+  async function readReverseTargetContext(sessionId) {
+    if (!isIdentifier(sessionId)) return { snapshot: null, commands: [] };
+    return runTransaction(
+      [STORE_SESSION_SNAPSHOTS, STORE_OUTBOX],
+      "readonly",
+      async (transaction) => {
+        const [snapshot, commands] = await Promise.all([
+          requestResult(transaction.objectStore(STORE_SESSION_SNAPSHOTS).get(sessionId)),
+          requestResult(transaction.objectStore(STORE_OUTBOX).getAll()),
+        ]);
+        return {
+          snapshot: isValidSessionSnapshot(snapshot) ? snapshot : null,
+          commands: commands
+            .filter(
+              (command) =>
+                isValidOutboxCommand(command) && command.session_id === sessionId,
+            )
+            .sort((left, right) => left.sequence - right.sequence),
+        };
+      },
+    );
+  }
+
+  async function cancelPendingOutboxCommand({
+    requestId,
+    sessionId,
+    snapshot,
+    expectedLocalRevision,
+    cancelledAt = new Date().toISOString(),
+  }) {
+    requireValidSnapshot(snapshot);
+    if (!isIdentifier(requestId) || snapshot.session_id !== sessionId) {
+      throw new TypeError("Cancellation identity does not match the snapshot");
+    }
+    const cancelled = await runTransaction(
+      [STORE_SESSION_SNAPSHOTS, STORE_OUTBOX, STORE_SYNC_STATE],
+      "readwrite",
+      async (transaction) => {
+        const snapshots = transaction.objectStore(STORE_SESSION_SNAPSHOTS);
+        const outbox = transaction.objectStore(STORE_OUTBOX);
+        const syncState = transaction.objectStore(STORE_SYNC_STATE);
+        const [currentSnapshot, command, commands] = await Promise.all([
+          requestResult(snapshots.get(sessionId)),
+          requestResult(outbox.get(requestId)),
+          requestResult(outbox.getAll()),
+        ]);
+        if (
+          !isValidSessionSnapshot(currentSnapshot) ||
+          currentSnapshot.local_revision !== expectedLocalRevision ||
+          !isValidOutboxCommand(command) ||
+          command.session_id !== sessionId ||
+          command.status !== "pending" ||
+          command.attempts !== 0 ||
+          command.last_attempt_at !== null ||
+          snapshot.local_revision !== expectedLocalRevision + 1 ||
+          !currentSnapshot.operations.some(
+            (operation) => operation.id === command.provisional_operation_id,
+          ) ||
+          snapshot.operations.some(
+            (operation) => operation.id === command.provisional_operation_id,
+          )
+        ) {
+          return false;
+        }
+        const pendingCount = commands.filter(
+          (item) =>
+            isValidOutboxCommand(item) &&
+            item.request_id !== requestId &&
+            (item.status === "pending" || item.status === "sending"),
+        ).length;
+        await Promise.all([
+          requestResult(snapshots.put(snapshot)),
+          requestResult(outbox.delete(requestId)),
+          requestResult(syncState.put({ key: "pending_count", value: pendingCount })),
+          requestResult(syncState.put({
+            key: "last_local_cancellation",
+            request_id: requestId,
+            session_id: sessionId,
+            cancelled_at: cancelledAt,
+          })),
+        ]);
+        return true;
+      },
+    );
+    if (cancelled) {
+      emitChange({ type: "outbox_command_cancelled", sessionId, requestId });
+    }
+    return cancelled;
+  }
+
+  async function writeProjectedSnapshotWithReverseCommand(
+    snapshot,
+    command,
+    expectedLocalRevision,
+  ) {
+    requireValidSnapshot(snapshot);
+    requireValidCommand(command);
+    if (
+      command.kind !== "reverse_operation" ||
+      snapshot.session_id !== command.session_id ||
+      !isIdentifier(command.payload?.target_operation_id)
+    ) {
+      throw new TypeError("Invalid reverse command projection");
+    }
+    const targetOperationId = command.payload.target_operation_id;
+    const written = await runTransaction(
+      [STORE_SESSION_SNAPSHOTS, STORE_OUTBOX, STORE_SYNC_STATE],
+      "readwrite",
+      async (transaction) => {
+        const snapshots = transaction.objectStore(STORE_SESSION_SNAPSHOTS);
+        const outbox = transaction.objectStore(STORE_OUTBOX);
+        const currentSnapshot = await requestResult(snapshots.get(command.session_id));
+        const commands = await requestResult(outbox.getAll());
+        if (
+          !isValidSessionSnapshot(currentSnapshot) ||
+          currentSnapshot.local_revision !== expectedLocalRevision ||
+          snapshot.local_revision !== expectedLocalRevision + 1 ||
+          !currentSnapshot.operations.some(
+            (operation) =>
+              operation.id === targetOperationId && operation.sync_status !== "pending",
+          ) ||
+          currentSnapshot.operations.some(
+            (operation) =>
+              operation.type === "reversal" &&
+              operation.reference_id === targetOperationId,
+          ) ||
+          commands.some(
+            (item) =>
+              isValidOutboxCommand(item) &&
+              item.kind === "reverse_operation" &&
+              item.payload.target_operation_id === targetOperationId,
+          ) ||
+          !snapshot.operations.some(
+            (operation) =>
+              operation.id === command.provisional_operation_id &&
+              operation.type === "reversal" &&
+              operation.reference_id === targetOperationId,
+          )
+        ) {
+          return false;
+        }
+        const pendingCount = commands.filter(
+          (item) =>
+            isValidOutboxCommand(item) &&
+            (item.status === "pending" || item.status === "sending"),
+        ).length + 1;
+        await Promise.all([
+          requestResult(snapshots.put(snapshot)),
+          requestResult(outbox.put(command)),
+          requestResult(transaction.objectStore(STORE_SYNC_STATE).put({
+            key: "pending_count",
+            value: pendingCount,
+          })),
+        ]);
+        return true;
+      },
+    );
+    if (written) {
+      emitChange({
+        type: "local_reverse_committed",
+        sessionId: command.session_id,
+        requestId: command.request_id,
+      });
+    }
+    return written;
   }
 
   async function claimNextReplayCommand({
@@ -628,22 +797,24 @@ export function createLocalDatabaseClient({
           return false;
         }
 
-        await requestResult(snapshots.put(snapshot));
-        await requestResult(outbox.delete(requestId));
         const pendingCount = commands.filter(
           (item) =>
             isValidOutboxCommand(item) &&
             item.request_id !== requestId &&
             (item.status === "pending" || item.status === "sending"),
         ).length;
-        await requestResult(syncState.put({
-          key: "last_successful_replay",
-          request_id: requestId,
-          session_id: sessionId,
-          acknowledgement,
-          completed_at: completedAt,
-        }));
-        await requestResult(syncState.put({ key: "pending_count", value: pendingCount }));
+        await Promise.all([
+          requestResult(snapshots.put(snapshot)),
+          requestResult(outbox.delete(requestId)),
+          requestResult(syncState.put({
+            key: "last_successful_replay",
+            request_id: requestId,
+            session_id: sessionId,
+            acknowledgement,
+            completed_at: completedAt,
+          })),
+          requestResult(syncState.put({ key: "pending_count", value: pendingCount })),
+        ]);
         return true;
       },
     );
@@ -708,6 +879,9 @@ export function createLocalDatabaseClient({
     deleteSessionSnapshot,
     listPendingCommands,
     listSessionProjectionCommands,
+    readReverseTargetContext,
+    cancelPendingOutboxCommand,
+    writeProjectedSnapshotWithReverseCommand,
     claimNextReplayCommand,
     retryOutboxCommand,
     blockOutboxCommand,
@@ -730,6 +904,10 @@ export const writeProjectedSnapshotWithCommand =
 export const deleteSessionSnapshot = defaultClient.deleteSessionSnapshot;
 export const listPendingCommands = defaultClient.listPendingCommands;
 export const listSessionProjectionCommands = defaultClient.listSessionProjectionCommands;
+export const readReverseTargetContext = defaultClient.readReverseTargetContext;
+export const cancelPendingOutboxCommand = defaultClient.cancelPendingOutboxCommand;
+export const writeProjectedSnapshotWithReverseCommand =
+  defaultClient.writeProjectedSnapshotWithReverseCommand;
 export const claimNextReplayCommand = defaultClient.claimNextReplayCommand;
 export const retryOutboxCommand = defaultClient.retryOutboxCommand;
 export const blockOutboxCommand = defaultClient.blockOutboxCommand;

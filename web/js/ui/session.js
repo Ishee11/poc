@@ -19,29 +19,39 @@ import {
 } from "../api.js";
 import { operationLabel, statusLabel, t } from "../i18n.js";
 import {
+  cancelPendingOutboxCommand,
   nextSessionCommandSequence,
   listSessionProjectionCommands,
+  readReverseTargetContext,
   readSessionSnapshot,
   reconcileOutboxCommand,
   writeProjectedSnapshotWithCommand,
+  writeProjectedSnapshotWithReverseCommand,
   writeServerSnapshotIfRevision,
 } from "../offline-db.js";
 import {
   serializeBuyInCommand,
   serializeCashOutCommand,
+  serializeReverseOperationCommand,
 } from "../network-contract.js";
 import {
   applySessionSnapshot,
   hydrateCachedSession,
-  refreshSessionSnapshot,
+  refreshSessionSnapshotWithRebase,
   snapshotFromServerResults,
   snapshotFromState,
 } from "../session-cache.js";
 import {
+  cancelPendingSessionCommandProjection,
+  classifyReverseTarget,
   createPendingCommand,
+  createPendingReverseCommand,
   createSingleFlightCommitter,
   commitProjectedSessionCommand,
+  LocalProjectionError,
+  projectReverseSessionCommand,
   reapplyPendingSessionCommands,
+  REVERSE_TARGET_KINDS,
   SESSION_REPLAY_REQUEST_EVENT,
 } from "../session-projection.js";
 import { state } from "../state.js";
@@ -111,6 +121,64 @@ const commitLocalSessionCommand = createSingleFlightCommitter(
         );
       },
     });
+  },
+);
+
+const commitConfirmedReverse = createSingleFlightCommitter(
+  async ({ sessionId, targetOperationId }) => {
+    const context = await readReverseTargetContext(sessionId);
+    const classification = classifyReverseTarget(
+      context.snapshot,
+      context.commands,
+      targetOperationId,
+    );
+    if (classification.kind !== REVERSE_TARGET_KINDS.SERVER_CONFIRMED) {
+      throw new LocalProjectionError(
+        "reverse_target_changed",
+        "reverse target changed before commit",
+      );
+    }
+    const serialized = serializeReverseOperationCommand({
+      operationId: targetOperationId,
+    });
+    const sequence = await nextSessionCommandSequence(sessionId);
+    const createdAt = new Date().toISOString();
+    const { projectionCommand, outboxCommand } = createPendingReverseCommand({
+      sessionId,
+      targetOperationId,
+      requestId: serialized.requestId,
+      sequence,
+      createdAt,
+      provisionalOperationId: `local-${serialized.requestId}`,
+      payload: serialized.payload,
+    });
+    const nextSnapshot = projectReverseSessionCommand(
+      context.snapshot,
+      projectionCommand,
+    );
+    const written = await writeProjectedSnapshotWithReverseCommand(
+      nextSnapshot,
+      outboxCommand,
+      context.snapshot.local_revision,
+    );
+    if (!written) {
+      throw new LocalProjectionError(
+        "reverse_target_changed",
+        "reverse target changed before persistence",
+      );
+    }
+    if (state.activeSessionId === sessionId) {
+      applySessionSnapshot(state, nextSnapshot, "cache", {
+        refreshStatus: state.sessionRefreshStatus,
+      });
+      renderSessionSlice();
+    }
+    window.dispatchEvent(
+      new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+        detail: { sessionId, requestId: serialized.requestId },
+      }),
+    );
+    return nextSnapshot;
   },
 );
 
@@ -186,7 +254,7 @@ function showSessionRoute(sessionId, replace) {
 }
 
 async function refreshSessionFromServer(sessionId) {
-  return refreshSessionSnapshot({
+  return refreshSessionSnapshotWithRebase({
     sessionId,
     state,
     loadResults: async () => {
@@ -477,7 +545,6 @@ export function renderOperations() {
       const reversible =
         state.session?.status === "active" &&
         operation.type !== "reversal" &&
-        !isPending &&
         !reversedTargets.has(operation.id);
 
       return `
@@ -1794,14 +1861,93 @@ async function confirmReverse(operationId) {
   });
   if (!values) return;
 
-  const res = await reverseOperation({ operationId });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedReverse")), "error");
+  if (state.localRuntimeStatus !== "available") {
+    const res = await reverseOperation({ operationId });
+    if (!res.ok) {
+      showNotice(describeError(res, t("error.failedReverse")), "error");
+      return;
+    }
+    await refreshSessionData();
+    showNotice(t("notice.operationReversed"), "success");
     return;
   }
 
-  await refreshSessionData();
-  showNotice(t("notice.operationReversed"), "success");
+  const sessionId = state.activeSessionId;
+  let context;
+  try {
+    context = await readReverseTargetContext(sessionId);
+  } catch (error) {
+    console.error("Reverse target lookup failed:", error);
+    showNotice(t("error.reverseUnavailable"), "error");
+    return;
+  }
+  const classification = classifyReverseTarget(
+    context.snapshot,
+    context.commands,
+    operationId,
+  );
+  if (classification.kind === REVERSE_TARGET_KINDS.PENDING_UNSENT) {
+    try {
+      const cancelledAt = new Date().toISOString();
+      const nextSnapshot = cancelPendingSessionCommandProjection(
+        context.snapshot,
+        { ...classification.command, cancelled_at: cancelledAt },
+      );
+      const cancelled = await cancelPendingOutboxCommand({
+        requestId: classification.command.request_id,
+        sessionId,
+        snapshot: nextSnapshot,
+        expectedLocalRevision: context.snapshot.local_revision,
+        cancelledAt,
+      });
+      if (!cancelled) {
+        showNotice(t("error.reverseUnavailable"), "error");
+        return;
+      }
+      if (state.activeSessionId === sessionId) {
+        applySessionSnapshot(state, nextSnapshot, "cache", {
+          refreshStatus: state.sessionRefreshStatus,
+        });
+        renderSessionSlice();
+      }
+      showNotice(t("notice.operationCancelledLocally"), "success");
+    } catch (error) {
+      console.error("Local operation cancellation failed:", error);
+      showNotice(t("error.reverseUnavailable"), "error");
+    }
+    return;
+  }
+  if (classification.kind === REVERSE_TARGET_KINDS.POSSIBLY_SENT) {
+    window.dispatchEvent(
+      new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+        detail: {
+          sessionId,
+          requestId: classification.command.request_id,
+          allowEarlyRetry: true,
+        },
+      }),
+    );
+    showNotice(t("notice.reverseWaitingForSync"), "info");
+    return;
+  }
+  if (classification.kind === REVERSE_TARGET_KINDS.ALREADY_REVERSED) {
+    showNotice(t("notice.operationAlreadyReversed"), "info");
+    return;
+  }
+  if (classification.kind !== REVERSE_TARGET_KINDS.SERVER_CONFIRMED) {
+    showNotice(t("error.reverseUnavailable"), "error");
+    return;
+  }
+  try {
+    await commitConfirmedReverse(operationId, {
+      sessionId,
+      targetOperationId: operationId,
+    });
+    showNotice(t("notice.operationReversed"), "success");
+  } catch (error) {
+    console.error("Local reverse commit failed:", error);
+    showNotice(t("error.localSessionSaveFailed"), "error");
+  }
 }
 
 async function confirmAddExpense() {

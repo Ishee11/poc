@@ -3,12 +3,17 @@ import test from "node:test";
 
 import { createLocalDatabaseClient } from "../web/js/offline-db.js";
 import {
+  cancelPendingSessionCommandProjection,
+  classifyReverseTarget,
   commitProjectedSessionCommand,
   createPendingCommand,
+  createPendingReverseCommand,
   createSingleFlightCommitter,
   LocalProjectionError,
   projectSessionCommand,
+  projectReverseSessionCommand,
   reapplyPendingSessionCommands,
+  REVERSE_TARGET_KINDS,
 } from "../web/js/session-projection.js";
 import { FakeIndexedDBFactory } from "./test-support/fake-indexeddb.mjs";
 
@@ -107,6 +112,103 @@ test("cash-out projector settles player and keeps arithmetic consistent", () => 
   assert.equal(next.players[0].profit_chips, -400);
   assert.equal(next.players[0].profit_money, -40);
   assert.equal(next.players[0].in_game, false);
+});
+
+test("inverse projector cancels a never-sent provisional buy-in", () => {
+  const original = baseSnapshot();
+  const { projectionCommand, outboxCommand } = pending("buy_in", {
+    requestId: "cancel-me",
+    chips: 500,
+  });
+  const projected = projectSessionCommand(original, projectionCommand);
+  const cancelled = cancelPendingSessionCommandProjection(projected, {
+    ...outboxCommand,
+    cancelled_at: "2026-08-04T01:01:00.000Z",
+  });
+
+  assert.equal(cancelled.session.totalBuyIn, original.session.totalBuyIn);
+  assert.equal(cancelled.session.totalCashOut, original.session.totalCashOut);
+  assert.equal(cancelled.session.totalChips, original.session.totalChips);
+  assert.equal(cancelled.players[0].buy_in, original.players[0].buy_in);
+  assert.equal(cancelled.operations.length, 0);
+  assert.equal(cancelled.local_revision, 4);
+});
+
+test("inverse projector restores an in-game player after cancelling cash-out", () => {
+  const original = baseSnapshot();
+  const { projectionCommand, outboxCommand } = pending("cash_out", {
+    requestId: "cancel-cash-out",
+    chips: 600,
+  });
+  const projected = projectSessionCommand(original, projectionCommand);
+  const cancelled = cancelPendingSessionCommandProjection(projected, {
+    ...outboxCommand,
+    cancelled_at: "2026-08-04T01:01:00.000Z",
+  });
+
+  assert.equal(cancelled.session.totalCashOut, 0);
+  assert.equal(cancelled.session.totalChips, 1000);
+  assert.equal(cancelled.players[0].cash_out, 0);
+  assert.equal(cancelled.players[0].in_game, true);
+});
+
+test("classifies uncertain lineage without allowing local deletion", () => {
+  const { projectionCommand, outboxCommand } = pending("buy_in", {
+    requestId: "uncertain",
+  });
+  const projected = projectSessionCommand(baseSnapshot(), projectionCommand);
+  const classification = classifyReverseTarget(
+    projected,
+    [{
+      ...outboxCommand,
+      status: "pending",
+      attempts: 1,
+      last_attempt_at: "2026-08-04T01:00:10.000Z",
+      last_error_kind: "timeout",
+    }],
+    "local-uncertain",
+  );
+
+  assert.equal(classification.kind, REVERSE_TARGET_KINDS.POSSIBLY_SENT);
+  assert.equal(classification.command.request_id, "uncertain");
+});
+
+test("confirmed reverse applies one inverse projection and tracks target lineage", () => {
+  const confirmed = baseSnapshot({
+    operations: [{
+      id: "server-operation-1",
+      request_id: "server-buy-in",
+      session_id: "session-1",
+      player_id: "player-1",
+      type: "buy_in",
+      chips: 500,
+      created_at: "2026-08-04T00:30:00.000Z",
+    }],
+  });
+  const { projectionCommand, outboxCommand } = createPendingReverseCommand({
+    sessionId: "session-1",
+    targetOperationId: "server-operation-1",
+    requestId: "reverse-1",
+    sequence: 1,
+    createdAt: "2026-08-04T01:00:00.000Z",
+    provisionalOperationId: "local-reverse-1",
+    payload: {
+      target_operation_id: "server-operation-1",
+      request_id: "reverse-1",
+    },
+  });
+  const reversed = projectReverseSessionCommand(confirmed, projectionCommand);
+
+  assert.equal(reversed.session.totalBuyIn, 500);
+  assert.equal(reversed.session.totalChips, 500);
+  assert.equal(reversed.players[0].buy_in, 500);
+  assert.equal(reversed.operations[0].type, "reversal");
+  assert.equal(reversed.operations[0].reference_id, "server-operation-1");
+  assert.equal(outboxCommand.target_lineage_id, "server-operation-1");
+  assert.equal(
+    classifyReverseTarget(reversed, [outboxCommand], "server-operation-1").kind,
+    REVERSE_TARGET_KINDS.ALREADY_REVERSED,
+  );
 });
 
 test("server refresh reapplies queued commands without changing their revision or identity", () => {

@@ -159,6 +159,10 @@ export function isCurrentRefresh(state, { sessionId, localRevision }) {
   );
 }
 
+function staleReason(state, token) {
+  return state.activeSessionId === token.sessionId ? "revision" : "route";
+}
+
 export async function hydrateCachedSession({ sessionId, state, readSnapshot, onHydrated }) {
   const snapshot = await readSnapshot(sessionId);
   if (state.activeSessionId !== sessionId || !snapshot) return false;
@@ -207,18 +211,38 @@ export async function refreshSessionSnapshot({
     if (isCurrentRefresh(state, token)) state.sessionRefreshStatus = "failed";
     return { status: "failed", snapshot: null, error };
   }
-  if (!isCurrentRefresh(state, token)) return { status: "stale", snapshot: null };
+  if (!isCurrentRefresh(state, token)) {
+    return { status: "stale", snapshot: null, reason: staleReason(state, token) };
+  }
 
   try {
     const written = await writeSnapshot(snapshot, token.localRevision);
-    if (written === false) return { status: "stale", snapshot: null };
+    if (written === false) {
+      return { status: "stale", snapshot: null, reason: "revision" };
+    }
   } catch (error) {
     if (isCurrentRefresh(state, token)) state.sessionRefreshStatus = "failed";
     return { status: "failed", snapshot: null, error };
   }
 
-  if (!isCurrentRefresh(state, token)) return { status: "stale", snapshot };
+  if (!isCurrentRefresh(state, token)) {
+    return { status: "stale", snapshot, reason: staleReason(state, token) };
+  }
   applySessionSnapshot(state, snapshot, "server");
   onApplied?.(snapshot);
   return { status: "fresh", snapshot };
+}
+
+export async function refreshSessionSnapshotWithRebase(options, maxRebaseAttempts = 1) {
+  let result = await refreshSessionSnapshot(options);
+  for (
+    let attempt = 0;
+    result.status === "stale" &&
+      result.reason === "revision" &&
+      attempt < maxRebaseAttempts;
+    attempt += 1
+  ) {
+    result = await refreshSessionSnapshot(options);
+  }
+  return result;
 }

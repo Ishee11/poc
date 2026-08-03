@@ -65,7 +65,7 @@ class FakeTransaction {
       const store = databaseState.stores.get(storeName);
       if (store) this.stores.set(storeName, cloneStore(store));
     }
-    queueMicrotask(() => this.maybeComplete());
+    setImmediate(() => this.maybeComplete());
   }
 
   objectStore(name) {
@@ -97,7 +97,7 @@ class FakeTransaction {
         this.fail(error);
       } finally {
         this.pending -= 1;
-        queueMicrotask(() => this.maybeComplete());
+        setImmediate(() => this.maybeComplete());
       }
     });
     return request;

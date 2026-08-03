@@ -297,3 +297,70 @@ test("stale sending lease is recovered without changing request identity", async
   assert.equal(store.commands.size, 0);
   replay.dispose();
 });
+
+test("reverse replay keeps its own request id and confirmed target lineage", async () => {
+  const reverse = command(1, {
+    request_id: "reverse-request-1",
+    kind: "reverse_operation",
+    payload: {
+      target_operation_id: "server-operation-1",
+      request_id: "reverse-request-1",
+    },
+  });
+  const store = createMemoryStore([reverse]);
+  let sent;
+  const replay = createOutboxReplay({
+    store,
+    now: () => 10_000,
+    send: async (current, serialized) => {
+      sent = { current, serialized };
+      return accepted();
+    },
+    reconcile: async (current) => store.reconcile(current.request_id),
+  });
+
+  await replay.requestReplay();
+
+  assert.equal(sent.current.request_id, "reverse-request-1");
+  assert.deepEqual(sent.serialized.payload, {
+    target_operation_id: "server-operation-1",
+    request_id: "reverse-request-1",
+  });
+  assert.equal(store.commands.size, 0);
+  replay.dispose();
+});
+
+test("accepted but unreconciled command retries the same lineage without duplication", async () => {
+  const store = createMemoryStore([command(1)]);
+  let currentTime = 10_000;
+  let sends = 0;
+  let reconciliations = 0;
+  const replay = createOutboxReplay({
+    store,
+    now: () => currentTime,
+    random: () => 0.5,
+    setTimeoutImpl: () => 1,
+    clearTimeoutImpl: () => {},
+    send: async (current) => {
+      sends += 1;
+      assert.equal(current.request_id, "request-1");
+      return accepted();
+    },
+    reconcile: async (current) => {
+      reconciliations += 1;
+      if (reconciliations === 1) throw new Error("IndexedDB aborted");
+      store.reconcile(current.request_id);
+    },
+  });
+
+  await replay.requestReplay();
+  assert.equal(store.commands.size, 1);
+  assert.equal(store.commands.get("request-1").last_error_kind, ERROR_KINDS.INVALID_RESPONSE);
+  currentTime += 1_000;
+  await replay.requestReplay();
+
+  assert.equal(sends, 2);
+  assert.equal(reconciliations, 2);
+  assert.equal(store.commands.size, 0);
+  replay.dispose();
+});

@@ -1,6 +1,14 @@
 const LOCAL_COMMAND_KINDS = new Set(["buy_in", "cash_out"]);
 export const SESSION_REPLAY_REQUEST_EVENT = "poker-session-replay-request";
 
+export const REVERSE_TARGET_KINDS = Object.freeze({
+  PENDING_UNSENT: "pending_unsent",
+  POSSIBLY_SENT: "possibly_sent",
+  SERVER_CONFIRMED: "server_confirmed",
+  ALREADY_REVERSED: "already_reversed",
+  UNAVAILABLE: "unavailable",
+});
+
 export class LocalProjectionError extends Error {
   constructor(code, message) {
     super(message);
@@ -48,6 +56,81 @@ function playerIdentifier(player) {
 function projectedProfit(profitChips, chipRate) {
   const rate = Number(chipRate);
   return Number.isFinite(rate) && rate > 0 ? Math.trunc(profitChips / rate) : 0;
+}
+
+function effectivePlayerInGame(operations, playerId, excludedOperationId) {
+  const reversedTargets = new Set(
+    operations
+      .filter((operation) => operation.type === "reversal" && operation.reference_id)
+      .map((operation) => operation.reference_id),
+  );
+  const latest = operations.find(
+    (operation) =>
+      operation.id !== excludedOperationId &&
+      operation.player_id === playerId &&
+      (operation.type === "buy_in" || operation.type === "cash_out") &&
+      !reversedTargets.has(operation.id),
+  );
+  return latest?.type === "buy_in";
+}
+
+function inverseOperation(snapshot, target, { removeTarget = false } = {}) {
+  const chips = requireChips(target?.chips);
+  const playerId = requireIdentifier(target?.player_id, "player_id");
+  if (target.type !== "buy_in" && target.type !== "cash_out") {
+    throw new LocalProjectionError("invalid_reverse_target", "operation cannot be reversed");
+  }
+  const playerIndex = snapshot.players.findIndex(
+    (player) => playerIdentifier(player) === playerId,
+  );
+  if (playerIndex < 0) {
+    throw new LocalProjectionError("player_not_found", "player is not cached");
+  }
+
+  const totalBuyIn =
+    (Number(snapshot.session.totalBuyIn) || 0) - (target.type === "buy_in" ? chips : 0);
+  const totalCashOut =
+    (Number(snapshot.session.totalCashOut) || 0) - (target.type === "cash_out" ? chips : 0);
+  if (totalBuyIn < 0 || totalCashOut < 0 || totalBuyIn - totalCashOut < 0) {
+    throw new LocalProjectionError("invalid_reverse_target", "reverse would break totals");
+  }
+
+  const players = snapshot.players.map((player, index) => {
+    if (index !== playerIndex) return { ...player };
+    const buyIn = (Number(player.buy_in) || 0) - (target.type === "buy_in" ? chips : 0);
+    const cashOut =
+      (Number(player.cash_out) || 0) - (target.type === "cash_out" ? chips : 0);
+    if (buyIn < 0 || cashOut < 0) {
+      throw new LocalProjectionError("invalid_reverse_target", "reverse would break player totals");
+    }
+    const profitChips = cashOut - buyIn;
+    return {
+      ...player,
+      buy_in: buyIn,
+      cash_out: cashOut,
+      profit_chips: profitChips,
+      profit_money: projectedProfit(profitChips, snapshot.session.chipRate),
+      in_game: target.type === "cash_out"
+        ? true
+        : effectivePlayerInGame(snapshot.operations, playerId, target.id),
+    };
+  });
+
+  return {
+    ...snapshot,
+    session: {
+      ...snapshot.session,
+      totalBuyIn,
+      totalCashOut,
+      totalChips: totalBuyIn - totalCashOut,
+    },
+    players,
+    operations: removeTarget
+      ? snapshot.operations.filter((operation) => operation.id !== target.id)
+      : snapshot.operations.map((operation) => ({ ...operation })),
+    local_revision: (Number(snapshot.local_revision) || 0) + 1,
+    last_server_refresh_status: "local",
+  };
 }
 
 function validateProjectionInput(snapshot, command) {
@@ -151,6 +234,70 @@ export function projectSessionCommand(snapshot, command) {
   };
 }
 
+export function cancelPendingSessionCommandProjection(snapshot, command) {
+  requireRecord(snapshot, "invalid_snapshot", "session snapshot is required");
+  const operation = snapshot.operations.find(
+    (item) =>
+      item.id === command?.provisional_operation_id &&
+      item.request_id === command?.request_id,
+  );
+  if (!operation || operation.sync_status !== "pending") {
+    throw new LocalProjectionError("reverse_target_unavailable", "pending operation is missing");
+  }
+  if (operation.type !== command.kind) {
+    throw new LocalProjectionError("reverse_target_unavailable", "command lineage is invalid");
+  }
+  return {
+    ...inverseOperation(snapshot, operation, { removeTarget: true }),
+    cached_at: requireIdentifier(command.cancelled_at, "cancelled_at"),
+  };
+}
+
+export function projectReverseSessionCommand(snapshot, command) {
+  requireRecord(snapshot, "invalid_snapshot", "session snapshot is required");
+  if (snapshot.session?.status !== "active") {
+    throw new LocalProjectionError("session_not_active", "session is not active");
+  }
+  const sessionId = requireIdentifier(command?.session_id, "session_id");
+  if (snapshot.session_id !== sessionId || snapshot.session?.id !== sessionId) {
+    throw new LocalProjectionError("session_mismatch", "command belongs to another session");
+  }
+  const targetOperationId = requireIdentifier(
+    command?.target_operation_id,
+    "target_operation_id",
+  );
+  const target = snapshot.operations.find((operation) => operation.id === targetOperationId);
+  if (!target || target.sync_status === "pending") {
+    throw new LocalProjectionError("reverse_target_unavailable", "confirmed target is missing");
+  }
+  const alreadyReversed = snapshot.operations.some(
+    (operation) =>
+      operation.type === "reversal" && operation.reference_id === targetOperationId,
+  );
+  if (alreadyReversed) {
+    throw new LocalProjectionError("already_reversed", "operation is already reversed");
+  }
+
+  const reversed = inverseOperation(snapshot, target);
+  const reversal = {
+    id: requireIdentifier(command.provisional_operation_id, "provisional_operation_id"),
+    request_id: requireIdentifier(command.request_id, "request_id"),
+    session_id: sessionId,
+    player_id: target.player_id,
+    type: "reversal",
+    chips: Number(target.chips),
+    created_at: requireIdentifier(command.created_at, "created_at"),
+    reference_id: targetOperationId,
+    sync_status: "pending",
+    sequence: requireSequence(command.sequence),
+  };
+  return {
+    ...reversed,
+    operations: [reversal, ...reversed.operations],
+    cached_at: command.created_at,
+  };
+}
+
 export function reapplyPendingSessionCommands(snapshot, commands) {
   if (!Array.isArray(commands) || commands.length === 0) return snapshot;
   const originalRevision = snapshot.local_revision;
@@ -162,6 +309,17 @@ export function reapplyPendingSessionCommands(snapshot, commands) {
       "invalid_command",
       "pending payload is required",
     );
+    if (command.kind === "reverse_operation") {
+      return projectReverseSessionCommand(current, {
+        kind: command.kind,
+        request_id: command.request_id,
+        session_id: command.session_id,
+        target_operation_id: payload.target_operation_id,
+        sequence: command.sequence,
+        created_at: command.created_at,
+        provisional_operation_id: command.provisional_operation_id,
+      });
+    }
     return projectSessionCommand(current, {
       kind: command.kind,
       request_id: command.request_id,
@@ -230,6 +388,111 @@ export function createPendingCommand({
     provisional_operation_id: projectionCommand.provisional_operation_id,
   };
   return { projectionCommand, outboxCommand };
+}
+
+export function createPendingReverseCommand({
+  sessionId,
+  targetOperationId,
+  requestId,
+  sequence,
+  createdAt,
+  provisionalOperationId,
+  payload,
+}) {
+  const normalizedRequestId = requireIdentifier(requestId, "request_id");
+  const normalizedSessionId = requireIdentifier(sessionId, "session_id");
+  const normalizedTargetId = requireIdentifier(targetOperationId, "target_operation_id");
+  const normalizedCreatedAt = requireIdentifier(createdAt, "created_at");
+  const normalizedSequence = requireSequence(sequence);
+  const projectionCommand = {
+    kind: "reverse_operation",
+    request_id: normalizedRequestId,
+    session_id: normalizedSessionId,
+    target_operation_id: normalizedTargetId,
+    sequence: normalizedSequence,
+    created_at: normalizedCreatedAt,
+    provisional_operation_id: requireIdentifier(
+      provisionalOperationId,
+      "provisional_operation_id",
+    ),
+  };
+  const outboxCommand = {
+    request_id: normalizedRequestId,
+    session_id: normalizedSessionId,
+    sequence: normalizedSequence,
+    kind: "reverse_operation",
+    payload: { ...requireRecord(payload, "invalid_command", "payload is required") },
+    created_at: normalizedCreatedAt,
+    status: "pending",
+    attempts: 0,
+    last_attempt_at: null,
+    next_attempt_at: null,
+    last_error_kind: null,
+    provisional_operation_id: projectionCommand.provisional_operation_id,
+    target_lineage_id: normalizedTargetId,
+  };
+  return { projectionCommand, outboxCommand };
+}
+
+export function classifyReverseTarget(snapshot, commands, operationId) {
+  if (!snapshot || !Array.isArray(snapshot.operations) || !Array.isArray(commands)) {
+    return { kind: REVERSE_TARGET_KINDS.UNAVAILABLE };
+  }
+  const operation = snapshot.operations.find((item) => item.id === operationId);
+  if (!operation || snapshot.session?.status !== "active") {
+    return { kind: REVERSE_TARGET_KINDS.UNAVAILABLE };
+  }
+  if (
+    operation.type === "reversal" ||
+    snapshot.operations.some(
+      (item) => item.type === "reversal" && item.reference_id === operationId,
+    ) ||
+    commands.some(
+      (command) =>
+        command.kind === "reverse_operation" &&
+        command.payload?.target_operation_id === operationId,
+    )
+  ) {
+    return { kind: REVERSE_TARGET_KINDS.ALREADY_REVERSED, operation };
+  }
+
+  const originalCommand = commands.find(
+    (command) =>
+      command.request_id === operation.request_id ||
+      command.provisional_operation_id === operation.id,
+  );
+  if (originalCommand) {
+    const neverSent =
+      originalCommand.status === "pending" &&
+      originalCommand.attempts === 0 &&
+      originalCommand.last_attempt_at === null;
+    const unknownOutcomeKinds = new Set([
+      "offline",
+      "timeout",
+      "network",
+      "retryable_http",
+      "invalid_response",
+    ]);
+    const possiblySent =
+      originalCommand.status === "sending" ||
+      unknownOutcomeKinds.has(originalCommand.last_error_kind);
+    return {
+      kind: neverSent
+        ? REVERSE_TARGET_KINDS.PENDING_UNSENT
+        : possiblySent
+          ? REVERSE_TARGET_KINDS.POSSIBLY_SENT
+          : REVERSE_TARGET_KINDS.UNAVAILABLE,
+      operation,
+      command: originalCommand,
+    };
+  }
+  if (operation.sync_status === "pending" || String(operation.id).startsWith("local-")) {
+    return { kind: REVERSE_TARGET_KINDS.UNAVAILABLE, operation };
+  }
+  if (operation.type === "buy_in" || operation.type === "cash_out") {
+    return { kind: REVERSE_TARGET_KINDS.SERVER_CONFIRMED, operation };
+  }
+  return { kind: REVERSE_TARGET_KINDS.UNAVAILABLE, operation };
 }
 
 export function createSingleFlightCommitter(commit) {

@@ -221,3 +221,97 @@ test("keeps blocked optimistic commands available for snapshot projection", asyn
     [],
   );
 });
+
+test("cancels only a never-sent provisional command in the snapshot transaction", async () => {
+  const factory = new FakeIndexedDBFactory();
+  const database = client(factory, "local-cancellation");
+  const projected = snapshot("session-1", 2);
+  projected.operations = [{
+    id: "local-request-1",
+    request_id: "request-1",
+    type: "buy_in",
+    sync_status: "pending",
+  }];
+  await database.writeProjectedSnapshotWithCommand(projected, command(1, {
+    provisional_operation_id: "local-request-1",
+  }));
+
+  assert.equal(
+    await database.cancelPendingOutboxCommand({
+      requestId: "request-1",
+      sessionId: "session-1",
+      snapshot: snapshot("session-1", 3),
+      expectedLocalRevision: 2,
+      cancelledAt: "2026-08-04T02:00:00.000Z",
+    }),
+    true,
+  );
+  assert.deepEqual(await database.listPendingCommands("session-1"), []);
+  assert.equal((await database.readSessionSnapshot("session-1")).local_revision, 3);
+
+  await database.writeProjectedSnapshotWithCommand(
+    snapshot("session-1", 4),
+    command(2, {
+      attempts: 1,
+      last_attempt_at: "2026-08-04T02:01:00.000Z",
+    }),
+  );
+  assert.equal(
+    await database.cancelPendingOutboxCommand({
+      requestId: "request-2",
+      sessionId: "session-1",
+      snapshot: snapshot("session-1", 5),
+      expectedLocalRevision: 4,
+    }),
+    false,
+  );
+  assert.equal((await database.listPendingCommands("session-1")).length, 1);
+});
+
+test("atomically prevents duplicate reverse lineages", async () => {
+  const factory = new FakeIndexedDBFactory();
+  const database = client(factory, "reverse-lineage");
+  const original = snapshot("session-1", 1);
+  original.operations = [{
+    id: "server-operation-1",
+    type: "buy_in",
+    sync_status: "confirmed",
+  }];
+  await database.writeServerSnapshot(original);
+  const reverseCommand = command(1, {
+    request_id: "reverse-1",
+    kind: "reverse_operation",
+    payload: {
+      target_operation_id: "server-operation-1",
+      request_id: "reverse-1",
+    },
+    provisional_operation_id: "local-reverse-1",
+    target_lineage_id: "server-operation-1",
+  });
+  const projected = snapshot("session-1", 2);
+  projected.operations = [{
+    id: "local-reverse-1",
+    type: "reversal",
+    reference_id: "server-operation-1",
+    sync_status: "pending",
+  }, ...original.operations];
+
+  assert.equal(
+    await database.writeProjectedSnapshotWithReverseCommand(projected, reverseCommand, 1),
+    true,
+  );
+  assert.equal(
+    await database.writeProjectedSnapshotWithReverseCommand(
+      projected,
+      { ...reverseCommand, request_id: "reverse-2", sequence: 2 },
+      2,
+    ),
+    false,
+  );
+  assert.deepEqual(
+    (await database.listSessionProjectionCommands("session-1")).map(
+      (item) => item.request_id,
+    ),
+    ["reverse-1"],
+  );
+});
