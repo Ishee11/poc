@@ -315,3 +315,47 @@ test("atomically prevents duplicate reverse lineages", async () => {
     ["reverse-1"],
   );
 });
+
+test("exposes durable blocked error details for sync diagnostics", async () => {
+  const factory = new FakeIndexedDBFactory();
+  const database = client(factory, "sync-diagnostics");
+  await database.writeProjectedSnapshotWithCommand(snapshot(), command(1));
+  await database.claimNextReplayCommand({
+    now: "2026-08-04T03:00:00.000Z",
+    leaseTimeoutMs: 30_000,
+  });
+  await database.blockOutboxCommand({
+    requestId: "request-1",
+    attempts: 1,
+    lastAttemptAt: "2026-08-04T03:00:01.000Z",
+    errorKind: "domain",
+    errorDetails: {
+      status: 409,
+      code: "session_not_active",
+      details: null,
+    },
+    conflict: true,
+  });
+
+  assert.deepEqual(await database.readReplayDiagnostics(), {
+    requestId: "request-1",
+    sessionId: "session-1",
+    errorKind: "domain",
+    errorDetails: {
+      status: 409,
+      code: "session_not_active",
+      details: null,
+    },
+  });
+
+  await database.blockOutboxCommand({
+    requestId: "request-1",
+    attempts: 1,
+    lastAttemptAt: "2026-08-04T03:00:02.000Z",
+    errorKind: "authorization",
+    errorDetails: { status: 401, code: "unauthorized" },
+  });
+  assert.equal(await database.releaseAuthorizationBlockedCommands(), 1);
+  assert.equal(await database.readReplayDiagnostics(), null);
+  assert.equal((await database.listPendingCommands("session-1")).length, 1);
+});

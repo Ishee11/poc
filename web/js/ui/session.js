@@ -55,6 +55,7 @@ import {
   SESSION_REPLAY_REQUEST_EVENT,
 } from "../session-projection.js";
 import { state } from "../state.js";
+import { deriveSyncUIStatus, SYNC_UI_STATUSES } from "../sync-status.js";
 import {
   describeError,
   currencySymbol,
@@ -516,6 +517,53 @@ export function renderSession() {
   bindAdminSessionConfigEditor(bigBlindCard);
   renderSessionActionMode();
   renderResultsSummary();
+  renderSessionSyncStatus();
+}
+
+export function renderSessionSyncStatus() {
+  const indicator = document.getElementById("session-sync-status");
+  const label = document.getElementById("session-sync-status-label");
+  const detail = document.getElementById("session-sync-status-detail");
+  const actionButton = document.getElementById("session-sync-status-action");
+  if (!indicator || !label || !detail || !actionButton) return;
+
+  const status = deriveSyncUIStatus({
+    isOnline: navigator.onLine !== false,
+    localRuntimeStatus: state.localRuntimeStatus,
+    replayStatus: state.sessionReplayStatus,
+    pendingCount: state.sessionPendingCount,
+    blockedCount: state.sessionBlockedCount,
+  });
+  const translationKeys = {
+    [SYNC_UI_STATUSES.ONLINE_FRESH]: "sync.onlineFresh",
+    [SYNC_UI_STATUSES.ONLINE_SYNCING]: "sync.onlineSyncing",
+    [SYNC_UI_STATUSES.OFFLINE_CLEAN]: "sync.offlineClean",
+    [SYNC_UI_STATUSES.OFFLINE_PENDING]: "sync.offlinePending",
+    [SYNC_UI_STATUSES.RETRY_WAIT]: "sync.retryWait",
+    [SYNC_UI_STATUSES.AUTHORIZATION_BLOCKED]: "sync.authorizationBlocked",
+    [SYNC_UI_STATUSES.DOMAIN_BLOCKED]: "sync.domainBlocked",
+    [SYNC_UI_STATUSES.LOCAL_STORAGE_UNAVAILABLE]: "sync.localStorageUnavailable",
+  };
+  indicator.dataset.syncStatus = status.kind;
+  label.textContent = t(translationKeys[status.kind], { count: status.pendingCount });
+
+  actionButton.hidden = !status.action;
+  actionButton.dataset.syncAction = status.action || "";
+  actionButton.textContent = status.action === "retry"
+    ? t("sync.retry")
+    : status.action === "authenticate"
+      ? t("sync.restoreAuth")
+      : "";
+
+  let detailText = "";
+  if (status.kind === SYNC_UI_STATUSES.DOMAIN_BLOCKED && state.sessionReplayError) {
+    const { code, message, details } = state.sessionReplayError;
+    detailText = code
+      ? describeError({ body: { error: code, details } }, t("sync.domainBlocked"))
+      : message || t("sync.domainBlocked");
+  }
+  detail.hidden = !detailText;
+  detail.textContent = detailText;
 }
 
 export function renderOperations() {
@@ -558,6 +606,7 @@ export function renderOperations() {
               <span>${escapeHtml(t("session.chips"))}: ${formatNumber(operation.chips)}</span>
               <span>${escapeHtml(formatDate(operation.created_at))}</span>
             </div>
+            ${isPending ? `<span class="operation-sync-label">${escapeHtml(t("sync.pendingRow"))}</span>` : ""}
           </div>
           ${
             reversible
@@ -1259,6 +1308,23 @@ export function initSessionActions() {
     const button = event.target.closest("button");
     if (!button) return;
 
+    if (button.id === "session-sync-status-action") {
+      const action = button.dataset.syncAction;
+      if (action === "retry") {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+            detail: { allowEarlyRetry: true },
+          }),
+        );
+      } else if (action === "authenticate") {
+        const disclosure = document.getElementById("admin-login-disclosure");
+        if (disclosure) disclosure.open = true;
+        disclosure?.scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById("admin-login-email")?.focus();
+      }
+      return;
+    }
+
     const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
     if (rebuyPlayerId) {
       await withBusyButton(button, () => confirmPlayerRebuy(rebuyPlayerId));
@@ -1676,6 +1742,10 @@ async function confirmAddPlayer() {
 }
 
 async function confirmFinishSession() {
+  if (navigator.onLine === false) {
+    showNotice(t("error.onlineRequired"), "error");
+    return;
+  }
   if (state.session?.status !== "active") return;
   if ((Number(state.session.totalChips) || 0) > 0) {
     showNotice(

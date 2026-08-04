@@ -131,12 +131,16 @@ export function createOutboxReplay({
   }
 
   async function publishStatus(status) {
-    const counts = await store.countPendingAndBlockedCommands();
+    const [counts, diagnostics] = await Promise.all([
+      store.countPendingAndBlockedCommands(),
+      store.readReplayDiagnostics?.() || null,
+    ]);
     onStatus({
       status,
       pendingCount: counts.pending,
       blockedCount: counts.blocked,
       lastSuccessfulReplayAt,
+      errorDetails: diagnostics?.errorDetails || null,
     });
   }
 

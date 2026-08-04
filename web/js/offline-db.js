@@ -856,6 +856,54 @@ export function createLocalDatabaseClient({
     );
   }
 
+  async function readReplayDiagnostics() {
+    const records = await runTransaction([STORE_OUTBOX], "readonly", (transaction) =>
+      requestResult(transaction.objectStore(STORE_OUTBOX).getAll()),
+    );
+    const blocked = records
+      .filter(
+        (command) =>
+          isValidOutboxCommand(command) &&
+          (command.status === "blocked" || command.status === "conflict"),
+      )
+      .sort((left, right) => left.sequence - right.sequence)[0];
+    return blocked
+      ? {
+          requestId: blocked.request_id,
+          sessionId: blocked.session_id,
+          errorKind: blocked.last_error_kind,
+          errorDetails: blocked.last_error_details || null,
+        }
+      : null;
+  }
+
+  async function releaseAuthorizationBlockedCommands() {
+    const released = await runTransaction([STORE_OUTBOX], "readwrite", async (transaction) => {
+      const store = transaction.objectStore(STORE_OUTBOX);
+      const commands = await requestResult(store.getAll());
+      const blocked = commands.filter(
+        (command) =>
+          isValidOutboxCommand(command) &&
+          command.status === "blocked" &&
+          command.last_error_kind === "authorization",
+      );
+      await Promise.all(
+        blocked.map((command) =>
+          requestResult(store.put({
+            ...command,
+            status: "pending",
+            next_attempt_at: null,
+            last_error_kind: null,
+            last_error_details: null,
+          })),
+        ),
+      );
+      return blocked.length;
+    });
+    if (released > 0) emitChange({ type: "authorization_commands_released" });
+    return released;
+  }
+
   function subscribeLocalRuntimeChanges(listener) {
     eventTarget.addEventListener(LOCAL_RUNTIME_CHANGE_EVENT, listener);
     return () => eventTarget.removeEventListener(LOCAL_RUNTIME_CHANGE_EVENT, listener);
@@ -888,6 +936,8 @@ export function createLocalDatabaseClient({
     reconcileOutboxCommand,
     nextSessionCommandSequence,
     countPendingAndBlockedCommands,
+    readReplayDiagnostics,
+    releaseAuthorizationBlockedCommands,
     subscribeLocalRuntimeChanges,
   });
 }
@@ -914,4 +964,7 @@ export const blockOutboxCommand = defaultClient.blockOutboxCommand;
 export const reconcileOutboxCommand = defaultClient.reconcileOutboxCommand;
 export const nextSessionCommandSequence = defaultClient.nextSessionCommandSequence;
 export const countPendingAndBlockedCommands = defaultClient.countPendingAndBlockedCommands;
+export const readReplayDiagnostics = defaultClient.readReplayDiagnostics;
+export const releaseAuthorizationBlockedCommands =
+  defaultClient.releaseAuthorizationBlockedCommands;
 export const subscribeLocalRuntimeChanges = defaultClient.subscribeLocalRuntimeChanges;

@@ -2398,6 +2398,69 @@ body.admin-mode .admin-only {
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.sync-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.025);
+    font-size: 0.88rem;
+}
+
+.sync-status-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #65c98b;
+}
+
+.sync-status-indicator[data-sync-status="online_syncing"] .sync-status-dot {
+    background: var(--accent);
+    animation: sync-status-pulse 1.2s ease-in-out infinite;
+}
+
+.sync-status-indicator[data-sync-status^="offline"] .sync-status-dot,
+.sync-status-indicator[data-sync-status="retry_wait"] .sync-status-dot {
+    background: #d4a95c;
+}
+
+.sync-status-indicator[data-sync-status$="blocked"] .sync-status-dot,
+.sync-status-indicator[data-sync-status="local_storage_unavailable"] .sync-status-dot {
+    background: #e07171;
+}
+
+.sync-status-action {
+    min-height: 30px;
+    margin-left: auto;
+    padding: 4px 9px;
+    font-size: 0.78rem;
+}
+
+.sync-status-detail {
+    margin-top: 6px;
+    color: #e6b4a7;
+    font-size: 0.82rem;
+}
+
+.operation-sync-label {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 4px;
+    color: #d4a95c;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+@keyframes sync-status-pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+}
+
 
 .session-action-switch:not([hidden]) {
     display: grid;

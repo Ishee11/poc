@@ -1010,6 +1010,29 @@
                             </div>
                         </div>
 
+                        <div
+                            id="session-sync-status"
+                            class="sync-status-indicator"
+                            data-sync-status="online_fresh"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <span class="sync-status-dot" aria-hidden="true"></span>
+                            <span id="session-sync-status-label">Online</span>
+                            <button
+                                type="button"
+                                class="secondary sync-status-action"
+                                id="session-sync-status-action"
+                                hidden
+                            ></button>
+                        </div>
+                        <div
+                            id="session-sync-status-detail"
+                            class="sync-status-detail"
+                            role="alert"
+                            hidden
+                        ></div>
+
                         <div class="stats session-config-stats">
                             <div class="stat" id="stat-chip-rate-card">
                                 <div

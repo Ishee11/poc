@@ -1,10 +1,10 @@
 {
-  "name": "Poker Blind Timer",
-  "short_name": "Blind Timer",
+  "name": "Poker Session Control",
+  "short_name": "Poker Session",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0b1117",
   "theme_color": "#0b1117",
-  "description": "Tournament blind timer with lock screen alerts."
+  "description": "Local-first poker cash-game session control and blind timer."
 }

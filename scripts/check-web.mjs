@@ -313,6 +313,8 @@ for (const testFile of [
   "scripts/session-cache.test.mjs",
   "scripts/session-projection.test.mjs",
   "scripts/offline-sync.test.mjs",
+  "scripts/sync-status.test.mjs",
+  "scripts/service-worker.test.mjs",
 ]) {
   const result = spawnSync(process.execPath, [testFile], { cwd: root, encoding: "utf8" });
   if (result.status !== 0) {

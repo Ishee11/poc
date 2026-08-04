@@ -25,6 +25,7 @@ export const state = {
   sessionPendingCount: 0,
   sessionBlockedCount: 0,
   sessionLastSuccessfulReplayAt: null,
+  sessionReplayError: null,
 
   overviewSessions: [],
   overviewSessionsFilter: "all",

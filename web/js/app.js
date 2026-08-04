@@ -19,6 +19,8 @@ import {
   claimNextReplayCommand,
   countPendingAndBlockedCommands,
   initializeLocalDatabase,
+  readReplayDiagnostics,
+  releaseAuthorizationBlockedCommands,
   retryOutboxCommand,
 } from "./offline-db.js";
 import { createOutboxReplay } from "./offline-sync.js";
@@ -53,6 +55,7 @@ import {
   renderExpenses,
   renderOperations,
   renderSession,
+  renderSessionSyncStatus,
   renderSettlement,
 } from "./ui/session.js";
 import { initBlindsClock, openBlindsClock, renderBlindsClock } from "./ui/blinds.js";
@@ -74,6 +77,7 @@ const sessionOutboxReplay = createOutboxReplay({
     retryOutboxCommand,
     blockOutboxCommand,
     countPendingAndBlockedCommands,
+    readReplayDiagnostics,
   },
   send: (command) => {
     const input = {
@@ -91,11 +95,19 @@ const sessionOutboxReplay = createOutboxReplay({
   },
   reconcile: reconcileReplayedSessionCommand,
   isActive: () => document.visibilityState !== "hidden",
-  onStatus: ({ status, pendingCount, blockedCount, lastSuccessfulReplayAt }) => {
+  onStatus: ({
+    status,
+    pendingCount,
+    blockedCount,
+    lastSuccessfulReplayAt,
+    errorDetails,
+  }) => {
     state.sessionReplayStatus = status;
     state.sessionPendingCount = pendingCount;
     state.sessionBlockedCount = blockedCount;
     state.sessionLastSuccessfulReplayAt = lastSuccessfulReplayAt;
+    state.sessionReplayError = errorDetails;
+    renderSessionSyncStatus();
   },
 });
 
@@ -103,6 +115,7 @@ let replayLifecycleInitialized = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
+  registerAppShellServiceWorker();
   initializeLocalRuntime();
   applyUiFeatureFlags();
   initPlayersSort();
@@ -166,6 +179,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const handleStartSession = async (event) => {
       event.preventDefault();
 
+      if (navigator.onLine === false) {
+        showNotice(t("error.onlineRequired"), "error");
+        return;
+      }
+
       const currency = defaultCurrency();
       const values = await openModal({
         title: t("modal.startTitle"),
@@ -225,12 +243,18 @@ function initializeLocalRuntime() {
   void initializeLocalDatabase()
     .then(() => {
       state.localRuntimeStatus = "available";
+      renderSessionSyncStatus();
       initializeReplayLifecycle();
-      void sessionOutboxReplay.requestReplay();
+      if (state.authUser) {
+        void resumeReplayAfterAuthentication();
+      } else {
+        void sessionOutboxReplay.requestReplay();
+      }
     })
     .catch((error) => {
       state.localRuntimeStatus = "unavailable";
       state.localRuntimeError = error instanceof Error ? error.message : "IndexedDB unavailable";
+      renderSessionSyncStatus();
       console.warn("Local session runtime is unavailable; continuing online-only", error);
     });
 }
@@ -244,13 +268,28 @@ function initializeReplayLifecycle() {
     });
   });
   window.addEventListener("online", () => {
+    renderSessionSyncStatus();
     void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
   });
+  window.addEventListener("offline", renderSessionSyncStatus);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
     }
   });
+}
+
+function registerAppShellServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  void navigator.serviceWorker.register("/sw.js").catch((error) => {
+    console.warn("App shell service worker registration failed", error);
+  });
+}
+
+async function resumeReplayAfterAuthentication() {
+  if (state.localRuntimeStatus !== "available") return;
+  await releaseAuthorizationBlockedCommands();
+  await sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
 }
 
 function applyUiFeatureFlags() {
@@ -296,6 +335,7 @@ function initAdminLoginFooter() {
       renderAdminLoginFooter();
       syncAdminMode();
       if (state.authUiEnabled) await loadAccount();
+      await resumeReplayAfterAuthentication();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -328,6 +368,7 @@ async function loadCurrentAdminUser() {
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAdminLoginFooter();
   syncAdminMode();
+  if (state.authUser) await resumeReplayAfterAuthentication();
 }
 
 function initAuth() {
@@ -370,6 +411,7 @@ function initAuth() {
       renderAdminLoginFooter();
       syncAdminMode();
       await loadAccount();
+      await resumeReplayAfterAuthentication();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -429,6 +471,7 @@ function initAuth() {
       renderAdminLoginFooter();
       syncAdminMode();
       await loadAccount();
+      await resumeReplayAfterAuthentication();
       showNotice(t("notice.registrationSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -444,6 +487,7 @@ async function loadCurrentUser() {
   syncAdminMode();
   if (state.authUser) {
     await loadAccount();
+    await resumeReplayAfterAuthentication();
   } else {
     clearAccount();
   }
