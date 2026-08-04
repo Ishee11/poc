@@ -89,11 +89,12 @@ function runFetch(request) {
 test("installs the versioned minimum shell without optional-asset failure", async () => {
   await runExtendable("install");
 
-  assert.equal(openedCacheName, "poker-session-control-shell-v1-2026-08-04");
+  assert.equal(openedCacheName, "poker-session-control-shell-v2-2026-08-04");
   assert.ok(cachedRequiredAssets.includes("/"));
   assert.ok(cachedRequiredAssets.includes("/static/css/main.css"));
   assert.ok(cachedRequiredAssets.includes("/static/js/app.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/sync-status.js"));
+  assert.ok(cachedRequiredAssets.includes("/static/js/rollout.js"));
   assert.ok(cachedRequiredAssets.includes("/manifest.webmanifest"));
   assert.ok(cachedOptionalAssets.includes("/static/assets/poker-mark.png"));
 });
@@ -101,7 +102,10 @@ test("installs the versioned minimum shell without optional-asset failure", asyn
 test("activation removes only obsolete application caches and claims clients", async () => {
   await runExtendable("activate");
 
-  assert.deepEqual(deletedCaches, ["poker-session-control-shell-v0"]);
+  assert.deepEqual(deletedCaches, [
+    "poker-session-control-shell-v0",
+    "poker-session-control-shell-v1-2026-08-04",
+  ]);
   assert.equal(clientsClaimed, true);
 });
 

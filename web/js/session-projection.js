@@ -298,6 +298,80 @@ export function projectReverseSessionCommand(snapshot, command) {
   };
 }
 
+export function reconcileSessionOperationAcknowledgement(snapshot, command, acknowledgement) {
+  requireRecord(snapshot, "invalid_snapshot", "session snapshot is required");
+  requireRecord(command, "invalid_command", "outbox command is required");
+  const ack = requireRecord(
+    acknowledgement,
+    "invalid_acknowledgement",
+    "operation acknowledgement is required",
+  );
+  const requestId = requireIdentifier(command.request_id, "request_id");
+  const sessionId = requireIdentifier(command.session_id, "session_id");
+  const operationId = requireIdentifier(ack.operation_id, "operation_id");
+  const createdAt = requireIdentifier(ack.created_at, "created_at");
+  if (!Number.isFinite(Date.parse(createdAt))) {
+    throw new LocalProjectionError("invalid_acknowledgement", "created_at is invalid");
+  }
+  const expectedType = command.kind === "reverse_operation" ? "reversal" : command.kind;
+  const targetOperationId = command.payload?.target_operation_id;
+  const reverseTarget = command.kind === "reverse_operation"
+    ? snapshot.operations.find((operation) => operation.id === targetOperationId)
+    : null;
+  const expectedPlayerId = reverseTarget?.player_id ?? command.payload?.player_id;
+  const expectedChips = reverseTarget?.chips ?? command.payload?.chips;
+  if (
+    ack.request_id !== requestId ||
+    ack.session_id !== sessionId ||
+    ack.type !== expectedType ||
+    ack.player_id !== expectedPlayerId ||
+    Number(ack.chips) !== Number(expectedChips) ||
+    (command.kind === "reverse_operation" &&
+      (ack.target_operation_id !== targetOperationId ||
+        ack.reversed_operation?.operation_id !== targetOperationId ||
+        ack.reversed_operation?.session_id !== sessionId ||
+        ack.reversed_operation?.player_id !== expectedPlayerId ||
+        Number(ack.reversed_operation?.chips) !== Number(expectedChips) ||
+        !["buy_in", "cash_out"].includes(ack.reversed_operation?.type)))
+  ) {
+    throw new LocalProjectionError(
+      "acknowledgement_mismatch",
+      "operation acknowledgement does not match the queued command",
+    );
+  }
+  const provisionalId = requireIdentifier(
+    command.provisional_operation_id,
+    "provisional_operation_id",
+  );
+  let replaced = false;
+  const operations = snapshot.operations.map((operation) => {
+    if (operation.id !== provisionalId || operation.request_id !== requestId) {
+      return { ...operation };
+    }
+    replaced = true;
+    const persisted = {
+      ...operation,
+      id: operationId,
+      request_id: requestId,
+      session_id: sessionId,
+      player_id: ack.player_id,
+      type: ack.type,
+      chips: Number(ack.chips),
+      created_at: createdAt,
+    };
+    delete persisted.sync_status;
+    delete persisted.sequence;
+    return persisted;
+  });
+  if (!replaced) {
+    throw new LocalProjectionError(
+      "provisional_operation_missing",
+      "provisional operation is unavailable for reconciliation",
+    );
+  }
+  return { ...snapshot, operations, cached_at: createdAt };
+}
+
 export function reapplyPendingSessionCommands(snapshot, commands) {
   if (!Array.isArray(commands) || commands.length === 0) return snapshot;
   const originalRevision = snapshot.local_revision;

@@ -30,41 +30,48 @@ func NewBuyInUseCase(
 	}
 }
 
-func (uc *BuyInUseCase) Execute(ctx context.Context, cmd command.BuyInCommand) error {
-	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
-		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
-			return uc.execute(tx, cmd)
-		})
+func (uc *BuyInUseCase) Execute(ctx context.Context, cmd command.BuyInCommand) (OperationAcknowledgement, error) {
+	var acknowledgement OperationAcknowledgement
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
+		op, duplicate, err := IdempotentOperation(tx, uc.idempotencyRepo, uc.helper.opReader, cmd.RequestID, OperationFingerprint{
+			Type: entity.OperationBuyIn, SessionID: cmd.SessionID, PlayerID: cmd.PlayerID, Chips: cmd.Chips,
+		}, func() (*entity.Operation, error) { return uc.execute(tx, cmd) })
+		if err != nil {
+			return err
+		}
+		acknowledgement = NewOperationAcknowledgement(op, duplicate)
+		return nil
 	})
+	return acknowledgement, err
 }
 
-func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
+func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) (*entity.Operation, error) {
 	// 1. блокируем сессию
 	session, err := uc.sessionLocker.FindByIDForUpdate(tx, cmd.SessionID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if session.Status() != entity.StatusActive {
-		return entity.ErrSessionNotActive
+		return nil, entity.ErrSessionNotActive
 	}
 
 	// 2. валидация
 	if cmd.Chips <= 0 {
-		return entity.ErrInvalidChips
+		return nil, entity.ErrInvalidChips
 	}
 
 	exists, err := uc.helper.playerRepo.Exists(tx, cmd.PlayerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !exists {
-		return entity.ErrPlayerNotFound
+		return nil, entity.ErrPlayerNotFound
 	}
 
 	// 3. бизнес-операция
 	if err := session.BuyIn(cmd.Chips); err != nil {
-		return err
+		return nil, err
 	}
 
 	// 4. создаём operation
@@ -76,22 +83,24 @@ func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) error {
 		cmd.Chips,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 5. сохраняем
 	if err := uc.helper.opWriter.Save(tx, op); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := uc.helper.sessionWriter.Save(tx, session); err != nil {
-		return err
+		return nil, err
 	}
 
 	event, err := NewOperationCreatedOutboxEvent(op)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return uc.outboxWriter.Save(tx, event)
+	if err := uc.outboxWriter.Save(tx, event); err != nil {
+		return nil, err
+	}
+	return op, nil
 }

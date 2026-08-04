@@ -340,6 +340,7 @@ func newHelperForStore(store *fakeStore, opGen OperationIDGenerator, playerGen P
 		fakeSessionRepo{store: store},
 		fakePlayerRepo{store: store},
 		fakeOperationRepo{store: store},
+		fakeOperationRepo{store: store},
 		opGen,
 		playerGen,
 	)
@@ -455,18 +456,35 @@ func TestBuyInUseCase(t *testing.T) {
 	outbox := &fakeOutboxRepo{}
 	uc := NewBuyInUseCase(helper, fakeSessionRepo{store: store}, fakeTxManager{}, newFakeIdempotencyRepo(), outbox)
 
-	err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
+	ack, err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if store.sessions["s1"].TotalBuyIn() != 100 || len(store.ops) != 1 {
 		t.Fatalf("buy in did not update session and save operation")
 	}
+	if ack.OperationID != "op1" || ack.RequestID != "req1" || ack.IdempotentReplay {
+		t.Fatalf("unexpected acknowledgement: %+v", ack)
+	}
+	duplicate, err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
+	if err != nil || duplicate.OperationID != ack.OperationID || !duplicate.IdempotentReplay {
+		t.Fatalf("duplicate did not return original acknowledgement: ack=%+v err=%v", duplicate, err)
+	}
+	if store.sessions["s1"].TotalBuyIn() != 100 || len(store.ops) != 1 {
+		t.Fatal("duplicate request created a second domain effect")
+	}
+	_, err = uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 200})
+	if !errors.Is(err, entity.ErrIdempotencyPayloadMismatch) {
+		t.Fatalf("expected payload mismatch, got %v", err)
+	}
+	if store.sessions["s1"].TotalBuyIn() != 100 || len(store.ops) != 1 {
+		t.Fatal("payload mismatch changed domain state")
+	}
 	if len(outbox.events) != 1 || outbox.events[0].EventType != OutboxEventOperationCreated {
 		t.Fatalf("buy in did not save operation.created event")
 	}
 
-	err = uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req2", SessionID: "s1", PlayerID: "missing", Chips: 100})
+	_, err = uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req2", SessionID: "s1", PlayerID: "missing", Chips: 100})
 	if !errors.Is(err, entity.ErrPlayerNotFound) {
 		t.Fatalf("expected player not found, got %v", err)
 	}
@@ -493,7 +511,7 @@ func TestCashOutUseCase(t *testing.T) {
 		outbox,
 	)
 
-	if err := uc.Execute(context.Background(), command.CashOutCommand{RequestID: "req2", SessionID: "s1", PlayerID: "p1", Chips: 40}); err != nil {
+	if _, err := uc.Execute(context.Background(), command.CashOutCommand{RequestID: "req2", SessionID: "s1", PlayerID: "p1", Chips: 40}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if store.sessions["s1"].TotalCashOut() != 40 {
@@ -503,7 +521,7 @@ func TestCashOutUseCase(t *testing.T) {
 		t.Fatalf("cash out did not save operation.created event")
 	}
 
-	err = uc.Execute(context.Background(), command.CashOutCommand{RequestID: "req3", SessionID: "s1", PlayerID: "p1", Chips: 1000})
+	_, err = uc.Execute(context.Background(), command.CashOutCommand{RequestID: "req3", SessionID: "s1", PlayerID: "p1", Chips: 1000})
 	if !errors.Is(err, entity.ErrInvalidCashOut) {
 		t.Fatalf("expected invalid cash out, got %v", err)
 	}
@@ -591,8 +609,20 @@ func TestReverseOperationUseCase(t *testing.T) {
 			outbox,
 		)
 
-		if err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"}); err != nil {
+		ack, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"})
+		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if ack.OperationID != "op2" || ack.TargetOperationID == nil || *ack.TargetOperationID != "op1" || ack.ReversedOperation == nil || ack.ReversedOperation.Type != entity.OperationBuyIn {
+			t.Fatalf("unexpected reverse acknowledgement: %+v", ack)
+		}
+		duplicate, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"})
+		if err != nil || duplicate.OperationID != ack.OperationID || !duplicate.IdempotentReplay {
+			t.Fatalf("duplicate reverse did not return original acknowledgement: ack=%+v err=%v", duplicate, err)
+		}
+		_, err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "missing-target"})
+		if !errors.Is(err, entity.ErrIdempotencyPayloadMismatch) {
+			t.Fatalf("expected reverse payload mismatch, got %v", err)
 		}
 		if store.sessions["s1"].TotalChips() != 0 {
 			t.Fatalf("expected reversed buy in to clear table chips, got %d", store.sessions["s1"].TotalChips())
@@ -601,7 +631,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 			t.Fatalf("reverse operation did not save operation.reversed event")
 		}
 
-		err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
+		_, err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
 		if !errors.Is(err, entity.ErrOperationAlreadyReversed) {
 			t.Fatalf("expected operation already reversed, got %v", err)
 		}
@@ -635,7 +665,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 			outbox,
 		)
 
-		if err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op2"}); err != nil {
+		if _, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op2"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if store.sessions["s1"].TotalBuyIn() != 100 {

@@ -25,6 +25,7 @@ import {
 } from "./offline-db.js";
 import { createOutboxReplay } from "./offline-sync.js";
 import { SESSION_REPLAY_REQUEST_EVENT } from "./session-projection.js";
+import { resolveLocalFirstSessionWrites } from "./rollout.js";
 import { state } from "./state.js";
 import {
   applyLatestSessionDefaults,
@@ -79,19 +80,30 @@ const sessionOutboxReplay = createOutboxReplay({
     countPendingAndBlockedCommands,
     readReplayDiagnostics,
   },
-  send: (command) => {
+  send: async (command) => {
     const input = {
       sessionId: command.session_id,
       playerId: command.payload.player_id,
       chips: command.payload.chips,
       requestId: command.request_id,
     };
-    if (command.kind === "buy_in") return buyIn(input);
-    if (command.kind === "cash_out") return cashOut(input);
-    return reverseOperation({
-      operationId: command.payload.target_operation_id,
-      requestId: command.request_id,
+    const result = command.kind === "buy_in"
+      ? await buyIn(input)
+      : command.kind === "cash_out"
+        ? await cashOut(input)
+        : await reverseOperation({
+            operationId: command.payload.target_operation_id,
+            requestId: command.request_id,
+          });
+    console.info("session_replay_attempt", {
+      request_id: command.request_id,
+      command_kind: command.kind,
+      session_id: command.session_id,
+      attempt: command.attempts + 1,
+      acknowledgement_result: result.ok ? "accepted" : result.errorKind,
+      idempotent_replay: result.body?.idempotent_replay === true,
     });
+    return result;
   },
   reconcile: reconcileReplayedSessionCommand,
   isActive: () => document.visibilityState !== "hidden",
@@ -293,6 +305,16 @@ async function resumeReplayAfterAuthentication() {
 }
 
 function applyUiFeatureFlags() {
+  const localFirst = resolveLocalFirstSessionWrites({
+    storage: window.localStorage,
+    documentRef: document,
+  });
+  state.localFirstSessionWritesEnabled = localFirst.enabled;
+  state.localFirstSessionWritesFlagSource = localFirst.source;
+  console.info("session_runtime_rollout", {
+    local_first_writes_enabled: localFirst.enabled,
+    flag_source: localFirst.source,
+  });
   document.body.classList.toggle("auth-ui-disabled", !state.authUiEnabled);
 }
 

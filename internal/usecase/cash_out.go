@@ -33,47 +33,54 @@ func NewCashOutUseCase(
 	}
 }
 
-func (uc *CashOutUseCase) Execute(ctx context.Context, cmd command.CashOutCommand) error {
-	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
-		return Idempotent(tx, uc.idempotencyRepo, cmd.RequestID, func() error {
-			return uc.execute(tx, cmd)
-		})
+func (uc *CashOutUseCase) Execute(ctx context.Context, cmd command.CashOutCommand) (OperationAcknowledgement, error) {
+	var acknowledgement OperationAcknowledgement
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
+		op, duplicate, err := IdempotentOperation(tx, uc.idempotencyRepo, uc.helper.opReader, cmd.RequestID, OperationFingerprint{
+			Type: entity.OperationCashOut, SessionID: cmd.SessionID, PlayerID: cmd.PlayerID, Chips: cmd.Chips,
+		}, func() (*entity.Operation, error) { return uc.execute(tx, cmd) })
+		if err != nil {
+			return err
+		}
+		acknowledgement = NewOperationAcknowledgement(op, duplicate)
+		return nil
 	})
+	return acknowledgement, err
 }
 
-func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
+func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) (*entity.Operation, error) {
 	// 1. блокируем сессию
 	session, err := uc.sessionLocker.FindByIDForUpdate(tx, cmd.SessionID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if session.Status() != entity.StatusActive {
-		return entity.ErrSessionNotActive
+		return nil, entity.ErrSessionNotActive
 	}
 
 	// 2. валидация
 	if cmd.Chips <= 0 {
-		return entity.ErrInvalidChips
+		return nil, entity.ErrInvalidChips
 	}
 
 	if cmd.Chips > session.TotalChips() {
-		return entity.ErrInvalidCashOut
+		return nil, entity.ErrInvalidCashOut
 	}
 
 	// 3. состояние игрока
 	state, err := uc.loadPlayerState(tx, cmd.SessionID, cmd.PlayerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := state.ValidateInGame(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// 4. применяем к домену
 	if err := session.CashOut(cmd.Chips); err != nil {
-		return err
+		return nil, err
 	}
 
 	// 5. создаём operation
@@ -85,24 +92,26 @@ func (uc *CashOutUseCase) execute(tx Tx, cmd command.CashOutCommand) error {
 		cmd.Chips,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 6. сохраняем
 	if err := uc.helper.opWriter.Save(tx, op); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := uc.helper.sessionWriter.Save(tx, session); err != nil {
-		return err
+		return nil, err
 	}
 
 	event, err := NewOperationCreatedOutboxEvent(op)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return uc.outboxWriter.Save(tx, event)
+	if err := uc.outboxWriter.Save(tx, event); err != nil {
+		return nil, err
+	}
+	return op, nil
 }
 
 func (uc *CashOutUseCase) loadPlayerState(

@@ -12,6 +12,7 @@ import {
   LocalProjectionError,
   projectSessionCommand,
   projectReverseSessionCommand,
+  reconcileSessionOperationAcknowledgement,
   reapplyPendingSessionCommands,
   REVERSE_TARGET_KINDS,
 } from "../web/js/session-projection.js";
@@ -223,6 +224,81 @@ test("server refresh reapplies queued commands without changing their revision o
   assert.equal(refreshed.operations[0].request_id, "queued-request");
   assert.equal(refreshed.local_revision, 2);
   assert.equal(refreshed.last_server_refresh_status, "fresh_with_pending");
+});
+
+test("operation acknowledgement replaces the provisional id without a server refresh", () => {
+  const { projectionCommand, outboxCommand } = pending("buy_in", {
+    requestId: "ack-buy-in",
+    chips: 500,
+  });
+  const projected = projectSessionCommand(baseSnapshot(), projectionCommand);
+  const reconciled = reconcileSessionOperationAcknowledgement(projected, outboxCommand, {
+    request_id: "ack-buy-in",
+    operation_id: "server-operation-9",
+    session_id: "session-1",
+    player_id: "player-1",
+    type: "buy_in",
+    chips: 500,
+    created_at: "2026-08-04T01:00:01.123Z",
+    idempotent_replay: false,
+  });
+
+  assert.equal(reconciled.operations[0].id, "server-operation-9");
+  assert.equal(reconciled.operations[0].created_at, "2026-08-04T01:00:01.123Z");
+  assert.equal("sync_status" in reconciled.operations[0], false);
+  assert.equal(reconciled.session.totalBuyIn, projected.session.totalBuyIn);
+  assert.equal(reconciled.local_revision, projected.local_revision);
+});
+
+test("operation acknowledgement mismatch preserves the provisional projection", () => {
+  const { projectionCommand, outboxCommand } = pending("cash_out", {
+    requestId: "ack-mismatch",
+    chips: 500,
+  });
+  const projected = projectSessionCommand(baseSnapshot(), projectionCommand);
+  assert.throws(
+    () => reconcileSessionOperationAcknowledgement(projected, outboxCommand, {
+      request_id: "ack-mismatch",
+      operation_id: "server-operation-10",
+      session_id: "session-1",
+      player_id: "player-1",
+      type: "cash_out",
+      chips: 700,
+      created_at: "2026-08-04T01:00:01Z",
+    }),
+    /does not match/,
+  );
+  assert.equal(projected.operations[0].id, "local-ack-mismatch");
+});
+
+test("reverse acknowledgement maps the provisional reversal to its server id", () => {
+  const confirmed = baseSnapshot({
+    operations: [{
+      id: "server-operation-1", request_id: "buy-1", session_id: "session-1",
+      player_id: "player-1", type: "buy_in", chips: 500,
+      created_at: "2026-08-04T00:30:00Z",
+    }],
+  });
+  const { projectionCommand, outboxCommand } = createPendingReverseCommand({
+    sessionId: "session-1", targetOperationId: "server-operation-1",
+    requestId: "reverse-ack", sequence: 1,
+    createdAt: "2026-08-04T01:00:00Z",
+    provisionalOperationId: "local-reverse-ack",
+    payload: { request_id: "reverse-ack", target_operation_id: "server-operation-1" },
+  });
+  const projected = projectReverseSessionCommand(confirmed, projectionCommand);
+  const reconciled = reconcileSessionOperationAcknowledgement(projected, outboxCommand, {
+    request_id: "reverse-ack", operation_id: "server-reversal-1",
+    session_id: "session-1", player_id: "player-1", type: "reversal", chips: 500,
+    created_at: "2026-08-04T01:00:01Z", target_operation_id: "server-operation-1",
+    reversed_operation: {
+      operation_id: "server-operation-1", session_id: "session-1",
+      player_id: "player-1", type: "buy_in", chips: 500,
+      created_at: "2026-08-04T00:30:00Z",
+    },
+  });
+  assert.equal(reconciled.operations[0].id, "server-reversal-1");
+  assert.equal(reconciled.operations[0].reference_id, "server-operation-1");
 });
 
 test("projectors reject locally knowable invalid actions", () => {

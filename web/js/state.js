@@ -26,6 +26,8 @@ export const state = {
   sessionBlockedCount: 0,
   sessionLastSuccessfulReplayAt: null,
   sessionReplayError: null,
+  localFirstSessionWritesEnabled: false,
+  localFirstSessionWritesFlagSource: "uninitialized",
 
   overviewSessions: [],
   overviewSessionsFilter: "all",

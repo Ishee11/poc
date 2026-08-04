@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v1-2026-08-04";
+const SHELL_CACHE_VERSION = "v2-2026-08-04";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -92,6 +92,7 @@ const REQUIRED_SHELL_ASSETS = Object.freeze([
   "/static/js/network-contract.js",
   "/static/js/offline-db.js",
   "/static/js/offline-sync.js",
+  "/static/js/rollout.js",
   "/static/js/session-cache.js",
   "/static/js/session-projection.js",
   "/static/js/state.js",

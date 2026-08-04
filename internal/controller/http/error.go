@@ -171,6 +171,9 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrDuplicateRequest):
 		return apiError{status: http.StatusOK, code: "duplicate_request"}
 
+	case errors.Is(err, entity.ErrIdempotencyPayloadMismatch):
+		return apiError{status: http.StatusConflict, code: "idempotency_payload_mismatch"}
+
 	case errors.Is(err, entity.ErrInvalidCredentials):
 		return apiError{status: http.StatusUnauthorized, code: "invalid_credentials"}
 

@@ -4,6 +4,45 @@ import (
 	"github.com/ishee11/poc/internal/entity"
 )
 
+type OperationAcknowledgement struct {
+	RequestID         string                     `json:"request_id"`
+	OperationID       entity.OperationID         `json:"operation_id"`
+	SessionID         entity.SessionID           `json:"session_id"`
+	PlayerID          entity.PlayerID            `json:"player_id"`
+	Type              entity.OperationType       `json:"type"`
+	Chips             int64                      `json:"chips"`
+	CreatedAt         string                     `json:"created_at"`
+	TargetOperationID *entity.OperationID        `json:"target_operation_id,omitempty"`
+	ReversedOperation *PersistedOperationDetails `json:"reversed_operation,omitempty"`
+	IdempotentReplay  bool                       `json:"idempotent_replay"`
+}
+
+type PersistedOperationDetails struct {
+	OperationID entity.OperationID   `json:"operation_id"`
+	SessionID   entity.SessionID     `json:"session_id"`
+	PlayerID    entity.PlayerID      `json:"player_id"`
+	Type        entity.OperationType `json:"type"`
+	Chips       int64                `json:"chips"`
+	CreatedAt   string               `json:"created_at"`
+}
+
+func NewOperationAcknowledgement(op *entity.Operation, duplicate bool) OperationAcknowledgement {
+	return OperationAcknowledgement{
+		RequestID: op.RequestID(), OperationID: op.ID(), SessionID: op.SessionID(),
+		PlayerID: op.PlayerID(), Type: op.Type(), Chips: op.Chips(),
+		CreatedAt:        op.CreatedAt().UTC().Format("2006-01-02T15:04:05.999999999Z07:00"),
+		IdempotentReplay: duplicate,
+	}
+}
+
+func NewPersistedOperationDetails(op *entity.Operation) PersistedOperationDetails {
+	return PersistedOperationDetails{
+		OperationID: op.ID(), SessionID: op.SessionID(), PlayerID: op.PlayerID(),
+		Type: op.Type(), Chips: op.Chips(),
+		CreatedAt: op.CreatedAt().UTC().Format("2006-01-02T15:04:05.999999999Z07:00"),
+	}
+}
+
 type PlayerDTO struct {
 	ID   entity.PlayerID `json:"player_id"`
 	Name string          `json:"name"`

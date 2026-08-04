@@ -61,6 +61,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		sessionRepo,
 		playerRepo,
 		opRepo,
+		opRepo,
 		opIDGen,
 		playerIDGen,
 	)

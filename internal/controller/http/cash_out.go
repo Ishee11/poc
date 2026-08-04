@@ -15,7 +15,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param request body CashOutRequest true "Cash-out request"
-// @Success 204 "No Content"
+// @Success 200 {object} OperationAcknowledgement
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
@@ -28,7 +28,7 @@ func (h *OperationHandler) CashOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.cashOutUC.Execute(r.Context(), command.CashOutCommand{
+	ack, err := h.cashOutUC.Execute(r.Context(), command.CashOutCommand{
 		RequestID: req.RequestID,
 		SessionID: entity.SessionID(req.SessionID),
 		PlayerID:  entity.PlayerID(req.PlayerID),
@@ -36,9 +36,11 @@ func (h *OperationHandler) CashOut(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		logOperationCommandFailure(r, req.RequestID, "cash_out", req.SessionID, err)
 		writeError(w, r, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	logOperationAcknowledgement(r, ack)
+	writeJSON(w, http.StatusOK, ack)
 }

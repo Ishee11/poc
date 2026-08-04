@@ -164,6 +164,7 @@ HTTP_ACCESS_LOG=all
 | `GET` | `/stats/player?player_id=...` | Детальная статистика игрока. |
 
 Актуальная схема API генерируется в `docs/swagger.yaml` и доступна через `/swagger/`.
+Порядок включения и отката локальных операций описан в `docs/OFFLINE_SESSION_ROLLOUT.md`.
 
 ## Тесты
 

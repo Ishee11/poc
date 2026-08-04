@@ -50,12 +50,14 @@ import {
   commitProjectedSessionCommand,
   LocalProjectionError,
   projectReverseSessionCommand,
+  reconcileSessionOperationAcknowledgement,
   reapplyPendingSessionCommands,
   REVERSE_TARGET_KINDS,
   SESSION_REPLAY_REQUEST_EVENT,
 } from "../session-projection.js";
 import { state } from "../state.js";
 import { deriveSyncUIStatus, SYNC_UI_STATUSES } from "../sync-status.js";
+import { shouldUseLocalFirstSessionWrites } from "../rollout.js";
 import {
   describeError,
   currencySymbol,
@@ -295,38 +297,10 @@ export async function reconcileReplayedSessionCommand(command, response) {
   const sessionId = command.session_id;
   const previousSnapshot = await readSessionSnapshot(sessionId);
   if (!previousSnapshot) throw new Error("Cached session snapshot is unavailable");
-
-  const [
-    sessionResult,
-    playersResult,
-    operationsResult,
-    expensesResult,
-    settlementsResult,
-    pendingCommands,
-  ] = await Promise.all([
-    getSession(sessionId),
-    getSessionPlayers(sessionId),
-    getSessionOperations(sessionId),
-    getExpenses(sessionId),
-    getSettlementTransfers(sessionId),
-    listSessionProjectionCommands(sessionId, { excludeRequestId: command.request_id }),
-  ]);
-  const serverSnapshot = snapshotFromServerResults({
-    sessionId,
-    sessionResult,
-    playersResult,
-    operationsResult,
-    expensesResult,
-    settlementsResult,
+  const reconciledSnapshot = reconcileSessionOperationAcknowledgement(
     previousSnapshot,
-    cachedAt: new Date().toISOString(),
-    localRevision: previousSnapshot.local_revision,
-  });
-  if (!serverSnapshot) throw new Error("Server refresh after replay failed");
-
-  const reconciledSnapshot = reapplyPendingSessionCommands(
-    serverSnapshot,
-    pendingCommands,
+    command,
+    response.body,
   );
   const reconciled = await reconcileOutboxCommand({
     requestId: command.request_id,
@@ -338,7 +312,7 @@ export async function reconcileReplayedSessionCommand(command, response) {
   if (!reconciled) return false;
 
   if (state.activeSessionId === sessionId) {
-    applySessionSnapshot(state, reconciledSnapshot, "server");
+    applySessionSnapshot(state, reconciledSnapshot, "cache");
     renderSessionSlice();
   }
   return true;
@@ -1536,6 +1510,10 @@ async function confirmPlayerRebuy(playerId) {
   const playerName = findPlayerName(playerId);
   const chips = lastBuyInChipsForRebuy(playerId);
   const sessionId = state.activeSessionId;
+  const useLocalFirst = shouldUseLocalFirstSessionWrites({
+    enabled: state.localFirstSessionWritesEnabled,
+    runtimeStatus: state.localRuntimeStatus,
+  });
   const values = await openModal({
     title: t("modal.confirmBuyInTitle"),
     description: t("modal.confirmBuyInDescription", {
@@ -1561,6 +1539,15 @@ async function confirmPlayerRebuy(playerId) {
         showNotice(t("notice.selectPlayerAndChips"), "error");
         return false;
       }
+      if (!useLocalFirst) {
+        const res = await buyIn({ sessionId, playerId, chips: nextChips });
+        if (!res.ok) {
+          showNotice(describeError(res, t("error.failedBuyIn")), "error");
+          return false;
+        }
+        await refreshSessionData();
+        return true;
+      }
       try {
         await commitLocalSessionCommand(sessionId, {
           kind: "buy_in",
@@ -1577,7 +1564,7 @@ async function confirmPlayerRebuy(playerId) {
     },
   });
   if (!values) return;
-  showNotice(t("notice.buyInSavedLocally", { name: playerName }), "success");
+  showNotice(t(useLocalFirst ? "notice.buyInSavedLocally" : "notice.buyInRecorded", { name: playerName }), "success");
 }
 
 async function confirmPlayerCashOut(playerId) {
@@ -1590,6 +1577,10 @@ async function confirmPlayerCashOut(playerId) {
   const defaultChips = String(Math.min(1000, maxChips));
 
   const sessionId = state.activeSessionId;
+  const useLocalFirst = shouldUseLocalFirstSessionWrites({
+    enabled: state.localFirstSessionWritesEnabled,
+    runtimeStatus: state.localRuntimeStatus,
+  });
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
@@ -1620,6 +1611,15 @@ async function confirmPlayerCashOut(playerId) {
         showNotice(t("notice.cashOutExceedsBalance"), "error");
         return false;
       }
+      if (!useLocalFirst) {
+        const res = await cashOut({ sessionId, playerId, chips });
+        if (!res.ok) {
+          showNotice(describeError(res, t("error.failedCashOut")), "error");
+          return false;
+        }
+        await refreshSessionData();
+        return true;
+      }
       try {
         await commitLocalSessionCommand(sessionId, {
           kind: "cash_out",
@@ -1636,7 +1636,7 @@ async function confirmPlayerCashOut(playerId) {
     },
   });
   if (!values) return;
-  showNotice(t("notice.cashOutSavedLocally", { name: playerName }), "success");
+  showNotice(t(useLocalFirst ? "notice.cashOutSavedLocally" : "notice.cashOutRecorded", { name: playerName }), "success");
 }
 
 async function confirmAddPlayer() {
@@ -1931,7 +1931,10 @@ async function confirmReverse(operationId) {
   });
   if (!values) return;
 
-  if (state.localRuntimeStatus !== "available") {
+  if (!shouldUseLocalFirstSessionWrites({
+    enabled: state.localFirstSessionWritesEnabled,
+    runtimeStatus: state.localRuntimeStatus,
+  })) {
     const res = await reverseOperation({ operationId });
     if (!res.ok) {
       showNotice(describeError(res, t("error.failedReverse")), "error");
