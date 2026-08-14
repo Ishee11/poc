@@ -1,4 +1,6 @@
 import {
+  buyIn,
+  cashOut,
   getAccount,
   getAccountAvailablePlayers,
   getCurrentUser,
@@ -7,10 +9,23 @@ import {
   login,
   logout,
   register,
+  reverseOperation,
   startSession,
   unlinkAccountPlayer,
 } from "./api.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
+import {
+  blockOutboxCommand,
+  claimNextReplayCommand,
+  countPendingAndBlockedCommands,
+  initializeLocalDatabase,
+  readReplayDiagnostics,
+  releaseAuthorizationBlockedCommands,
+  retryOutboxCommand,
+} from "./offline-db.js";
+import { createOutboxReplay } from "./offline-sync.js";
+import { SESSION_REPLAY_REQUEST_EVENT } from "./session-projection.js";
+import { resolveLocalFirstSessionWrites } from "./rollout.js";
 import { state } from "./state.js";
 import {
   applyLatestSessionDefaults,
@@ -35,11 +50,13 @@ import {
   initSessionActions,
   openSession,
   openSessionResults,
+  reconcileReplayedSessionCommand,
   renderActionPlayerOptions,
   renderExpenseForm,
   renderExpenses,
   renderOperations,
   renderSession,
+  renderSessionSyncStatus,
   renderSettlement,
 } from "./ui/session.js";
 import { initBlindsClock, openBlindsClock, renderBlindsClock } from "./ui/blinds.js";
@@ -55,8 +72,63 @@ import {
   showNotice,
 } from "./utils.js";
 
+const sessionOutboxReplay = createOutboxReplay({
+  store: {
+    claimNextReplayCommand,
+    retryOutboxCommand,
+    blockOutboxCommand,
+    countPendingAndBlockedCommands,
+    readReplayDiagnostics,
+  },
+  send: async (command) => {
+    const input = {
+      sessionId: command.session_id,
+      playerId: command.payload.player_id,
+      chips: command.payload.chips,
+      requestId: command.request_id,
+    };
+    const result = command.kind === "buy_in"
+      ? await buyIn(input)
+      : command.kind === "cash_out"
+        ? await cashOut(input)
+        : await reverseOperation({
+            operationId: command.payload.target_operation_id,
+            requestId: command.request_id,
+          });
+    console.info("session_replay_attempt", {
+      request_id: command.request_id,
+      command_kind: command.kind,
+      session_id: command.session_id,
+      attempt: command.attempts + 1,
+      acknowledgement_result: result.ok ? "accepted" : result.errorKind,
+      idempotent_replay: result.body?.idempotent_replay === true,
+    });
+    return result;
+  },
+  reconcile: reconcileReplayedSessionCommand,
+  isActive: () => document.visibilityState !== "hidden",
+  onStatus: ({
+    status,
+    pendingCount,
+    blockedCount,
+    lastSuccessfulReplayAt,
+    errorDetails,
+  }) => {
+    state.sessionReplayStatus = status;
+    state.sessionPendingCount = pendingCount;
+    state.sessionBlockedCount = blockedCount;
+    state.sessionLastSuccessfulReplayAt = lastSuccessfulReplayAt;
+    state.sessionReplayError = errorDetails;
+    renderSessionSyncStatus();
+  },
+});
+
+let replayLifecycleInitialized = false;
+
 document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
+  registerAppShellServiceWorker();
+  initializeLocalRuntime();
   applyUiFeatureFlags();
   initPlayersSort();
   initPlayersOverviewFilters();
@@ -78,8 +150,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     await loadCurrentAdminUser();
   }
-  await Promise.all([loadSessions(), loadPlayersOverview()]);
-  await openInitialRoute();
+  if (isSessionRoute()) {
+    const routePromise = openInitialRoute();
+    void Promise.all([loadSessions(), loadPlayersOverview()]).catch((error) => {
+      console.error("Background lobby refresh failed:", error);
+    });
+    await routePromise;
+  } else {
+    await Promise.all([loadSessions(), loadPlayersOverview()]);
+    await openInitialRoute();
+  }
 
   window.addEventListener("popstate", () => {
     openInitialRoute({ fromHistory: true });
@@ -110,6 +190,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (startForm && startToggle) {
     const handleStartSession = async (event) => {
       event.preventDefault();
+
+      if (navigator.onLine === false) {
+        showNotice(t("error.onlineRequired"), "error");
+        return;
+      }
 
       const currency = defaultCurrency();
       const values = await openModal({
@@ -164,7 +249,72 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 });
 
+function initializeLocalRuntime() {
+  state.localRuntimeStatus = "initializing";
+  state.localRuntimeError = "";
+  void initializeLocalDatabase()
+    .then(() => {
+      state.localRuntimeStatus = "available";
+      renderSessionSyncStatus();
+      initializeReplayLifecycle();
+      if (state.authUser) {
+        void resumeReplayAfterAuthentication();
+      } else {
+        void sessionOutboxReplay.requestReplay();
+      }
+    })
+    .catch((error) => {
+      state.localRuntimeStatus = "unavailable";
+      state.localRuntimeError = error instanceof Error ? error.message : "IndexedDB unavailable";
+      renderSessionSyncStatus();
+      console.warn("Local session runtime is unavailable; continuing online-only", error);
+    });
+}
+
+function initializeReplayLifecycle() {
+  if (replayLifecycleInitialized) return;
+  replayLifecycleInitialized = true;
+  window.addEventListener(SESSION_REPLAY_REQUEST_EVENT, (event) => {
+    void sessionOutboxReplay.requestReplay({
+      allowEarlyRetry: event.detail?.allowEarlyRetry === true,
+    });
+  });
+  window.addEventListener("online", () => {
+    renderSessionSyncStatus();
+    void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
+  });
+  window.addEventListener("offline", renderSessionSyncStatus);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      void sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
+    }
+  });
+}
+
+function registerAppShellServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  void navigator.serviceWorker.register("/sw.js").catch((error) => {
+    console.warn("App shell service worker registration failed", error);
+  });
+}
+
+async function resumeReplayAfterAuthentication() {
+  if (state.localRuntimeStatus !== "available") return;
+  await releaseAuthorizationBlockedCommands();
+  await sessionOutboxReplay.requestReplay({ allowEarlyRetry: true });
+}
+
 function applyUiFeatureFlags() {
+  const localFirst = resolveLocalFirstSessionWrites({
+    storage: window.localStorage,
+    documentRef: document,
+  });
+  state.localFirstSessionWritesEnabled = localFirst.enabled;
+  state.localFirstSessionWritesFlagSource = localFirst.source;
+  console.info("session_runtime_rollout", {
+    local_first_writes_enabled: localFirst.enabled,
+    flag_source: localFirst.source,
+  });
   document.body.classList.toggle("auth-ui-disabled", !state.authUiEnabled);
 }
 
@@ -207,6 +357,7 @@ function initAdminLoginFooter() {
       renderAdminLoginFooter();
       syncAdminMode();
       if (state.authUiEnabled) await loadAccount();
+      await resumeReplayAfterAuthentication();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -239,6 +390,7 @@ async function loadCurrentAdminUser() {
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAdminLoginFooter();
   syncAdminMode();
+  if (state.authUser) await resumeReplayAfterAuthentication();
 }
 
 function initAuth() {
@@ -281,6 +433,7 @@ function initAuth() {
       renderAdminLoginFooter();
       syncAdminMode();
       await loadAccount();
+      await resumeReplayAfterAuthentication();
       showNotice(t("notice.loginSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -340,6 +493,7 @@ function initAuth() {
       renderAdminLoginFooter();
       syncAdminMode();
       await loadAccount();
+      await resumeReplayAfterAuthentication();
       showNotice(t("notice.registrationSuccess"), "success");
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
@@ -355,6 +509,7 @@ async function loadCurrentUser() {
   syncAdminMode();
   if (state.authUser) {
     await loadAccount();
+    await resumeReplayAfterAuthentication();
   } else {
     clearAccount();
   }
@@ -714,6 +869,11 @@ function renderCurrentLanguage() {
   if (document.body.dataset.screen === "blinds") {
     renderBlindsClock();
   }
+}
+
+function isSessionRoute() {
+  const [, section, rawId] = window.location.pathname.split("/");
+  return section === "session" && Boolean(rawId);
 }
 
 function defaultCurrency() {

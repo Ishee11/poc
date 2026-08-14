@@ -12,6 +12,7 @@ type Helper struct {
 	sessionWriter     SessionWriter
 	playerRepo        PlayerRepository
 	opWriter          OperationWriter
+	opReader          OperationReader
 	idGen             OperationIDGenerator
 	playerIDGenerator PlayerIDGenerator
 }
@@ -21,6 +22,7 @@ func NewHelper(
 	sessionWriter SessionWriter,
 	playerRepo PlayerRepository,
 	opWriter OperationWriter,
+	opReader OperationReader,
 	idGen OperationIDGenerator,
 	playerIDGenerator PlayerIDGenerator,
 ) *Helper {
@@ -29,6 +31,7 @@ func NewHelper(
 		sessionWriter:     sessionWriter,
 		playerRepo:        playerRepo,
 		opWriter:          opWriter,
+		opReader:          opReader,
 		idGen:             idGen,
 		playerIDGenerator: playerIDGenerator,
 	}

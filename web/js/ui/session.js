@@ -1,6 +1,5 @@
 import {
   buyIn,
-  cashOut,
   closeExpenses,
   createPlayer,
   createExpense,
@@ -14,11 +13,51 @@ import {
   getSettlementTransfers,
   getSession,
   getSessionOperations,
+  getSessionPlayers,
   reverseOperation,
   saveSettlementTransfers,
 } from "../api.js";
 import { operationLabel, statusLabel, t } from "../i18n.js";
+import {
+  cancelPendingOutboxCommand,
+  nextSessionCommandSequence,
+  listSessionProjectionCommands,
+  readReverseTargetContext,
+  readSessionSnapshot,
+  reconcileOutboxCommand,
+  writeProjectedSnapshotWithCommand,
+  writeProjectedSnapshotWithReverseCommand,
+  writeServerSnapshotIfRevision,
+} from "../offline-db.js";
+import {
+  serializeBuyInCommand,
+  serializeCashOutCommand,
+  serializeReverseOperationCommand,
+} from "../network-contract.js";
+import {
+  applySessionSnapshot,
+  hydrateCachedSession,
+  refreshSessionSnapshotWithRebase,
+  snapshotFromServerResults,
+  snapshotFromState,
+} from "../session-cache.js";
+import {
+  cancelPendingSessionCommandProjection,
+  classifyReverseTarget,
+  createPendingCommand,
+  createPendingReverseCommand,
+  createSingleFlightCommitter,
+  commitProjectedSessionCommand,
+  LocalProjectionError,
+  projectReverseSessionCommand,
+  reconcileSessionOperationAcknowledgement,
+  reapplyPendingSessionCommands,
+  REVERSE_TARGET_KINDS,
+  SESSION_REPLAY_REQUEST_EVENT,
+} from "../session-projection.js";
 import { state } from "../state.js";
+import { deriveSyncUIStatus, SYNC_UI_STATUSES } from "../sync-status.js";
+import { shouldUseLocalFirstSessionWrites } from "../rollout.js";
 import {
   describeError,
   currencySymbol,
@@ -41,50 +80,242 @@ import {
 import { loadSessions } from "./lobby.js";
 import { loadPlayers, loadPlayersOverview, renderPlayers } from "./player.js";
 
+const commitLocalSessionCommand = createSingleFlightCommitter(
+  async ({ kind, sessionId, playerId, chips }) => {
+    const serialized = kind === "buy_in"
+      ? serializeBuyInCommand({ sessionId, playerId, chips })
+      : serializeCashOutCommand({ sessionId, playerId, chips });
+    const sequence = await nextSessionCommandSequence(sessionId);
+    const currentSnapshot = snapshotFromState(state, sessionId);
+    if (!currentSnapshot || state.activeSessionId !== sessionId) {
+      throw new Error("Current session snapshot is unavailable");
+    }
+
+    const createdAt = new Date().toISOString();
+    const provisionalOperationId = `local-${serialized.requestId}`;
+    const { projectionCommand, outboxCommand } = createPendingCommand({
+      kind,
+      sessionId,
+      playerId,
+      chips,
+      requestId: serialized.requestId,
+      sequence,
+      createdAt,
+      provisionalOperationId,
+      payload: serialized.payload,
+    });
+    return commitProjectedSessionCommand({
+      snapshot: currentSnapshot,
+      projectionCommand,
+      outboxCommand,
+      persist: writeProjectedSnapshotWithCommand,
+      onCommitted: (nextSnapshot) => {
+        if (state.activeSessionId !== sessionId) return;
+        applySessionSnapshot(state, nextSnapshot, "cache", {
+          refreshStatus: state.sessionRefreshStatus,
+        });
+        renderSessionSlice();
+      },
+      requestReplay: () => {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+            detail: { sessionId, requestId: serialized.requestId },
+          }),
+        );
+      },
+    });
+  },
+);
+
+const commitConfirmedReverse = createSingleFlightCommitter(
+  async ({ sessionId, targetOperationId }) => {
+    const context = await readReverseTargetContext(sessionId);
+    const classification = classifyReverseTarget(
+      context.snapshot,
+      context.commands,
+      targetOperationId,
+    );
+    if (classification.kind !== REVERSE_TARGET_KINDS.SERVER_CONFIRMED) {
+      throw new LocalProjectionError(
+        "reverse_target_changed",
+        "reverse target changed before commit",
+      );
+    }
+    const serialized = serializeReverseOperationCommand({
+      operationId: targetOperationId,
+    });
+    const sequence = await nextSessionCommandSequence(sessionId);
+    const createdAt = new Date().toISOString();
+    const { projectionCommand, outboxCommand } = createPendingReverseCommand({
+      sessionId,
+      targetOperationId,
+      requestId: serialized.requestId,
+      sequence,
+      createdAt,
+      provisionalOperationId: `local-${serialized.requestId}`,
+      payload: serialized.payload,
+    });
+    const nextSnapshot = projectReverseSessionCommand(
+      context.snapshot,
+      projectionCommand,
+    );
+    const written = await writeProjectedSnapshotWithReverseCommand(
+      nextSnapshot,
+      outboxCommand,
+      context.snapshot.local_revision,
+    );
+    if (!written) {
+      throw new LocalProjectionError(
+        "reverse_target_changed",
+        "reverse target changed before persistence",
+      );
+    }
+    if (state.activeSessionId === sessionId) {
+      applySessionSnapshot(state, nextSnapshot, "cache", {
+        refreshStatus: state.sessionRefreshStatus,
+      });
+      renderSessionSlice();
+    }
+    window.dispatchEvent(
+      new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+        detail: { sessionId, requestId: serialized.requestId },
+      }),
+    );
+    return nextSnapshot;
+  },
+);
+
 export async function openSession(sessionId, { replace = false } = {}) {
   if (!sessionId) return;
 
   state.activeSessionId = sessionId;
+  resetVisibleSessionState(sessionId);
+  state.settlementEditing = false;
+  state.expenseFormOpen = false;
+
+  let cached = false;
+  try {
+    cached = await hydrateCachedSession({
+      sessionId,
+      state,
+      readSnapshot: readSessionSnapshot,
+      onHydrated: renderSessionSlice,
+    });
+  } catch (error) {
+    console.warn("Cached session hydration is unavailable; continuing online-only", error);
+  }
+
+  if (cached) {
+    showSessionRoute(sessionId, replace);
+    void refreshSessionFromServer(sessionId);
+    return;
+  }
+
+  state.sessionRefreshStatus = "refreshing";
+  const result = await refreshSessionFromServer(sessionId);
+  if (result.status !== "fresh") {
+    if (state.activeSessionId === sessionId) {
+      showNotice(t("error.failedLoadSession"), "error");
+    }
+    return;
+  }
+  showSessionRoute(sessionId, replace);
+}
+
+function resetVisibleSessionState(sessionId) {
   state.session = null;
   state.operations = [];
   state.expenses = [];
   state.players = [];
-  state.settlementEditing = false;
-  state.expenseFormOpen = false;
+  state.sessionDataSource = "none";
+  state.sessionCachedAt = null;
+  state.sessionRefreshStatus = "idle";
+  state.sessionLocalRevision = 0;
+  state.sessionExpensesCached = false;
+  state.sessionSettlementsCached = false;
   delete state.settlementDrafts[sessionId];
+}
 
-  const res = await getSession(sessionId);
-  if (!res.ok || !res.body) {
-    showNotice(describeError(res, t("error.failedLoadSession")), "error");
-    return;
-  }
-
-  hydrateSession(res.body);
+function renderSessionSlice() {
   renderSession();
+  renderPlayers();
+  renderOperations();
   renderActionPlayerOptions();
   renderExpenseForm();
   renderExpenses();
   renderSettlement();
+}
+
+function showSessionRoute(sessionId, replace) {
+  renderSessionSlice();
   setScreen("session");
-
-  await Promise.all([
-    loadPlayers(sessionId),
-    loadOperations(sessionId),
-    loadExpenses(sessionId),
-    loadSettlementTransfers(sessionId),
-  ]);
-
-  renderSession();
-  renderActionPlayerOptions();
-  renderExpenseForm();
-  renderExpenses();
-  renderSettlement();
-
   if (replace) {
     replaceRoute(routeToSession(sessionId));
   } else {
     pushRoute(routeToSession(sessionId));
   }
+}
+
+async function refreshSessionFromServer(sessionId) {
+  return refreshSessionSnapshotWithRebase({
+    sessionId,
+    state,
+    loadResults: async () => {
+      const [
+        sessionResult,
+        playersResult,
+        operationsResult,
+        expensesResult,
+        settlementsResult,
+        pendingCommands,
+      ] =
+        await Promise.all([
+          getSession(sessionId),
+          getSessionPlayers(sessionId),
+          getSessionOperations(sessionId),
+          getExpenses(sessionId),
+          getSettlementTransfers(sessionId),
+          listSessionProjectionCommands(sessionId),
+        ]);
+      return {
+        sessionResult,
+        playersResult,
+        operationsResult,
+        expensesResult,
+        settlementsResult,
+        pendingCommands,
+      };
+    },
+    writeSnapshot: writeServerSnapshotIfRevision,
+    transformSnapshot: (snapshot, results) =>
+      reapplyPendingSessionCommands(snapshot, results.pendingCommands),
+    onApplied: renderSessionSlice,
+  });
+}
+
+export async function reconcileReplayedSessionCommand(command, response) {
+  const sessionId = command.session_id;
+  const previousSnapshot = await readSessionSnapshot(sessionId);
+  if (!previousSnapshot) throw new Error("Cached session snapshot is unavailable");
+  const reconciledSnapshot = reconcileSessionOperationAcknowledgement(
+    previousSnapshot,
+    command,
+    response.body,
+  );
+  const reconciled = await reconcileOutboxCommand({
+    requestId: command.request_id,
+    sessionId,
+    snapshot: reconciledSnapshot,
+    expectedLocalRevision: previousSnapshot.local_revision,
+    acknowledgement: response.body,
+  });
+  if (!reconciled) return false;
+
+  if (state.activeSessionId === sessionId) {
+    applySessionSnapshot(state, reconciledSnapshot, "cache");
+    renderSessionSlice();
+  }
+  return true;
 }
 
 export async function openSessionResults(sessionId, { replace = false } = {}) {
@@ -108,13 +339,12 @@ export async function loadExpenses(sessionId) {
   const res = await withLoading("#expenses-wrap", () => getExpenses(sessionId));
   if (!res.ok) {
     console.error("loadExpenses failed:", res.text);
-    state.expenses = [];
-    renderExpenses();
-    renderSettlement();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   state.expenses = Array.isArray(res.body) ? res.body : [];
+  state.sessionExpensesCached = true;
   renderExpenses();
   renderSettlement();
 }
@@ -125,11 +355,10 @@ async function loadSettlementTransfers(sessionId) {
   const res = await getSettlementTransfers(sessionId);
   if (!res.ok) {
     console.error("loadSettlementTransfers failed:", res.text);
-    delete state.settlementDrafts[sessionId];
-    renderSettlement();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   const transfers = Array.isArray(res.body)
     ? res.body.map(normalizeSettlementTransfer).filter(Boolean)
     : [];
@@ -138,6 +367,7 @@ async function loadSettlementTransfers(sessionId) {
   } else {
     delete state.settlementDrafts[sessionId];
   }
+  state.sessionSettlementsCached = true;
   renderSettlement();
 }
 
@@ -147,11 +377,10 @@ export async function loadOperations(sessionId) {
   const res = await withLoading("#operations-wrap", () => getSessionOperations(sessionId));
   if (!res.ok) {
     console.error("loadOperations failed:", res.text);
-    state.operations = [];
-    renderOperations();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   state.operations = Array.isArray(res.body) ? res.body : [];
   renderOperations();
   renderPlayers();
@@ -262,6 +491,53 @@ export function renderSession() {
   bindAdminSessionConfigEditor(bigBlindCard);
   renderSessionActionMode();
   renderResultsSummary();
+  renderSessionSyncStatus();
+}
+
+export function renderSessionSyncStatus() {
+  const indicator = document.getElementById("session-sync-status");
+  const label = document.getElementById("session-sync-status-label");
+  const detail = document.getElementById("session-sync-status-detail");
+  const actionButton = document.getElementById("session-sync-status-action");
+  if (!indicator || !label || !detail || !actionButton) return;
+
+  const status = deriveSyncUIStatus({
+    isOnline: navigator.onLine !== false,
+    localRuntimeStatus: state.localRuntimeStatus,
+    replayStatus: state.sessionReplayStatus,
+    pendingCount: state.sessionPendingCount,
+    blockedCount: state.sessionBlockedCount,
+  });
+  const translationKeys = {
+    [SYNC_UI_STATUSES.ONLINE_FRESH]: "sync.onlineFresh",
+    [SYNC_UI_STATUSES.ONLINE_SYNCING]: "sync.onlineSyncing",
+    [SYNC_UI_STATUSES.OFFLINE_CLEAN]: "sync.offlineClean",
+    [SYNC_UI_STATUSES.OFFLINE_PENDING]: "sync.offlinePending",
+    [SYNC_UI_STATUSES.RETRY_WAIT]: "sync.retryWait",
+    [SYNC_UI_STATUSES.AUTHORIZATION_BLOCKED]: "sync.authorizationBlocked",
+    [SYNC_UI_STATUSES.DOMAIN_BLOCKED]: "sync.domainBlocked",
+    [SYNC_UI_STATUSES.LOCAL_STORAGE_UNAVAILABLE]: "sync.localStorageUnavailable",
+  };
+  indicator.dataset.syncStatus = status.kind;
+  label.textContent = t(translationKeys[status.kind], { count: status.pendingCount });
+
+  actionButton.hidden = !status.action;
+  actionButton.dataset.syncAction = status.action || "";
+  actionButton.textContent = status.action === "retry"
+    ? t("sync.retry")
+    : status.action === "authenticate"
+      ? t("sync.restoreAuth")
+      : "";
+
+  let detailText = "";
+  if (status.kind === SYNC_UI_STATUSES.DOMAIN_BLOCKED && state.sessionReplayError) {
+    const { code, message, details } = state.sessionReplayError;
+    detailText = code
+      ? describeError({ body: { error: code, details } }, t("sync.domainBlocked"))
+      : message || t("sync.domainBlocked");
+  }
+  detail.hidden = !detailText;
+  detail.textContent = detailText;
 }
 
 export function renderOperations() {
@@ -286,13 +562,15 @@ export function renderOperations() {
   const operationRows = state.operations
     .map((operation) => {
       const playerName = findPlayerName(operation.player_id);
+      const syncStatus = operation.sync_status || "confirmed";
+      const isPending = syncStatus === "pending";
       const reversible =
         state.session?.status === "active" &&
         operation.type !== "reversal" &&
         !reversedTargets.has(operation.id);
 
       return `
-        <div class="operation-row">
+        <div class="operation-row ${isPending ? "operation-pending" : ""}" data-sync-status="${escapeHtml(syncStatus)}">
           <div class="row-main">
             <div class="row-title">
               <span class="operation-type ${escapeHtml(operation.type)}">${escapeHtml(operationLabel(operation.type))}</span>
@@ -302,6 +580,7 @@ export function renderOperations() {
               <span>${escapeHtml(t("session.chips"))}: ${formatNumber(operation.chips)}</span>
               <span>${escapeHtml(formatDate(operation.created_at))}</span>
             </div>
+            ${isPending ? `<span class="operation-sync-label">${escapeHtml(t("sync.pendingRow"))}</span>` : ""}
           </div>
           ${
             reversible
@@ -394,7 +673,17 @@ export function renderExpenseForm() {
   const amount = Number(document.getElementById("expense-amount")?.value);
   const selectedPayerIds = readSelectedExpensePayers(players);
 
-  participantsWrap.innerHTML = renderExpenseParticipantControls(players, amount);
+  // When switching to custom mode, default to all players selected
+  const initialParticipantIds =
+    (state.expenseParticipantMode || "all") === "custom"
+      ? players.map((player) => playerId(player)).filter(Boolean)
+      : [];
+
+  participantsWrap.innerHTML = renderExpenseParticipantControls(
+    players,
+    initialParticipantIds,
+    amount,
+  );
   payersWrap.innerHTML = renderExpensePayerControls(players, selectedPayerIds, amount);
   bindExpenseSplitInputs();
   updateExpenseParticipantShares();
@@ -414,7 +703,7 @@ function bindExpenseSplitInputs() {
   });
 }
 
-function renderExpenseParticipantControls(players, amount) {
+function renderExpenseParticipantControls(players, selectedParticipantIds, amount) {
   if (!players.length) {
     return `<div class="empty-inline">${escapeHtml(t("common.noPlayers"))}</div>`;
   }
@@ -431,15 +720,17 @@ function renderExpenseParticipantControls(players, amount) {
     return modeSwitch;
   }
 
-  const shares = calculateEqualShares(amount, players.map((player) => playerId(player)));
+  const shares = calculateEqualShares(amount, selectedParticipantIds);
+  const selectedSet = new Set(selectedParticipantIds);
   const participantRows = players
     .map((player) => {
       const id = playerId(player);
       const name = playerName(player);
+      const isChecked = selectedSet.has(id);
       return `
         <label class="expense-check">
           <span class="expense-check-main">
-            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" checked />
+            <input type="checkbox" name="expense-participant" value="${escapeHtml(id)}" ${isChecked ? "checked" : ""} />
             <span>${escapeHtml(name)}</span>
           </span>
           <strong data-expense-share="${escapeHtml(id)}">${formatMoney(shares.get(id) || 0, state.session?.currency)}</strong>
@@ -991,6 +1282,23 @@ export function initSessionActions() {
     const button = event.target.closest("button");
     if (!button) return;
 
+    if (button.id === "session-sync-status-action") {
+      const action = button.dataset.syncAction;
+      if (action === "retry") {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+            detail: { allowEarlyRetry: true },
+          }),
+        );
+      } else if (action === "authenticate") {
+        const disclosure = document.getElementById("admin-login-disclosure");
+        if (disclosure) disclosure.open = true;
+        disclosure?.scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById("admin-login-email")?.focus();
+      }
+      return;
+    }
+
     const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
     if (rebuyPlayerId) {
       await withBusyButton(button, () => confirmPlayerRebuy(rebuyPlayerId));
@@ -1201,6 +1509,11 @@ async function confirmPlayerRebuy(playerId) {
 
   const playerName = findPlayerName(playerId);
   const chips = lastBuyInChipsForRebuy(playerId);
+  const sessionId = state.activeSessionId;
+  const useLocalFirst = shouldUseLocalFirstSessionWrites({
+    enabled: state.localFirstSessionWritesEnabled,
+    runtimeStatus: state.localRuntimeStatus,
+  });
   const values = await openModal({
     title: t("modal.confirmBuyInTitle"),
     description: t("modal.confirmBuyInDescription", {
@@ -1220,27 +1533,38 @@ async function confirmPlayerRebuy(playerId) {
         placeholder: t("session.chips"),
       },
     ],
+    onConfirm: async (confirmedValues) => {
+      const nextChips = Number(confirmedValues.chips);
+      if (!Number.isFinite(nextChips) || nextChips <= 0) {
+        showNotice(t("notice.selectPlayerAndChips"), "error");
+        return false;
+      }
+      if (!useLocalFirst) {
+        const res = await buyIn({ sessionId, playerId, chips: nextChips });
+        if (!res.ok) {
+          showNotice(describeError(res, t("error.failedBuyIn")), "error");
+          return false;
+        }
+        await refreshSessionData();
+        return true;
+      }
+      try {
+        await commitLocalSessionCommand(sessionId, {
+          kind: "buy_in",
+          sessionId,
+          playerId,
+          chips: nextChips,
+        });
+        return true;
+      } catch (error) {
+        console.error("Local buy-in commit failed:", error);
+        showNotice(t("error.localSessionSaveFailed"), "error");
+        return false;
+      }
+    },
   });
   if (!values) return;
-
-  const nextChips = Number(values.chips);
-  if (!Number.isFinite(nextChips) || nextChips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-
-  const res = await buyIn({
-    sessionId: state.activeSessionId,
-    playerId,
-    chips: nextChips,
-  });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedBuyIn")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  showNotice(t("notice.buyInRecorded", { name: playerName }), "success");
+  showNotice(t(useLocalFirst ? "notice.buyInSavedLocally" : "notice.buyInRecorded", { name: playerName }), "success");
 }
 
 async function confirmPlayerCashOut(playerId) {
@@ -1252,6 +1576,11 @@ async function confirmPlayerCashOut(playerId) {
   }
   const defaultChips = String(Math.min(1000, maxChips));
 
+  const sessionId = state.activeSessionId;
+  const useLocalFirst = shouldUseLocalFirstSessionWrites({
+    enabled: state.localFirstSessionWritesEnabled,
+    runtimeStatus: state.localRuntimeStatus,
+  });
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
@@ -1272,31 +1601,42 @@ async function confirmPlayerCashOut(playerId) {
         placeholder: t("session.chips"),
       },
     ],
+    onConfirm: async (confirmedValues) => {
+      const chips = Number(confirmedValues.chips);
+      if (!playerId || !Number.isFinite(chips) || chips <= 0) {
+        showNotice(t("notice.selectPlayerAndChips"), "error");
+        return false;
+      }
+      if (chips > (Number(state.session?.totalChips) || 0)) {
+        showNotice(t("notice.cashOutExceedsBalance"), "error");
+        return false;
+      }
+      if (!useLocalFirst) {
+        const res = await cashOut({ sessionId, playerId, chips });
+        if (!res.ok) {
+          showNotice(describeError(res, t("error.failedCashOut")), "error");
+          return false;
+        }
+        await refreshSessionData();
+        return true;
+      }
+      try {
+        await commitLocalSessionCommand(sessionId, {
+          kind: "cash_out",
+          sessionId,
+          playerId,
+          chips,
+        });
+        return true;
+      } catch (error) {
+        console.error("Local cash-out commit failed:", error);
+        showNotice(t("error.localSessionSaveFailed"), "error");
+        return false;
+      }
+    },
   });
   if (!values) return;
-
-  const chips = Number(values.chips);
-  if (!playerId || !Number.isFinite(chips) || chips <= 0) {
-    showNotice(t("notice.selectPlayerAndChips"), "error");
-    return;
-  }
-  if (chips > maxChips) {
-    showNotice(t("notice.cashOutExceedsBalance"), "error");
-    return;
-  }
-
-  const res = await cashOut({
-    sessionId: state.activeSessionId,
-    playerId,
-    chips,
-  });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedCashOut")), "error");
-    return;
-  }
-
-  await refreshSessionData();
-  showNotice(t("notice.cashOutRecorded", { name: playerName }), "success");
+  showNotice(t(useLocalFirst ? "notice.cashOutSavedLocally" : "notice.cashOutRecorded", { name: playerName }), "success");
 }
 
 async function confirmAddPlayer() {
@@ -1402,6 +1742,10 @@ async function confirmAddPlayer() {
 }
 
 async function confirmFinishSession() {
+  if (navigator.onLine === false) {
+    showNotice(t("error.onlineRequired"), "error");
+    return;
+  }
   if (state.session?.status !== "active") return;
   if ((Number(state.session.totalChips) || 0) > 0) {
     showNotice(
@@ -1587,14 +1931,96 @@ async function confirmReverse(operationId) {
   });
   if (!values) return;
 
-  const res = await reverseOperation({ operationId });
-  if (!res.ok) {
-    showNotice(describeError(res, t("error.failedReverse")), "error");
+  if (!shouldUseLocalFirstSessionWrites({
+    enabled: state.localFirstSessionWritesEnabled,
+    runtimeStatus: state.localRuntimeStatus,
+  })) {
+    const res = await reverseOperation({ operationId });
+    if (!res.ok) {
+      showNotice(describeError(res, t("error.failedReverse")), "error");
+      return;
+    }
+    await refreshSessionData();
+    showNotice(t("notice.operationReversed"), "success");
     return;
   }
 
-  await refreshSessionData();
-  showNotice(t("notice.operationReversed"), "success");
+  const sessionId = state.activeSessionId;
+  let context;
+  try {
+    context = await readReverseTargetContext(sessionId);
+  } catch (error) {
+    console.error("Reverse target lookup failed:", error);
+    showNotice(t("error.reverseUnavailable"), "error");
+    return;
+  }
+  const classification = classifyReverseTarget(
+    context.snapshot,
+    context.commands,
+    operationId,
+  );
+  if (classification.kind === REVERSE_TARGET_KINDS.PENDING_UNSENT) {
+    try {
+      const cancelledAt = new Date().toISOString();
+      const nextSnapshot = cancelPendingSessionCommandProjection(
+        context.snapshot,
+        { ...classification.command, cancelled_at: cancelledAt },
+      );
+      const cancelled = await cancelPendingOutboxCommand({
+        requestId: classification.command.request_id,
+        sessionId,
+        snapshot: nextSnapshot,
+        expectedLocalRevision: context.snapshot.local_revision,
+        cancelledAt,
+      });
+      if (!cancelled) {
+        showNotice(t("error.reverseUnavailable"), "error");
+        return;
+      }
+      if (state.activeSessionId === sessionId) {
+        applySessionSnapshot(state, nextSnapshot, "cache", {
+          refreshStatus: state.sessionRefreshStatus,
+        });
+        renderSessionSlice();
+      }
+      showNotice(t("notice.operationCancelledLocally"), "success");
+    } catch (error) {
+      console.error("Local operation cancellation failed:", error);
+      showNotice(t("error.reverseUnavailable"), "error");
+    }
+    return;
+  }
+  if (classification.kind === REVERSE_TARGET_KINDS.POSSIBLY_SENT) {
+    window.dispatchEvent(
+      new CustomEvent(SESSION_REPLAY_REQUEST_EVENT, {
+        detail: {
+          sessionId,
+          requestId: classification.command.request_id,
+          allowEarlyRetry: true,
+        },
+      }),
+    );
+    showNotice(t("notice.reverseWaitingForSync"), "info");
+    return;
+  }
+  if (classification.kind === REVERSE_TARGET_KINDS.ALREADY_REVERSED) {
+    showNotice(t("notice.operationAlreadyReversed"), "info");
+    return;
+  }
+  if (classification.kind !== REVERSE_TARGET_KINDS.SERVER_CONFIRMED) {
+    showNotice(t("error.reverseUnavailable"), "error");
+    return;
+  }
+  try {
+    await commitConfirmedReverse(operationId, {
+      sessionId,
+      targetOperationId: operationId,
+    });
+    showNotice(t("notice.operationReversed"), "success");
+  } catch (error) {
+    console.error("Local reverse commit failed:", error);
+    showNotice(t("error.localSessionSaveFailed"), "error");
+  }
 }
 
 async function confirmAddExpense() {
@@ -1686,42 +2112,13 @@ async function refreshSessionData() {
   const id = state.activeSessionId;
   if (!id) return;
 
-  const res = await getSession(id);
-  if (!res.ok || !res.body) {
-    showNotice(describeError(res, t("error.failedRefresh")), "error");
+  const result = await refreshSessionFromServer(id);
+  if (result.status === "failed") {
+    showNotice(t("error.failedRefresh"), "error");
     return;
   }
 
-  hydrateSession(res.body);
-  renderSession();
-
-  await Promise.all([
-    loadPlayers(id),
-    loadOperations(id),
-    loadExpenses(id),
-    loadSettlementTransfers(id),
-  ]);
-  renderActionPlayerOptions();
-  renderExpenseForm();
-  renderSettlement();
-
   await Promise.allSettled([loadSessions(), loadPlayersOverview()]);
-}
-
-function hydrateSession(raw) {
-  state.session = {
-    id: raw.session_id,
-    status: raw.status,
-    chipRate: raw.chip_rate,
-    bigBlind: raw.big_blind,
-    currency: raw.currency || "RUB",
-    createdAt: raw.created_at,
-    finishedAt: raw.finished_at,
-    expensesClosed: Boolean(raw.expenses_closed),
-    totalBuyIn: raw.total_buy_in,
-    totalCashOut: raw.total_cash_out,
-    totalChips: raw.total_chips,
-  };
 }
 
 function findPlayerName(pid) {

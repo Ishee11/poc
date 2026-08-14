@@ -33,11 +33,10 @@ export async function loadPlayers(sessionId) {
   const res = await withLoading("#players-wrap", () => getSessionPlayers(sessionId));
   if (!res.ok) {
     console.error("loadPlayers failed:", res.text);
-    state.players = [];
-    renderPlayers();
     return;
   }
 
+  if (state.activeSessionId !== sessionId) return;
   state.players = (Array.isArray(res.body) ? res.body : []).sort(
     (a, b) => (Number(b.profit_money) || 0) - (Number(a.profit_money) || 0),
   );

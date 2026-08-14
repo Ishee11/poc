@@ -77,6 +77,31 @@ func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	}
 }
 
+func TestIdempotencyReservationRollsBackWithBusinessTransaction(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	manager := NewTxManager(pool)
+	repository := NewIdempotencyRepository()
+	simulatedFailure := errors.New("operation persistence failed")
+
+	err := manager.RunInTx(context.Background(), func(tx usecase.Tx) error {
+		if err := repository.Save(tx, "rollback-request"); err != nil {
+			return err
+		}
+		return simulatedFailure
+	})
+	if !errors.Is(err, simulatedFailure) {
+		t.Fatalf("expected simulated failure, got %v", err)
+	}
+
+	err = manager.RunInTx(context.Background(), func(tx usecase.Tx) error {
+		return repository.Save(tx, "rollback-request")
+	})
+	if err != nil {
+		t.Fatalf("retry was blocked by rolled-back reservation: %v", err)
+	}
+}
+
 func txRun(t *testing.T, pool *pgxpool.Pool, fn func(tx usecase.Tx)) {
 	t.Helper()
 	txManager := NewTxManager(pool)

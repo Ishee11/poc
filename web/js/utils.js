@@ -231,6 +231,7 @@ export function openModal({
   cancelText = t("common.cancel"),
   showCancel = true,
   confirmClass = "",
+  onConfirm = null,
 }) {
   const root = document.getElementById("modal-root");
   if (!root) {
@@ -399,11 +400,34 @@ export function openModal({
       });
     });
 
-    root.querySelector("#modal-form")?.addEventListener("submit", (event) => {
+    let submitting = false;
+    root.querySelector("#modal-form")?.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (submitting) return;
       const form = new FormData(event.currentTarget);
       const values = Object.fromEntries(form.entries());
-      close(values);
+      if (typeof onConfirm !== "function") {
+        close(values);
+        return;
+      }
+
+      submitting = true;
+      const confirmButton = root.querySelector("#modal-confirm-btn");
+      const cancelButton = root.querySelector("#modal-cancel-btn");
+      if (confirmButton) confirmButton.disabled = true;
+      if (cancelButton) cancelButton.disabled = true;
+      try {
+        const accepted = await onConfirm(values);
+        if (accepted !== false) {
+          close(values);
+          return;
+        }
+      } catch (error) {
+        console.error("Modal confirmation failed:", error);
+      }
+      submitting = false;
+      if (confirmButton) confirmButton.disabled = false;
+      if (cancelButton) cancelButton.disabled = false;
     });
   });
 }

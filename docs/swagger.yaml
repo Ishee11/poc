@@ -137,6 +137,29 @@ definitions:
       user:
         $ref: '#/definitions/http.AuthUserResponse'
     type: object
+  http.OperationAcknowledgement:
+    properties:
+      chips:
+        type: integer
+      created_at:
+        type: string
+      idempotent_replay:
+        type: boolean
+      operation_id:
+        type: string
+      player_id:
+        type: string
+      request_id:
+        type: string
+      reversed_operation:
+        $ref: '#/definitions/usecase.PersistedOperationDetails'
+      session_id:
+        type: string
+      target_operation_id:
+        type: string
+      type:
+        $ref: '#/definitions/entity.OperationType'
+    type: object
   http.PlayerDTO:
     properties:
       name:
@@ -179,6 +202,8 @@ definitions:
         type: string
       currency:
         $ref: '#/definitions/entity.Currency'
+      expenses_closed:
+        type: boolean
       finished_at:
         type: string
       session_id:
@@ -203,6 +228,21 @@ definitions:
       player_id:
         type: string
       reference_id:
+        type: string
+      type:
+        $ref: '#/definitions/entity.OperationType'
+    type: object
+  usecase.PersistedOperationDetails:
+    properties:
+      chips:
+        type: integer
+      created_at:
+        type: string
+      operation_id:
+        type: string
+      player_id:
+        type: string
+      session_id:
         type: string
       type:
         $ref: '#/definitions/entity.OperationType'
@@ -275,12 +315,18 @@ definitions:
     type: object
   usecase.PlayerStat:
     properties:
+      avg_buy_in_money_per_session:
+        type: number
+      avg_buy_in_per_session:
+        type: number
       last_activity_at:
         type: string
       player_id:
         type: string
       player_name:
         type: string
+      positive_streak:
+        type: integer
       profit_chips:
         type: integer
       profit_money:
@@ -290,6 +336,8 @@ definitions:
       sessions_count:
         type: integer
       total_buy_in:
+        type: integer
+      total_buy_in_money:
         type: integer
       total_cash_out:
         type: integer
@@ -597,8 +645,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.OperationAcknowledgement'
         "400":
           description: Bad Request
           schema:
@@ -629,8 +679,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.OperationAcknowledgement'
         "400":
           description: Bad Request
           schema:
@@ -661,8 +713,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.OperationAcknowledgement'
         "400":
           description: Bad Request
           schema:

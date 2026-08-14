@@ -147,6 +147,45 @@ func TestAPIIntegration_SessionLifecycle(t *testing.T) {
 	if buyIn.Code != http.StatusOK {
 		t.Fatalf("buy in status=%d body=%s", buyIn.Code, buyIn.Body.String())
 	}
+	var buyInAck struct {
+		RequestID        string `json:"request_id"`
+		OperationID      string `json:"operation_id"`
+		SessionID        string `json:"session_id"`
+		PlayerID         string `json:"player_id"`
+		Type             string `json:"type"`
+		Chips            int64  `json:"chips"`
+		CreatedAt        string `json:"created_at"`
+		IdempotentReplay bool   `json:"idempotent_replay"`
+	}
+	decodeJSON(t, buyIn, &buyInAck)
+	if buyInAck.OperationID == "" || buyInAck.RequestID != "req-buy-in-1" || buyInAck.Type != "buy_in" || buyInAck.Chips != 100 || buyInAck.IdempotentReplay {
+		t.Fatalf("unexpected buy-in acknowledgement: %+v", buyInAck)
+	}
+
+	buyInDuplicate := requestJSON(t, handler, http.MethodPost, "/operations/buy-in", map[string]any{
+		"request_id": "req-buy-in-1", "session_id": sessionResp.SessionID,
+		"player_id": playerResp.PlayerID, "chips": 100,
+	})
+	var duplicateAck struct {
+		OperationID      string `json:"operation_id"`
+		IdempotentReplay bool   `json:"idempotent_replay"`
+	}
+	decodeJSON(t, buyInDuplicate, &duplicateAck)
+	if buyInDuplicate.Code != http.StatusOK || duplicateAck.OperationID != buyInAck.OperationID || !duplicateAck.IdempotentReplay {
+		t.Fatalf("unexpected duplicate acknowledgement: status=%d ack=%+v", buyInDuplicate.Code, duplicateAck)
+	}
+
+	buyInMismatch := requestJSON(t, handler, http.MethodPost, "/operations/buy-in", map[string]any{
+		"request_id": "req-buy-in-1", "session_id": sessionResp.SessionID,
+		"player_id": playerResp.PlayerID, "chips": 200,
+	})
+	var mismatchErr struct {
+		Error string `json:"error"`
+	}
+	decodeJSON(t, buyInMismatch, &mismatchErr)
+	if buyInMismatch.Code != http.StatusConflict || mismatchErr.Error != "idempotency_payload_mismatch" {
+		t.Fatalf("unexpected payload mismatch: status=%d body=%s", buyInMismatch.Code, buyInMismatch.Body.String())
+	}
 
 	finishUnbalanced := requestJSON(t, handler, http.MethodPost, "/sessions/finish", map[string]any{
 		"request_id": "req-finish-1",
@@ -266,6 +305,19 @@ func TestAPIIntegration_ReverseOperation(t *testing.T) {
 	})
 	if reverse.Code != http.StatusOK {
 		t.Fatalf("reverse status=%d body=%s", reverse.Code, reverse.Body.String())
+	}
+	var reverseAck struct {
+		OperationID       string `json:"operation_id"`
+		TargetOperationID string `json:"target_operation_id"`
+		Type              string `json:"type"`
+		ReversedOperation struct {
+			OperationID string `json:"operation_id"`
+			Type        string `json:"type"`
+		} `json:"reversed_operation"`
+	}
+	decodeJSON(t, reverse, &reverseAck)
+	if reverseAck.OperationID == "" || reverseAck.TargetOperationID != ops[0].ID || reverseAck.Type != "reversal" || reverseAck.ReversedOperation.OperationID != ops[0].ID || reverseAck.ReversedOperation.Type != "buy_in" {
+		t.Fatalf("unexpected reverse acknowledgement: %+v", reverseAck)
 	}
 
 	sessionRes := requestJSON(t, handler, http.MethodGet, "/sessions?session_id="+sessionResp.SessionID, nil)

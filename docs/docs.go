@@ -438,8 +438,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.OperationAcknowledgement"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -487,8 +490,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.OperationAcknowledgement"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -536,8 +542,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.OperationAcknowledgement"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -1189,6 +1198,41 @@ const docTemplate = `{
                 }
             }
         },
+        "http.OperationAcknowledgement": {
+            "type": "object",
+            "properties": {
+                "chips": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "idempotent_replay": {
+                    "type": "boolean"
+                },
+                "operation_id": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "reversed_operation": {
+                    "$ref": "#/definitions/usecase.PersistedOperationDetails"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "target_operation_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/entity.OperationType"
+                }
+            }
+        },
         "http.PlayerDTO": {
             "type": "object",
             "properties": {
@@ -1253,6 +1297,9 @@ const docTemplate = `{
                 "currency": {
                     "$ref": "#/definitions/entity.Currency"
                 },
+                "expenses_closed": {
+                    "type": "boolean"
+                },
                 "finished_at": {
                     "type": "string"
                 },
@@ -1289,6 +1336,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "reference_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/entity.OperationType"
+                }
+            }
+        },
+        "usecase.PersistedOperationDetails": {
+            "type": "object",
+            "properties": {
+                "chips": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "operation_id": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "session_id": {
                     "type": "string"
                 },
                 "type": {
@@ -1400,6 +1470,12 @@ const docTemplate = `{
         "usecase.PlayerStat": {
             "type": "object",
             "properties": {
+                "avg_buy_in_money_per_session": {
+                    "type": "number"
+                },
+                "avg_buy_in_per_session": {
+                    "type": "number"
+                },
                 "last_activity_at": {
                     "type": "string"
                 },
@@ -1408,6 +1484,9 @@ const docTemplate = `{
                 },
                 "player_name": {
                     "type": "string"
+                },
+                "positive_streak": {
+                    "type": "integer"
                 },
                 "profit_chips": {
                     "type": "integer"
@@ -1422,6 +1501,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total_buy_in": {
+                    "type": "integer"
+                },
+                "total_buy_in_money": {
                     "type": "integer"
                 },
                 "total_cash_out": {

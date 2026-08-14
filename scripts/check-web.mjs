@@ -307,6 +307,24 @@ checkJSImports(jsFiles);
 checkReferencedAssets();
 checkTranslations();
 
+for (const testFile of [
+  "scripts/offline-db.test.mjs",
+  "scripts/network-contract.test.mjs",
+  "scripts/session-cache.test.mjs",
+  "scripts/session-projection.test.mjs",
+  "scripts/offline-sync.test.mjs",
+  "scripts/sync-status.test.mjs",
+  "scripts/rollout.test.mjs",
+  "scripts/service-worker.test.mjs",
+]) {
+  const result = spawnSync(process.execPath, [testFile], { cwd: root, encoding: "utf8" });
+  if (result.status !== 0) {
+    addError(
+      `${testFile} failed:\n${result.stderr || result.stdout || "unknown error"}`,
+    );
+  }
+}
+
 if (errors.length > 0) {
   console.error(errors.map((error) => `- ${error}`).join("\n"));
   process.exit(1);

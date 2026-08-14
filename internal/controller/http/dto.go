@@ -41,6 +41,8 @@ type CashOutRequest struct {
 	Chips     int64  `json:"chips" example:"500"`
 }
 
+type OperationAcknowledgement = usecase.OperationAcknowledgement
+
 type CreateExpensePaymentRequest struct {
 	PlayerID string `json:"player_id"`
 	Amount   int64  `json:"amount"`

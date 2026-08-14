@@ -15,7 +15,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param request body ReverseOperationRequest true "Reverse request"
-// @Success 204 "No Content"
+// @Success 200 {object} OperationAcknowledgement
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
@@ -42,15 +42,17 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err := h.reverseOperationUC.Execute(r.Context(), command.ReverseOperationCommand{
+	ack, err := h.reverseOperationUC.Execute(r.Context(), command.ReverseOperationCommand{
 		RequestID:         req.RequestID,
 		TargetOperationID: entity.OperationID(req.TargetOperationID),
 	})
 
 	if err != nil {
+		logOperationCommandFailure(r, req.RequestID, "reverse_operation", "", err)
 		writeError(w, r, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	logOperationAcknowledgement(r, ack)
+	writeJSON(w, http.StatusOK, ack)
 }
