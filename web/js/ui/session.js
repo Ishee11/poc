@@ -1,5 +1,6 @@
 import {
   buyIn,
+  cashOut,
   closeExpenses,
   createPlayer,
   createExpense,
@@ -1514,6 +1515,7 @@ async function confirmPlayerRebuy(playerId) {
     enabled: state.localFirstSessionWritesEnabled,
     runtimeStatus: state.localRuntimeStatus,
   });
+  let usedLocalFirst = useLocalFirst;
   const values = await openModal({
     title: t("modal.confirmBuyInTitle"),
     description: t("modal.confirmBuyInDescription", {
@@ -1558,13 +1560,19 @@ async function confirmPlayerRebuy(playerId) {
         return true;
       } catch (error) {
         console.error("Local buy-in commit failed:", error);
-        showNotice(t("error.localSessionSaveFailed"), "error");
-        return false;
+        usedLocalFirst = false;
+        const res = await buyIn({ sessionId, playerId, chips: nextChips });
+        if (!res.ok) {
+          showNotice(describeError(res, t("error.failedBuyIn")), "error");
+          return false;
+        }
+        await refreshSessionData();
+        return true;
       }
     },
   });
   if (!values) return;
-  showNotice(t(useLocalFirst ? "notice.buyInSavedLocally" : "notice.buyInRecorded", { name: playerName }), "success");
+  showNotice(t(usedLocalFirst ? "notice.buyInSavedLocally" : "notice.buyInRecorded", { name: playerName }), "success");
 }
 
 async function confirmPlayerCashOut(playerId) {
@@ -1581,6 +1589,7 @@ async function confirmPlayerCashOut(playerId) {
     enabled: state.localFirstSessionWritesEnabled,
     runtimeStatus: state.localRuntimeStatus,
   });
+  let usedLocalFirst = useLocalFirst;
   const values = await openModal({
     title: t("modal.confirmCashOutTitle"),
     description: t("modal.confirmCashOutDescription", {
@@ -1630,13 +1639,19 @@ async function confirmPlayerCashOut(playerId) {
         return true;
       } catch (error) {
         console.error("Local cash-out commit failed:", error);
-        showNotice(t("error.localSessionSaveFailed"), "error");
-        return false;
+        usedLocalFirst = false;
+        const res = await cashOut({ sessionId, playerId, chips });
+        if (!res.ok) {
+          showNotice(describeError(res, t("error.failedCashOut")), "error");
+          return false;
+        }
+        await refreshSessionData();
+        return true;
       }
     },
   });
   if (!values) return;
-  showNotice(t(useLocalFirst ? "notice.cashOutSavedLocally" : "notice.cashOutRecorded", { name: playerName }), "success");
+  showNotice(t(usedLocalFirst ? "notice.cashOutSavedLocally" : "notice.cashOutRecorded", { name: playerName }), "success");
 }
 
 async function confirmAddPlayer() {
