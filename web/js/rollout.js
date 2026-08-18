@@ -1,6 +1,13 @@
 export const LOCAL_FIRST_SESSION_WRITES_KEY = "poker-local-first-session-writes";
 
 export function resolveLocalFirstSessionWrites({ storage, documentRef } = {}) {
+  const configured = documentRef
+    ?.querySelector?.('meta[name="poker-local-first-session-writes"]')
+    ?.getAttribute?.("content");
+  if (configured === "true" || configured === "false") {
+    return Object.freeze({ enabled: configured === "true", source: "deployment", raw: configured });
+  }
+
   let stored = null;
   try {
     stored = storage?.getItem?.(LOCAL_FIRST_SESSION_WRITES_KEY) ?? null;
@@ -9,13 +16,6 @@ export function resolveLocalFirstSessionWrites({ storage, documentRef } = {}) {
   }
   if (stored === "true" || stored === "false") {
     return Object.freeze({ enabled: stored === "true", source: "local_storage", raw: stored });
-  }
-
-  const configured = documentRef
-    ?.querySelector?.('meta[name="poker-local-first-session-writes"]')
-    ?.getAttribute?.("content");
-  if (configured === "true" || configured === "false") {
-    return Object.freeze({ enabled: configured === "true", source: "deployment", raw: configured });
   }
   return Object.freeze({ enabled: false, source: "unknown", raw: configured ?? stored });
 }

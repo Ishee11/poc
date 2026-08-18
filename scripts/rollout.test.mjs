@@ -28,7 +28,7 @@ test("disabled or unavailable runtime selects the online-first fallback", () => 
   assert.equal(shouldUseLocalFirstSessionWrites({ enabled: true, runtimeStatus: "available" }), true);
 });
 
-test("deployment default is explicit and local cohort setting can override it", () => {
+test("deployment flag takes precedence over stale local cohort setting", () => {
   assert.deepEqual(resolveLocalFirstSessionWrites({
     storage: { getItem: () => null },
     documentRef: documentFlag("false"),
@@ -38,11 +38,11 @@ test("deployment default is explicit and local cohort setting can override it", 
   assert.deepEqual(resolveLocalFirstSessionWrites({
     storage: { getItem: (key) => { requestedKey = key; return "true"; } },
     documentRef: documentFlag("false"),
-  }), { enabled: true, source: "local_storage", raw: "true" });
-  assert.equal(requestedKey, LOCAL_FIRST_SESSION_WRITES_KEY);
+  }), { enabled: false, source: "deployment", raw: "false" });
+  assert.equal(requestedKey, "");
 });
 
-test("invalid or unavailable local storage never enables local-first writes", () => {
+test("invalid local storage never overrides deployment, unavailable storage is ignored", () => {
   assert.equal(resolveLocalFirstSessionWrites({
     storage: { getItem: () => "unexpected" },
     documentRef: documentFlag("false"),
@@ -50,5 +50,5 @@ test("invalid or unavailable local storage never enables local-first writes", ()
   assert.deepEqual(resolveLocalFirstSessionWrites({
     storage: { getItem: () => { throw new Error("denied"); } },
     documentRef: documentFlag("true"),
-  }), { enabled: false, source: "storage_unavailable", raw: null });
+  }), { enabled: true, source: "deployment", raw: "true" });
 });
