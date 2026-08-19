@@ -659,8 +659,42 @@ body[data-screen="blinds"][data-blinds-mode="presentation"] .blinds-level-flash 
 }
 
 #overview-players-panel:not([open]) .overview-player-controls,
-#overview-sessions-panel:not([open]) .overview-session-controls {
+#overview-sessions-panel:not([open]) .overview-session-controls,
+#overview-sessions-panel:not([open]) .sessions-pagination {
     display: none;
+}
+
+.sessions-pagination,
+.sessions-page-nav,
+.sessions-page-size {
+    display: flex;
+    align-items: center;
+}
+
+.sessions-pagination {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sessions-page-size,
+.sessions-page-nav {
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.sessions-page-size select {
+    min-width: 72px;
+    min-height: 36px;
+    padding: 5px 28px 5px 10px;
+}
+
+.sessions-page-nav button {
+    min-height: 36px;
+    padding: 6px 10px;
 }
 
 .overview-filter-pill,

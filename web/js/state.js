@@ -30,7 +30,11 @@ export const state = {
   localFirstSessionWritesFlagSource: "uninitialized",
 
   overviewSessions: [],
+  overviewSessionPageItems: [],
   overviewSessionsFilter: "all",
+  overviewSessionsPage: 0,
+  overviewSessionsPageSize: 20,
+  overviewSessionsHasNextPage: false,
   overviewPlayers: [],
   overviewPlayersAll: [],
   overviewPlayersSort: "last_activity",

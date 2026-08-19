@@ -11,30 +11,53 @@ import {
   withLoading,
 } from "../utils.js";
 
+let sessionsRequestGeneration = 0;
+
 export async function loadSessions() {
+  const requestGeneration = ++sessionsRequestGeneration;
+  const pageSize = state.overviewSessionsPageSize;
+  const page = state.overviewSessionsPage;
   const res = await withLoading("#overview-sessions-wrap", () =>
-    getSessions({ guestPlayerId: state.authUser ? "" : state.guestPlayerId }));
+    getSessions({
+      guestPlayerId: state.authUser ? "" : state.guestPlayerId,
+      limit: pageSize + 1,
+      offset: page * pageSize,
+      status: state.overviewSessionsFilter,
+    }));
+
+  if (requestGeneration !== sessionsRequestGeneration) return;
 
   if (!res.ok) {
     console.error("loadSessions failed:", res.text);
-    state.overviewSessions = [];
+    state.overviewSessionPageItems = [];
+    state.overviewSessionsHasNextPage = false;
     renderSessions();
-    syncSelect();
     return;
   }
 
+  let sessions;
   if (Array.isArray(res.body)) {
-    state.overviewSessions = res.body;
+    sessions = res.body;
   } else if (Array.isArray(res.body?.sessions)) {
-    state.overviewSessions = res.body.sessions;
+    sessions = res.body.sessions;
   } else if (Array.isArray(res.body?.items)) {
-    state.overviewSessions = res.body.items;
+    sessions = res.body.items;
   } else {
-    state.overviewSessions = [];
+    sessions = [];
   }
 
+  if (!sessions.length && state.overviewSessionsPage > 0) {
+    state.overviewSessionsPage -= 1;
+    return loadSessions();
+  }
+
+  state.overviewSessionsHasNextPage = sessions.length > pageSize;
+  state.overviewSessionPageItems = sessions.slice(0, pageSize);
+  if (state.overviewSessionsPage === 0 && state.overviewSessionsFilter === "all") {
+    state.overviewSessions = state.overviewSessionPageItems;
+    syncSelect();
+  }
   renderSessions();
-  syncSelect();
 }
 
 export function renderSessions() {
@@ -42,18 +65,20 @@ export function renderSessions() {
   const count = document.getElementById("overview-sessions-count");
   if (!wrap || !count) return;
 
-  const filtered = state.overviewSessionsFilter === "all"
-    ? state.overviewSessions
-    : state.overviewSessions.filter((s) => s.status === state.overviewSessionsFilter);
+  const sessions = state.overviewSessionPageItems;
+  const pageStart = state.overviewSessionsPage * state.overviewSessionsPageSize;
 
-  count.textContent = String(state.overviewSessions.length);
+  count.textContent = sessions.length
+    ? `${pageStart + 1}–${pageStart + sessions.length}`
+    : "0";
+  renderSessionsPagination();
 
-  if (!filtered.length) {
+  if (!sessions.length) {
     wrap.innerHTML = `<div class="empty-inline">${escapeHtml(t("common.noSessions"))}</div>`;
     return;
   }
 
-  wrap.innerHTML = filtered
+  wrap.innerHTML = sessions
     .map((session) => {
       const id = session.session_id || session.id;
 
@@ -182,8 +207,47 @@ export function initSessionsFilter() {
     });
 
     state.overviewSessionsFilter = btn.getAttribute("data-session-filter");
-    renderSessions();
+    state.overviewSessionsPage = 0;
+    void loadSessions();
   });
+
+  const pageSize = document.getElementById("overview-sessions-page-size");
+  const previous = document.getElementById("overview-sessions-prev");
+  const next = document.getElementById("overview-sessions-next");
+
+  pageSize?.addEventListener("change", () => {
+    const value = Number(pageSize.value);
+    if (![20, 50, 100].includes(value)) return;
+    state.overviewSessionsPageSize = value;
+    state.overviewSessionsPage = 0;
+    void loadSessions();
+  });
+  previous?.addEventListener("click", () => {
+    if (state.overviewSessionsPage <= 0) return;
+    state.overviewSessionsPage -= 1;
+    void loadSessions();
+  });
+  next?.addEventListener("click", () => {
+    if (!state.overviewSessionsHasNextPage) return;
+    state.overviewSessionsPage += 1;
+    void loadSessions();
+  });
+}
+
+function renderSessionsPagination() {
+  const pageSize = document.getElementById("overview-sessions-page-size");
+  const previous = document.getElementById("overview-sessions-prev");
+  const next = document.getElementById("overview-sessions-next");
+  const label = document.getElementById("overview-sessions-page-label");
+
+  if (pageSize) pageSize.value = String(state.overviewSessionsPageSize);
+  if (previous) previous.disabled = state.overviewSessionsPage === 0;
+  if (next) next.disabled = !state.overviewSessionsHasNextPage;
+  if (label) {
+    label.textContent = t("lobby.sessionsPage", {
+      page: state.overviewSessionsPage + 1,
+    });
+  }
 }
 
 export function applyLatestSessionDefaults({ force = false } = {}) {

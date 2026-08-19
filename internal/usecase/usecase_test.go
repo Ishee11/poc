@@ -36,10 +36,14 @@ func (fakeTxManager) RunInTx(_ context.Context, fn func(tx Tx) error) error {
 }
 
 type fakeStatsRepo struct {
-	players []PlayerStat
+	players           []PlayerStat
+	lastSessionFilter *SessionStatsFilter
 }
 
-func (r fakeStatsRepo) ListSessions(_ Tx, _ SessionStatsFilter) ([]SessionStat, error) {
+func (r fakeStatsRepo) ListSessions(_ Tx, filter SessionStatsFilter) ([]SessionStat, error) {
+	if r.lastSessionFilter != nil {
+		*r.lastSessionFilter = filter
+	}
 	return nil, nil
 }
 
@@ -53,6 +57,26 @@ func (r fakeStatsRepo) GetPlayerOverall(_ Tx, _ entity.PlayerID, _ PlayerStatsFi
 
 func (r fakeStatsRepo) ListPlayerSessions(_ Tx, _ entity.PlayerID, _ PlayerStatsFilter) ([]PlayerSessionStat, error) {
 	return nil, nil
+}
+
+func TestGetStatsSessionsPaginationFilter(t *testing.T) {
+	var got SessionStatsFilter
+	uc := NewGetStatsSessionsUseCase(
+		fakeStatsRepo{lastSessionFilter: &got},
+		fakeTxManager{},
+	)
+
+	_, err := uc.Execute(context.Background(), GetStatsSessionsQuery{
+		Limit:  51,
+		Offset: 100,
+		Status: entity.StatusFinished,
+	})
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if got.Limit != 51 || got.Offset != 100 || got.Status != entity.StatusFinished {
+		t.Fatalf("unexpected session filter: %+v", got)
+	}
 }
 
 type sequenceSessionIDGen struct{ next entity.SessionID }

@@ -145,9 +145,12 @@ export function getSession(sessionId) {
   return request(`/sessions?session_id=${sessionId}`);
 }
 
-export function getSessions({ guestPlayerId } = {}) {
+export function getSessions({ guestPlayerId, limit, offset, status } = {}) {
   const params = new URLSearchParams();
   if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+  if (status && status !== "all") params.set("status", status);
 
   const suffix = params.toString() ? `?${params.toString()}` : "";
   return request(`/stats/sessions${suffix}`);

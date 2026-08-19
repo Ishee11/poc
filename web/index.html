@@ -454,6 +454,21 @@
                             >
                         </div>
                         <div id="overview-sessions-wrap"></div>
+                        <div class="sessions-pagination" id="overview-sessions-pagination">
+                            <label class="sessions-page-size">
+                                <span data-i18n="lobby.sessionsPerPage">На странице</span>
+                                <select id="overview-sessions-page-size">
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
+                            <div class="sessions-page-nav">
+                                <button type="button" class="secondary" id="overview-sessions-prev" data-i18n="common.previous">Назад</button>
+                                <span id="overview-sessions-page-label">Страница 1</span>
+                                <button type="button" class="secondary" id="overview-sessions-next" data-i18n="common.next">Вперёд</button>
+                            </div>
+                        </div>
                     </details>
 
                     <details

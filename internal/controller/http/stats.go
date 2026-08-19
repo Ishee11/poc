@@ -17,6 +17,8 @@ import (
 // @Accept json
 // @Produce json
 // @Param limit query int false "Limit (default 20)"
+// @Param offset query int false "Offset (default 0)"
+// @Param status query string false "Session status (active or finished)"
 // @Param from query string false "From date (RFC3339 or YYYY-MM-DD)"
 // @Param to query string false "To date (RFC3339 or YYYY-MM-DD)"
 // @Success 200 {array} usecase.SessionStat
@@ -33,6 +35,15 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		limit = 0
 	}
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil {
+		offset = 0
+	}
+	status := entity.Status(r.URL.Query().Get("status"))
+	if status != "" && status != entity.StatusActive && status != entity.StatusFinished {
+		writeErr(w, r, http.StatusBadRequest, "invalid_session_status", nil)
+		return
+	}
 
 	viewer, err := h.currentStatsViewer(r)
 	if err != nil {
@@ -48,6 +59,8 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 
 	res, err := h.getStatsSessionsUC.Execute(r.Context(), usecase.GetStatsSessionsQuery{
 		Limit:         limit,
+		Offset:        offset,
+		Status:        status,
 		From:          from,
 		To:            to,
 		ViewerUserID:  viewerUserID,
