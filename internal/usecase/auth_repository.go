@@ -35,3 +35,13 @@ type UserPlayerLinkRepository interface {
 	IsPlayerLinkedToUser(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) (bool, error)
 	ListUnlinkedPlayers(tx Tx, limit int, offset int) ([]AvailablePlayerDTO, error)
 }
+
+type AdminAccountOwnershipRepository interface {
+	ListAccounts(tx Tx, query string, limit int, offset int) ([]AccountOwnershipDTO, int64, error)
+	LockUser(tx Tx, userID entity.AuthUserID) error
+	LockPlayer(tx Tx, playerID entity.PlayerID) error
+	FindUserPlayer(tx Tx, userID entity.AuthUserID) (*PlayerDTO, error)
+	FindPlayerOwner(tx Tx, playerID entity.PlayerID) (*entity.AuthUserID, error)
+	LinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
+	UnlinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
+}

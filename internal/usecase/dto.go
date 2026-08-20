@@ -41,6 +41,27 @@ type AvailablePlayerDTO struct {
 	LastPlayedAt  *time.Time      `json:"last_played_at"`
 }
 
+type AccountOwnershipDTO struct {
+	ID     entity.AuthUserID     `json:"id"`
+	Email  string                `json:"email"`
+	Role   entity.AuthRole       `json:"role"`
+	Status entity.AuthUserStatus `json:"status"`
+	Player *PlayerDTO            `json:"player"`
+}
+
+type AdminAccountList struct {
+	Accounts []AccountOwnershipDTO `json:"accounts"`
+	Total    int64                 `json:"total"`
+	Limit    int                   `json:"limit"`
+	Offset   int                   `json:"offset"`
+}
+
+type OwnershipChange struct {
+	TargetUserID entity.AuthUserID
+	OldPlayerID  *entity.PlayerID
+	NewPlayerID  *entity.PlayerID
+}
+
 type OperationAcknowledgement struct {
 	RequestID         string                     `json:"request_id"`
 	OperationID       entity.OperationID         `json:"operation_id"`

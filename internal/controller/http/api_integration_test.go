@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/ishee11/poc/internal/app"
+	"github.com/ishee11/poc/internal/infra"
 	postgres "github.com/ishee11/poc/internal/infra/postgres"
 )
 
@@ -109,6 +110,35 @@ func requestJSONWithCookie(t *testing.T, handler http.Handler, method string, pa
 	return rec
 }
 
+func saveLoginUser(t *testing.T, pool *pgxpool.Pool, id string, email string, role string, password string) {
+	t.Helper()
+	hash, err := (infra.Argon2IDPasswordHasher{}).HashPassword(password)
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO users (id, email, password_hash, role, status)
+		VALUES ($1, $2, $3, $4, 'active')
+	`, id, email, hash, role); err != nil {
+		t.Fatalf("save login user: %v", err)
+	}
+}
+
+func loginCookie(t *testing.T, handler http.Handler, email string, password string) *http.Cookie {
+	t.Helper()
+	login := requestJSON(t, handler, http.MethodPost, "/auth/login", map[string]any{
+		"email": email, "password": password,
+	})
+	if login.Code != http.StatusOK {
+		t.Fatalf("login status=%d body=%s", login.Code, login.Body.String())
+	}
+	cookies := login.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("login did not return a cookie")
+	}
+	return cookies[0]
+}
+
 func TestAPIIntegration_RegistrationEstablishesSingularOwnership(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)
@@ -191,6 +221,64 @@ func TestAPIIntegration_RegistrationCreatesPlayerAndRollsBackInvalidSelection(t 
 	}
 	if users != 1 || players != 1 || links != 1 {
 		t.Fatalf("registration was not atomic: users=%d players=%d links=%d", users, players, links)
+	}
+}
+
+func TestAPIIntegration_AdminAccountOwnershipManagement(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveLoginUser(t, pool, "admin-1", "admin@example.com", "admin", "admin-password")
+	saveLoginUser(t, pool, "user-1", "user@example.com", "user", "user-password")
+	saveLoginUser(t, pool, "target-1", "target@example.com", "user", "target-password")
+	saveLoginUser(t, pool, "other-1", "other@example.com", "user", "other-password")
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO players (id, name) VALUES ('player-free', 'Free'), ('player-owned', 'Owned');
+		INSERT INTO user_players (user_id, player_id) VALUES ('other-1', 'player-owned')
+	`); err != nil {
+		t.Fatalf("prepare ownership: %v", err)
+	}
+	handler := ownershipTestHandler(pool)
+
+	unauthorized := requestJSON(t, handler, http.MethodGet, "/admin/accounts", nil)
+	if unauthorized.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthorized list status=%d body=%s", unauthorized.Code, unauthorized.Body.String())
+	}
+	userCookie := loginCookie(t, handler, "user@example.com", "user-password")
+	forbidden := requestJSONWithCookie(t, handler, http.MethodGet, "/admin/accounts", nil, userCookie)
+	if forbidden.Code != http.StatusForbidden {
+		t.Fatalf("forbidden list status=%d body=%s", forbidden.Code, forbidden.Body.String())
+	}
+
+	adminCookie := loginCookie(t, handler, "admin@example.com", "admin-password")
+	list := requestJSONWithCookie(t, handler, http.MethodGet, "/admin/accounts?query=target&limit=10&offset=0", nil, adminCookie)
+	if list.Code != http.StatusOK || !strings.Contains(list.Body.String(), `"total":1`) || !strings.Contains(list.Body.String(), `"player":null`) {
+		t.Fatalf("admin list status=%d body=%s", list.Code, list.Body.String())
+	}
+
+	assign := requestJSONWithCookie(t, handler, http.MethodPut, "/admin/accounts/target-1/player", map[string]any{"player_id": "player-free"}, adminCookie)
+	if assign.Code != http.StatusNoContent {
+		t.Fatalf("assign status=%d body=%s", assign.Code, assign.Body.String())
+	}
+	idempotent := requestJSONWithCookie(t, handler, http.MethodPut, "/admin/accounts/target-1/player", map[string]any{"player_id": "player-free"}, adminCookie)
+	if idempotent.Code != http.StatusNoContent {
+		t.Fatalf("idempotent assign status=%d body=%s", idempotent.Code, idempotent.Body.String())
+	}
+	conflict := requestJSONWithCookie(t, handler, http.MethodPut, "/admin/accounts/target-1/player", map[string]any{"player_id": "player-owned"}, adminCookie)
+	if conflict.Code != http.StatusConflict || !strings.Contains(conflict.Body.String(), "player_already_linked") {
+		t.Fatalf("occupied-player status=%d body=%s", conflict.Code, conflict.Body.String())
+	}
+
+	clear := requestJSONWithCookie(t, handler, http.MethodDelete, "/admin/accounts/target-1/player", nil, adminCookie)
+	if clear.Code != http.StatusNoContent {
+		t.Fatalf("clear status=%d body=%s", clear.Code, clear.Body.String())
+	}
+	clearAgain := requestJSONWithCookie(t, handler, http.MethodDelete, "/admin/accounts/target-1/player", nil, adminCookie)
+	if clearAgain.Code != http.StatusNoContent {
+		t.Fatalf("idempotent clear status=%d body=%s", clearAgain.Code, clearAgain.Body.String())
+	}
+	unknown := requestJSONWithCookie(t, handler, http.MethodDelete, "/admin/accounts/missing/player", nil, adminCookie)
+	if unknown.Code != http.StatusNotFound || !strings.Contains(unknown.Body.String(), "account_not_found") {
+		t.Fatalf("unknown account status=%d body=%s", unknown.Code, unknown.Body.String())
 	}
 }
 

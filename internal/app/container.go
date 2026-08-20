@@ -237,6 +237,10 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		playerIDGen,
 		txManager,
 	)
+	adminAccountOwnershipUC := usecase.NewAdminAccountOwnershipService(
+		userPlayerLinkRepo,
+		txManager,
+	)
 	blindClockUC := usecase.NewBlindClockService(
 		blindClockRepo,
 		txManager,
@@ -309,6 +313,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		deleteAdminPlayerUC,
 		deleteAdminSessionUC,
 		deleteAdminSessionFinishUC,
+		adminAccountOwnershipUC,
 	)
 
 	// ===== Router =====

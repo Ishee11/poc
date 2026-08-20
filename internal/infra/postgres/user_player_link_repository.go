@@ -50,6 +50,105 @@ func (r *UserPlayerLinkRepository) FindUserPlayer(
 	return &player, nil
 }
 
+func (r *UserPlayerLinkRepository) FindPlayerOwner(
+	tx usecase.Tx,
+	playerID entity.PlayerID,
+) (*entity.AuthUserID, error) {
+	var userID entity.AuthUserID
+	err := tx.QueryRow(context.Background(), `
+		SELECT user_id
+		FROM user_players
+		WHERE player_id = $1
+	`, playerID).Scan(&userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &userID, nil
+}
+
+func (r *UserPlayerLinkRepository) LockUser(tx usecase.Tx, userID entity.AuthUserID) error {
+	var lockedID entity.AuthUserID
+	err := tx.QueryRow(context.Background(), `
+		SELECT id FROM users WHERE id = $1 FOR UPDATE
+	`, userID).Scan(&lockedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return entity.ErrAuthUserNotFound
+	}
+	return err
+}
+
+func (r *UserPlayerLinkRepository) LockPlayer(tx usecase.Tx, playerID entity.PlayerID) error {
+	var lockedID entity.PlayerID
+	err := tx.QueryRow(context.Background(), `
+		SELECT id FROM players WHERE id = $1 FOR UPDATE
+	`, playerID).Scan(&lockedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return entity.ErrPlayerNotFound
+	}
+	return err
+}
+
+func (r *UserPlayerLinkRepository) ListAccounts(
+	tx usecase.Tx,
+	query string,
+	limit int,
+	offset int,
+) ([]usecase.AccountOwnershipDTO, int64, error) {
+	pattern := "%" + query + "%"
+	var total int64
+	if err := tx.QueryRow(context.Background(), `
+		SELECT COUNT(*)
+		FROM users u
+		LEFT JOIN user_players up ON up.user_id = u.id
+		LEFT JOIN players p ON p.id = up.player_id
+		WHERE $1 = '' OR u.email ILIKE $2 OR p.name ILIKE $2
+	`, query, pattern).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := tx.Query(context.Background(), `
+		SELECT u.id, u.email, u.role, u.status, p.id, p.name
+		FROM users u
+		LEFT JOIN user_players up ON up.user_id = u.id
+		LEFT JOIN players p ON p.id = up.player_id
+		WHERE $1 = '' OR u.email ILIKE $2 OR p.name ILIKE $2
+		ORDER BY u.email ASC, u.id ASC
+		LIMIT $3 OFFSET $4
+	`, query, pattern, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	accounts := make([]usecase.AccountOwnershipDTO, 0)
+	for rows.Next() {
+		var account usecase.AccountOwnershipDTO
+		var playerID *entity.PlayerID
+		var playerName *string
+		if err := rows.Scan(
+			&account.ID,
+			&account.Email,
+			&account.Role,
+			&account.Status,
+			&playerID,
+			&playerName,
+		); err != nil {
+			return nil, 0, err
+		}
+		if playerID != nil && playerName != nil {
+			account.Player = &usecase.PlayerDTO{ID: *playerID, Name: *playerName}
+		}
+		accounts = append(accounts, account)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return accounts, total, nil
+}
+
 func (r *UserPlayerLinkRepository) UnlinkPlayer(
 	tx usecase.Tx,
 	userID entity.AuthUserID,

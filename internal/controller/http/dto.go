@@ -156,6 +156,10 @@ type SelectAccountPlayerRequest struct {
 	Name     string `json:"name,omitempty"`
 }
 
+type AdminReplaceAccountPlayerRequest struct {
+	PlayerID string `json:"player_id"`
+}
+
 type UpdateBlindClockLevelsRequest struct {
 	Levels []BlindClockLevelRequest `json:"levels"`
 }

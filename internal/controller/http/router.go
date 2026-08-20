@@ -114,6 +114,8 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/admin/session", h.Admin.DeleteSession)
 	mux.HandleFunc("/admin/session/config", h.Admin.UpdateSessionConfig)
 	mux.HandleFunc("/admin/session/finish", h.Admin.DeleteSessionFinish)
+	mux.HandleFunc("/admin/accounts", h.Admin.Accounts)
+	mux.HandleFunc("/admin/accounts/", h.Admin.AccountPlayer)
 
 	// ===== MIDDLEWARE =====
 	var handler http.Handler = mux
