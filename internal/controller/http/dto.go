@@ -1,6 +1,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
 )
@@ -97,8 +99,14 @@ type LoginRequest struct {
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string                  `json:"email"`
+	Password string                  `json:"password"`
+	Player   usecase.PlayerSelection `json:"player"`
+}
+
+type AuthConfigResponse struct {
+	Enabled          bool `json:"enabled"`
+	OpenRegistration bool `json:"open_registration"`
 }
 
 type AuthUserResponse struct {
@@ -117,8 +125,10 @@ type MeResponse struct {
 }
 
 type AccountResponse struct {
-	User    AuthUserResponse `json:"user"`
-	Players []PlayerDTO      `json:"players"`
+	User               AuthUserResponse `json:"user"`
+	Player             *PlayerDTO       `json:"player"`
+	OnboardingRequired bool             `json:"onboarding_required"`
+	Players            []PlayerDTO      `json:"players"`
 }
 
 type PlayerDTO struct {
@@ -130,7 +140,28 @@ type AccountPlayersResponse struct {
 	Players []PlayerDTO `json:"players"`
 }
 
+type AvailablePlayerDTO struct {
+	ID            entity.PlayerID `json:"player_id"`
+	Name          string          `json:"name"`
+	SessionsCount int64           `json:"sessions_count"`
+	LastPlayedAt  *time.Time      `json:"last_played_at"`
+}
+
+type AvailablePlayersResponse struct {
+	Players []AvailablePlayerDTO `json:"players"`
+}
+
 type LinkAccountPlayerRequest struct {
+	PlayerID string `json:"player_id"`
+}
+
+type SelectAccountPlayerRequest struct {
+	Mode     string `json:"mode"`
+	PlayerID string `json:"player_id,omitempty"`
+	Name     string `json:"name,omitempty"`
+}
+
+type AdminReplaceAccountPlayerRequest struct {
 	PlayerID string `json:"player_id"`
 }
 

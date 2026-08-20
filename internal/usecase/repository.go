@@ -96,6 +96,8 @@ type ProjectionRepository interface {
 
 type SessionStatsFilter struct {
 	Limit         int
+	Offset        int
+	Status        entity.Status
 	From          *DateTimeRangeBound
 	To            *DateTimeRangeBound
 	ViewerUserID  *entity.AuthUserID

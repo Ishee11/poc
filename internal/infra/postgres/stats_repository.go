@@ -29,6 +29,10 @@ func (r *StatsRepository) ListSessions(
 	if limit <= 0 {
 		limit = 20
 	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
 
 	rows, err := tx.Query(ctx, `
 		WITH effective_operations AS (
@@ -55,6 +59,7 @@ func (r *StatsRepository) ListSessions(
 		LEFT JOIN effective_operations eo ON eo.session_id = s.id
 		WHERE ($1::timestamp IS NULL OR s.created_at >= $1::timestamp)
 		  AND ($2::timestamp IS NULL OR s.created_at < $2::timestamp)
+		  AND ($7::text IS NULL OR s.status = $7::text)
 		  AND (
 			$6::boolean
 			OR
@@ -99,7 +104,8 @@ func (r *StatsRepository) ListSessions(
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
 		LIMIT $3
-	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
+		OFFSET $8
+	`, boundTime(filter.From), boundTime(filter.To), limit, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin, optionalSessionStatus(filter.Status), offset)
 	if err != nil {
 		return nil, err
 	}
@@ -481,6 +487,14 @@ func optionalPlayerID(id entity.PlayerID) *string {
 		return nil
 	}
 	value := string(id)
+	return &value
+}
+
+func optionalSessionStatus(status entity.Status) *string {
+	if status == "" {
+		return nil
+	}
+	value := string(status)
 	return &value
 }
 

@@ -235,7 +235,43 @@
                                 placeholder="Password"
                                 data-i18n-placeholder="auth.password"
                             />
-                            <button type="submit" data-i18n="auth.login">
+                            <input
+                                id="auth-password-confirm"
+                                type="password"
+                                autocomplete="new-password"
+                                placeholder="Confirm password"
+                                data-i18n-placeholder="auth.confirmPassword"
+                                hidden
+                            />
+                            <div
+                                id="auth-player-selection"
+                                class="ownership-selection auth-ownership-selection"
+                                hidden
+                            >
+                                <label>
+                                    <span data-i18n="ownership.mode">Player choice</span>
+                                    <select id="auth-player-mode">
+                                        <option value="existing" data-i18n="ownership.existing">Choose existing player</option>
+                                        <option value="new" data-i18n="ownership.new">Create new player</option>
+                                    </select>
+                                </label>
+                                <label id="auth-existing-player-field">
+                                    <span data-i18n="ownership.existingPlayer">Existing player</span>
+                                    <select id="auth-existing-player"></select>
+                                </label>
+                                <label id="auth-new-player-field" hidden>
+                                    <span data-i18n="ownership.newPlayerName">New player name</span>
+                                    <input id="auth-new-player-name" type="text" autocomplete="off" />
+                                </label>
+                                <p class="hint ownership-warning" data-i18n="ownership.irreversible">
+                                    This choice is permanent. Contact an administrator to correct it.
+                                </p>
+                            </div>
+                            <button
+                                type="submit"
+                                id="auth-submit-btn"
+                                data-i18n="auth.login"
+                            >
                                 Login
                             </button>
                             <div
@@ -243,7 +279,7 @@
                                 id="auth-register-row"
                                 hidden
                             >
-                                <span data-i18n="auth.noAccount"
+                                <span id="auth-mode-hint" data-i18n="auth.noAccount"
                                     >No account yet?</span
                                 >
                                 <button
@@ -253,6 +289,15 @@
                                     data-i18n="auth.register"
                                 >
                                     Register
+                                </button>
+                                <button
+                                    type="button"
+                                    class="secondary"
+                                    id="auth-login-mode-btn"
+                                    data-i18n="auth.haveAccount"
+                                    hidden
+                                >
+                                    Already have an account?
                                 </button>
                             </div>
                         </form>
@@ -454,6 +499,21 @@
                             >
                         </div>
                         <div id="overview-sessions-wrap"></div>
+                        <div class="sessions-pagination" id="overview-sessions-pagination">
+                            <label class="sessions-page-size">
+                                <span data-i18n="lobby.sessionsPerPage">На странице</span>
+                                <select id="overview-sessions-page-size">
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
+                            <div class="sessions-page-nav">
+                                <button type="button" class="secondary" id="overview-sessions-prev" data-i18n="common.previous">Назад</button>
+                                <span id="overview-sessions-page-label">Страница 1</span>
+                                <button type="button" class="secondary" id="overview-sessions-next" data-i18n="common.next">Вперёд</button>
+                            </div>
+                        </div>
                     </details>
 
                     <details
@@ -923,7 +983,7 @@
                         <div class="account-header">
                             <h2 data-i18n="account.title">Account</h2>
                             <span class="hint" data-i18n="account.hint"
-                                >Link any free player.</span
+                                >Your player identity is permanent.</span
                             >
                         </div>
                         <div
@@ -935,25 +995,58 @@
                             class="account-link-form"
                             onsubmit="return false;"
                         >
-                            <select
-                                id="account-player-select"
-                                data-i18n-aria-label="account.selectPlayer"
-                            >
-                                <option
-                                    value=""
-                                    data-i18n="account.selectPlayer"
-                                >
-                                    Select player
-                                </option>
-                            </select>
+                            <div class="ownership-selection">
+                                <label>
+                                    <span data-i18n="ownership.mode">Player choice</span>
+                                    <select id="account-player-mode">
+                                        <option value="existing" data-i18n="ownership.existing">Choose existing player</option>
+                                        <option value="new" data-i18n="ownership.new">Create new player</option>
+                                    </select>
+                                </label>
+                                <label id="account-existing-player-field">
+                                    <span data-i18n="ownership.existingPlayer">Existing player</span>
+                                    <select id="account-player-select" data-i18n-aria-label="account.selectPlayer"></select>
+                                </label>
+                                <label id="account-new-player-field" hidden>
+                                    <span data-i18n="ownership.newPlayerName">New player name</span>
+                                    <input id="account-new-player-name" type="text" autocomplete="off" />
+                                </label>
+                                <p class="hint ownership-warning" data-i18n="ownership.irreversible">
+                                    This choice is permanent. Contact an administrator to correct it.
+                                </p>
+                            </div>
                             <button
                                 type="submit"
                                 class="secondary"
-                                data-i18n="account.linkPlayer"
+                                data-i18n="account.claimPlayer"
                             >
-                                Link
+                                Confirm player
                             </button>
                         </form>
+                        <p id="account-admin-guidance" class="hint" data-i18n="account.adminGuidance" hidden>
+                            Only an administrator can correct player ownership.
+                        </p>
+                        <section id="admin-account-ownership" class="admin-ownership-panel" hidden>
+                            <h3 data-i18n="adminOwnership.title">Account ownership administration</h3>
+                            <form id="admin-account-search-form" class="admin-account-search" onsubmit="return false;">
+                                <input id="admin-account-query" type="search" data-i18n-placeholder="adminOwnership.search" />
+                                <button type="submit" class="secondary" data-i18n="adminOwnership.searchAction">Search</button>
+                            </form>
+                            <label>
+                                <span data-i18n="adminOwnership.account">Account</span>
+                                <select id="admin-account-select"></select>
+                            </label>
+                            <div id="admin-account-current" class="hint"></div>
+                            <label>
+                                <span data-i18n="adminOwnership.freePlayer">Free player</span>
+                                <select id="admin-account-player-select"></select>
+                            </label>
+                            <div class="actions">
+                                <button type="button" id="admin-account-replace" data-i18n="adminOwnership.replace">Replace ownership</button>
+                                <button type="button" id="admin-account-clear" class="danger" data-i18n="adminOwnership.clear">Clear ownership</button>
+                            </div>
+                            <div id="admin-account-empty" class="hint" hidden data-i18n="adminOwnership.empty">No accounts found.</div>
+                        </section>
                     </div>
                 </section>
 

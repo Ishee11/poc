@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -11,7 +12,7 @@ import (
 
 // Account godoc
 // @Summary Current account
-// @Description Returns the authenticated user and linked players.
+// @Description Returns the authenticated user, nullable singular player ownership, onboarding state, and transitional zero-or-one players mirror.
 // @Tags account
 // @Produce json
 // @Success 200 {object} AccountResponse
@@ -35,37 +36,65 @@ func (h *AccountHandler) Account(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	playerList := playerResponses(players)
+	var player *PlayerDTO
+	if len(playerList) > 0 {
+		player = &playerList[0]
+	}
 	writeJSON(w, http.StatusOK, AccountResponse{
-		User:    authUserResponse(*principal),
-		Players: playerResponses(players),
+		User:               authUserResponse(*principal),
+		Player:             player,
+		OnboardingRequired: player == nil,
+		Players:            playerList,
 	})
 }
 
-// Players godoc
-// @Summary Linked account players
-// @Description Links, unlinks, or lists players linked to the current user.
+// Player godoc
+// @Summary Establish current account player ownership
+// @Description Claims an unowned existing player or creates a new owned player. Ownership is write-once.
 // @Tags account
 // @Accept json
 // @Produce json
-// @Success 200 {object} AccountPlayersResponse
-// @Success 204
+// @Param request body SelectAccountPlayerRequest true "Player selection"
+// @Success 200 {object} AccountResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /account/player [put]
+func (h *AccountHandler) Player(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		w.Header().Set("Allow", http.MethodPut)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	h.choosePlayer(w, r, false)
+}
+
+// Players godoc
+// @Summary Transitional account player compatibility
+// @Description Lists the zero-or-one owned player or applies the legacy one-time existing-player claim alias. Self-service deletion is disabled.
+// @Tags account
+// @Accept json
+// @Produce json
+// @Success 200 {object} AccountResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /account/players [get]
 // @Router /account/players [post]
-// @Router /account/players [delete]
 func (h *AccountHandler) Players(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		h.ListPlayers(w, r)
 	case http.MethodPost:
-		h.LinkPlayer(w, r)
+		h.choosePlayer(w, r, true)
 	case http.MethodDelete:
-		h.UnlinkPlayer(w, r)
+		w.Header().Set("Allow", "GET, POST")
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 	default:
-		w.Header().Set("Allow", "GET, POST, DELETE")
+		w.Header().Set("Allow", "GET, POST")
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
 	}
 }
@@ -88,7 +117,7 @@ func (h *AccountHandler) ListPlayers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *AccountHandler) LinkPlayer(w http.ResponseWriter, r *http.Request) {
+func (h *AccountHandler) choosePlayer(w http.ResponseWriter, r *http.Request, legacy bool) {
 	defer r.Body.Close()
 
 	principal, err := h.currentPrincipal(r)
@@ -97,49 +126,45 @@ func (h *AccountHandler) LinkPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req LinkAccountPlayerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var selection usecase.PlayerSelection
+	if legacy {
+		var req LinkAccountPlayerRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
+			return
+		}
+		selection = usecase.PlayerSelection{
+			Mode:     usecase.PlayerSelectionExisting,
+			PlayerID: entity.PlayerID(req.PlayerID),
+		}
+	} else if err := json.NewDecoder(r.Body).Decode(&selection); err != nil {
 		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
-	if req.PlayerID == "" {
-		writeErr(w, r, http.StatusBadRequest, "invalid_player_id", nil)
-		return
-	}
 
-	if err := h.userPlayerLinksUC.LinkPlayer(r.Context(), usecase.LinkUserPlayerCommand{
-		UserID:   principal.UserID,
-		PlayerID: entity.PlayerID(req.PlayerID),
-	}); err != nil {
-		writeError(w, r, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *AccountHandler) UnlinkPlayer(w http.ResponseWriter, r *http.Request) {
-	principal, err := h.currentPrincipal(r)
+	player, err := h.userPlayerLinksUC.ChooseOrCreatePlayer(r.Context(), principal.UserID, selection)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
 
-	playerID := r.URL.Query().Get("player_id")
-	if playerID == "" {
-		writeErr(w, r, http.StatusBadRequest, "invalid_player_id", nil)
-		return
-	}
-
-	if err := h.userPlayerLinksUC.UnlinkPlayer(r.Context(), usecase.LinkUserPlayerCommand{
-		UserID:   principal.UserID,
-		PlayerID: entity.PlayerID(playerID),
-	}); err != nil {
-		writeError(w, r, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	slog.InfoContext(
+		r.Context(),
+		"account_player_ownership_changed",
+		"request_id", GetRequestID(r.Context()),
+		"operation", "self_claim",
+		"actor_user_id", principal.UserID,
+		"target_user_id", principal.UserID,
+		"old_player_id", "",
+		"new_player_id", player.ID,
+	)
+	playerResponse := PlayerDTO{ID: player.ID, Name: player.Name}
+	writeJSON(w, http.StatusOK, AccountResponse{
+		User:               authUserResponse(*principal),
+		Player:             &playerResponse,
+		OnboardingRequired: false,
+		Players:            []PlayerDTO{playerResponse},
+	})
 }
 
 // AvailablePlayers godoc
@@ -147,7 +172,7 @@ func (h *AccountHandler) UnlinkPlayer(w http.ResponseWriter, r *http.Request) {
 // @Description Returns players that are not linked to any user.
 // @Tags account
 // @Produce json
-// @Success 200 {object} AccountPlayersResponse
+// @Success 200 {object} AvailablePlayersResponse
 // @Failure 401 {object} ErrorResponse
 // @Router /account/players/available [get]
 func (h *AccountHandler) AvailablePlayers(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +194,7 @@ func (h *AccountHandler) AvailablePlayers(w http.ResponseWriter, r *http.Request
 // @Description Returns players that are not linked to any user.
 // @Tags players
 // @Produce json
-// @Success 200 {object} AccountPlayersResponse
+// @Success 200 {object} AvailablePlayersResponse
 // @Router /players/unlinked [get]
 func (h *AccountHandler) PublicAvailablePlayers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -200,8 +225,8 @@ func (h *AccountHandler) writeAvailablePlayers(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeJSON(w, http.StatusOK, AccountPlayersResponse{
-		Players: playerResponses(players),
+	writeJSON(w, http.StatusOK, AvailablePlayersResponse{
+		Players: availablePlayerResponses(players),
 	})
 }
 
@@ -220,6 +245,19 @@ func playerResponses(players []usecase.PlayerDTO) []PlayerDTO {
 		result = append(result, PlayerDTO{
 			ID:   player.ID,
 			Name: player.Name,
+		})
+	}
+	return result
+}
+
+func availablePlayerResponses(players []usecase.AvailablePlayerDTO) []AvailablePlayerDTO {
+	result := make([]AvailablePlayerDTO, 0, len(players))
+	for _, player := range players {
+		result = append(result, AvailablePlayerDTO{
+			ID:            player.ID,
+			Name:          player.Name,
+			SessionsCount: player.SessionsCount,
+			LastPlayedAt:  player.LastPlayedAt,
 		})
 	}
 	return result

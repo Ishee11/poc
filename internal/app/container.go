@@ -227,10 +227,18 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		infra.UUIDAuthUserIDGenerator{},
 		passwordHasher,
 		usecase.SystemClock{},
+		userPlayerLinkRepo,
+		playerRepo,
+		playerIDGen,
 	)
 	userPlayerLinksUC := usecase.NewUserPlayerLinksUseCase(
 		userPlayerLinkRepo,
 		playerRepo,
+		playerIDGen,
+		txManager,
+	)
+	adminAccountOwnershipUC := usecase.NewAdminAccountOwnershipService(
+		userPlayerLinkRepo,
 		txManager,
 	)
 	blindClockUC := usecase.NewBlindClockService(
@@ -305,6 +313,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		deleteAdminPlayerUC,
 		deleteAdminSessionUC,
 		deleteAdminSessionFinishUC,
+		adminAccountOwnershipUC,
 	)
 
 	// ===== Router =====

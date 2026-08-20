@@ -7,6 +7,14 @@ definitions:
     x-enum-varnames:
     - AuthRoleAdmin
     - AuthRoleUser
+  entity.AuthUserStatus:
+    enum:
+    - active
+    - disabled
+    type: string
+    x-enum-varnames:
+    - AuthUserStatusActive
+    - AuthUserStatusDisabled
   entity.Currency:
     enum:
     - RUB
@@ -33,21 +41,30 @@ definitions:
     x-enum-varnames:
     - StatusActive
     - StatusFinished
-  http.AccountPlayersResponse:
-    properties:
-      players:
-        items:
-          $ref: '#/definitions/http.PlayerDTO'
-        type: array
-    type: object
   http.AccountResponse:
     properties:
+      onboarding_required:
+        type: boolean
+      player:
+        $ref: '#/definitions/http.PlayerDTO'
       players:
         items:
           $ref: '#/definitions/http.PlayerDTO'
         type: array
       user:
         $ref: '#/definitions/http.AuthUserResponse'
+    type: object
+  http.AdminReplaceAccountPlayerRequest:
+    properties:
+      player_id:
+        type: string
+    type: object
+  http.AuthConfigResponse:
+    properties:
+      enabled:
+        type: boolean
+      open_registration:
+        type: boolean
     type: object
   http.AuthUserResponse:
     properties:
@@ -57,6 +74,24 @@ definitions:
         type: string
       role:
         $ref: '#/definitions/entity.AuthRole'
+    type: object
+  http.AvailablePlayerDTO:
+    properties:
+      last_played_at:
+        type: string
+      name:
+        type: string
+      player_id:
+        type: string
+      sessions_count:
+        type: integer
+    type: object
+  http.AvailablePlayersResponse:
+    properties:
+      players:
+        items:
+          $ref: '#/definitions/http.AvailablePlayerDTO'
+        type: array
     type: object
   http.BuyInRequest:
     properties:
@@ -173,6 +208,8 @@ definitions:
         type: string
       password:
         type: string
+      player:
+        $ref: '#/definitions/usecase.PlayerSelection'
     type: object
   http.ReverseOperationRequest:
     properties:
@@ -183,6 +220,15 @@ definitions:
         example: op-456
         type: string
     type: object
+  http.SelectAccountPlayerRequest:
+    properties:
+      mode:
+        type: string
+      name:
+        type: string
+      player_id:
+        type: string
+    type: object
   http.StartSessionRequest:
     properties:
       big_blind:
@@ -191,6 +237,32 @@ definitions:
         type: integer
       currency:
         type: string
+    type: object
+  usecase.AccountOwnershipDTO:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      player:
+        $ref: '#/definitions/usecase.PlayerDTO'
+      role:
+        $ref: '#/definitions/entity.AuthRole'
+      status:
+        $ref: '#/definitions/entity.AuthUserStatus'
+    type: object
+  usecase.AdminAccountList:
+    properties:
+      accounts:
+        items:
+          $ref: '#/definitions/usecase.AccountOwnershipDTO'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
     type: object
   usecase.GetSessionResponse:
     properties:
@@ -313,6 +385,15 @@ definitions:
       label:
         type: string
     type: object
+  usecase.PlayerSelection:
+    properties:
+      mode:
+        type: string
+      name:
+        type: string
+      player_id:
+        type: string
+    type: object
   usecase.PlayerStat:
     properties:
       avg_buy_in_money_per_session:
@@ -370,7 +451,8 @@ info:
 paths:
   /account:
     get:
-      description: Returns the authenticated user and linked players.
+      description: Returns the authenticated user, nullable singular player ownership,
+        onboarding state, and transitional zero-or-one players mirror.
       produces:
       - application/json
       responses:
@@ -385,20 +467,26 @@ paths:
       summary: Current account
       tags:
       - account
-  /account/players:
-    delete:
+  /account/player:
+    put:
       consumes:
       - application/json
-      description: Links, unlinks, or lists players linked to the current user.
+      description: Claims an unowned existing player or creates a new owned player.
+        Ownership is write-once.
+      parameters:
+      - description: Player selection
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.SelectAccountPlayerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.AccountPlayersResponse'
-        "204":
-          description: No Content
+            $ref: '#/definitions/http.AccountResponse'
         "400":
           description: Bad Request
           schema:
@@ -415,22 +503,22 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/http.ErrorResponse'
-      summary: Linked account players
+      summary: Establish current account player ownership
       tags:
       - account
+  /account/players:
     get:
       consumes:
       - application/json
-      description: Links, unlinks, or lists players linked to the current user.
+      description: Lists the zero-or-one owned player or applies the legacy one-time
+        existing-player claim alias. Self-service deletion is disabled.
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.AccountPlayersResponse'
-        "204":
-          description: No Content
+            $ref: '#/definitions/http.AccountResponse'
         "400":
           description: Bad Request
           schema:
@@ -447,22 +535,21 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/http.ErrorResponse'
-      summary: Linked account players
+      summary: Transitional account player compatibility
       tags:
       - account
     post:
       consumes:
       - application/json
-      description: Links, unlinks, or lists players linked to the current user.
+      description: Lists the zero-or-one owned player or applies the legacy one-time
+        existing-player claim alias. Self-service deletion is disabled.
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.AccountPlayersResponse'
-        "204":
-          description: No Content
+            $ref: '#/definitions/http.AccountResponse'
         "400":
           description: Bad Request
           schema:
@@ -479,7 +566,7 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/http.ErrorResponse'
-      summary: Linked account players
+      summary: Transitional account player compatibility
       tags:
       - account
   /account/players/available:
@@ -491,7 +578,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.AccountPlayersResponse'
+            $ref: '#/definitions/http.AvailablePlayersResponse'
         "401":
           description: Unauthorized
           schema:
@@ -499,6 +586,131 @@ paths:
       summary: Unlinked players
       tags:
       - account
+  /admin/accounts:
+    get:
+      parameters:
+      - description: Email or player search
+        in: query
+        name: query
+        type: string
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/usecase.AdminAccountList'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: List account ownership
+      tags:
+      - admin
+  /admin/accounts/{user_id}/player:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Account ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Player assignment
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.AdminReplaceAccountPlayerRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Replace or clear account player ownership
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Account ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Player assignment
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.AdminReplaceAccountPlayerRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Replace or clear account player ownership
+      tags:
+      - admin
+  /auth/config:
+    get:
+      description: Reports whether login/account UI and open registration are enabled.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AuthConfigResponse'
+      summary: Public authentication configuration
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -771,7 +983,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.AccountPlayersResponse'
+            $ref: '#/definitions/http.AvailablePlayersResponse'
       summary: Unlinked players
       tags:
       - players
@@ -987,6 +1199,14 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Session status (active or finished)
+        in: query
+        name: status
+        type: string
       - description: From date (RFC3339 or YYYY-MM-DD)
         in: query
         name: from

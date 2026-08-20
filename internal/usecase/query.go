@@ -42,6 +42,8 @@ type GetStatsPlayersQuery struct {
 
 type GetStatsSessionsQuery struct {
 	Limit         int
+	Offset        int
+	Status        entity.Status
 	From          *DateTimeRangeBound
 	To            *DateTimeRangeBound
 	ViewerUserID  *entity.AuthUserID

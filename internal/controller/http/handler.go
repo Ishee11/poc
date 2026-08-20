@@ -66,6 +66,7 @@ func NewHandler(
 	deleteAdminPlayer *usecase.AdminDeletePlayerUseCase,
 	deleteAdminSession *usecase.AdminDeleteSessionUseCase,
 	deleteAdminSessionFinish *usecase.AdminDeleteSessionFinishUseCase,
+	adminAccountOwnership *usecase.AdminAccountOwnershipService,
 ) *Handler {
 
 	return &Handler{
@@ -118,6 +119,7 @@ func NewHandler(
 			deletePlayerUC:        deleteAdminPlayer,
 			deleteSessionUC:       deleteAdminSession,
 			deleteSessionFinishUC: deleteAdminSessionFinish,
+			accountOwnershipUC:    adminAccountOwnership,
 			authUC:                authUC,
 			cookie:                authCookie,
 		},
@@ -181,6 +183,7 @@ type AdminHandler struct {
 	deletePlayerUC        *usecase.AdminDeletePlayerUseCase
 	deleteSessionUC       *usecase.AdminDeleteSessionUseCase
 	deleteSessionFinishUC *usecase.AdminDeleteSessionFinishUseCase
+	accountOwnershipUC    *usecase.AdminAccountOwnershipService
 	authUC                *usecase.AuthService
 	cookie                AuthCookieConfig
 }

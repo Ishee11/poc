@@ -84,6 +84,12 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrPlayerAlreadyLinked):
 		return apiError{status: http.StatusConflict, code: "player_already_linked"}
 
+	case errors.Is(err, entity.ErrAccountAlreadyLinked):
+		return apiError{status: http.StatusConflict, code: "account_already_linked"}
+
+	case errors.Is(err, entity.ErrInvalidPlayerSelection):
+		return apiError{status: http.StatusBadRequest, code: "invalid_player_selection"}
+
 	case errors.Is(err, entity.ErrUserPlayerNotLinked):
 		return apiError{status: http.StatusNotFound, code: "user_player_not_linked"}
 
@@ -179,6 +185,9 @@ func mapError(err error) apiError {
 
 	case errors.Is(err, entity.ErrAuthUserAlreadyExists):
 		return apiError{status: http.StatusConflict, code: "user_already_exists"}
+
+	case errors.Is(err, entity.ErrAuthUserNotFound):
+		return apiError{status: http.StatusNotFound, code: "account_not_found"}
 
 	case errors.Is(err, entity.ErrInvalidAuthEmail):
 		return apiError{status: http.StatusBadRequest, code: "invalid_auth_email"}

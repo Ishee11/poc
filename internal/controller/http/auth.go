@@ -9,6 +9,25 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
+// Config godoc
+// @Summary Public authentication configuration
+// @Description Reports whether login/account UI and open registration are enabled.
+// @Tags auth
+// @Produce json
+// @Success 200 {object} AuthConfigResponse
+// @Router /auth/config [get]
+func (h *AuthHandler) Config(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, AuthConfigResponse{
+		Enabled:          h.cookie.Enabled,
+		OpenRegistration: true,
+	})
+}
+
 // Register godoc
 // @Summary Register
 // @Description Creates a regular user and sets an HttpOnly session cookie.
@@ -33,10 +52,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.registerUserUC.Execute(r.Context(), usecase.RegisterUserCommand{
+	registeredPlayer, err := h.registerUserUC.Execute(r.Context(), usecase.RegisterUserCommand{
 		Email:    req.Email,
 		Password: req.Password,
-	}); err != nil {
+		Player:   req.Player,
+	})
+	if err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -60,6 +81,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		"user_id", result.User.UserID,
 		"ip", clientIP(r),
 		"user_agent", r.UserAgent(),
+	)
+	slog.InfoContext(
+		r.Context(),
+		"account_player_ownership_changed",
+		"request_id", GetRequestID(r.Context()),
+		"operation", "register",
+		"actor_user_id", result.User.UserID,
+		"target_user_id", result.User.UserID,
+		"old_player_id", "",
+		"new_player_id", registeredPlayer.ID,
 	)
 
 	writeJSON(w, http.StatusOK, LoginResponse{

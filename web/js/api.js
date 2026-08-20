@@ -55,6 +55,10 @@ export function apiDelete(path, body, { requestId = rid(), timeoutMs } = {}) {
 
 // ===== auth =====
 
+export function getAuthConfig() {
+  return request("/auth/config");
+}
+
 export function login({ email, password }) {
   return request("/auth/login", {
     method: "POST",
@@ -62,10 +66,10 @@ export function login({ email, password }) {
   });
 }
 
-export function register({ email, password }) {
-  return request("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ email, password, request_id: rid() }),
+export function register({ email, password, player }) {
+	return request("/auth/register", {
+		method: "POST",
+		body: JSON.stringify({ email, password, player, request_id: rid() }),
   });
 }
 
@@ -95,19 +99,30 @@ export function getAccountAvailablePlayers({ limit, offset } = {}) {
   return request(`/account/players/available${suffix}`);
 }
 
-export function linkAccountPlayer(playerId) {
-  return request("/account/players", {
-    method: "POST",
-    body: JSON.stringify({ player_id: playerId, request_id: rid() }),
-  });
+export function selectAccountPlayer(player) {
+	return request("/account/player", {
+		method: "PUT",
+		body: JSON.stringify({ ...player, request_id: rid() }),
+	});
 }
 
-export function unlinkAccountPlayer(playerId) {
-  const params = new URLSearchParams({ player_id: playerId });
-  return request(`/account/players?${params.toString()}`, {
-    method: "DELETE",
-    body: JSON.stringify({ request_id: rid() }),
-  });
+export function getAdminAccounts({ query = "", limit = 50, offset = 0 } = {}) {
+	const params = new URLSearchParams({ query, limit: String(limit), offset: String(offset) });
+	return request(`/admin/accounts?${params.toString()}`);
+}
+
+export function replaceAdminAccountPlayer(userId, playerId) {
+	return request(`/admin/accounts/${encodeURIComponent(userId)}/player`, {
+		method: "PUT",
+		body: JSON.stringify({ player_id: playerId, request_id: rid() }),
+	});
+}
+
+export function clearAdminAccountPlayer(userId) {
+	return request(`/admin/accounts/${encodeURIComponent(userId)}/player`, {
+		method: "DELETE",
+		body: JSON.stringify({ request_id: rid() }),
+	});
 }
 
 // ===== utils =====
@@ -145,9 +160,12 @@ export function getSession(sessionId) {
   return request(`/sessions?session_id=${sessionId}`);
 }
 
-export function getSessions({ guestPlayerId } = {}) {
+export function getSessions({ guestPlayerId, limit, offset, status } = {}) {
   const params = new URLSearchParams();
   if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
+  if (Number.isFinite(limit)) params.set("limit", String(limit));
+  if (Number.isFinite(offset)) params.set("offset", String(offset));
+  if (status && status !== "all") params.set("status", status);
 
   const suffix = params.toString() ? `?${params.toString()}` : "";
   return request(`/stats/sessions${suffix}`);

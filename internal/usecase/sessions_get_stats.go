@@ -21,6 +21,12 @@ func (uc *GetStatsSessionsUseCase) Execute(ctx context.Context, q GetStatsSessio
 	if q.Limit <= 0 {
 		q.Limit = 20
 	}
+	if q.Limit > 101 {
+		q.Limit = 101
+	}
+	if q.Offset < 0 {
+		q.Offset = 0
+	}
 
 	var result []SessionStat
 
@@ -43,6 +49,8 @@ func (uc *GetStatsSessionsUseCase) execute(
 
 	return uc.statsRepo.ListSessions(tx, SessionStatsFilter{
 		Limit:         q.Limit,
+		Offset:        q.Offset,
+		Status:        q.Status,
 		From:          q.From,
 		To:            q.To,
 		ViewerUserID:  q.ViewerUserID,
