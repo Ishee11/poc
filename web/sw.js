@@ -13,10 +13,9 @@ self.addEventListener("install", (event) => {
             }
           }),
         );
-      }),
+      })
+      .then(() => self.skipWaiting()),
   );
-  // Deliberately do not call skipWaiting(): a new version activates after the
-  // previous worker releases its clients, avoiding a mixed shell mid-session.
 });
 
 self.addEventListener("activate", (event) => {
@@ -32,7 +31,8 @@ self.addEventListener("activate", (event) => {
             .map((name) => caches.delete(name)),
         ),
       )
-      .then(() => clients.claim()),
+      .then(() => clients.claim())
+      .then(() => refreshSafeShellClients()),
   );
 });
 
@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v4-2026-08-20-account-ownership";
+const SHELL_CACHE_VERSION = "v5-2026-08-20-immediate-activation";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -123,6 +123,18 @@ const OPTIONAL_SHELL_ASSETS = Object.freeze([
 
 function isKnownStaticAsset(pathname) {
   return pathname === "/manifest.webmanifest" || pathname.startsWith("/static/");
+}
+
+async function refreshSafeShellClients() {
+  const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  await Promise.all(
+    windowClients.map((client) => {
+      const url = new URL(client.url);
+      if (url.origin !== self.location.origin) return undefined;
+      if (url.pathname !== "/" && url.pathname !== "/account") return undefined;
+      return client.navigate(client.url);
+    }),
+  );
 }
 
 async function networkFirstNavigation(request) {

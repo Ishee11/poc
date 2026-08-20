@@ -9,6 +9,8 @@ const shellResponse = { source: "shell-cache" };
 const staticResponse = { source: "static-cache" };
 let openedCacheName = "";
 let clientsClaimed = false;
+let waitingSkipped = false;
+const navigatedClients = [];
 let fetchImpl = async () => ({ ok: true });
 
 const cache = {
@@ -25,6 +27,9 @@ const cache = {
 globalThis.self = {
   location: { origin: "https://poc.test" },
   registration: { showNotification: async () => {} },
+  async skipWaiting() {
+    waitingSkipped = true;
+  },
   addEventListener(type, listener) {
     listeners.set(type, listener);
   },
@@ -34,7 +39,20 @@ globalThis.clients = {
     clientsClaimed = true;
   },
   async matchAll() {
-    return [];
+    return [
+      {
+        url: "https://poc.test/",
+        async navigate(url) {
+          navigatedClients.push(url);
+        },
+      },
+      {
+        url: "https://poc.test/session/session-1",
+        async navigate(url) {
+          navigatedClients.push(url);
+        },
+      },
+    ];
   },
   async openWindow() {},
 };
@@ -89,7 +107,7 @@ function runFetch(request) {
 test("installs the versioned minimum shell without optional-asset failure", async () => {
   await runExtendable("install");
 
-  assert.equal(openedCacheName, "poker-session-control-shell-v4-2026-08-20-account-ownership");
+  assert.equal(openedCacheName, "poker-session-control-shell-v5-2026-08-20-immediate-activation");
   assert.ok(cachedRequiredAssets.includes("/"));
   assert.ok(cachedRequiredAssets.includes("/static/css/main.css"));
   assert.ok(cachedRequiredAssets.includes("/static/js/app.js"));
@@ -98,9 +116,10 @@ test("installs the versioned minimum shell without optional-asset failure", asyn
   assert.ok(cachedRequiredAssets.includes("/static/js/rollout.js"));
   assert.ok(cachedRequiredAssets.includes("/manifest.webmanifest"));
   assert.ok(cachedOptionalAssets.includes("/static/assets/poker-mark.png"));
+  assert.equal(waitingSkipped, true);
 });
 
-test("activation removes only obsolete application caches and claims clients", async () => {
+test("activation removes obsolete caches and refreshes only safe shell clients", async () => {
   await runExtendable("activate");
 
   assert.deepEqual(deletedCaches, [
@@ -108,6 +127,7 @@ test("activation removes only obsolete application caches and claims clients", a
     "poker-session-control-shell-v1-2026-08-04",
   ]);
   assert.equal(clientsClaimed, true);
+  assert.deepEqual(navigatedClients, ["https://poc.test/"]);
 });
 
 test("navigation is network-first with shell fallback", async () => {
