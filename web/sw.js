@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v3-2026-08-19";
+const SHELL_CACHE_VERSION = "v4-2026-08-20-account-ownership";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -87,6 +87,7 @@ const REQUIRED_SHELL_ASSETS = Object.freeze([
   "/manifest.webmanifest",
   "/static/css/main.css",
   "/static/js/app.js",
+  "/static/js/account-ownership-ui.js",
   "/static/js/api.js",
   "/static/js/i18n.js",
   "/static/js/network-contract.js",
