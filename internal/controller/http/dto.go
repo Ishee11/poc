@@ -104,6 +104,11 @@ type RegisterRequest struct {
 	Player   usecase.PlayerSelection `json:"player"`
 }
 
+type AuthConfigResponse struct {
+	Enabled          bool `json:"enabled"`
+	OpenRegistration bool `json:"open_registration"`
+}
+
 type AuthUserResponse struct {
 	ID    entity.AuthUserID `json:"id"`
 	Email string            `json:"email"`

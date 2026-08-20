@@ -43,6 +43,7 @@ func NewRouter(h *Handler) http.Handler {
 	mux.Handle("/metrics", MetricsHandler())
 
 	// ===== AUTH =====
+	mux.HandleFunc("/auth/config", h.Auth.Config)
 	mux.HandleFunc("/auth/register", h.Auth.Register)
 	mux.HandleFunc("/auth/login", h.Auth.Login)
 	mux.HandleFunc("/auth/logout", h.Auth.Logout)

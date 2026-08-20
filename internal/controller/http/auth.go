@@ -9,6 +9,25 @@ import (
 	"github.com/ishee11/poc/internal/usecase"
 )
 
+// Config godoc
+// @Summary Public authentication configuration
+// @Description Reports whether login/account UI and open registration are enabled.
+// @Tags auth
+// @Produce json
+// @Success 200 {object} AuthConfigResponse
+// @Router /auth/config [get]
+func (h *AuthHandler) Config(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, AuthConfigResponse{
+		Enabled:          h.cookie.Enabled,
+		OpenRegistration: true,
+	})
+}
+
 // Register godoc
 // @Summary Register
 // @Description Creates a regular user and sets an HttpOnly session cookie.

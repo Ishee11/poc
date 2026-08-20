@@ -1,18 +1,27 @@
 import {
-  buyIn,
-  cashOut,
-  getAccount,
-  getAccountAvailablePlayers,
+	buyIn,
+	cashOut,
+	clearAdminAccountPlayer,
+	getAccount,
+	getAccountAvailablePlayers,
+	getAdminAccounts,
+	getAuthConfig,
   getCurrentUser,
   getUnlinkedPlayers,
-  linkAccountPlayer,
-  login,
-  logout,
-  register,
+	login,
+	logout,
+	register,
+	replaceAdminAccountPlayer,
   reverseOperation,
-  startSession,
-  unlinkAccountPlayer,
+	startSession,
+	selectAccountPlayer,
 } from "./api.js";
+import {
+	accountRequiresOnboarding,
+	buildPlayerSelection,
+	ownershipConflictRequiresRefresh,
+	playerContext,
+} from "./account-ownership-ui.js";
 import { initI18n, onLanguageChange, setLanguage, t } from "./i18n.js";
 import {
   blockOutboxCommand,
@@ -129,6 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initI18n();
   registerAppShellServiceWorker();
   initializeLocalRuntime();
+  await loadAuthConfig();
   applyUiFeatureFlags();
   initPlayersSort();
   initPlayersOverviewFilters();
@@ -248,6 +258,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 });
+
+async function loadAuthConfig() {
+  const res = await getAuthConfig();
+  if (res.ok && typeof res.body?.enabled === "boolean") {
+    state.authUiEnabled = res.body.enabled;
+  }
+}
 
 function initializeLocalRuntime() {
   state.localRuntimeStatus = "initializing";
@@ -399,10 +416,13 @@ function initAuth() {
   const accountButton = document.getElementById("auth-account-btn");
   const logoutButton = document.getElementById("auth-logout-btn");
   const registerButton = document.getElementById("auth-register-btn");
+	const loginModeButton = document.getElementById("auth-login-mode-btn");
+	const playerMode = document.getElementById("auth-player-mode");
 
   if (showLoginButton) {
     showLoginButton.addEventListener("click", () => {
       state.authLoginOpen = true;
+      state.authMode = "login";
       renderAuthPanel();
       document.getElementById("auth-email")?.focus();
     });
@@ -414,27 +434,59 @@ function initAuth() {
 
       const email = document.getElementById("auth-email")?.value?.trim() || "";
       const password = document.getElementById("auth-password")?.value || "";
+      const passwordConfirm =
+        document.getElementById("auth-password-confirm")?.value || "";
+		const registering = state.authMode === "register";
       if (!email || !password) {
         showNotice(t("notice.authCredentialsRequired"), "error");
         return;
       }
+		if (registering && password !== passwordConfirm) {
+        showNotice(t("notice.authPasswordsMismatch"), "error");
+        return;
+		}
+		const player = registering
+			? buildPlayerSelection(
+				playerMode?.value,
+				document.getElementById("auth-existing-player")?.value,
+				document.getElementById("auth-new-player-name")?.value,
+			)
+			: null;
+		if (registering && !player) {
+			showNotice(t("notice.playerSelectionRequired"), "error");
+			return;
+		}
+		if (registering && !window.confirm(t("ownership.confirm"))) return;
 
-      const res = await login({ email, password });
+		const res = registering
+			? await register({ email, password, player })
+        : await login({ email, password });
       if (!res.ok || !res.body?.user) {
-        showNotice(describeError(res, t("error.loginFailed")), "error");
+        showNotice(
+          describeError(
+            res,
+            t(registering ? "error.registerFailed" : "error.loginFailed"),
+          ),
+          "error",
+        );
         return;
       }
 
       state.authUser = res.body.user;
       state.authChecked = true;
       state.authLoginOpen = false;
+      state.authMode = "login";
       form.reset();
       renderAuthPanel();
       renderAdminLoginFooter();
       syncAdminMode();
       await loadAccount();
+		if (state.accountOnboardingRequired) await openAccount({ replace: true });
       await resumeReplayAfterAuthentication();
-      showNotice(t("notice.loginSuccess"), "success");
+      showNotice(
+        t(registering ? "notice.registrationSuccess" : "notice.loginSuccess"),
+        "success",
+      );
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
   }
@@ -450,6 +502,7 @@ function initAuth() {
       state.authUser = null;
       state.authChecked = true;
       state.authLoginOpen = false;
+      state.authMode = "login";
       clearAccount();
       renderAuthPanel();
       renderAdminLoginFooter();
@@ -470,34 +523,53 @@ function initAuth() {
   }
 
   if (registerButton) {
-    registerButton.addEventListener("click", async () => {
-      const form = document.getElementById("auth-login-form");
-      const email = document.getElementById("auth-email")?.value?.trim() || "";
-      const password = document.getElementById("auth-password")?.value || "";
-      if (!email || !password) {
-        showNotice(t("notice.authCredentialsRequired"), "error");
-        return;
-      }
-
-      const res = await register({ email, password });
-      if (!res.ok || !res.body?.user) {
-        showNotice(describeError(res, t("error.registerFailed")), "error");
-        return;
-      }
-
-      state.authUser = res.body.user;
-      state.authChecked = true;
-      state.authLoginOpen = false;
-      form?.reset();
-      renderAuthPanel();
-      renderAdminLoginFooter();
-      syncAdminMode();
-      await loadAccount();
-      await resumeReplayAfterAuthentication();
-      showNotice(t("notice.registrationSuccess"), "success");
-      await Promise.all([loadSessions(), loadPlayersOverview()]);
+    registerButton.addEventListener("click", () => {
+		state.authMode = "register";
+		void loadRegistrationPlayers();
+		renderAuthPanel();
+      document.getElementById("auth-password")?.focus();
     });
   }
+
+  if (loginModeButton) {
+    loginModeButton.addEventListener("click", () => {
+      state.authMode = "login";
+      renderAuthPanel();
+      document.getElementById("auth-email")?.focus();
+    });
+	}
+
+	if (playerMode) {
+		playerMode.addEventListener("change", renderRegistrationOwnership);
+	}
+}
+
+async function loadRegistrationPlayers() {
+	state.registrationPlayersLoading = true;
+	renderRegistrationOwnership();
+	const res = await getUnlinkedPlayers({ limit: 200 });
+	state.registrationPlayersLoading = false;
+	state.registrationPlayers = res.ok && Array.isArray(res.body?.players) ? res.body.players : [];
+	renderRegistrationOwnership();
+	if (!res.ok) showNotice(describeError(res, t("error.failedLoadAvailablePlayers")), "error");
+}
+
+function renderRegistrationOwnership() {
+	const container = document.getElementById("auth-player-selection");
+	const mode = document.getElementById("auth-player-mode");
+	const existingField = document.getElementById("auth-existing-player-field");
+	const newField = document.getElementById("auth-new-player-field");
+	const existing = document.getElementById("auth-existing-player");
+	if (!container || !mode || !existingField || !newField || !existing) return;
+	const registering = state.authMode === "register";
+	container.hidden = !registering;
+	existingField.hidden = mode.value !== "existing";
+	newField.hidden = mode.value !== "new";
+	existing.disabled = state.registrationPlayersLoading;
+	existing.innerHTML = `
+		<option value="">${escapeHtml(t(state.registrationPlayersLoading ? "ownership.loading" : "account.selectPlayer"))}</option>
+		${state.registrationPlayers.map((player) => `<option value="${escapeHtml(playerId(player))}">${escapeHtml(playerContext(player))}</option>`).join("")}
+	`;
 }
 
 async function loadCurrentUser() {
@@ -509,6 +581,9 @@ async function loadCurrentUser() {
   syncAdminMode();
   if (state.authUser) {
     await loadAccount();
+	if (state.accountOnboardingRequired) {
+		await openAccount({ replace: true });
+	}
     await resumeReplayAfterAuthentication();
   } else {
     clearAccount();
@@ -521,6 +596,11 @@ function renderAuthPanel() {
   const form = document.getElementById("auth-login-form");
   const showLoginButton = document.getElementById("auth-show-login-btn");
   const registerRow = document.getElementById("auth-register-row");
+  const registerButton = document.getElementById("auth-register-btn");
+  const loginModeButton = document.getElementById("auth-login-mode-btn");
+  const confirmPassword = document.getElementById("auth-password-confirm");
+  const submitButton = document.getElementById("auth-submit-btn");
+  const modeHint = document.getElementById("auth-mode-hint");
   const userPanel = document.getElementById("auth-user-panel");
   const userName = document.getElementById("auth-user-name");
   const guestPlayerLabel = document.getElementById("guest-player-label");
@@ -536,6 +616,16 @@ function renderAuthPanel() {
   registerRow.hidden = Boolean(user) || !state.authLoginOpen;
   userPanel.hidden = !user;
   if (guestPlayerLabel) guestPlayerLabel.hidden = Boolean(user);
+
+  const registering = state.authMode === "register";
+  if (registerButton) registerButton.hidden = registering;
+  if (loginModeButton) loginModeButton.hidden = !registering;
+  if (modeHint) modeHint.hidden = registering;
+  if (confirmPassword) confirmPassword.hidden = !registering;
+	if (submitButton) {
+		submitButton.textContent = t(registering ? "auth.register" : "auth.login");
+	}
+	renderRegistrationOwnership();
 
   if (user) {
     userName.textContent = `${user.email} · ${user.role}`;
@@ -636,8 +726,8 @@ async function openAccount({ replace = false } = {}) {
     pushRoute(routeToAccount());
   }
 
-  if (state.authUser) {
-    await loadAccount();
+	if (state.authUser) {
+		await loadAccount();
   } else {
     clearAccount();
     renderAccountPanel();
@@ -648,50 +738,47 @@ function initAccountPanel() {
   if (!state.authUiEnabled) return;
 
   const form = document.getElementById("account-link-form");
-  const linked = document.getElementById("account-linked-players");
+	const mode = document.getElementById("account-player-mode");
+	const adminSearch = document.getElementById("admin-account-search-form");
+	const adminAccount = document.getElementById("admin-account-select");
+	const adminReplace = document.getElementById("admin-account-replace");
+	const adminClear = document.getElementById("admin-account-clear");
 
   if (form) {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-
-      const select = document.getElementById("account-player-select");
-      const playerId = select?.value || "";
-      if (!playerId) {
-        showNotice(t("notice.selectAccountPlayer"), "error");
+		const selection = buildPlayerSelection(
+			mode?.value,
+			document.getElementById("account-player-select")?.value,
+			document.getElementById("account-new-player-name")?.value,
+		);
+		if (!selection) {
+			showNotice(t("notice.playerSelectionRequired"), "error");
         return;
       }
+		if (!window.confirm(t("ownership.confirm"))) return;
 
-      const res = await linkAccountPlayer(playerId);
+		const res = await selectAccountPlayer(selection);
       if (!res.ok) {
-        showNotice(describeError(res, t("error.failedLinkPlayer")), "error");
+			showNotice(describeError(res, t("error.failedClaimPlayer")), "error");
+			if (ownershipConflictRequiresRefresh(res)) await loadAccount();
         return;
       }
 
-      showNotice(t("notice.accountPlayerLinked"), "success");
+		showNotice(t("notice.accountPlayerClaimed"), "success");
       await loadAccount();
       await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
   }
 
-  if (linked) {
-    linked.addEventListener("click", async (event) => {
-      if (!(event.target instanceof Element)) return;
-
-      const button = event.target.closest("[data-account-unlink-player]");
-      if (!button) return;
-
-      const playerId = button.dataset.accountUnlinkPlayer;
-      const res = await unlinkAccountPlayer(playerId);
-      if (!res.ok) {
-        showNotice(describeError(res, t("error.failedUnlinkPlayer")), "error");
-        return;
-      }
-
-      showNotice(t("notice.accountPlayerUnlinked"), "success");
-      await loadAccount();
-      await Promise.all([loadSessions(), loadPlayersOverview()]);
-    });
-  }
+	mode?.addEventListener("change", renderAccountPanel);
+	adminSearch?.addEventListener("submit", async () => {
+		state.adminAccountsQuery = document.getElementById("admin-account-query")?.value?.trim() || "";
+		await loadAdminAccounts();
+	});
+	adminAccount?.addEventListener("change", renderAdminOwnershipPanel);
+	adminReplace?.addEventListener("click", replaceAdminOwnership);
+	adminClear?.addEventListener("click", clearAdminOwnership);
 }
 
 async function loadAccount() {
@@ -708,7 +795,7 @@ async function loadAccount() {
   state.accountLoading = true;
   renderAccountPanel();
 
-  const [accountRes, availableRes] = await Promise.all([
+	const [accountRes, availableRes] = await Promise.all([
     getAccount(),
     getAccountAvailablePlayers({ limit: 200 }),
   ]);
@@ -722,13 +809,14 @@ async function loadAccount() {
     return;
   }
 
-  state.accountPlayers = Array.isArray(accountRes.body?.players)
-    ? accountRes.body.players
-    : [];
+	state.account = accountRes.body;
+	state.accountOnboardingRequired = accountRequiresOnboarding(accountRes.body);
+	state.accountPlayers = accountRes.body?.player ? [accountRes.body.player] : [];
   state.accountAvailablePlayers = availableRes.ok && Array.isArray(availableRes.body?.players)
     ? availableRes.body.players
     : [];
-  renderAccountPanel();
+	renderAccountPanel();
+	if (state.adminMode) await loadAdminAccounts();
 
   if (!availableRes.ok) {
     showNotice(describeError(availableRes, t("error.failedLoadAvailablePlayers")), "error");
@@ -736,6 +824,8 @@ async function loadAccount() {
 }
 
 function clearAccount() {
+	state.account = null;
+	state.accountOnboardingRequired = false;
   state.accountPlayers = [];
   state.accountAvailablePlayers = [];
   state.accountLoading = false;
@@ -746,8 +836,13 @@ function renderAccountPanel() {
   const panel = document.getElementById("account-panel");
   const linked = document.getElementById("account-linked-players");
   const select = document.getElementById("account-player-select");
-  const form = document.getElementById("account-link-form");
-  if (!panel || !linked || !select || !form) return;
+	const form = document.getElementById("account-link-form");
+	const mode = document.getElementById("account-player-mode");
+	const existingField = document.getElementById("account-existing-player-field");
+	const newField = document.getElementById("account-new-player-field");
+	const guidance = document.getElementById("account-admin-guidance");
+	const adminPanel = document.getElementById("admin-account-ownership");
+	if (!panel || !linked || !select || !form || !mode || !existingField || !newField) return;
 
   if (!state.authUiEnabled) {
     panel.hidden = true;
@@ -756,30 +851,25 @@ function renderAccountPanel() {
 
   const user = state.authUser;
   panel.hidden = false;
-  if (!user) {
+	if (!user) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loginRequired"))}</div>`;
-    form.hidden = true;
-    return;
-  }
+		form.hidden = true;
+		if (adminPanel) adminPanel.hidden = true;
+		return;
+	}
 
   if (state.accountLoading) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;
-  } else if (state.accountPlayers.length === 0) {
-    linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.noLinkedPlayers"))}</div>`;
+	} else if (!state.account?.player) {
+		linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.onboardingRequired"))}</div>`;
   } else {
-    linked.innerHTML = state.accountPlayers
-      .map(
-        (player) => {
-          const id = playerId(player);
-          return `
+		const player = state.account.player;
+		linked.innerHTML = `
           <div class="account-player-row">
-            <span>${escapeHtml(player.name)}</span>
-            <button type="button" class="secondary" data-account-unlink-player="${escapeHtml(id)}">${escapeHtml(t("account.unlinkPlayer"))}</button>
+			<strong>${escapeHtml(player.name)}</strong>
+			<span class="hint">${escapeHtml(playerId(player).slice(0, 8))}</span>
           </div>
         `;
-        },
-      )
-      .join("");
   }
 
   select.innerHTML = `
@@ -787,17 +877,82 @@ function renderAccountPanel() {
     ${state.accountAvailablePlayers
       .map((player) => {
         const id = playerId(player);
-        return `<option value="${escapeHtml(id)}">${escapeHtml(player.name)}</option>`;
+		return `<option value="${escapeHtml(id)}">${escapeHtml(playerContext(player))}</option>`;
       })
       .join("")}
   `;
-  form.hidden = state.accountLoading || state.accountAvailablePlayers.length === 0;
-  if (!state.accountLoading && state.accountAvailablePlayers.length === 0) {
+	existingField.hidden = mode.value !== "existing";
+	newField.hidden = mode.value !== "new";
+	form.hidden = state.accountLoading || Boolean(state.account?.player);
+	if (guidance) guidance.hidden = !state.account?.player;
+	if (!state.accountLoading && !state.account?.player && mode.value === "existing" && state.accountAvailablePlayers.length === 0) {
     linked.insertAdjacentHTML(
       "beforeend",
       `<div class="hint account-empty-hint">${escapeHtml(t("account.noAvailablePlayers"))}</div>`,
     );
-  }
+	}
+	if (adminPanel) adminPanel.hidden = !state.adminMode;
+	renderAdminOwnershipPanel();
+}
+
+async function loadAdminAccounts() {
+	if (!state.adminMode) return;
+	state.adminAccountsLoading = true;
+	renderAdminOwnershipPanel();
+	const res = await getAdminAccounts({ query: state.adminAccountsQuery, limit: 100 });
+	state.adminAccountsLoading = false;
+	state.adminAccounts = res.ok && Array.isArray(res.body?.accounts) ? res.body.accounts : [];
+	renderAdminOwnershipPanel();
+	if (!res.ok) showNotice(describeError(res, t("error.failedLoadAdminAccounts")), "error");
+}
+
+function renderAdminOwnershipPanel() {
+	const panel = document.getElementById("admin-account-ownership");
+	const accountSelect = document.getElementById("admin-account-select");
+	const playerSelect = document.getElementById("admin-account-player-select");
+	const current = document.getElementById("admin-account-current");
+	const empty = document.getElementById("admin-account-empty");
+	if (!panel || !accountSelect || !playerSelect || !current || !empty) return;
+	panel.hidden = !state.adminMode;
+	if (!state.adminMode) return;
+	const previous = accountSelect.value;
+	accountSelect.disabled = state.adminAccountsLoading;
+	accountSelect.innerHTML = state.adminAccounts.map((account) => `<option value="${escapeHtml(account.id)}">${escapeHtml(account.email)} · ${escapeHtml(account.player?.name || t("adminOwnership.unassigned"))}</option>`).join("");
+	if (state.adminAccounts.some((account) => account.id === previous)) accountSelect.value = previous;
+	const selected = state.adminAccounts.find((account) => account.id === accountSelect.value) || state.adminAccounts[0];
+	current.textContent = selected?.player ? t("adminOwnership.current", { player: selected.player.name }) : t("adminOwnership.unassigned");
+	playerSelect.innerHTML = `<option value="">${escapeHtml(t("account.selectPlayer"))}</option>${state.accountAvailablePlayers.map((player) => `<option value="${escapeHtml(playerId(player))}">${escapeHtml(playerContext(player))}</option>`).join("")}`;
+	empty.hidden = state.adminAccountsLoading || state.adminAccounts.length > 0;
+}
+
+async function replaceAdminOwnership() {
+	const userId = document.getElementById("admin-account-select")?.value || "";
+	const playerIdValue = document.getElementById("admin-account-player-select")?.value || "";
+	if (!userId || !playerIdValue) {
+		showNotice(t("notice.adminOwnershipSelectionRequired"), "error");
+		return;
+	}
+	if (!window.confirm(t("adminOwnership.confirmReplace"))) return;
+	const res = await replaceAdminAccountPlayer(userId, playerIdValue);
+	if (!res.ok) {
+		showNotice(describeError(res, t("error.failedReplaceOwnership")), "error");
+		if (ownershipConflictRequiresRefresh(res)) await Promise.all([loadAccount(), loadAdminAccounts()]);
+		return;
+	}
+	showNotice(t("notice.adminOwnershipReplaced"), "success");
+	await loadAccount();
+}
+
+async function clearAdminOwnership() {
+	const userId = document.getElementById("admin-account-select")?.value || "";
+	if (!userId || !window.confirm(t("adminOwnership.confirmClear"))) return;
+	const res = await clearAdminAccountPlayer(userId);
+	if (!res.ok) {
+		showNotice(describeError(res, t("error.failedClearOwnership")), "error");
+		return;
+	}
+	showNotice(t("notice.adminOwnershipCleared"), "success");
+	await loadAccount();
 }
 
 function initLanguageSelect() {
@@ -900,6 +1055,10 @@ function defaultStartNumber(field, fallback) {
 }
 
 async function openInitialRoute({ fromHistory = false } = {}) {
+	if (state.authUser && state.accountOnboardingRequired) {
+		await openAccount({ replace: true });
+		return;
+	}
   const [, section, rawId, subSection] = window.location.pathname.split("/");
   const id = rawId ? decodeURIComponent(rawId) : "";
 
