@@ -2,6 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
@@ -23,7 +27,27 @@ func (r *UserPlayerLinkRepository) LinkPlayer(
 		VALUES ($1, $2)
 	`, userID, playerID)
 
-	return err
+	return mapOwnershipConstraintError(err)
+}
+
+func (r *UserPlayerLinkRepository) FindUserPlayer(
+	tx usecase.Tx,
+	userID entity.AuthUserID,
+) (*usecase.PlayerDTO, error) {
+	var player usecase.PlayerDTO
+	err := tx.QueryRow(context.Background(), `
+		SELECT p.id, p.name
+		FROM user_players up
+		JOIN players p ON p.id = up.player_id
+		WHERE up.user_id = $1
+	`, userID).Scan(&player.ID, &player.Name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &player, nil
 }
 
 func (r *UserPlayerLinkRepository) UnlinkPlayer(
@@ -104,12 +128,16 @@ func (r *UserPlayerLinkRepository) ListUnlinkedPlayers(
 	tx usecase.Tx,
 	limit int,
 	offset int,
-) ([]usecase.PlayerDTO, error) {
+) ([]usecase.AvailablePlayerDTO, error) {
 	rows, err := tx.Query(context.Background(), `
-		SELECT p.id, p.name
+		SELECT p.id, p.name,
+			COUNT(DISTINCT o.session_id) AS sessions_count,
+			MAX(o.created_at) AS last_played_at
 		FROM players p
 		LEFT JOIN user_players up ON up.player_id = p.id
+		LEFT JOIN operations o ON o.player_id = p.id
 		WHERE up.player_id IS NULL
+		GROUP BY p.id, p.name
 		ORDER BY p.name ASC, p.id ASC
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
@@ -118,14 +146,32 @@ func (r *UserPlayerLinkRepository) ListUnlinkedPlayers(
 	}
 	defer rows.Close()
 
-	result := make([]usecase.PlayerDTO, 0)
+	result := make([]usecase.AvailablePlayerDTO, 0)
 	for rows.Next() {
-		var player usecase.PlayerDTO
-		if err := rows.Scan(&player.ID, &player.Name); err != nil {
+		var player usecase.AvailablePlayerDTO
+		if err := rows.Scan(&player.ID, &player.Name, &player.SessionsCount, &player.LastPlayedAt); err != nil {
 			return nil, err
 		}
 		result = append(result, player)
 	}
 
 	return result, rows.Err()
+}
+
+func mapOwnershipConstraintError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+		return err
+	}
+	switch pgErr.ConstraintName {
+	case "uq_user_players_user_id":
+		return entity.ErrAccountAlreadyLinked
+	case "user_players_player_id_key":
+		return entity.ErrPlayerAlreadyLinked
+	default:
+		return err
+	}
 }

@@ -200,8 +200,8 @@ func (h *AccountHandler) writeAvailablePlayers(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeJSON(w, http.StatusOK, AccountPlayersResponse{
-		Players: playerResponses(players),
+	writeJSON(w, http.StatusOK, AvailablePlayersResponse{
+		Players: availablePlayerResponses(players),
 	})
 }
 
@@ -220,6 +220,19 @@ func playerResponses(players []usecase.PlayerDTO) []PlayerDTO {
 		result = append(result, PlayerDTO{
 			ID:   player.ID,
 			Name: player.Name,
+		})
+	}
+	return result
+}
+
+func availablePlayerResponses(players []usecase.AvailablePlayerDTO) []AvailablePlayerDTO {
+	result := make([]AvailablePlayerDTO, 0, len(players))
+	for _, player := range players {
+		result = append(result, AvailablePlayerDTO{
+			ID:            player.ID,
+			Name:          player.Name,
+			SessionsCount: player.SessionsCount,
+			LastPlayedAt:  player.LastPlayedAt,
 		})
 	}
 	return result

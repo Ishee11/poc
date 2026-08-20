@@ -1,8 +1,45 @@
 package usecase
 
 import (
+	"strings"
+	"time"
+
 	"github.com/ishee11/poc/internal/entity"
 )
+
+const (
+	PlayerSelectionExisting = "existing"
+	PlayerSelectionNew      = "new"
+)
+
+type PlayerSelection struct {
+	Mode     string          `json:"mode"`
+	PlayerID entity.PlayerID `json:"player_id,omitempty"`
+	Name     string          `json:"name,omitempty"`
+}
+
+func (s PlayerSelection) Validate() error {
+	switch s.Mode {
+	case PlayerSelectionExisting:
+		if s.PlayerID == "" || strings.TrimSpace(s.Name) != "" {
+			return entity.ErrInvalidPlayerSelection
+		}
+	case PlayerSelectionNew:
+		if s.PlayerID != "" || strings.TrimSpace(s.Name) == "" {
+			return entity.ErrInvalidPlayerSelection
+		}
+	default:
+		return entity.ErrInvalidPlayerSelection
+	}
+	return nil
+}
+
+type AvailablePlayerDTO struct {
+	ID            entity.PlayerID `json:"player_id"`
+	Name          string          `json:"name"`
+	SessionsCount int64           `json:"sessions_count"`
+	LastPlayedAt  *time.Time      `json:"last_played_at"`
+}
 
 type OperationAcknowledgement struct {
 	RequestID         string                     `json:"request_id"`

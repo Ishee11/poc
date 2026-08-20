@@ -1,6 +1,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
 )
@@ -128,6 +130,17 @@ type PlayerDTO struct {
 
 type AccountPlayersResponse struct {
 	Players []PlayerDTO `json:"players"`
+}
+
+type AvailablePlayerDTO struct {
+	ID            entity.PlayerID `json:"player_id"`
+	Name          string          `json:"name"`
+	SessionsCount int64           `json:"sessions_count"`
+	LastPlayedAt  *time.Time      `json:"last_played_at"`
+}
+
+type AvailablePlayersResponse struct {
+	Players []AvailablePlayerDTO `json:"players"`
 }
 
 type LinkAccountPlayerRequest struct {

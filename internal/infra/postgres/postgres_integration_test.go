@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"net/url"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -69,11 +71,134 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, sessions, players
+		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_sessions, login_attempts, user_players, users, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
 		t.Fatalf("clean database: %v", err)
+	}
+}
+
+func saveTestUser(t *testing.T, pool *pgxpool.Pool, id entity.AuthUserID) {
+	t.Helper()
+	_, err := pool.Exec(context.Background(), `
+		INSERT INTO users (id, email, password_hash, role, status)
+		VALUES ($1, $2, 'hash', 'user', 'active')
+	`, id, string(id)+"@example.com")
+	if err != nil {
+		t.Fatalf("save test user: %v", err)
+	}
+}
+
+func TestOwnershipMigrationFailsWithoutRewritingMultiPlayerAccount(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveTestUser(t, pool, "user-multi")
+	txRun(t, pool, func(tx usecase.Tx) {
+		saveTestPlayer(t, tx, "player-a", "Alice")
+		saveTestPlayer(t, tx, "player-b", "Bob")
+	})
+
+	if _, err := pool.Exec(context.Background(), `DROP INDEX uq_user_players_user_id`); err != nil {
+		t.Fatalf("drop ownership index: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), `DELETE FROM user_players WHERE user_id = 'user-multi'`)
+		_, _ = pool.Exec(context.Background(), `CREATE UNIQUE INDEX IF NOT EXISTS uq_user_players_user_id ON user_players(user_id)`)
+	})
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO user_players (user_id, player_id)
+		VALUES ('user-multi', 'player-a'), ('user-multi', 'player-b')
+	`); err != nil {
+		t.Fatalf("prepare unsafe ownership state: %v", err)
+	}
+
+	migration, err := fs.ReadFile(MigrationsFS, "migrations/000018_establish_account_player_ownership.up.sql")
+	if err != nil {
+		t.Fatalf("read migration: %v", err)
+	}
+	if _, err := pool.Exec(context.Background(), string(migration)); err == nil {
+		t.Fatal("expected migration to reject a multi-player account")
+	}
+
+	var links int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM user_players WHERE user_id = 'user-multi'`).Scan(&links); err != nil {
+		t.Fatalf("count preserved links: %v", err)
+	}
+	if links != 2 {
+		t.Fatalf("migration rewrote ownership data: got %d links", links)
+	}
+}
+
+func TestUserPlayerLinkRepositoryEnforcesBothOwnershipConstraints(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveTestUser(t, pool, "user-1")
+	saveTestUser(t, pool, "user-2")
+	txRun(t, pool, func(tx usecase.Tx) {
+		saveTestPlayer(t, tx, "player-1", "Alice")
+		saveTestPlayer(t, tx, "player-2", "Bob")
+	})
+
+	repo := NewUserPlayerLinkRepository()
+	manager := NewTxManager(pool)
+	claim := func(userID entity.AuthUserID, playerID entity.PlayerID) error {
+		return manager.RunInTx(context.Background(), func(tx usecase.Tx) error {
+			return repo.LinkPlayer(tx, userID, playerID)
+		})
+	}
+	if err := claim("user-1", "player-1"); err != nil {
+		t.Fatalf("first claim: %v", err)
+	}
+	if err := claim("user-1", "player-2"); !errors.Is(err, entity.ErrAccountAlreadyLinked) {
+		t.Fatalf("expected account_already_linked, got %v", err)
+	}
+	if err := claim("user-2", "player-1"); !errors.Is(err, entity.ErrPlayerAlreadyLinked) {
+		t.Fatalf("expected player_already_linked, got %v", err)
+	}
+}
+
+func TestUserPlayerLinkRepositoryConcurrentClaimHasSingleWinner(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveTestUser(t, pool, "user-race-1")
+	saveTestUser(t, pool, "user-race-2")
+	txRun(t, pool, func(tx usecase.Tx) {
+		saveTestPlayer(t, tx, "player-race", "Race")
+	})
+
+	repo := NewUserPlayerLinkRepository()
+	manager := NewTxManager(pool)
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for _, userID := range []entity.AuthUserID{"user-race-1", "user-race-2"} {
+		wg.Add(1)
+		go func(userID entity.AuthUserID) {
+			defer wg.Done()
+			<-start
+			errs <- manager.RunInTx(context.Background(), func(tx usecase.Tx) error {
+				return repo.LinkPlayer(tx, userID, "player-race")
+			})
+		}(userID)
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	var succeeded, conflicted int
+	for err := range errs {
+		switch {
+		case err == nil:
+			succeeded++
+		case errors.Is(err, entity.ErrPlayerAlreadyLinked):
+			conflicted++
+		default:
+			t.Fatalf("unexpected concurrent claim result: %v", err)
+		}
+	}
+	if succeeded != 1 || conflicted != 1 {
+		t.Fatalf("expected one winner and one conflict, got success=%d conflict=%d", succeeded, conflicted)
 	}
 }
 

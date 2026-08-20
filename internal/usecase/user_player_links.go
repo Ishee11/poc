@@ -92,7 +92,7 @@ func (uc *UserPlayerLinksUseCase) ListUserPlayers(ctx context.Context, userID en
 	return result, nil
 }
 
-func (uc *UserPlayerLinksUseCase) ListUnlinkedPlayers(ctx context.Context, q ListUnlinkedPlayersQuery) ([]PlayerDTO, error) {
+func (uc *UserPlayerLinksUseCase) ListUnlinkedPlayers(ctx context.Context, q ListUnlinkedPlayersQuery) ([]AvailablePlayerDTO, error) {
 	limit := q.Limit
 	if limit <= 0 {
 		limit = 100
@@ -106,7 +106,7 @@ func (uc *UserPlayerLinksUseCase) ListUnlinkedPlayers(ctx context.Context, q Lis
 		offset = 0
 	}
 
-	var result []PlayerDTO
+	var result []AvailablePlayerDTO
 	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		var err error
 		result, err = uc.linkRepo.ListUnlinkedPlayers(tx, limit, offset)

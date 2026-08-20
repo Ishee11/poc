@@ -30,7 +30,8 @@ type UserPlayerLinkRepository interface {
 	LinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
 	UnlinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
 	ListUserPlayers(tx Tx, userID entity.AuthUserID) ([]PlayerDTO, error)
+	FindUserPlayer(tx Tx, userID entity.AuthUserID) (*PlayerDTO, error)
 	IsPlayerLinked(tx Tx, playerID entity.PlayerID) (bool, error)
 	IsPlayerLinkedToUser(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) (bool, error)
-	ListUnlinkedPlayers(tx Tx, limit int, offset int) ([]PlayerDTO, error)
+	ListUnlinkedPlayers(tx Tx, limit int, offset int) ([]AvailablePlayerDTO, error)
 }
