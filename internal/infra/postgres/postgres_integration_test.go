@@ -202,6 +202,53 @@ func TestUserPlayerLinkRepositoryConcurrentClaimHasSingleWinner(t *testing.T) {
 	}
 }
 
+func TestOwnershipControlsSessionVisibility(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveTestUser(t, pool, "owner-1")
+	saveTestUser(t, pool, "unrelated-1")
+	txRun(t, pool, func(tx usecase.Tx) {
+		saveTestPlayer(t, tx, "visible-player", "Alice")
+		saveTestSession(t, tx, "visible-session", entity.StatusFinished, 2)
+		saveTestOperation(t, tx, "visible-op", "visible-request", "visible-session", entity.OperationBuyIn, "visible-player", 100, time.Now())
+	})
+
+	list := func(viewer *entity.AuthUserID) []usecase.SessionStat {
+		t.Helper()
+		var sessions []usecase.SessionStat
+		txRun(t, pool, func(tx usecase.Tx) {
+			var err error
+			sessions, err = NewStatsRepository(pool).ListSessions(tx, usecase.SessionStatsFilter{
+				Limit: 20, ViewerUserID: viewer,
+			})
+			if err != nil {
+				t.Fatalf("list visible sessions: %v", err)
+			}
+		})
+		return sessions
+	}
+
+	if sessions := list(nil); len(sessions) != 1 {
+		t.Fatalf("unowned session should be guest-visible, got %d", len(sessions))
+	}
+	txRun(t, pool, func(tx usecase.Tx) {
+		if err := NewUserPlayerLinkRepository().LinkPlayer(tx, "owner-1", "visible-player"); err != nil {
+			t.Fatalf("claim visible player: %v", err)
+		}
+	})
+	if sessions := list(nil); len(sessions) != 0 {
+		t.Fatalf("claimed session should be hidden from guests, got %d", len(sessions))
+	}
+	owner := entity.AuthUserID("owner-1")
+	if sessions := list(&owner); len(sessions) != 1 {
+		t.Fatalf("claimed session should remain owner-visible, got %d", len(sessions))
+	}
+	unrelated := entity.AuthUserID("unrelated-1")
+	if sessions := list(&unrelated); len(sessions) != 0 {
+		t.Fatalf("claimed session should be hidden from unrelated accounts, got %d", len(sessions))
+	}
+}
+
 func TestIdempotencyReservationRollsBackWithBusinessTransaction(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)

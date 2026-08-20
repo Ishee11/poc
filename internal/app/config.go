@@ -77,7 +77,7 @@ func Load() (*Config, error) {
 			OTLPInsecure: getBoolEnv("OTEL_EXPORTER_OTLP_INSECURE", true),
 		},
 		Auth: AuthConfig{
-			Enabled:        getBoolEnv("AUTH_ENABLED", false),
+			Enabled:        getBoolEnv("AUTH_ENABLED", true),
 			CookieName:     getEnv("AUTH_COOKIE_NAME", "sid"),
 			CookieSecure:   getBoolEnv("AUTH_COOKIE_SECURE", true),
 			CookieSameSite: getEnv("AUTH_COOKIE_SAMESITE", "Lax"),

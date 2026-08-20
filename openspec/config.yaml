@@ -1,0 +1,21 @@
+schema: spec-driven
+
+context: |
+  Project: Poker Session Control POC
+  Backend: Go, net/http, PostgreSQL, pgx
+  Frontend: embedded vanilla JavaScript, HTML, and CSS
+  Authentication: Argon2id passwords and opaque HttpOnly server sessions
+  Delivery: Docker Compose with dev and production GitHub Actions workflows
+  Preserve unrelated worktree changes and use stable API error codes.
+  Database migrations must fail closed and must not silently discard production data.
+
+rules:
+  proposal:
+    - Identify breaking API or migration behavior explicitly.
+    - Separate new capabilities from modified canonical capabilities.
+  design:
+    - Define transaction boundaries, compatibility behavior, and rollback strategy for auth or data-ownership changes.
+    - Record all resolved product decisions and leave no implementation choice implicit.
+  tasks:
+    - Order work from persistence invariants through backend, frontend, verification, and staged rollout.
+    - Include focused tests, full repository checks, documentation updates, and strict OpenSpec validation.

@@ -26,7 +26,7 @@ services:
       DATABASE_URL: postgres://poker:poker@db:5432/poker?sslmode=disable
       LOG_LEVEL: debug
       HTTP_ACCESS_LOG: errors
-      AUTH_ENABLED: "false"
+      AUTH_ENABLED: "${AUTH_ENABLED:-true}"
       AUTH_COOKIE_SECURE: "false"
       AUTH_SESSION_TTL: 24h
       AUTH_IDLE_TTL: 8h

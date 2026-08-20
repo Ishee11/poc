@@ -202,6 +202,28 @@ func TestAPIIntegration_RegistrationCreatesPlayerAndRollsBackInvalidSelection(t 
 		t.Fatalf("invalid registration created %d users", invalidUsers)
 	}
 
+	saveLoginUser(t, pool, "existing-owner", "existing-owner@example.com", "user", "owner-password")
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO players (id, name) VALUES ('occupied-player', 'Occupied');
+		INSERT INTO user_players (user_id, player_id) VALUES ('existing-owner', 'occupied-player')
+	`); err != nil {
+		t.Fatalf("prepare occupied player: %v", err)
+	}
+	conflict := requestJSON(t, handler, http.MethodPost, "/auth/register", map[string]any{
+		"email": "conflict@example.com", "password": "long-password",
+		"player": map[string]any{"mode": "existing", "player_id": "occupied-player"},
+	})
+	if conflict.Code != http.StatusConflict || !strings.Contains(conflict.Body.String(), "player_already_linked") {
+		t.Fatalf("conflicting registration status=%d body=%s", conflict.Code, conflict.Body.String())
+	}
+	var conflictUsers int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM users WHERE email = 'conflict@example.com'`).Scan(&conflictUsers); err != nil {
+		t.Fatal(err)
+	}
+	if conflictUsers != 0 {
+		t.Fatalf("conflicting registration created %d accounts", conflictUsers)
+	}
+
 	created := requestJSON(t, handler, http.MethodPost, "/auth/register", map[string]any{
 		"email": "new@example.com", "password": "long-password",
 		"player": map[string]any{"mode": "new", "name": " New player "},
@@ -216,11 +238,41 @@ func TestAPIIntegration_RegistrationCreatesPlayerAndRollsBackInvalidSelection(t 
 	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM players WHERE name = 'New player'`).Scan(&players); err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM user_players`).Scan(&links); err != nil {
+	if err := pool.QueryRow(context.Background(), `
+		SELECT COUNT(*) FROM user_players up JOIN users u ON u.id = up.user_id WHERE u.email = 'new@example.com'
+	`).Scan(&links); err != nil {
 		t.Fatal(err)
 	}
 	if users != 1 || players != 1 || links != 1 {
 		t.Fatalf("registration was not atomic: users=%d players=%d links=%d", users, players, links)
+	}
+}
+
+func TestAPIIntegration_LegacyAccountCompletesOneTimeOwnershipOnboarding(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveLoginUser(t, pool, "legacy-1", "legacy@example.com", "user", "legacy-password")
+	if _, err := pool.Exec(context.Background(), `INSERT INTO players (id, name) VALUES ('legacy-player', 'Legacy')`); err != nil {
+		t.Fatalf("insert legacy player: %v", err)
+	}
+	handler := ownershipTestHandler(pool)
+	cookie := loginCookie(t, handler, "legacy@example.com", "legacy-password")
+
+	before := requestJSONWithCookie(t, handler, http.MethodGet, "/account", nil, cookie)
+	if before.Code != http.StatusOK || !strings.Contains(before.Body.String(), `"onboarding_required":true`) || !strings.Contains(before.Body.String(), `"player":null`) {
+		t.Fatalf("legacy account before onboarding status=%d body=%s", before.Code, before.Body.String())
+	}
+	claim := requestJSONWithCookie(t, handler, http.MethodPost, "/account/players", map[string]any{"player_id": "legacy-player"}, cookie)
+	if claim.Code != http.StatusOK {
+		t.Fatalf("legacy claim status=%d body=%s", claim.Code, claim.Body.String())
+	}
+	after := requestJSONWithCookie(t, handler, http.MethodGet, "/account", nil, cookie)
+	if after.Code != http.StatusOK || !strings.Contains(after.Body.String(), `"onboarding_required":false`) || !strings.Contains(after.Body.String(), `"player_id":"legacy-player"`) {
+		t.Fatalf("legacy account after onboarding status=%d body=%s", after.Code, after.Body.String())
+	}
+	unlink := requestJSONWithCookie(t, handler, http.MethodDelete, "/account/players", nil, cookie)
+	if unlink.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("self-service unlink status=%d body=%s", unlink.Code, unlink.Body.String())
 	}
 }
 

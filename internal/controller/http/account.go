@@ -12,7 +12,7 @@ import (
 
 // Account godoc
 // @Summary Current account
-// @Description Returns the authenticated user and linked players.
+// @Description Returns the authenticated user, nullable singular player ownership, onboarding state, and transitional zero-or-one players mirror.
 // @Tags account
 // @Produce json
 // @Success 200 {object} AccountResponse
@@ -72,20 +72,18 @@ func (h *AccountHandler) Player(w http.ResponseWriter, r *http.Request) {
 }
 
 // Players godoc
-// @Summary Linked account players
-// @Description Links, unlinks, or lists players linked to the current user.
+// @Summary Transitional account player compatibility
+// @Description Lists the zero-or-one owned player or applies the legacy one-time existing-player claim alias. Self-service deletion is disabled.
 // @Tags account
 // @Accept json
 // @Produce json
-// @Success 200 {object} AccountPlayersResponse
-// @Success 204
+// @Success 200 {object} AccountResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /account/players [get]
 // @Router /account/players [post]
-// @Router /account/players [delete]
 func (h *AccountHandler) Players(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -174,7 +172,7 @@ func (h *AccountHandler) choosePlayer(w http.ResponseWriter, r *http.Request, le
 // @Description Returns players that are not linked to any user.
 // @Tags account
 // @Produce json
-// @Success 200 {object} AccountPlayersResponse
+// @Success 200 {object} AvailablePlayersResponse
 // @Failure 401 {object} ErrorResponse
 // @Router /account/players/available [get]
 func (h *AccountHandler) AvailablePlayers(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +194,7 @@ func (h *AccountHandler) AvailablePlayers(w http.ResponseWriter, r *http.Request
 // @Description Returns players that are not linked to any user.
 // @Tags players
 // @Produce json
-// @Success 200 {object} AccountPlayersResponse
+// @Success 200 {object} AvailablePlayersResponse
 // @Router /players/unlinked [get]
 func (h *AccountHandler) PublicAvailablePlayers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

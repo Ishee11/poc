@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/account": {
             "get": {
-                "description": "Returns the authenticated user and linked players.",
+                "description": "Returns the authenticated user, nullable singular player ownership, onboarding state, and transitional zero-or-one players mirror.",
                 "produces": [
                     "application/json"
                 ],
@@ -41,9 +41,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/account/players": {
-            "get": {
-                "description": "Links, unlinks, or lists players linked to the current user.",
+        "/account/player": {
+            "put": {
+                "description": "Claims an unowned existing player or creates a new owned player. Ownership is write-once.",
                 "consumes": [
                     "application/json"
                 ],
@@ -53,16 +53,71 @@ const docTemplate = `{
                 "tags": [
                     "account"
                 ],
-                "summary": "Linked account players",
+                "summary": "Establish current account player ownership",
+                "parameters": [
+                    {
+                        "description": "Player selection",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SelectAccountPlayerRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                            "$ref": "#/definitions/http.AccountResponse"
                         }
                     },
-                    "204": {
-                        "description": "No Content"
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/players": {
+            "get": {
+                "description": "Lists the zero-or-one owned player or applies the legacy one-time existing-player claim alias. Self-service deletion is disabled.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Transitional account player compatibility",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AccountResponse"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -91,7 +146,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Links, unlinks, or lists players linked to the current user.",
+                "description": "Lists the zero-or-one owned player or applies the legacy one-time existing-player claim alias. Self-service deletion is disabled.",
                 "consumes": [
                     "application/json"
                 ],
@@ -101,64 +156,13 @@ const docTemplate = `{
                 "tags": [
                     "account"
                 ],
-                "summary": "Linked account players",
+                "summary": "Transitional account player compatibility",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                            "$ref": "#/definitions/http.AccountResponse"
                         }
-                    },
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/http.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/http.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/http.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Links, unlinks, or lists players linked to the current user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "account"
-                ],
-                "summary": "Linked account players",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/http.AccountPlayersResponse"
-                        }
-                    },
-                    "204": {
-                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -201,13 +205,204 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                            "$ref": "#/definitions/http.AvailablePlayersResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/accounts": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List account ownership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email or player search",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/usecase.AdminAccountList"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/accounts/{user_id}/player": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Replace or clear account player ownership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Player assignment",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.AdminReplaceAccountPlayerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Replace or clear account player ownership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Player assignment",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.AdminReplaceAccountPlayerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/config": {
+            "get": {
+                "description": "Reports whether login/account UI and open registration are enabled.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Public authentication configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AuthConfigResponse"
                         }
                     }
                 }
@@ -629,7 +824,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.AccountPlayersResponse"
+                            "$ref": "#/definitions/http.AvailablePlayersResponse"
                         }
                     }
                 }
@@ -963,6 +1158,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session status (active or finished)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "From date (RFC3339 or YYYY-MM-DD)",
                         "name": "from",
@@ -1007,6 +1214,17 @@ const docTemplate = `{
                 "AuthRoleUser"
             ]
         },
+        "entity.AuthUserStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "disabled"
+            ],
+            "x-enum-varnames": [
+                "AuthUserStatusActive",
+                "AuthUserStatusDisabled"
+            ]
+        },
         "entity.Currency": {
             "type": "string",
             "enum": [
@@ -1042,20 +1260,15 @@ const docTemplate = `{
                 "StatusFinished"
             ]
         },
-        "http.AccountPlayersResponse": {
-            "type": "object",
-            "properties": {
-                "players": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/http.PlayerDTO"
-                    }
-                }
-            }
-        },
         "http.AccountResponse": {
             "type": "object",
             "properties": {
+                "onboarding_required": {
+                    "type": "boolean"
+                },
+                "player": {
+                    "$ref": "#/definitions/http.PlayerDTO"
+                },
                 "players": {
                     "type": "array",
                     "items": {
@@ -1064,6 +1277,25 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/http.AuthUserResponse"
+                }
+            }
+        },
+        "http.AdminReplaceAccountPlayerRequest": {
+            "type": "object",
+            "properties": {
+                "player_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.AuthConfigResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "open_registration": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1078,6 +1310,34 @@ const docTemplate = `{
                 },
                 "role": {
                     "$ref": "#/definitions/entity.AuthRole"
+                }
+            }
+        },
+        "http.AvailablePlayerDTO": {
+            "type": "object",
+            "properties": {
+                "last_played_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "sessions_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "http.AvailablePlayersResponse": {
+            "type": "object",
+            "properties": {
+                "players": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.AvailablePlayerDTO"
+                    }
                 }
             }
         },
@@ -1252,6 +1512,9 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                },
+                "player": {
+                    "$ref": "#/definitions/usecase.PlayerSelection"
                 }
             }
         },
@@ -1268,6 +1531,20 @@ const docTemplate = `{
                 }
             }
         },
+        "http.SelectAccountPlayerRequest": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                }
+            }
+        },
         "http.StartSessionRequest": {
             "type": "object",
             "properties": {
@@ -1279,6 +1556,46 @@ const docTemplate = `{
                 },
                 "currency": {
                     "type": "string"
+                }
+            }
+        },
+        "usecase.AccountOwnershipDTO": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "player": {
+                    "$ref": "#/definitions/usecase.PlayerDTO"
+                },
+                "role": {
+                    "$ref": "#/definitions/entity.AuthRole"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.AuthUserStatus"
+                }
+            }
+        },
+        "usecase.AdminAccountList": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/usecase.AccountOwnershipDTO"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -1463,6 +1780,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.PlayerSelection": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "player_id": {
                     "type": "string"
                 }
             }

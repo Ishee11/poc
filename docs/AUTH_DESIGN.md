@@ -1,6 +1,9 @@
 # Auth Design
 
-Status: draft.
+Status: active.
+
+Email login, account management, and open self-registration are enabled by
+default. Registration does not use invite codes.
 
 This document defines the auth boundary for Poker Session Control.
 
@@ -26,7 +29,7 @@ Auth users are system accounts. They are not poker players.
 
 Poker players remain business entities in the `players` table.
 
-A system user may be linked to multiple poker players through a join table:
+A system user owns at most one poker player through a one-to-one join table:
 
 ```text
 user_players
@@ -35,23 +38,25 @@ user_players
 - created_at
 ```
 
-A player may be linked to at most one system user. Users can link players to
-their account from a personal account page only when the player is not already
-linked to another user.
+PostgreSQL unique constraints enforce both sides: one player per account and
+one account per player. Registration must claim one unowned existing player or
+create a new player in the same transaction as the account. A legacy account
+without a player must complete the same onboarding flow. Self-service ownership
+is write-once; only an administrator may later replace or clear it.
 
 Session visibility is based on linked players:
 - A session is public when none of its participating players is linked to a user.
-- A session is user-visible when the current user's linked player participated
+- A session is user-visible when the current user's owned player participated
   in it.
 - A session is hidden from a user or guest when it contains another user's
-  linked player and none of the current user's linked players participated.
+  linked player and the current user's player did not participate.
 
 ## Roles
 
 | Role | Purpose |
 | --- | --- |
 | `admin` | Full access, including temporary debug/admin endpoints and future user management. |
-| `user` | Normal authenticated user. Can operate games but cannot use debug/admin endpoints. Visibility is filtered by linked players. |
+| `user` | Normal authenticated user. Can operate games but cannot use debug/admin endpoints. Visibility is filtered by its owned player. |
 | `guest` | Anonymous user. Can operate public games but cannot use debug/admin endpoints. Visibility is filtered to public sessions. |
 
 Authorization is server-side. UI visibility is only a convenience.
@@ -62,10 +67,13 @@ Admins see every session, player, operation, and stat.
 
 Authenticated users see:
 - public sessions;
-- sessions where at least one of their linked players participated.
+- sessions where their owned player participated.
 
 Authenticated users do not see sessions where another user's linked player
-participated unless one of their own linked players also participated.
+participated unless their owned player also participated.
+
+An authenticated account without ownership receives guest-equivalent domain
+visibility until onboarding is complete.
 
 Guests see only public sessions. A guest cannot see a session that contains any
 player linked to a system user.
@@ -89,12 +97,19 @@ The same visibility filter must be applied consistently to:
 | `GET /static/*` | Public |
 | `GET /health` | Public |
 | `GET /swagger/*` | Development only, or `admin` in production |
+| `GET /auth/config` | Public; exposes login UI and open-registration flags |
+| `POST /auth/register` | Public; requires existing/new player selection, no invite code |
 | `POST /auth/login` | Public |
 | `POST /auth/logout` | Authenticated |
 | `GET /auth/me` | Public; returns anonymous state when no session exists |
 | `GET /account` | Authenticated user, `admin` |
-| `POST /account/players` | Authenticated user, `admin` |
-| `DELETE /account/players/{id}` | Authenticated user, `admin` |
+| `PUT /account/player` | Authenticated unlinked account; one-time existing/new claim |
+| `POST /account/players` | Transitional one-time existing-player claim alias |
+| `DELETE /account/players` | Disabled; returns `405 method_not_allowed` |
+| `GET /account/players/available` | Authenticated; unowned players with session context |
+| `GET /admin/accounts` | `admin` only; paginated ownership listing |
+| `PUT /admin/accounts/{user_id}/player` | `admin` only; atomic ownership replace |
+| `DELETE /admin/accounts/{user_id}/player` | `admin` only; idempotent ownership clear |
 | `GET /sessions` | `guest`, `user`, `admin`; visibility-filtered |
 | `GET /sessions/players` | `guest`, `user`, `admin`; visibility-filtered |
 | `GET /sessions/operations` | `guest`, `user`, `admin`; visibility-filtered |
@@ -171,6 +186,10 @@ Use stable API error codes consistent with the existing error response style.
 | Player hidden by visibility rules | `404` | `player_not_found` |
 | Invalid login credentials | `401` | `invalid_credentials` |
 | Login rate limit exceeded | `429` | `rate_limited` |
+| Missing or ambiguous player selection | `400` | `invalid_player_selection` |
+| Account already owns a player | `409` | `account_already_linked` |
+| Player is already owned | `409` | `player_already_linked` |
+| Administrator target account missing | `404` | `account_not_found` |
 
 Authentication errors must not reveal whether an email exists.
 
@@ -219,6 +238,7 @@ Events:
 - `auth_session_expired`
 - `auth_session_revoked`
 - `auth_forbidden`
+- `account_player_ownership_changed`
 
 Do not log raw session tokens or passwords.
 
@@ -229,6 +249,11 @@ Suggested fields:
 - `ip`
 - `user_agent`
 - `error_code`
+- `operation`, `actor_user_id`, `target_user_id`, `old_player_id`, and
+  `new_player_id` for ownership changes
+
+Ownership audit records must not include email addresses, passwords, cookie
+values, or raw session tokens.
 
 ## Configuration
 
@@ -273,12 +298,13 @@ If HTTPS is added, `APP_ORIGIN` must be changed to the HTTPS origin.
 2. Add auth domain/usecase layer and repositories.
 3. Add `/auth/login`, `/auth/logout`, and `/auth/me`.
 4. Add login/logout UI.
-5. Add `user_players` schema and repositories.
-6. Add personal account page for linking unlinked players.
+5. Add one-to-one `user_players` ownership constraints and repositories.
+6. Require ownership during registration and legacy-account onboarding.
 7. Add server-side visibility filters for sessions, players, operations, and stats.
 8. Add debug/admin route protection.
 9. Add CSRF origin checks for unsafe methods.
 10. Add runbook documentation.
+11. Add administrator ownership correction and structured ownership logs.
 
 ## References
 
