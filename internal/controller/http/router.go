@@ -50,6 +50,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	// ===== ACCOUNT =====
 	mux.HandleFunc("/account", h.Account.Account)
+	mux.HandleFunc("/account/player", h.Account.Player)
 	mux.HandleFunc("/account/players", h.Account.Players)
 	mux.HandleFunc("/account/players/available", h.Account.AvailablePlayers)
 

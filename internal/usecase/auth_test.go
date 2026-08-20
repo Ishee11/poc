@@ -479,17 +479,28 @@ func TestSeedUserUseCaseRejectsInvalidRole(t *testing.T) {
 func TestRegisterUserUseCaseCreatesUser(t *testing.T) {
 	now := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
 	repo := newFakeAuthRepo()
+	store := newFakeStore()
+	player, err := entity.NewPlayer("player-1", "Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.players[player.ID()] = player
+	links := newFakeUserPlayerLinkRepo()
 	uc := NewRegisterUserUseCase(
 		repo,
 		fakeTxManager{},
 		fakeAuthUserIDGen{next: "user-1"},
 		fakePasswordHasher{hash: "hash"},
 		fakeClock{now: now},
+		links,
+		fakePlayerRepo{store: store},
+		sequencePlayerIDGen{next: "player-new"},
 	)
 
-	err := uc.Execute(context.Background(), RegisterUserCommand{
+	registeredPlayer, err := uc.Execute(context.Background(), RegisterUserCommand{
 		Email:    " user@example.com ",
 		Password: "long-password",
+		Player:   PlayerSelection{Mode: PlayerSelectionExisting, PlayerID: "player-1"},
 	})
 	if err != nil {
 		t.Fatalf("Execute returned error: %v", err)
@@ -501,6 +512,9 @@ func TestRegisterUserUseCaseCreatesUser(t *testing.T) {
 	}
 	if user.ID != "user-1" || user.Role != entity.AuthRoleUser || user.PasswordHash != "hash" {
 		t.Fatalf("unexpected registered user: %+v", user)
+	}
+	if registeredPlayer.ID != "player-1" || links.links["player-1"] != "user-1" {
+		t.Fatalf("ownership was not registered: player=%+v links=%+v", registeredPlayer, links.links)
 	}
 }
 
@@ -521,11 +535,15 @@ func TestRegisterUserUseCaseRejectsExistingEmail(t *testing.T) {
 		fakeAuthUserIDGen{next: "user-2"},
 		fakePasswordHasher{hash: "new-hash"},
 		fakeClock{now: now},
+		newFakeUserPlayerLinkRepo(),
+		fakePlayerRepo{store: newFakeStore()},
+		sequencePlayerIDGen{next: "player-new"},
 	)
 
-	err = uc.Execute(context.Background(), RegisterUserCommand{
+	_, err = uc.Execute(context.Background(), RegisterUserCommand{
 		Email:    "user@example.com",
 		Password: "long-password",
+		Player:   PlayerSelection{Mode: PlayerSelectionNew, Name: "Alice"},
 	})
 	if !errors.Is(err, entity.ErrAuthUserAlreadyExists) {
 		t.Fatalf("expected ErrAuthUserAlreadyExists, got %v", err)
@@ -539,11 +557,15 @@ func TestRegisterUserUseCaseRejectsShortPassword(t *testing.T) {
 		fakeAuthUserIDGen{},
 		fakePasswordHasher{},
 		fakeClock{now: time.Now()},
+		newFakeUserPlayerLinkRepo(),
+		fakePlayerRepo{store: newFakeStore()},
+		sequencePlayerIDGen{next: "player-new"},
 	)
 
-	err := uc.Execute(context.Background(), RegisterUserCommand{
+	_, err := uc.Execute(context.Background(), RegisterUserCommand{
 		Email:    "user@example.com",
 		Password: "short",
+		Player:   PlayerSelection{Mode: PlayerSelectionNew, Name: "Alice"},
 	})
 	if !errors.Is(err, entity.ErrPasswordTooShort) {
 		t.Fatalf("expected ErrPasswordTooShort, got %v", err)

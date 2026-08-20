@@ -227,10 +227,14 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		infra.UUIDAuthUserIDGenerator{},
 		passwordHasher,
 		usecase.SystemClock{},
+		userPlayerLinkRepo,
+		playerRepo,
+		playerIDGen,
 	)
 	userPlayerLinksUC := usecase.NewUserPlayerLinksUseCase(
 		userPlayerLinkRepo,
 		playerRepo,
+		playerIDGen,
 		txManager,
 	)
 	blindClockUC := usecase.NewBlindClockService(

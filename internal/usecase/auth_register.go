@@ -13,14 +13,18 @@ const minRegisterPasswordLength = 12
 type RegisterUserCommand struct {
 	Email    string
 	Password string
+	Player   PlayerSelection
 }
 
 type RegisterUserUseCase struct {
-	userRepo  AuthUserRepository
-	txManager TxManager
-	idGen     AuthUserIDGenerator
-	passwords PasswordHasher
-	clock     Clock
+	userRepo    AuthUserRepository
+	txManager   TxManager
+	idGen       AuthUserIDGenerator
+	passwords   PasswordHasher
+	clock       Clock
+	linkRepo    UserPlayerLinkRepository
+	playerRepo  PlayerRepository
+	playerIDGen PlayerIDGenerator
 }
 
 func NewRegisterUserUseCase(
@@ -29,30 +33,40 @@ func NewRegisterUserUseCase(
 	idGen AuthUserIDGenerator,
 	passwords PasswordHasher,
 	clock Clock,
+	linkRepo UserPlayerLinkRepository,
+	playerRepo PlayerRepository,
+	playerIDGen PlayerIDGenerator,
 ) *RegisterUserUseCase {
 	if clock == nil {
 		clock = SystemClock{}
 	}
 
 	return &RegisterUserUseCase{
-		userRepo:  userRepo,
-		txManager: txManager,
-		idGen:     idGen,
-		passwords: passwords,
-		clock:     clock,
+		userRepo:    userRepo,
+		txManager:   txManager,
+		idGen:       idGen,
+		passwords:   passwords,
+		clock:       clock,
+		linkRepo:    linkRepo,
+		playerRepo:  playerRepo,
+		playerIDGen: playerIDGen,
 	}
 }
 
-func (uc *RegisterUserUseCase) Execute(ctx context.Context, cmd RegisterUserCommand) error {
+func (uc *RegisterUserUseCase) Execute(ctx context.Context, cmd RegisterUserCommand) (*PlayerDTO, error) {
 	email := strings.TrimSpace(cmd.Email)
 	if email == "" {
-		return entity.ErrInvalidAuthEmail
+		return nil, entity.ErrInvalidAuthEmail
 	}
 	if len(cmd.Password) < minRegisterPasswordLength {
-		return entity.ErrPasswordTooShort
+		return nil, entity.ErrPasswordTooShort
+	}
+	if err := cmd.Player.Validate(); err != nil {
+		return nil, err
 	}
 
-	return uc.txManager.RunInTx(ctx, func(tx Tx) error {
+	var registeredPlayer *PlayerDTO
+	err := uc.txManager.RunInTx(ctx, func(tx Tx) error {
 		_, err := uc.userRepo.FindUserByEmail(tx, email)
 		if err == nil {
 			return entity.ErrAuthUserAlreadyExists
@@ -77,6 +91,22 @@ func (uc *RegisterUserUseCase) Execute(ctx context.Context, cmd RegisterUserComm
 			return err
 		}
 
-		return uc.userRepo.Save(tx, user)
+		if err := uc.userRepo.Save(tx, user); err != nil {
+			return err
+		}
+
+		registeredPlayer, err = chooseOrCreatePlayerInTx(
+			tx,
+			user.ID,
+			cmd.Player,
+			uc.linkRepo,
+			uc.playerRepo,
+			uc.playerIDGen,
+		)
+		return err
 	})
+	if err != nil {
+		return nil, err
+	}
+	return registeredPlayer, nil
 }

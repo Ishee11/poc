@@ -3,6 +3,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
@@ -60,7 +63,7 @@ func (r *PlayerRepository) GetByID(
 	).Scan(&name)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 			return nil, entity.ErrPlayerNotFound
 		}
 		return nil, err

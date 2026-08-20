@@ -33,10 +33,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.registerUserUC.Execute(r.Context(), usecase.RegisterUserCommand{
+	registeredPlayer, err := h.registerUserUC.Execute(r.Context(), usecase.RegisterUserCommand{
 		Email:    req.Email,
 		Password: req.Password,
-	}); err != nil {
+		Player:   req.Player,
+	})
+	if err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -60,6 +62,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		"user_id", result.User.UserID,
 		"ip", clientIP(r),
 		"user_agent", r.UserAgent(),
+	)
+	slog.InfoContext(
+		r.Context(),
+		"account_player_ownership_changed",
+		"request_id", GetRequestID(r.Context()),
+		"operation", "register",
+		"actor_user_id", result.User.UserID,
+		"target_user_id", result.User.UserID,
+		"old_player_id", "",
+		"new_player_id", registeredPlayer.ID,
 	)
 
 	writeJSON(w, http.StatusOK, LoginResponse{

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -69,11 +70,127 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, sessions, players
+		TRUNCATE TABLE idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_sessions, login_attempts, user_players, users, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
 		t.Fatalf("clean database: %v", err)
+	}
+}
+
+func ownershipTestHandler(pool *pgxpool.Pool) http.Handler {
+	return app.NewContainer(&app.DB{Pool: pool}, &app.Config{
+		Auth: app.AuthConfig{
+			Enabled:        true,
+			CookieName:     "sid",
+			CookieSecure:   false,
+			CookieSameSite: "Lax",
+			SessionTTL:     12 * time.Hour,
+			IdleTTL:        2 * time.Hour,
+		},
+	}).Router
+}
+
+func requestJSONWithCookie(t *testing.T, handler http.Handler, method string, path string, body any, cookie *http.Cookie) *httptest.ResponseRecorder {
+	t.Helper()
+	var payload bytes.Buffer
+	if body != nil {
+		if err := json.NewEncoder(&payload).Encode(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	req := httptest.NewRequest(method, path, &payload)
+	req.Header.Set("Content-Type", "application/json")
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestAPIIntegration_RegistrationEstablishesSingularOwnership(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	if _, err := pool.Exec(context.Background(), `INSERT INTO players (id, name) VALUES ('player-existing', 'Alice')`); err != nil {
+		t.Fatalf("insert player: %v", err)
+	}
+	handler := ownershipTestHandler(pool)
+
+	register := requestJSON(t, handler, http.MethodPost, "/auth/register", map[string]any{
+		"email": "owner@example.com", "password": "long-password",
+		"player": map[string]any{"mode": "existing", "player_id": "player-existing"},
+	})
+	if register.Code != http.StatusOK {
+		t.Fatalf("register status=%d body=%s", register.Code, register.Body.String())
+	}
+	cookies := register.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("registration did not create an auth session cookie")
+	}
+
+	account := requestJSONWithCookie(t, handler, http.MethodGet, "/account", nil, cookies[0])
+	if account.Code != http.StatusOK {
+		t.Fatalf("account status=%d body=%s", account.Code, account.Body.String())
+	}
+	var body struct {
+		Player *struct {
+			ID string `json:"player_id"`
+		} `json:"player"`
+		OnboardingRequired bool  `json:"onboarding_required"`
+		Players            []any `json:"players"`
+	}
+	decodeJSON(t, account, &body)
+	if body.Player == nil || body.Player.ID != "player-existing" || body.OnboardingRequired || len(body.Players) != 1 {
+		t.Fatalf("unexpected singular account ownership: %+v", body)
+	}
+
+	repeat := requestJSONWithCookie(t, handler, http.MethodPut, "/account/player", map[string]any{
+		"mode": "new", "name": "Wrong second player",
+	}, cookies[0])
+	if repeat.Code != http.StatusConflict || !strings.Contains(repeat.Body.String(), "account_already_linked") {
+		t.Fatalf("repeat claim status=%d body=%s", repeat.Code, repeat.Body.String())
+	}
+}
+
+func TestAPIIntegration_RegistrationCreatesPlayerAndRollsBackInvalidSelection(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	handler := ownershipTestHandler(pool)
+
+	invalid := requestJSON(t, handler, http.MethodPost, "/auth/register", map[string]any{
+		"email": "invalid@example.com", "password": "long-password",
+	})
+	if invalid.Code != http.StatusBadRequest || !strings.Contains(invalid.Body.String(), "invalid_player_selection") {
+		t.Fatalf("invalid registration status=%d body=%s", invalid.Code, invalid.Body.String())
+	}
+	var invalidUsers int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM users WHERE email = 'invalid@example.com'`).Scan(&invalidUsers); err != nil {
+		t.Fatalf("count invalid users: %v", err)
+	}
+	if invalidUsers != 0 {
+		t.Fatalf("invalid registration created %d users", invalidUsers)
+	}
+
+	created := requestJSON(t, handler, http.MethodPost, "/auth/register", map[string]any{
+		"email": "new@example.com", "password": "long-password",
+		"player": map[string]any{"mode": "new", "name": " New player "},
+	})
+	if created.Code != http.StatusOK {
+		t.Fatalf("new-player registration status=%d body=%s", created.Code, created.Body.String())
+	}
+	var users, players, links int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM users WHERE email = 'new@example.com'`).Scan(&users); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM players WHERE name = 'New player'`).Scan(&players); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM user_players`).Scan(&links); err != nil {
+		t.Fatal(err)
+	}
+	if users != 1 || players != 1 || links != 1 {
+		t.Fatalf("registration was not atomic: users=%d players=%d links=%d", users, players, links)
 	}
 }
 

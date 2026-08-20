@@ -99,8 +99,9 @@ type LoginRequest struct {
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string                  `json:"email"`
+	Password string                  `json:"password"`
+	Player   usecase.PlayerSelection `json:"player"`
 }
 
 type AuthUserResponse struct {
@@ -119,8 +120,10 @@ type MeResponse struct {
 }
 
 type AccountResponse struct {
-	User    AuthUserResponse `json:"user"`
-	Players []PlayerDTO      `json:"players"`
+	User               AuthUserResponse `json:"user"`
+	Player             *PlayerDTO       `json:"player"`
+	OnboardingRequired bool             `json:"onboarding_required"`
+	Players            []PlayerDTO      `json:"players"`
 }
 
 type PlayerDTO struct {
@@ -145,6 +148,12 @@ type AvailablePlayersResponse struct {
 
 type LinkAccountPlayerRequest struct {
 	PlayerID string `json:"player_id"`
+}
+
+type SelectAccountPlayerRequest struct {
+	Mode     string `json:"mode"`
+	PlayerID string `json:"player_id,omitempty"`
+	Name     string `json:"name,omitempty"`
 }
 
 type UpdateBlindClockLevelsRequest struct {
