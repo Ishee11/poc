@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v10-2026-08-21-embedded-auth";
+const SHELL_CACHE_VERSION = "v11-2026-08-21-profile-route";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -132,7 +132,7 @@ async function refreshSafeShellClients() {
     windowClients.map((client) => {
       const url = new URL(client.url);
       if (url.origin !== self.location.origin) return undefined;
-      if (url.pathname !== "/" && url.pathname !== "/account") return undefined;
+      if (url.pathname !== "/" && url.pathname !== "/profile") return undefined;
       return client.navigate(client.url);
     }),
   );

@@ -28,6 +28,7 @@ assert.match(playerContext({ player_id: "123456789", name: "Alice", sessions_cou
 const html = readFileSync(new URL("../web/index.html", import.meta.url), "utf8");
 const app = readFileSync(new URL("../web/js/app.js", import.meta.url), "utf8");
 const api = readFileSync(new URL("../web/js/api.js", import.meta.url), "utf8");
+const utils = readFileSync(new URL("../web/js/utils.js", import.meta.url), "utf8");
 for (const id of [
 	"header-account-btn",
 	"auth-menu",
@@ -69,5 +70,7 @@ assert.match(
 	"app bootstrap must import playerId for unauthenticated guest loading",
 );
 assert.match(api, /\/admin\/accounts\/\$\{encodeURIComponent\(userId\)\}\/player/);
+assert.match(utils, /function routeToAccount\(\)[\s\S]*return ["']\/profile["']/);
+assert.doesNotMatch(utils, /function routeToAccount\(\)[\s\S]*return ["']\/account["']/);
 
 console.log("account ownership UI tests passed");

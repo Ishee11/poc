@@ -451,7 +451,7 @@ function initAuth() {
       renderAuthPanel();
       syncAdminMode();
       await loadGuestPlayers();
-      if (window.location.pathname === "/account") {
+      if (window.location.pathname === "/profile") {
         setScreen("lobby");
         pushRoute(routeToHome());
       }
@@ -1036,7 +1036,7 @@ async function openInitialRoute({ fromHistory = false } = {}) {
     return;
   }
 
-  if (section === "account") {
+  if (section === "profile") {
     if (!state.authUiEnabled) {
       setScreen("lobby");
       if (!fromHistory) replaceRoute(routeToHome());
