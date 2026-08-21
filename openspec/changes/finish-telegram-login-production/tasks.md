@@ -1,8 +1,8 @@
 ## 1. Production evidence
 
 - [x] 1.1 Add a read-only, credential-safe production identity diagnostic.
-- [ ] 1.2 Inspect the actual email, Telegram identity, player-link, and session relationship.
-- [ ] 1.3 Apply and verify the smallest safe reconciliation supported by that evidence.
+- [x] 1.2 Inspect the actual email, Telegram identity, player-link, and session relationship.
+- [x] 1.3 Apply and verify the smallest safe reconciliation supported by that evidence.
 
 ## 2. Telegram-first login UX
 
@@ -13,5 +13,5 @@
 ## 3. Validation and rollout
 
 - [x] 3.1 Add/update login-order, focus, and service-worker tests.
-- [ ] 3.2 Run full checks and strict OpenSpec validation.
+- [x] 3.2 Run full checks and strict OpenSpec validation.
 - [ ] 3.3 Deploy through dev and production, rerun the diagnostic, and verify user acceptance.
