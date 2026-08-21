@@ -1292,10 +1292,8 @@ export function initSessionActions() {
           }),
         );
       } else if (action === "authenticate") {
-        const disclosure = document.getElementById("admin-login-disclosure");
-        if (disclosure) disclosure.open = true;
-        disclosure?.scrollIntoView({ behavior: "smooth", block: "center" });
-        document.getElementById("admin-login-email")?.focus();
+        document.getElementById("header-account-btn")?.click();
+        document.getElementById("auth-email")?.focus();
       }
       return;
     }

@@ -191,150 +191,126 @@
                                 >Blind Timer</span
                             >
                         </button>
-                    </div>
-                </div>
-                <div class="lobby-auth-bar">
-                    <label class="guest-player-label" id="guest-player-label">
-                        <span data-i18n="guest.player">Guest player</span>
-                        <select id="guest-player-select">
-                            <option value="" data-i18n="guest.noPlayer">
-                                No player selected
-                            </option>
-                        </select>
-                    </label>
-                    <section
-                        class="auth-panel"
-                        aria-label="Authentication"
-                        data-i18n-aria-label="auth.label"
-                    >
-                        <button
-                            type="button"
-                            class="secondary"
-                            id="auth-show-login-btn"
-                            data-i18n="auth.login"
-                        >
-                            Login
-                        </button>
-                        <form
-                            id="auth-login-form"
-                            class="auth-login-form"
-                            onsubmit="return false;"
-                            hidden
-                        >
-                            <input
-                                id="auth-email"
-                                type="email"
-                                autocomplete="username"
-                                placeholder="Email"
-                                data-i18n-placeholder="auth.email"
-                            />
-                            <input
-                                id="auth-password"
-                                type="password"
-                                autocomplete="current-password"
-                                placeholder="Password"
-                                data-i18n-placeholder="auth.password"
-                            />
-                            <input
-                                id="auth-password-confirm"
-                                type="password"
-                                autocomplete="new-password"
-                                placeholder="Confirm password"
-                                data-i18n-placeholder="auth.confirmPassword"
-                                hidden
-                            />
-                            <div
-                                id="auth-player-selection"
-                                class="ownership-selection auth-ownership-selection"
+                        <div class="header-account-menu" id="header-account-menu">
+                            <button
+                                type="button"
+                                class="secondary app-icon-button header-account-btn"
+                                id="header-account-btn"
+                                aria-label="Login"
+                                data-i18n-aria-label="auth.login"
+                                aria-haspopup="dialog"
+                                aria-expanded="false"
+                            >
+                                <img
+                                    class="app-nav-icon"
+                                    src="/static/svg/13-user-outline-white.svg"
+                                    alt=""
+                                    aria-hidden="true"
+                                />
+                                <span class="visually-hidden" data-i18n="auth.login">Login</span>
+                            </button>
+                            <section
+                                class="auth-menu"
+                                id="auth-menu"
+                                aria-label="Authentication"
+                                data-i18n-aria-label="auth.label"
                                 hidden
                             >
-                                <label>
-                                    <span data-i18n="ownership.mode">Player choice</span>
-                                    <select id="auth-player-mode">
-                                        <option value="existing" data-i18n="ownership.existing">Choose existing player</option>
-                                        <option value="new" data-i18n="ownership.new">Create new player</option>
+                                <label class="guest-player-label" id="guest-player-label">
+                                    <span data-i18n="guest.player">Guest player</span>
+                                    <select id="guest-player-select">
+                                        <option value="" data-i18n="guest.noPlayer">
+                                            No player selected
+                                        </option>
                                     </select>
                                 </label>
-                                <label id="auth-existing-player-field">
-                                    <span data-i18n="ownership.existingPlayer">Existing player</span>
-                                    <select id="auth-existing-player"></select>
-                                </label>
-                                <label id="auth-new-player-field" hidden>
-                                    <span data-i18n="ownership.newPlayerName">New player name</span>
-                                    <input id="auth-new-player-name" type="text" autocomplete="off" />
-                                </label>
-                                <p class="hint ownership-warning" data-i18n="ownership.irreversible">
-                                    This choice is permanent. Contact an administrator to correct it.
-                                </p>
-                            </div>
-                            <button
-                                type="submit"
-                                id="auth-submit-btn"
-                                data-i18n="auth.login"
-                            >
-                                Login
-                            </button>
-                            <div
-                                class="auth-register-row"
-                                id="auth-register-row"
-                                hidden
-                            >
-                                <span id="auth-mode-hint" data-i18n="auth.noAccount"
-                                    >No account yet?</span
+                                <form
+                                    id="auth-login-form"
+                                    class="auth-login-form"
+                                    onsubmit="return false;"
                                 >
-                                <button
-                                    type="button"
-                                    class="secondary"
-                                    id="auth-register-btn"
-                                    data-i18n="auth.register"
-                                >
-                                    Register
-                                </button>
-                                <button
-                                    type="button"
-                                    class="secondary"
-                                    id="auth-login-mode-btn"
-                                    data-i18n="auth.haveAccount"
-                                    hidden
-                                >
-                                    Already have an account?
-                                </button>
-                            </div>
-                        </form>
-                        <div
-                            id="auth-user-panel"
-                            class="auth-user-panel"
-                            hidden
-                        >
-                            <div>
-                                <div
-                                    class="auth-user-label"
-                                    data-i18n="auth.signedIn"
-                                >
-                                    Signed in
-                                </div>
-                                <div id="auth-user-name" class="auth-user-name">
-                                    -
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                class="secondary"
-                                id="auth-account-btn"
-                                data-i18n="account.title"
-                            >
-                                Account
-                            </button>
-                            <button
-                                type="button"
-                                class="secondary"
-                                id="auth-logout-btn"
-                                data-i18n="auth.logout"
-                            >
-                                Logout
-                            </button>
+                                    <input
+                                        id="auth-email"
+                                        type="email"
+                                        autocomplete="username"
+                                        placeholder="Email"
+                                        data-i18n-placeholder="auth.email"
+                                    />
+                                    <input
+                                        id="auth-password"
+                                        type="password"
+                                        autocomplete="current-password"
+                                        placeholder="Password"
+                                        data-i18n-placeholder="auth.password"
+                                    />
+                                    <input
+                                        id="auth-password-confirm"
+                                        type="password"
+                                        autocomplete="new-password"
+                                        placeholder="Confirm password"
+                                        data-i18n-placeholder="auth.confirmPassword"
+                                        hidden
+                                    />
+                                    <div
+                                        id="auth-player-selection"
+                                        class="ownership-selection auth-ownership-selection"
+                                        hidden
+                                    >
+                                        <label>
+                                            <span data-i18n="ownership.mode">Player choice</span>
+                                            <select id="auth-player-mode">
+                                                <option value="existing" data-i18n="ownership.existing">Choose existing player</option>
+                                                <option value="new" data-i18n="ownership.new">Create new player</option>
+                                            </select>
+                                        </label>
+                                        <label id="auth-existing-player-field">
+                                            <span data-i18n="ownership.existingPlayer">Existing player</span>
+                                            <select id="auth-existing-player"></select>
+                                        </label>
+                                        <label id="auth-new-player-field" hidden>
+                                            <span data-i18n="ownership.newPlayerName">New player name</span>
+                                            <input id="auth-new-player-name" type="text" autocomplete="off" />
+                                        </label>
+                                        <p class="hint ownership-warning" data-i18n="ownership.irreversible">
+                                            This choice is permanent. Contact an administrator to correct it.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        id="auth-submit-btn"
+                                        data-i18n="auth.login"
+                                    >
+                                        Login
+                                    </button>
+                                    <div
+                                        class="auth-register-row"
+                                        id="auth-register-row"
+                                    >
+                                        <span id="auth-mode-hint" data-i18n="auth.noAccount"
+                                            >No account yet?</span
+                                        >
+                                        <button
+                                            type="button"
+                                            class="secondary"
+                                            id="auth-register-btn"
+                                            data-i18n="auth.register"
+                                        >
+                                            Register
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="secondary"
+                                            id="auth-login-mode-btn"
+                                            data-i18n="auth.haveAccount"
+                                            hidden
+                                        >
+                                            Already have an account?
+                                        </button>
+                                    </div>
+                                </form>
+                            </section>
                         </div>
-                    </section>
+                    </div>
                 </div>
             </header>
 
@@ -1047,6 +1023,16 @@
                             </div>
                             <div id="admin-account-empty" class="hint" hidden data-i18n="adminOwnership.empty">No accounts found.</div>
                         </section>
+                        <div class="account-footer-actions" id="account-footer-actions" hidden>
+                            <button
+                                type="button"
+                                class="secondary"
+                                id="account-logout-btn"
+                                data-i18n="auth.logout"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -1528,58 +1514,6 @@ class="results-close-bill-btn"
                 </section>
             </main>
 
-            <footer class="admin-login-footer">
-                <details
-                    class="admin-login-disclosure"
-                    id="admin-login-disclosure"
-                >
-                    <summary data-i18n="adminLogin.summary">Admin</summary>
-                    <section
-                        class="admin-login-panel"
-                        aria-label="Admin login"
-                        data-i18n-aria-label="adminLogin.label"
-                    >
-                        <form
-                            id="admin-login-form"
-                            class="admin-login-form"
-                            onsubmit="return false;"
-                        >
-                            <input
-                                id="admin-login-email"
-                                type="email"
-                                autocomplete="username"
-                                placeholder="Email"
-                                data-i18n-placeholder="auth.email"
-                            />
-                            <input
-                                id="admin-login-password"
-                                type="password"
-                                autocomplete="current-password"
-                                placeholder="Password"
-                                data-i18n-placeholder="auth.password"
-                            />
-                            <button type="submit" class="rebuy-action" data-i18n="auth.login">
-                                Login
-                            </button>
-                        </form>
-                        <div
-                            id="admin-login-user-panel"
-                            class="admin-login-user-panel"
-                            hidden
-                        >
-                            <span id="admin-login-user-name">-</span>
-                            <button
-                                type="button"
-                                class="secondary"
-                                id="admin-login-logout-btn"
-                                data-i18n="auth.logout"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </section>
-                </details>
-            </footer>
         </div>
 
         <div id="modal-root" class="modal-root" hidden></div>

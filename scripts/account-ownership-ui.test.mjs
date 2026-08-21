@@ -29,6 +29,8 @@ const html = readFileSync(new URL("../web/index.html", import.meta.url), "utf8")
 const app = readFileSync(new URL("../web/js/app.js", import.meta.url), "utf8");
 const api = readFileSync(new URL("../web/js/api.js", import.meta.url), "utf8");
 for (const id of [
+	"header-account-btn",
+	"auth-menu",
 	"auth-player-mode",
 	"auth-existing-player",
 	"auth-new-player-name",
@@ -36,10 +38,24 @@ for (const id of [
 	"admin-account-search-form",
 	"admin-account-replace",
 	"admin-account-clear",
+	"account-logout-btn",
 ]) {
 	assert.match(html, new RegExp(`id=["']${id}["']`), `missing ownership control ${id}`);
 }
+for (const removedId of [
+	"auth-show-login-btn",
+	"auth-account-btn",
+	"auth-logout-btn",
+	"admin-login-disclosure",
+]) {
+	assert.doesNotMatch(html, new RegExp(`id=["']${removedId}["']`), `obsolete auth control ${removedId}`);
+}
+const timerButtonIndex = html.indexOf('id="header-blinds-clock-btn"');
+const accountButtonIndex = html.indexOf('id="header-account-btn"');
+assert.ok(timerButtonIndex >= 0 && accountButtonIndex > timerButtonIndex, "account icon must follow blind timer");
 assert.match(app, /state\.accountOnboardingRequired[\s\S]*openAccount\(\{ replace: true \}\)/);
+assert.match(app, /header-account-btn[\s\S]*state\.authUser[\s\S]*openAccount\(\)/);
+assert.match(app, /account-logout-btn[\s\S]*logout\(\)/);
 assert.match(
 	app,
 	/import\s*\{[\s\S]*?\bplayerId\b[\s\S]*?\}\s*from\s*["']\.\/utils\.js["']/,

@@ -144,7 +144,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   initPlayersSort();
   initPlayersOverviewFilters();
   initSessionsFilter();
-  initAdminLoginFooter();
   if (state.authUiEnabled) {
     initAuth();
     initAccountPanel();
@@ -159,7 +158,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadCurrentUser();
     await loadGuestPlayers();
   } else {
-    await loadCurrentAdminUser();
+    state.authChecked = true;
+    state.authUser = null;
+    syncAdminMode();
   }
   if (isSessionRoute()) {
     const routePromise = openInitialRoute();
@@ -336,98 +337,39 @@ function applyUiFeatureFlags() {
   document.body.classList.toggle("auth-ui-disabled", !state.authUiEnabled);
 }
 
-function initAdminLoginFooter() {
-  const form = document.getElementById("admin-login-form");
-  const logoutButton = document.getElementById("admin-login-logout-btn");
-
-  if (form) {
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      const email = document.getElementById("admin-login-email")?.value?.trim() || "";
-      const password = document.getElementById("admin-login-password")?.value || "";
-      if (!email || !password) {
-        showNotice(t("notice.authCredentialsRequired"), "error");
-        return;
-      }
-
-      const res = await login({ email, password });
-      if (!res.ok || !res.body?.user) {
-        showNotice(describeError(res, t("error.loginFailed")), "error");
-        return;
-      }
-
-      if (res.body.user.role !== "admin") {
-        await logout();
-        state.authUser = null;
-        state.authChecked = true;
-        syncAdminMode();
-        renderAdminLoginFooter();
-        showNotice(t("error.adminRequired"), "error");
-        return;
-      }
-
-      state.authUser = res.body.user;
-      state.authChecked = true;
-      state.authLoginOpen = false;
-      form.reset();
-      renderAuthPanel();
-      renderAdminLoginFooter();
-      syncAdminMode();
-      if (state.authUiEnabled) await loadAccount();
-      await resumeReplayAfterAuthentication();
-      showNotice(t("notice.loginSuccess"), "success");
-      await Promise.all([loadSessions(), loadPlayersOverview()]);
-    });
-  }
-
-  if (logoutButton) {
-    logoutButton.addEventListener("click", async () => {
-      const res = await logout();
-      if (!res.ok && res.status !== 401) {
-        showNotice(describeError(res, t("error.logoutFailed")), "error");
-        return;
-      }
-
-      state.authUser = null;
-      state.authChecked = true;
-      state.authLoginOpen = false;
-      clearAccount();
-      renderAuthPanel();
-      renderAdminLoginFooter();
-      syncAdminMode();
-      showNotice(t("notice.logoutSuccess"), "success");
-      await Promise.all([loadSessions(), loadPlayersOverview()]);
-    });
-  }
-}
-
-async function loadCurrentAdminUser() {
-  const res = await getCurrentUser();
-  state.authChecked = true;
-  state.authUser = res.ok && res.body?.user ? res.body.user : null;
-  renderAdminLoginFooter();
-  syncAdminMode();
-  if (state.authUser) await resumeReplayAfterAuthentication();
-}
-
 function initAuth() {
-  const showLoginButton = document.getElementById("auth-show-login-btn");
+  const accountMenu = document.getElementById("header-account-menu");
+  const accountButton = document.getElementById("header-account-btn");
   const form = document.getElementById("auth-login-form");
-  const accountButton = document.getElementById("auth-account-btn");
-  const logoutButton = document.getElementById("auth-logout-btn");
+  const logoutButton = document.getElementById("account-logout-btn");
   const registerButton = document.getElementById("auth-register-btn");
 	const loginModeButton = document.getElementById("auth-login-mode-btn");
 	const playerMode = document.getElementById("auth-player-mode");
 
-  if (showLoginButton) {
-    showLoginButton.addEventListener("click", () => {
-      state.authLoginOpen = true;
+  if (accountButton) {
+    accountButton.addEventListener("click", async () => {
+      if (state.authUser) {
+        await openAccount();
+        return;
+      }
+      state.authLoginOpen = !state.authLoginOpen;
       state.authMode = "login";
       renderAuthPanel();
-      document.getElementById("auth-email")?.focus();
+      if (state.authLoginOpen) document.getElementById("auth-email")?.focus();
     });
   }
+
+  document.addEventListener("click", (event) => {
+    if (!state.authLoginOpen || accountMenu?.contains(event.target)) return;
+    state.authLoginOpen = false;
+    renderAuthPanel();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !state.authLoginOpen) return;
+    state.authLoginOpen = false;
+    renderAuthPanel();
+    accountButton?.focus();
+  });
 
   if (form) {
     form.addEventListener("submit", async (event) => {
@@ -479,7 +421,6 @@ function initAuth() {
       state.authMode = "login";
       form.reset();
       renderAuthPanel();
-      renderAdminLoginFooter();
       syncAdminMode();
       await loadAccount();
 		if (state.accountOnboardingRequired) await openAccount({ replace: true });
@@ -506,7 +447,6 @@ function initAuth() {
       state.authMode = "login";
       clearAccount();
       renderAuthPanel();
-      renderAdminLoginFooter();
       syncAdminMode();
       await loadGuestPlayers();
       if (window.location.pathname === "/account") {
@@ -514,12 +454,7 @@ function initAuth() {
         pushRoute(routeToHome());
       }
       showNotice(t("notice.logoutSuccess"), "success");
-    });
-  }
-
-  if (accountButton) {
-    accountButton.addEventListener("click", async () => {
-      await openAccount();
+      await Promise.all([loadSessions(), loadPlayersOverview()]);
     });
   }
 
@@ -578,7 +513,6 @@ async function loadCurrentUser() {
   state.authChecked = true;
   state.authUser = res.ok && res.body?.user ? res.body.user : null;
   renderAuthPanel();
-  renderAdminLoginFooter();
   syncAdminMode();
   if (state.authUser) {
     await loadAccount();
@@ -595,27 +529,28 @@ function renderAuthPanel() {
   if (!state.authUiEnabled) return;
 
   const form = document.getElementById("auth-login-form");
-  const showLoginButton = document.getElementById("auth-show-login-btn");
+  const accountButton = document.getElementById("header-account-btn");
+  const accountButtonLabel = accountButton?.querySelector(".visually-hidden");
+  const menu = document.getElementById("auth-menu");
   const registerRow = document.getElementById("auth-register-row");
   const registerButton = document.getElementById("auth-register-btn");
   const loginModeButton = document.getElementById("auth-login-mode-btn");
   const confirmPassword = document.getElementById("auth-password-confirm");
   const submitButton = document.getElementById("auth-submit-btn");
   const modeHint = document.getElementById("auth-mode-hint");
-  const userPanel = document.getElementById("auth-user-panel");
-  const userName = document.getElementById("auth-user-name");
   const guestPlayerLabel = document.getElementById("guest-player-label");
-  const authPanel = document.querySelector(".auth-panel");
 
-  if (!form || !showLoginButton || !registerRow || !userPanel || !userName) return;
+  if (!form || !accountButton || !menu || !registerRow) return;
 
   const user = state.authUser;
-  authPanel?.classList.toggle("authenticated", Boolean(user));
-  authPanel?.classList.toggle("login-open", !user && state.authLoginOpen);
-  showLoginButton.hidden = Boolean(user) || state.authLoginOpen;
-  form.hidden = Boolean(user) || !state.authLoginOpen;
+  const menuOpen = !user && state.authLoginOpen;
+  accountButton.classList.toggle("authenticated", Boolean(user));
+  accountButton.setAttribute("aria-expanded", String(menuOpen));
+  accountButton.setAttribute("aria-label", t(user ? "account.title" : "auth.login"));
+  if (accountButtonLabel) accountButtonLabel.textContent = t(user ? "account.title" : "auth.login");
+  menu.hidden = !menuOpen;
+  form.hidden = !menuOpen;
   registerRow.hidden = Boolean(user) || !state.authLoginOpen;
-  userPanel.hidden = !user;
   if (guestPlayerLabel) guestPlayerLabel.hidden = Boolean(user);
 
   const registering = state.authMode === "register";
@@ -627,30 +562,6 @@ function renderAuthPanel() {
 		submitButton.textContent = t(registering ? "auth.register" : "auth.login");
 	}
 	renderRegistrationOwnership();
-
-  if (user) {
-    userName.textContent = `${user.email} · ${user.role}`;
-  } else {
-    userName.textContent = "-";
-  }
-}
-
-function renderAdminLoginFooter() {
-  const form = document.getElementById("admin-login-form");
-  const userPanel = document.getElementById("admin-login-user-panel");
-  const userName = document.getElementById("admin-login-user-name");
-  const disclosure = document.getElementById("admin-login-disclosure");
-
-  if (!form || !userPanel || !userName) return;
-
-  const user = state.authUser?.role === "admin" ? state.authUser : null;
-  form.hidden = Boolean(user);
-  userPanel.hidden = !user;
-  userName.textContent = user ? `${user.email} · ${user.role}` : "-";
-
-  if (disclosure && user) {
-    disclosure.open = false;
-  }
 }
 
 function initGuestPlayerSelect() {
@@ -843,6 +754,7 @@ function renderAccountPanel() {
 	const newField = document.getElementById("account-new-player-field");
 	const guidance = document.getElementById("account-admin-guidance");
 	const adminPanel = document.getElementById("admin-account-ownership");
+	const footerActions = document.getElementById("account-footer-actions");
 	if (!panel || !linked || !select || !form || !mode || !existingField || !newField) return;
 
   if (!state.authUiEnabled) {
@@ -856,8 +768,10 @@ function renderAccountPanel() {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loginRequired"))}</div>`;
 		form.hidden = true;
 		if (adminPanel) adminPanel.hidden = true;
+		if (footerActions) footerActions.hidden = true;
 		return;
 	}
+	if (footerActions) footerActions.hidden = false;
 
   if (state.accountLoading) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;
