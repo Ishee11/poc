@@ -9,17 +9,68 @@
         <meta name="theme-color" content="#0b1117" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="poker-local-first-session-writes" content="false" />
+        <meta name="poker-shell-version" content="v14-2026-08-21-resilient-startup" />
         <meta
             name="apple-mobile-web-app-status-bar-style"
             content="black-translucent"
         />
         <title>Poker Session Control</title>
 
+        <style>
+            .startup-shell {
+                position: fixed;
+                inset: 0;
+                z-index: 10000;
+                display: grid;
+                place-items: center;
+                padding: 24px;
+                color: #f4f1ea;
+                background: #020706;
+                font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+            }
+            .startup-shell[hidden] { display: none; }
+            .startup-card { width: min(420px, 100%); text-align: center; }
+            .startup-card p { color: #afa99b; line-height: 1.45; }
+            .startup-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+            .startup-actions button {
+                min-height: 44px;
+                padding: 10px 16px;
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 10px;
+                color: #f4f1ea;
+                background: #0b100d;
+                font: inherit;
+            }
+        </style>
+        <script
+            src="/static/js/startup.js"
+            onerror="window.__pokerStartupScriptFailed = true"
+        ></script>
+
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="stylesheet" href="/static/css/main.css" />
     </head>
 
     <body>
+        <div id="startup-shell" class="startup-shell" role="status" aria-live="polite">
+            <div class="startup-card">
+                <strong id="startup-message">Загрузка приложения…</strong>
+                <p id="startup-detail" hidden></p>
+                <div class="startup-actions">
+                    <button type="button" id="startup-retry" hidden>Повторить</button>
+                    <button type="button" id="startup-update" hidden>Обновить приложение</button>
+                </div>
+            </div>
+        </div>
+        <script>
+            if (window.__pokerStartupScriptFailed) {
+                document.getElementById("startup-message").textContent = "Не удалось загрузить приложение";
+                document.getElementById("startup-detail").hidden = false;
+                document.getElementById("startup-detail").textContent = "Проверьте сеть или VPN и повторите попытку.";
+                document.getElementById("startup-retry").hidden = false;
+                document.getElementById("startup-retry").onclick = function () { location.reload(); };
+            }
+        </script>
         <div class="app">
             <header class="app-header">
                 <div class="app-header-content">
@@ -1544,6 +1595,10 @@ class="results-close-bill-btn"
 
         <div id="modal-root" class="modal-root" hidden></div>
 
-        <script type="module" src="/static/js/app.js"></script>
+        <script
+            type="module"
+            src="/static/js/app.js"
+            onerror="window.pokerStartup?.fail('module', new Error('Application module failed to load'), { fatal: true })"
+        ></script>
     </body>
 </html>

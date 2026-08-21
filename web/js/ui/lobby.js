@@ -32,7 +32,7 @@ export async function loadSessions() {
     state.overviewSessionPageItems = [];
     state.overviewSessionsHasNextPage = false;
     renderSessions();
-    return;
+    return res;
   }
 
   let sessions;
@@ -58,6 +58,7 @@ export async function loadSessions() {
     syncSelect();
   }
   renderSessions();
+  return res;
 }
 
 export function renderSessions() {

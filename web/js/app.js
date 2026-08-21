@@ -136,133 +136,224 @@ const sessionOutboxReplay = createOutboxReplay({
 });
 
 let replayLifecycleInitialized = false;
+let remoteRefreshLifecycleInitialized = false;
+let remoteRefreshPromise = null;
+let lastVisibleRefreshAt = 0;
+const VISIBLE_REFRESH_INTERVAL_MS = 15_000;
 
-document.addEventListener("DOMContentLoaded", async () => {
-  initI18n();
-  registerAppShellServiceWorker();
-  initializeLocalRuntime();
-  await loadAuthConfig();
-  applyUiFeatureFlags();
-  initPlayersSort();
-  initPlayersOverviewFilters();
-  initSessionsFilter();
-  if (state.authUiEnabled) {
+document.addEventListener("DOMContentLoaded", () => {
+  void bootstrapApplication();
+});
+
+async function bootstrapApplication() {
+  try {
+    window.pokerStartup?.setPhase("bootstrap");
+    initI18n();
+    registerAppShellServiceWorker();
+    initializeLocalRuntime();
+    applyUiFeatureFlags();
+    initPlayersSort();
+    initPlayersOverviewFilters();
+    initSessionsFilter();
     initAuth();
     initAccountPanel();
     initGuestPlayerSelect();
-  }
-  initSessionActions();
-  initBlindsClock();
-  initLanguageSelect();
-  onLanguageChange(renderCurrentLanguage);
+    initSessionActions();
+    initBlindsClock();
+    initLanguageSelect();
+    onLanguageChange(renderCurrentLanguage);
 
+    window.addEventListener("popstate", () => {
+      void openInitialRoute({ fromHistory: true }).catch((error) => {
+        window.pokerStartup?.fail("bootstrap", error, { phase: "route_change" });
+      });
+    });
+
+    const openButton = document.getElementById("open-workspace-btn");
+    const sessionSelect = document.getElementById("active-session-select");
+    if (openButton && sessionSelect) {
+      openButton.addEventListener("click", async () => {
+        let sessionId = sessionSelect.value;
+        if (!sessionId) {
+          sessionId = firstActiveSessionId();
+        }
+
+        if (!sessionId) {
+          showNotice(t("notice.noSession"), "info");
+          return;
+        }
+
+        await openSession(sessionId);
+      });
+    }
+
+    const startForm = document.getElementById("start-session-form");
+    const startToggle = document.getElementById("start-session-toggle");
+    renderStartChipRateLabel();
+    applyLatestSessionDefaults();
+    if (startForm && startToggle) {
+      const handleStartSession = async (event) => {
+        event.preventDefault();
+
+        if (navigator.onLine === false) {
+          showNotice(t("error.onlineRequired"), "error");
+          return;
+        }
+
+        const currency = defaultCurrency();
+        const values = await openModal({
+          title: t("modal.startTitle"),
+          confirmText: t("lobby.startSession"),
+          confirmClass: "rebuy-action",
+          fields: [
+            {
+              name: "chip_rate",
+              label: t("lobby.chipRate", { currencySymbol: currencySymbol() }),
+              type: "number",
+              min: 1,
+              value: defaultStartNumber("chip_rate", 1),
+            },
+            {
+              name: "big_blind",
+              label: t("lobby.bigBlind"),
+              type: "number",
+              min: 1,
+              value: defaultStartNumber("big_blind", 1),
+            },
+          ],
+        });
+        if (!values) return;
+
+        const chipRate = Number(values.chip_rate);
+        const bigBlind = Number(values.big_blind);
+        if (!Number.isFinite(chipRate) || chipRate <= 0) {
+          showNotice(t("notice.validChipRate"), "error");
+          return;
+        }
+        if (!Number.isFinite(bigBlind) || bigBlind <= 0) {
+          showNotice(t("notice.validBigBlind"), "error");
+          return;
+        }
+
+        const res = await startSession({ chipRate, bigBlind, currency });
+        if (!res.ok || !res.body?.session_id) {
+          showNotice(describeError(res, t("error.failedStartSession")), "error");
+          return;
+        }
+
+        await Promise.all([loadSessions(), loadPlayersOverview()]);
+        applyLatestSessionDefaults({ force: true });
+        await openSession(res.body.session_id);
+        showNotice(t("notice.sessionStarted"), "success");
+      };
+
+      startToggle.addEventListener("click", handleStartSession);
+      startForm.addEventListener("submit", handleStartSession);
+    }
+
+    showInitialRouteShell();
+    initializeRemoteRefreshLifecycle();
+    window.pokerStartup?.ready();
+    void refreshRemoteState({ reason: "startup", force: true });
+  } catch (error) {
+    window.pokerStartup?.fail("bootstrap", error, { fatal: true, phase: "bootstrap" });
+  }
+}
+
+function showInitialRouteShell() {
+  const [, section, rawId, subSection] = window.location.pathname.split("/");
+  if (section === "session" && rawId && subSection === "results") return setScreen("results");
+  if (section === "session" && rawId) return setScreen("session");
+  if (section === "player" && rawId) return setScreen("player");
+  if (section === "players" && rawId === "stats") return setScreen("players-stats");
+  if (section === "profile") return setScreen("account");
+  if (section === "blinds") return setScreen("blinds");
+  return setScreen("lobby");
+}
+
+function initializeRemoteRefreshLifecycle() {
+  if (remoteRefreshLifecycleInitialized) return;
+  remoteRefreshLifecycleInitialized = true;
+  window.addEventListener("online", () => {
+    void refreshRemoteState({ reason: "online", force: true });
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    void refreshRemoteState({ reason: "visible" });
+  });
+}
+
+function refreshRemoteState({ reason, force = false }) {
+  if (remoteRefreshPromise) return remoteRefreshPromise;
+  const now = Date.now();
+  if (!force && reason === "visible" && now - lastVisibleRefreshAt < VISIBLE_REFRESH_INTERVAL_MS) {
+    return Promise.resolve();
+  }
+  if (reason === "visible") lastVisibleRefreshAt = now;
+
+  remoteRefreshPromise = runRemoteRefresh(reason)
+    .catch((error) => {
+      window.pokerStartup?.degraded("initial_api", error, "remote_refresh");
+      showNotice(t("error.startupNetwork"), "error");
+    })
+    .finally(() => {
+      remoteRefreshPromise = null;
+    });
+  return remoteRefreshPromise;
+}
+
+async function runRemoteRefresh(reason) {
+  window.pokerStartup?.setPhase("auth_initialization");
+  const configResult = await loadAuthConfig();
+  reportRemoteFailure(configResult, "auth", "auth_config");
+  applyUiFeatureFlags();
+
+  let authResult = null;
   if (state.authUiEnabled) {
-    await loadCurrentUser();
-    await loadGuestPlayers();
+    authResult = await loadCurrentUser();
+    if (authResult?.status !== 401) reportRemoteFailure(authResult, "auth", "session_restore");
+    const guestResult = await loadGuestPlayers();
+    reportRemoteFailure(guestResult, "auth", "guest_players");
     handleTelegramReturn();
   } else {
     state.authChecked = true;
     state.authUser = null;
     syncAdminMode();
   }
+
+  window.pokerStartup?.setPhase("initial_api");
+  let lobbyResults;
   if (isSessionRoute()) {
     const routePromise = openInitialRoute();
-    void Promise.all([loadSessions(), loadPlayersOverview()]).catch((error) => {
-      console.error("Background lobby refresh failed:", error);
-    });
+    const lobbyPromise = Promise.all([loadSessions(), loadPlayersOverview()]);
+    lobbyResults = await lobbyPromise;
     await routePromise;
   } else {
-    await Promise.all([loadSessions(), loadPlayersOverview()]);
+    lobbyResults = await Promise.all([loadSessions(), loadPlayersOverview()]);
     await openInitialRoute();
   }
 
-  window.addEventListener("popstate", () => {
-    openInitialRoute({ fromHistory: true });
-  });
-
-  const openButton = document.getElementById("open-workspace-btn");
-  const sessionSelect = document.getElementById("active-session-select");
-  if (openButton && sessionSelect) {
-    openButton.addEventListener("click", async () => {
-      let sessionId = sessionSelect.value;
-      if (!sessionId) {
-        sessionId = firstActiveSessionId();
-      }
-
-      if (!sessionId) {
-        showNotice(t("notice.noSession"), "info");
-        return;
-      }
-
-      await openSession(sessionId);
-    });
+  const failures = flattenResults(lobbyResults).filter((result) => result && result.ok === false);
+  failures.forEach((result) => reportRemoteFailure(result, "initial_api", reason));
+  if (failures.length || configResult?.ok === false || (authResult?.ok === false && authResult.status !== 401)) {
+    showNotice(t("error.startupNetwork"), "error");
   }
+}
 
-  const startForm = document.getElementById("start-session-form");
-  const startToggle = document.getElementById("start-session-toggle");
-  renderStartChipRateLabel();
-  applyLatestSessionDefaults();
-  if (startForm && startToggle) {
-    const handleStartSession = async (event) => {
-      event.preventDefault();
+function flattenResults(results) {
+  if (!Array.isArray(results)) return [results];
+  return results.flatMap((result) => Array.isArray(result) ? flattenResults(result) : [result]);
+}
 
-      if (navigator.onLine === false) {
-        showNotice(t("error.onlineRequired"), "error");
-        return;
-      }
-
-      const currency = defaultCurrency();
-      const values = await openModal({
-        title: t("modal.startTitle"),
-        confirmText: t("lobby.startSession"),
-        confirmClass: "rebuy-action",
-        fields: [
-          {
-            name: "chip_rate",
-            label: t("lobby.chipRate", { currencySymbol: currencySymbol() }),
-            type: "number",
-            min: 1,
-            value: defaultStartNumber("chip_rate", 1),
-          },
-          {
-            name: "big_blind",
-            label: t("lobby.bigBlind"),
-            type: "number",
-            min: 1,
-            value: defaultStartNumber("big_blind", 1),
-          },
-        ],
-      });
-      if (!values) return;
-
-      const chipRate = Number(values.chip_rate);
-      const bigBlind = Number(values.big_blind);
-      if (!Number.isFinite(chipRate) || chipRate <= 0) {
-        showNotice(t("notice.validChipRate"), "error");
-        return;
-      }
-      if (!Number.isFinite(bigBlind) || bigBlind <= 0) {
-        showNotice(t("notice.validBigBlind"), "error");
-        return;
-      }
-
-      const res = await startSession({ chipRate, bigBlind, currency });
-      if (!res.ok || !res.body?.session_id) {
-        showNotice(describeError(res, t("error.failedStartSession")), "error");
-        return;
-      }
-
-      await Promise.all([loadSessions(), loadPlayersOverview()]);
-      applyLatestSessionDefaults({ force: true });
-      await openSession(res.body.session_id);
-      showNotice(t("notice.sessionStarted"), "success");
-    };
-
-    startToggle.addEventListener("click", handleStartSession);
-    startForm.addEventListener("submit", handleStartSession);
-  }
-
-});
+function reportRemoteFailure(result, category, phase) {
+  if (!result || result.ok !== false) return;
+  const error = new Error(result.text || `${category} request failed`);
+  if (result.errorKind === "timeout") error.name = "TimeoutError";
+  const diagnosticCategory = result.errorKind === "offline" || result.errorKind === "network"
+    ? result.errorKind
+    : category;
+  window.pokerStartup?.degraded(diagnosticCategory, error, phase);
+}
 
 async function loadAuthConfig() {
   const res = await getAuthConfig();
@@ -270,6 +361,7 @@ async function loadAuthConfig() {
     state.authUiEnabled = res.body.enabled;
     state.telegramAuthEnabled = res.body.telegram_enabled === true;
   }
+  return res;
 }
 
 function handleTelegramReturn() {
@@ -331,6 +423,7 @@ function registerAppShellServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   void navigator.serviceWorker.register("/sw.js").catch((error) => {
     console.warn("App shell service worker registration failed", error);
+    window.pokerStartup?.degraded("service_worker", error, "service_worker_registration");
   });
 }
 
@@ -525,6 +618,7 @@ async function loadCurrentUser() {
   } else {
     clearAccount();
   }
+  return res;
 }
 
 function renderAuthPanel() {
@@ -587,13 +681,13 @@ async function loadGuestPlayers() {
     state.guestPlayers = [];
     state.guestPlayerId = "";
     renderGuestPlayerSelect();
-    return;
+    return { ok: true, status: 200, errorKind: "none" };
   }
 
   if (state.authUser) {
     state.guestPlayers = [];
     renderGuestPlayerSelect();
-    return;
+    return { ok: true, status: 200, errorKind: "none" };
   }
 
   const res = await getUnlinkedPlayers({ limit: 200 });
@@ -607,6 +701,7 @@ async function loadGuestPlayers() {
     saveGuestPlayerId("");
   }
   renderGuestPlayerSelect();
+  return res;
 }
 
 function renderGuestPlayerSelect() {

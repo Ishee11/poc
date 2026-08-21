@@ -3,11 +3,17 @@ self.addEventListener("install", (event) => {
     caches
       .open(SHELL_CACHE_NAME)
       .then(async (cache) => {
-        await cache.addAll(REQUIRED_SHELL_ASSETS);
+        await cache.addAll(
+          REQUIRED_SHELL_ASSETS.map(
+            (asset) => new Request(new URL(asset, self.location.origin), { cache: "reload" }),
+          ),
+        );
         await Promise.all(
           OPTIONAL_SHELL_ASSETS.map(async (asset) => {
             try {
-              await cache.add(asset);
+              await cache.add(
+                new Request(new URL(asset, self.location.origin), { cache: "reload" }),
+              );
             } catch {
               // Decorative assets must not make the shell installation fail.
             }
@@ -44,7 +50,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(request));
+    event.respondWith(activeShellNavigation(request));
     return;
   }
 
@@ -79,13 +85,14 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v13-2026-08-21-player-session-visibility-layout";
+const SHELL_CACHE_VERSION = "v14-2026-08-21-resilient-startup";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
   "/",
   "/manifest.webmanifest",
   "/static/css/main.css",
+  "/static/js/startup.js",
   "/static/js/app.js",
   "/static/js/account-ownership-ui.js",
   "/static/js/api.js",
@@ -146,14 +153,13 @@ function isSafeShellRefreshPath(pathname) {
     pathname.startsWith("/player/");
 }
 
-async function networkFirstNavigation(request) {
-  try {
-    return await fetch(request);
-  } catch {
-    const cached = await caches.match("/", { cacheName: SHELL_CACHE_NAME });
-    if (cached) return cached;
-    throw new Error("Offline shell is unavailable");
-  }
+async function activeShellNavigation(request) {
+  const cached = await caches.match("/", { cacheName: SHELL_CACHE_NAME });
+  if (cached) return cached;
+
+  // An uncontrolled first visit has no active cache. Keep a network fallback
+  // for defensive completeness without mixing generations for controlled clients.
+  return fetch(request);
 }
 
 async function cacheFirstStatic(request) {
