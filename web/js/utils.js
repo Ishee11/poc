@@ -186,7 +186,7 @@ export function routeToPlayersStats() {
 }
 
 export function routeToAccount() {
-  return "/account";
+  return "/profile";
 }
 
 export function routeToBlinds(mode = "default") {
