@@ -40,6 +40,18 @@ type fakeStatsRepo struct {
 	lastSessionFilter *SessionStatsFilter
 }
 
+type fakeSessionAccessRepo struct {
+	allowed    bool
+	lastFilter *SessionAccessFilter
+}
+
+func (r fakeSessionAccessRepo) CanViewSession(_ Tx, _ entity.SessionID, filter SessionAccessFilter) (bool, error) {
+	if r.lastFilter != nil {
+		*r.lastFilter = filter
+	}
+	return r.allowed, nil
+}
+
 func (r fakeStatsRepo) ListSessions(_ Tx, filter SessionStatsFilter) ([]SessionStat, error) {
 	if r.lastSessionFilter != nil {
 		*r.lastSessionFilter = filter
@@ -76,6 +88,33 @@ func TestGetStatsSessionsPaginationFilter(t *testing.T) {
 	}
 	if got.Limit != 51 || got.Offset != 100 || got.Status != entity.StatusFinished {
 		t.Fatalf("unexpected session filter: %+v", got)
+	}
+}
+
+func TestSessionAccessRequiresVisibleSession(t *testing.T) {
+	viewer := entity.AuthUserID("viewer-1")
+	var filter SessionAccessFilter
+	service := NewSessionAccessService(
+		fakeSessionAccessRepo{allowed: true, lastFilter: &filter},
+		fakeTxManager{},
+	)
+
+	err := service.RequireView(context.Background(), SessionAccessQuery{
+		SessionID:     "session-1",
+		ViewerUserID:  &viewer,
+		ViewerIsAdmin: false,
+		GuestPlayerID: "guest-1",
+	})
+	if err != nil {
+		t.Fatalf("require visible session: %v", err)
+	}
+	if filter.ViewerUserID == nil || *filter.ViewerUserID != viewer || filter.GuestPlayerID != "guest-1" {
+		t.Fatalf("unexpected access filter: %+v", filter)
+	}
+
+	denied := NewSessionAccessService(fakeSessionAccessRepo{}, fakeTxManager{})
+	if err := denied.RequireView(context.Background(), SessionAccessQuery{SessionID: "session-2"}); !errors.Is(err, entity.ErrForbidden) {
+		t.Fatalf("expected forbidden session, got %v", err)
 	}
 }
 

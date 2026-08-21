@@ -106,9 +106,18 @@ type SessionStatsFilter struct {
 }
 
 type PlayerStatsFilter struct {
-	Limit int
-	From  *DateTimeRangeBound
-	To    *DateTimeRangeBound
+	Limit         int
+	From          *DateTimeRangeBound
+	To            *DateTimeRangeBound
+	ViewerUserID  *entity.AuthUserID
+	ViewerIsAdmin bool
+	GuestPlayerID entity.PlayerID
+}
+
+type SessionAccessFilter struct {
+	ViewerUserID  *entity.AuthUserID
+	ViewerIsAdmin bool
+	GuestPlayerID entity.PlayerID
 }
 
 type DateTimeRangeBound struct {
@@ -135,6 +144,10 @@ type StatsRepository interface {
 	ListPlayers(tx Tx, filter PlayerStatsFilter) ([]PlayerStat, error)
 	GetPlayerOverall(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) (*PlayerOverallStat, error)
 	ListPlayerSessions(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) ([]PlayerSessionStat, error)
+}
+
+type SessionAccessRepository interface {
+	CanViewSession(tx Tx, sessionID entity.SessionID, filter SessionAccessFilter) (bool, error)
 }
 
 type AdminRepository interface {

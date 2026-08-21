@@ -28,6 +28,9 @@ func (h *OperationHandler) BuyIn(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
+	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+		return
+	}
 
 	ack, err := h.buyInUC.Execute(r.Context(), command.BuyInCommand{
 		RequestID: req.RequestID,

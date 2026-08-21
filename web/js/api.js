@@ -131,6 +131,21 @@ function rid() {
   return createRequestId();
 }
 
+function guestPlayerIdForRequest() {
+  try {
+    return globalThis.localStorage?.getItem("poker-guest-player-id") || "";
+  } catch {
+    return "";
+  }
+}
+
+function guestAccessSuffix() {
+  const guestPlayerId = guestPlayerIdForRequest();
+  return guestPlayerId
+    ? `?guest_player_id=${encodeURIComponent(guestPlayerId)}`
+    : "";
+}
+
 // ===== sessions =====
 
 export function startSession({ sessionId, chipRate, bigBlind, currency }) {
@@ -147,7 +162,7 @@ export function startSession({ sessionId, chipRate, bigBlind, currency }) {
 }
 
 export function finishSession({ sessionId }) {
-  return request("/sessions/finish", {
+  return request(`/sessions/finish${guestAccessSuffix()}`, {
     method: "POST",
     body: JSON.stringify({
       session_id: sessionId,
@@ -156,8 +171,14 @@ export function finishSession({ sessionId }) {
   });
 }
 
-export function getSession(sessionId) {
-  return request(`/sessions?session_id=${sessionId}`);
+function sessionAccessParams(sessionId, guestPlayerId) {
+  const params = new URLSearchParams({ session_id: sessionId });
+  if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
+  return params.toString();
+}
+
+export function getSession(sessionId, { guestPlayerId } = {}) {
+  return request(`/sessions?${sessionAccessParams(sessionId, guestPlayerId)}`);
 }
 
 export function getSessions({ guestPlayerId, limit, offset, status } = {}) {
@@ -199,20 +220,20 @@ export function getUnlinkedPlayers({ limit, offset } = {}) {
   return request(`/players/unlinked${suffix}`);
 }
 
-export function getSessionPlayers(sessionId) {
-  return request(`/sessions/players?session_id=${sessionId}`);
+export function getSessionPlayers(sessionId, { guestPlayerId } = {}) {
+  return request(`/sessions/players?${sessionAccessParams(sessionId, guestPlayerId)}`);
 }
 
-export function getSessionOperations(sessionId) {
-  return request(`/sessions/operations?session_id=${sessionId}`);
+export function getSessionOperations(sessionId, { guestPlayerId } = {}) {
+  return request(`/sessions/operations?${sessionAccessParams(sessionId, guestPlayerId)}`);
 }
 
-export function getExpenses(sessionId) {
-  return request(`/expenses?session_id=${sessionId}`);
+export function getExpenses(sessionId, { guestPlayerId } = {}) {
+  return request(`/expenses?${sessionAccessParams(sessionId, guestPlayerId)}`);
 }
 
 export function createExpense({ sessionId, title, amount, participants, payments }) {
-  return request("/expenses", {
+  return request(`/expenses${guestAccessSuffix()}`, {
     method: "POST",
     body: JSON.stringify({
       session_id: sessionId,
@@ -226,26 +247,28 @@ export function createExpense({ sessionId, title, amount, participants, payments
 }
 
 export function closeExpenses(sessionId) {
-  return request("/expenses/close", {
+  return request(`/expenses/close${guestAccessSuffix()}`, {
     method: "POST",
     body: JSON.stringify({ session_id: sessionId, request_id: rid() }),
   });
 }
 
-export function deleteExpense(expenseId) {
-  const params = new URLSearchParams({ expense_id: expenseId });
+export function deleteExpense(expenseId, sessionId) {
+  const params = new URLSearchParams({ expense_id: expenseId, session_id: sessionId });
+  const guestPlayerId = guestPlayerIdForRequest();
+  if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
   return request(`/expenses?${params.toString()}`, {
     method: "DELETE",
     body: JSON.stringify({ request_id: rid() }),
   });
 }
 
-export function getSettlementTransfers(sessionId) {
-  return request(`/settlement-transfers?session_id=${sessionId}`);
+export function getSettlementTransfers(sessionId, { guestPlayerId } = {}) {
+  return request(`/settlement-transfers?${sessionAccessParams(sessionId, guestPlayerId)}`);
 }
 
 export function saveSettlementTransfers(sessionId, transfers) {
-  return request("/settlement-transfers", {
+  return request(`/settlement-transfers${guestAccessSuffix()}`, {
     method: "PUT",
     body: JSON.stringify({
       session_id: sessionId,
@@ -260,7 +283,7 @@ export function saveSettlementTransfers(sessionId, transfers) {
 export function buyIn({ sessionId, playerId, chips, requestId }) {
   const command = serializeBuyInCommand({ sessionId, playerId, chips, requestId });
   return withRequestId(
-    request("/operations/buy-in", {
+    request(`/operations/buy-in${guestAccessSuffix()}`, {
       method: "POST",
       body: JSON.stringify(command.payload),
     }),
@@ -271,7 +294,7 @@ export function buyIn({ sessionId, playerId, chips, requestId }) {
 export function cashOut({ sessionId, playerId, chips, requestId }) {
   const command = serializeCashOutCommand({ sessionId, playerId, chips, requestId });
   return withRequestId(
-    request("/operations/cash-out", {
+    request(`/operations/cash-out${guestAccessSuffix()}`, {
       method: "POST",
       body: JSON.stringify(command.payload),
     }),
@@ -279,10 +302,10 @@ export function cashOut({ sessionId, playerId, chips, requestId }) {
   );
 }
 
-export function reverseOperation({ operationId, requestId }) {
+export function reverseOperation({ operationId, sessionId, requestId }) {
   const command = serializeReverseOperationCommand({ operationId, requestId });
   return withRequestId(
-    request("/operations/reverse", {
+    request(`/operations/reverse?session_id=${encodeURIComponent(sessionId)}${guestAccessSuffix().replace("?", "&")}`, {
       method: "POST",
       body: JSON.stringify(command.payload),
     }),
@@ -302,10 +325,11 @@ export function createPlayer(name) {
   });
 }
 
-export function getPlayerStats(playerId, { from, to } = {}) {
+export function getPlayerStats(playerId, { from, to, guestPlayerId } = {}) {
   const params = new URLSearchParams({ player_id: playerId });
   if (from) params.set("from", from);
   if (to) params.set("to", to);
+  if (guestPlayerId) params.set("guest_player_id", guestPlayerId);
   return request(`/stats/player?${params.toString()}`);
 }
 

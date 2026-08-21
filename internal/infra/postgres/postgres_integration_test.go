@@ -227,9 +227,38 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 		})
 		return sessions
 	}
+	canView := func(viewer *entity.AuthUserID) bool {
+		t.Helper()
+		var allowed bool
+		txRun(t, pool, func(tx usecase.Tx) {
+			var err error
+			allowed, err = NewStatsRepository(pool).CanViewSession(tx, "visible-session", usecase.SessionAccessFilter{ViewerUserID: viewer})
+			if err != nil {
+				t.Fatalf("check visible session: %v", err)
+			}
+		})
+		return allowed
+	}
+	playerSessions := func(viewer *entity.AuthUserID) []usecase.PlayerSessionStat {
+		t.Helper()
+		var sessions []usecase.PlayerSessionStat
+		txRun(t, pool, func(tx usecase.Tx) {
+			var err error
+			sessions, err = NewStatsRepository(pool).ListPlayerSessions(tx, "visible-player", usecase.PlayerStatsFilter{
+				Limit: 20, ViewerUserID: viewer,
+			})
+			if err != nil {
+				t.Fatalf("list player sessions: %v", err)
+			}
+		})
+		return sessions
+	}
 
 	if sessions := list(nil); len(sessions) != 1 {
 		t.Fatalf("unowned session should be guest-visible, got %d", len(sessions))
+	}
+	if !canView(nil) || len(playerSessions(nil)) != 1 {
+		t.Fatal("unowned session should be guest-openable from player details")
 	}
 	txRun(t, pool, func(tx usecase.Tx) {
 		if err := NewUserPlayerLinkRepository().LinkPlayer(tx, "owner-1", "visible-player"); err != nil {
@@ -239,9 +268,15 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 	if sessions := list(nil); len(sessions) != 0 {
 		t.Fatalf("claimed session should be hidden from guests, got %d", len(sessions))
 	}
+	if canView(nil) || len(playerSessions(nil)) != 0 {
+		t.Fatal("claimed session leaked through direct or player-detail access")
+	}
 	owner := entity.AuthUserID("owner-1")
 	if sessions := list(&owner); len(sessions) != 1 {
 		t.Fatalf("claimed session should remain owner-visible, got %d", len(sessions))
+	}
+	if !canView(&owner) || len(playerSessions(&owner)) != 1 {
+		t.Fatal("claimed session should remain openable by its owner")
 	}
 	unrelated := entity.AuthUserID("unrelated-1")
 	if sessions := list(&unrelated); len(sessions) != 0 {

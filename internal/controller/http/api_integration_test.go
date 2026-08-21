@@ -334,6 +334,68 @@ func TestAPIIntegration_AdminAccountOwnershipManagement(t *testing.T) {
 	}
 }
 
+func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveLoginUser(t, pool, "owner-1", "owner@example.com", "user", "owner-password")
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO players (id, name) VALUES ('owned-player', 'Owned');
+		INSERT INTO sessions (id, chip_rate, big_blind, currency, status) VALUES ('private-session', 2, 2, 'RUB', 'active');
+		INSERT INTO operations (id, request_id, session_id, player_id, type, chips)
+		VALUES ('private-operation', 'private-request', 'private-session', 'owned-player', 'buy_in', 100);
+		INSERT INTO user_players (user_id, player_id) VALUES ('owner-1', 'owned-player')
+	`); err != nil {
+		t.Fatalf("prepare private session: %v", err)
+	}
+	handler := ownershipTestHandler(pool)
+
+	for _, path := range []string{
+		"/sessions?session_id=private-session",
+		"/sessions/players?session_id=private-session",
+		"/sessions/operations?session_id=private-session",
+		"/expenses?session_id=private-session",
+		"/settlement-transfers?session_id=private-session",
+	} {
+		guest := requestJSON(t, handler, http.MethodGet, path, nil)
+		if guest.Code != http.StatusForbidden {
+			t.Fatalf("guest read %s status=%d body=%s", path, guest.Code, guest.Body.String())
+		}
+	}
+	for _, test := range []struct {
+		method string
+		path   string
+		body   map[string]any
+	}{
+		{http.MethodPost, "/operations/buy-in", map[string]any{"request_id": "blocked-buy-in", "session_id": "private-session", "player_id": "owned-player", "chips": 10}},
+		{http.MethodPost, "/operations/cash-out", map[string]any{"request_id": "blocked-cash-out", "session_id": "private-session", "player_id": "owned-player", "chips": 10}},
+		{http.MethodPost, "/operations/reverse?session_id=private-session", map[string]any{"request_id": "blocked-reverse", "target_operation_id": "private-operation"}},
+		{http.MethodPost, "/sessions/finish", map[string]any{"request_id": "blocked-finish", "session_id": "private-session"}},
+		{http.MethodPost, "/expenses", map[string]any{"session_id": "private-session", "title": "Blocked", "amount": 10}},
+		{http.MethodPost, "/expenses/close", map[string]any{"session_id": "private-session"}},
+		{http.MethodDelete, "/expenses?expense_id=missing&session_id=private-session", nil},
+		{http.MethodPut, "/settlement-transfers", map[string]any{"session_id": "private-session", "transfers": []any{}}},
+	} {
+		guest := requestJSON(t, handler, test.method, test.path, test.body)
+		if guest.Code != http.StatusForbidden {
+			t.Fatalf("guest write %s status=%d body=%s", test.path, guest.Code, guest.Body.String())
+		}
+	}
+	guestStats := requestJSON(t, handler, http.MethodGet, "/stats/player?player_id=owned-player", nil)
+	if guestStats.Code != http.StatusOK || !strings.Contains(guestStats.Body.String(), `"sessions":[]`) {
+		t.Fatalf("guest player stats leaked sessions status=%d body=%s", guestStats.Code, guestStats.Body.String())
+	}
+
+	ownerCookie := loginCookie(t, handler, "owner@example.com", "owner-password")
+	ownerSession := requestJSONWithCookie(t, handler, http.MethodGet, "/sessions?session_id=private-session", nil, ownerCookie)
+	if ownerSession.Code != http.StatusOK {
+		t.Fatalf("owner session status=%d body=%s", ownerSession.Code, ownerSession.Body.String())
+	}
+	ownerStats := requestJSONWithCookie(t, handler, http.MethodGet, "/stats/player?player_id=owned-player", nil, ownerCookie)
+	if ownerStats.Code != http.StatusOK || !strings.Contains(ownerStats.Body.String(), `"session_id":"private-session"`) {
+		t.Fatalf("owner player stats missing session status=%d body=%s", ownerStats.Code, ownerStats.Body.String())
+	}
+}
+
 func requestJSON(t *testing.T, handler http.Handler, method string, path string, body any) *httptest.ResponseRecorder {
 	t.Helper()
 

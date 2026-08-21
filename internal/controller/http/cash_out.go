@@ -27,6 +27,9 @@ func (h *OperationHandler) CashOut(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
+	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+		return
+	}
 
 	ack, err := h.cashOutUC.Execute(r.Context(), command.CashOutCommand{
 		RequestID: req.RequestID,

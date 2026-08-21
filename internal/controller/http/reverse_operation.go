@@ -41,6 +41,14 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 		writeErr(w, r, http.StatusBadRequest, "invalid_request", nil)
 		return
 	}
+	sessionID := entity.SessionID(r.URL.Query().Get("session_id"))
+	if sessionID == "" {
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
+		return
+	}
+	if !h.access.requireView(w, r, sessionID) {
+		return
+	}
 
 	ack, err := h.reverseOperationUC.Execute(r.Context(), command.ReverseOperationCommand{
 		RequestID:         req.RequestID,
@@ -48,7 +56,7 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 	})
 
 	if err != nil {
-		logOperationCommandFailure(r, req.RequestID, "reverse_operation", "", err)
+		logOperationCommandFailure(r, req.RequestID, "reverse_operation", string(sessionID), err)
 		writeError(w, r, err)
 		return
 	}

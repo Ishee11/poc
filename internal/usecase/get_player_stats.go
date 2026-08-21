@@ -45,9 +45,12 @@ func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlay
 	}
 
 	filter := PlayerStatsFilter{
-		Limit: 100,
-		From:  q.From,
-		To:    q.To,
+		Limit:         100,
+		From:          q.From,
+		To:            q.To,
+		ViewerUserID:  q.ViewerUserID,
+		ViewerIsAdmin: q.ViewerIsAdmin,
+		GuestPlayerID: q.GuestPlayerID,
 	}
 
 	player, err := uc.statsRepo.GetPlayerOverall(tx, q.PlayerID, filter)
