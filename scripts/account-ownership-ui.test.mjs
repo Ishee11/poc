@@ -40,6 +40,11 @@ for (const id of [
 	assert.match(html, new RegExp(`id=["']${id}["']`), `missing ownership control ${id}`);
 }
 assert.match(app, /state\.accountOnboardingRequired[\s\S]*openAccount\(\{ replace: true \}\)/);
+assert.match(
+	app,
+	/import\s*\{[\s\S]*?\bplayerId\b[\s\S]*?\}\s*from\s*["']\.\/utils\.js["']/,
+	"app bootstrap must import playerId for unauthenticated guest loading",
+);
 assert.match(api, /\/admin\/accounts\/\$\{encodeURIComponent\(userId\)\}\/player/);
 
 console.log("account ownership UI tests passed");
