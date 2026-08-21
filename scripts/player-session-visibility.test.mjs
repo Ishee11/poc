@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   financialVisibilityNoticeRequired,
+  playerSessionListCount,
   playerSessionVisibility,
   sessionHistoryMessageKey,
 } from "../web/js/player-session-visibility.js";
@@ -58,13 +59,34 @@ test("only restricted or unavailable histories require a financial notice", () =
   assert.equal(financialVisibilityNoticeRequired(playerSessionVisibility({ total_sessions_count: 10, visible_sessions_count: 4 })), true);
 });
 
+test("session list count distinguishes visible sessions from the total", () => {
+  assert.deepEqual(
+    playerSessionListCount(playerSessionVisibility({ total_sessions_count: 53, visible_sessions_count: 6 }), 6),
+    { visible: 6, total: 53 },
+  );
+  assert.deepEqual(
+    playerSessionListCount(playerSessionVisibility({ total_sessions_count: 6, visible_sessions_count: 6 }), 6),
+    { visible: 6, total: null },
+  );
+});
+
 test("player session availability has a dedicated second row and safe shell refresh", () => {
   const playerUI = readFileSync(new URL("../web/js/ui/player.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../web/css/main.css", import.meta.url), "utf8");
   const serviceWorker = readFileSync(new URL("../web/sw.js", import.meta.url), "utf8");
 
   assert.match(playerUI, /class="stat player-session-count-stat"/);
+  assert.match(playerUI, /player\.sessionsVisibleOfTotal/);
   assert.match(styles, /\.player-session-count-stat \.stat-context\s*\{[^}]*grid-column:\s*1 \/ -1/s);
   assert.match(serviceWorker, /pathname\.startsWith\("\/player\/"\)/);
   assert.match(serviceWorker, /pathname === "\/players\/stats"/);
+});
+
+test("player detail uses a flat visual hierarchy", () => {
+  const styles = readFileSync(new URL("../web/css/main.css", import.meta.url), "utf8");
+
+  assert.match(styles, /body\[data-screen="player"\] #screen-player > \.panel\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
+  assert.match(styles, /\.player-sessions-disclosure\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
+  assert.match(styles, /\.player-sessions-disclosure > \.disclosure-body\s*\{[^}]*padding:\s*0;/s);
+  assert.match(styles, /\.player-sessions-disclosure \.mobile-player-session-card \.card-meta-item\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
 });

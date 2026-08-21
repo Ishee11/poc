@@ -14,6 +14,8 @@
 - [x] 3.1 Render explicit total and visible count states for complete, partial, zero-visible, truly-empty, and unavailable histories.
 - [x] 3.2 Add localized explanatory copy and an informative history empty state while clarifying that financial aggregates may include unavailable sessions.
 - [x] 3.3 Add focused frontend tests for every required count/visibility state and advance the service-worker cache version for changed web modules.
+- [x] 3.4 Label a partially visible player-session list with both the visible and total counts.
+- [x] 3.5 Flatten the player-detail visual hierarchy and remove nested borders from the session history presentation.
 
 ## 4. Documentation and Validation
 

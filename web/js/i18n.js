@@ -287,6 +287,7 @@ const translations = {
     "player.period": "Period",
     "player.selectPeriod": "Select Period",
     "player.sessions": "Sessions",
+    "player.sessionsVisibleOfTotal": "Sessions ({visible} of {total})",
     "player.visibleSessions": "Available to view: {count}",
     "player.sessionsUnavailableEmpty":
       "This player's sessions are unavailable to view. Overall statistics include the results of those games.",
@@ -861,6 +862,7 @@ const translations = {
     "player.period": "Период",
     "player.selectPeriod": "Выбрать период",
     "player.sessions": "Сессии",
+    "player.sessionsVisibleOfTotal": "Сессии ({visible} из {total})",
     "player.visibleSessions": "Доступно для просмотра: {count}",
     "player.sessionsUnavailableEmpty":
       "Сессии этого игрока недоступны для просмотра. Общая статистика учитывает результаты этих игр.",

@@ -9,6 +9,7 @@ import {
 import { statusLabel, t } from "../i18n.js";
 import {
   financialVisibilityNoticeRequired,
+  playerSessionListCount,
   playerSessionVisibility,
   sessionHistoryMessageKey,
 } from "../player-session-visibility.js";
@@ -521,7 +522,7 @@ export function renderPlayerDetail() {
       ` : ""}
       ${sessions.length ? `
       <details class="disclosure player-sessions-disclosure">
-        <summary>${escapeHtml(t("player.sessions"))} (${formatNumber(visibility.visible ?? sessions.length)})</summary>
+        <summary>${escapeHtml(renderPlayerSessionsListTitle(visibility, sessions.length))}</summary>
         <div class="disclosure-body">
           ${renderPlayerSessionCards(sessions)}
           <div class="table-wrap desktop-only">
@@ -818,6 +819,17 @@ function renderVisibleSessionsContext(visibility) {
     return `<div class="stat-context">${escapeHtml(t("player.sessionHistoryUnavailable"))}</div>`;
   }
   return "";
+}
+
+function renderPlayerSessionsListTitle(visibility, returnedCount) {
+  const count = playerSessionListCount(visibility, returnedCount);
+  if (count.total !== null) {
+    return t("player.sessionsVisibleOfTotal", {
+      visible: formatNumber(count.visible),
+      total: formatNumber(count.total),
+    });
+  }
+  return `${t("player.sessions")} (${formatNumber(count.visible)})`;
 }
 
 function renderCurrencyStats(stats) {

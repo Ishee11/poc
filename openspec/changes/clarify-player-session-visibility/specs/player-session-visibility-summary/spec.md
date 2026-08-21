@@ -39,7 +39,7 @@ The player detail UI SHALL use the explicit total as the primary Sessions value 
 
 #### Scenario: Partial visibility
 - **WHEN** total is 10 and visible is 4
-- **THEN** the UI shows 10 as the primary count and separately states that 4 sessions are available to view
+- **THEN** the UI shows 10 as the primary count, separately states that 4 sessions are available to view, and labels the session list as `4 of 10`
 
 #### Scenario: Existing history is completely hidden
 - **WHEN** total is greater than zero and visible is zero
@@ -48,6 +48,10 @@ The player detail UI SHALL use the explicit total as the primary Sessions value 
 #### Scenario: Player has never played
 - **WHEN** total and visible counts are zero
 - **THEN** the UI shows zero sessions and a normal no-sessions empty state
+
+#### Scenario: Player detail visual hierarchy
+- **WHEN** the player statistics and session history are rendered
+- **THEN** the screen presents them as flat sections without nesting the player screen, session list, and mobile session fields inside repeated bordered containers
 
 ### Requirement: Missing total is not represented as zero
 The player detail UI MUST treat an absent, non-numeric, or otherwise unavailable explicit total as unknown and MUST make clear that financial aggregates can include history unavailable to the viewer.

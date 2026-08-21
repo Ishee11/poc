@@ -85,7 +85,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v14-2026-08-21-resilient-startup";
+const SHELL_CACHE_VERSION = "v15-2026-08-21-visible-session-ratio";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
