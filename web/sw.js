@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v6-2026-08-21-guest-bootstrap";
+const SHELL_CACHE_VERSION = "v7-2026-08-21-compact-account-menu";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -112,6 +112,7 @@ const REQUIRED_SHELL_ASSETS = Object.freeze([
   "/static/svg/08-calendar-outline-gold.svg",
   "/static/svg/09-clock-outline-gold.svg",
   "/static/svg/11-calculator-outline-green.svg",
+  "/static/svg/13-user-outline-white.svg",
 ]);
 
 const OPTIONAL_SHELL_ASSETS = Object.freeze([
