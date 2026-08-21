@@ -75,7 +75,7 @@ func (h *AuthHandler) TelegramCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	if result.Mode == usecase.TelegramOIDCModeLink {
 		slog.InfoContext(r.Context(), "telegram_identity_linked", "request_id", GetRequestID(r.Context()), "user_id", result.UserID)
-		http.Redirect(w, r, "/account?telegram=linked", http.StatusFound)
+		http.Redirect(w, r, telegramCallbackSuccessRedirect(result.Mode), http.StatusFound)
 		return
 	}
 	loginResult, err := h.authUC.LoginUser(r.Context(), result.UserID, r.UserAgent(), clientIP(r))
@@ -85,7 +85,14 @@ func (h *AuthHandler) TelegramCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	h.setSessionCookie(w, r, loginResult.Token, loginResult.ExpiresAt)
 	slog.InfoContext(r.Context(), "telegram_login_success", "request_id", GetRequestID(r.Context()), "user_id", result.UserID)
-	http.Redirect(w, r, "/account?telegram=logged_in", http.StatusFound)
+	http.Redirect(w, r, telegramCallbackSuccessRedirect(result.Mode), http.StatusFound)
+}
+
+func telegramCallbackSuccessRedirect(mode string) string {
+	if mode == usecase.TelegramOIDCModeLink {
+		return "/profile?telegram=linked"
+	}
+	return "/profile?telegram=logged_in"
 }
 
 // Register godoc
