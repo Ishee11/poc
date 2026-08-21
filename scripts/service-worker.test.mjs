@@ -109,7 +109,7 @@ function runFetch(request) {
 test("installs the versioned minimum shell without optional-asset failure", async () => {
   await runExtendable("install");
 
-  assert.equal(openedCacheName, "poker-session-control-shell-v16-2026-08-21-telegram-auth-recovery");
+  assert.equal(openedCacheName, "poker-session-control-shell-v17-2026-08-21-auth-navigation-bypass");
   assert.ok(cachedRequiredAssets.includes("/"));
   assert.ok(cachedRequiredAssets.includes("/static/css/main.css"));
   assert.ok(cachedRequiredAssets.includes("/static/js/app.js"));
@@ -150,6 +150,22 @@ test("controlled navigation stays on the active coherent shell generation", asyn
 
   assert.equal(response, shellResponse);
   assert.equal(networkCalls, 0);
+});
+
+test("authentication and backend navigations bypass the cached application shell", () => {
+  for (const pathname of [
+    "/auth/telegram/start?mode=login",
+    "/auth/telegram/callback?code=opaque",
+    "/auth/config",
+    "/account",
+    "/health",
+  ]) {
+    assert.equal(runFetch({
+      method: "GET",
+      mode: "navigate",
+      url: `https://poc.test${pathname}`,
+    }), null, pathname);
+  }
 });
 
 test("static assets are cache-first while API and unsupported requests pass through", async () => {

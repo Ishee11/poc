@@ -26,6 +26,12 @@ Server logs record started, failed, cancelled, and completed lifecycle categorie
 
 Existing email login, guest mode, sessions, PKCE, nonce validation, one-use flows, opaque HttpOnly sessions, and IP audit behavior are unchanged. The service worker receives a new cache generation and the attempt helper is a required shell asset; auth and API paths continue to bypass the worker.
 
+## Navigation boundary regression
+
+The coherent-shell worker may answer navigations only for known SPA routes: `/`, `/profile`, `/players/stats`, `/player/*`, `/session/*`, and `/blinds/*`. A browser navigation is not automatically an SPA navigation. In particular, `/auth/telegram/start`, `/auth/telegram/callback`, `/auth/*`, `/account`, `/health`, and any unknown backend path MUST pass through without `respondWith` so the browser reaches the server and can follow its external redirect.
+
+This boundary is covered at the service-worker fetch-event level. The regression test asserts that a controlled navigation to `/auth/telegram/start?mode=login` receives no cached shell response, while a controlled session/profile navigation still uses the active coherent shell.
+
 ## Rollback
 
 Reverting the frontend/backend commit and shell version restores the previous flow without data rollback. Existing browser markers are versioned, non-sensitive, expire after ten minutes, and are ignored by older code.

@@ -51,3 +51,14 @@ Attempt storage and diagnostics MUST NOT contain OAuth state, code, verifier, no
 #### Scenario: User dismisses recovery
 - **WHEN** the user dismisses the message
 - **THEN** the persistent feedback is removed without changing authentication state
+
+### Requirement: Authentication navigations bypass the PWA shell
+The service worker SHALL use the cached application document only for explicit Poker UI routes. Navigations to authentication and backend endpoints MUST reach the network and MUST NOT receive the cached `/` document.
+
+#### Scenario: Controlled PWA starts Telegram login
+- **WHEN** a service-worker-controlled client navigates to `/auth/telegram/start?mode=login`
+- **THEN** the worker does not call `respondWith` and the backend can return the Telegram authorization redirect
+
+#### Scenario: Controlled PWA opens an application route
+- **WHEN** a controlled client navigates to `/profile` or `/session/{id}`
+- **THEN** the worker may return the active coherent shell generation

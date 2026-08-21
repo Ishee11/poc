@@ -50,7 +50,9 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(activeShellNavigation(request));
+    if (isAppShellNavigationPath(url.pathname)) {
+      event.respondWith(activeShellNavigation(request));
+    }
     return;
   }
 
@@ -85,7 +87,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v16-2026-08-21-telegram-auth-recovery";
+const SHELL_CACHE_VERSION = "v17-2026-08-21-auth-navigation-bypass";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -133,6 +135,16 @@ const OPTIONAL_SHELL_ASSETS = Object.freeze([
 
 function isKnownStaticAsset(pathname) {
   return pathname === "/manifest.webmanifest" || pathname.startsWith("/static/");
+}
+
+function isAppShellNavigationPath(pathname) {
+  return pathname === "/" ||
+    pathname === "/profile" ||
+    pathname === "/players/stats" ||
+    pathname === "/blinds" ||
+    pathname.startsWith("/player/") ||
+    pathname.startsWith("/session/") ||
+    pathname.startsWith("/blinds/");
 }
 
 async function refreshSafeShellClients() {
