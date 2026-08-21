@@ -141,6 +141,77 @@ func (r *StatsRepository) ListSessions(
 	return result, rows.Err()
 }
 
+func (r *StatsRepository) CanViewSession(
+	tx usecase.Tx,
+	sessionID entity.SessionID,
+	filter usecase.SessionAccessFilter,
+) (bool, error) {
+	ctx := context.Background()
+	row := tx.QueryRow(ctx, `
+		WITH effective_operations AS (
+			SELECT o.id, o.session_id, o.player_id
+			FROM operations o
+			LEFT JOIN operations rev
+				ON rev.reference_id = o.id
+				AND rev.type = 'reversal'
+			WHERE o.type <> 'reversal'
+			  AND rev.id IS NULL
+		)
+		SELECT EXISTS (
+			SELECT 1
+			FROM sessions s
+			WHERE s.id = $1
+			  AND (
+				$4::boolean
+				OR
+				($2::text IS NULL AND NOT EXISTS (
+					SELECT 1
+					FROM effective_operations guest_eo
+					JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
+					WHERE guest_eo.session_id = s.id
+				))
+				OR
+				($2::text IS NULL AND $3::text IS NOT NULL
+					AND NOT EXISTS (
+						SELECT 1
+						FROM user_players selected_guest_up
+						WHERE selected_guest_up.player_id = $3::text
+					)
+					AND EXISTS (
+						SELECT 1
+						FROM effective_operations selected_guest_eo
+						WHERE selected_guest_eo.session_id = s.id
+						  AND selected_guest_eo.player_id = $3::text
+					)
+				)
+				OR
+				($2::text IS NOT NULL AND (
+					NOT EXISTS (
+						SELECT 1
+						FROM effective_operations other_eo
+						JOIN user_players other_up ON other_up.player_id = other_eo.player_id
+						WHERE other_eo.session_id = s.id
+						  AND other_up.user_id <> $2::text
+					)
+					OR EXISTS (
+						SELECT 1
+						FROM effective_operations own_eo
+						JOIN user_players own_up ON own_up.player_id = own_eo.player_id
+						WHERE own_eo.session_id = s.id
+						  AND own_up.user_id = $2::text
+					)
+				))
+			  )
+		)
+	`, sessionID, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
+
+	var allowed bool
+	if err := row.Scan(&allowed); err != nil {
+		return false, err
+	}
+	return allowed, nil
+}
+
 func (r *StatsRepository) ListPlayers(
 	tx usecase.Tx,
 	filter usecase.PlayerStatsFilter,
@@ -414,10 +485,51 @@ func (r *StatsRepository) ListPlayerSessions(
 		WHERE eo.player_id = $1
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
+		  AND (
+			$7::boolean
+			OR
+			($5::text IS NULL AND NOT EXISTS (
+				SELECT 1
+				FROM effective_operations guest_eo
+				JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
+				WHERE guest_eo.session_id = s.id
+			))
+			OR
+			($5::text IS NULL AND $6::text IS NOT NULL
+				AND NOT EXISTS (
+					SELECT 1
+					FROM user_players selected_guest_up
+					WHERE selected_guest_up.player_id = $6::text
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM effective_operations selected_guest_eo
+					WHERE selected_guest_eo.session_id = s.id
+					  AND selected_guest_eo.player_id = $6::text
+				)
+			)
+			OR
+			($5::text IS NOT NULL AND (
+				NOT EXISTS (
+					SELECT 1
+					FROM effective_operations other_eo
+					JOIN user_players other_up ON other_up.player_id = other_eo.player_id
+					WHERE other_eo.session_id = s.id
+					  AND other_up.user_id <> $5::text
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM effective_operations own_eo
+					JOIN user_players own_up ON own_up.player_id = own_eo.player_id
+					WHERE own_eo.session_id = s.id
+					  AND own_up.user_id = $5::text
+				)
+			))
+		  )
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY MAX(eo.created_at) DESC, s.created_at DESC
 		LIMIT $4
-		`, playerID, boundTime(filter.From), boundTime(filter.To), filterLimit(filter.Limit, 100))
+		`, playerID, boundTime(filter.From), boundTime(filter.To), filterLimit(filter.Limit, 100), optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
 	if err != nil {
 		return nil, err
 	}

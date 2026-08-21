@@ -43,6 +43,9 @@ func (h *SessionHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
+	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+		return
+	}
 
 	err := h.finishSessionUC.Execute(r.Context(), command.FinishSessionCommand{
 		RequestID: req.RequestID,

@@ -5,9 +5,19 @@ import (
 )
 
 type GetPlayerStatsQuery struct {
-	PlayerID entity.PlayerID
-	From     *DateTimeRangeBound
-	To       *DateTimeRangeBound
+	PlayerID      entity.PlayerID
+	From          *DateTimeRangeBound
+	To            *DateTimeRangeBound
+	ViewerUserID  *entity.AuthUserID
+	ViewerIsAdmin bool
+	GuestPlayerID entity.PlayerID
+}
+
+type SessionAccessQuery struct {
+	SessionID     entity.SessionID
+	ViewerUserID  *entity.AuthUserID
+	ViewerIsAdmin bool
+	GuestPlayerID entity.PlayerID
 }
 
 type GetPlayersQuery struct {

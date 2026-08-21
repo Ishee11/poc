@@ -168,6 +168,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		statsRepo,
 		txManager,
 	)
+	sessionAccessUC := usecase.NewSessionAccessService(statsRepo, txManager)
 
 	getSessionPlayersUC := usecase.NewGetSessionPlayersUseCase(
 		projectionRepo,
@@ -279,6 +280,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		authUC,
 		registerUserUC,
 		userPlayerLinksUC,
+		sessionAccessUC,
 
 		// session
 		startSessionUC,

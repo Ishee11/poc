@@ -103,6 +103,7 @@ const sessionOutboxReplay = createOutboxReplay({
         ? await cashOut(input)
         : await reverseOperation({
             operationId: command.payload.target_operation_id,
+            sessionId: command.session_id,
             requestId: command.request_id,
           });
     console.info("session_replay_attempt", {

@@ -21,6 +21,13 @@ func (h *OperationHandler) SettlementTransfers(w http.ResponseWriter, r *http.Re
 
 func (h *OperationHandler) ListSettlementTransfers(w http.ResponseWriter, r *http.Request) {
 	sessionID := entity.SessionID(r.URL.Query().Get("session_id"))
+	if sessionID == "" {
+		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
+		return
+	}
+	if !h.access.requireView(w, r, sessionID) {
+		return
+	}
 	transfers, err := h.settlementTransferService.List(r.Context(), sessionID)
 	if err != nil {
 		writeError(w, r, err)
@@ -40,6 +47,9 @@ func (h *OperationHandler) SaveSettlementTransfers(w http.ResponseWriter, r *htt
 	}
 	if req.SessionID == "" {
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
+		return
+	}
+	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
 		return
 	}
 

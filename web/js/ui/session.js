@@ -31,6 +31,7 @@ import {
   writeServerSnapshotIfRevision,
 } from "../offline-db.js";
 import {
+  ERROR_KINDS,
   serializeBuyInCommand,
   serializeCashOutCommand,
   serializeReverseOperationCommand,
@@ -194,14 +195,30 @@ export async function openSession(sessionId, { replace = false } = {}) {
   state.settlementEditing = false;
   state.expenseFormOpen = false;
 
+  const accessResult = await getSession(sessionId, sessionAccessOptions());
+  if (
+    !accessResult.ok &&
+    ![
+      ERROR_KINDS.OFFLINE,
+      ERROR_KINDS.TIMEOUT,
+      ERROR_KINDS.NETWORK,
+      ERROR_KINDS.RETRYABLE_HTTP,
+    ].includes(accessResult.errorKind)
+  ) {
+    showNotice(t("error.failedLoadSession"), "error");
+    return;
+  }
+
   let cached = false;
   try {
-    cached = await hydrateCachedSession({
-      sessionId,
-      state,
-      readSnapshot: readSessionSnapshot,
-      onHydrated: renderSessionSlice,
-    });
+    if (!accessResult.ok) {
+      cached = await hydrateCachedSession({
+        sessionId,
+        state,
+        readSnapshot: readSessionSnapshot,
+        onHydrated: renderSessionSlice,
+      });
+    }
   } catch (error) {
     console.warn("Cached session hydration is unavailable; continuing online-only", error);
   }
@@ -213,7 +230,7 @@ export async function openSession(sessionId, { replace = false } = {}) {
   }
 
   state.sessionRefreshStatus = "refreshing";
-  const result = await refreshSessionFromServer(sessionId);
+  const result = await refreshSessionFromServer(sessionId, accessResult.ok ? accessResult : null);
   if (result.status !== "fresh") {
     if (state.activeSessionId === sessionId) {
       showNotice(t("error.failedLoadSession"), "error");
@@ -257,7 +274,7 @@ function showSessionRoute(sessionId, replace) {
   }
 }
 
-async function refreshSessionFromServer(sessionId) {
+async function refreshSessionFromServer(sessionId, prefetchedSessionResult = null) {
   return refreshSessionSnapshotWithRebase({
     sessionId,
     state,
@@ -271,11 +288,11 @@ async function refreshSessionFromServer(sessionId) {
         pendingCommands,
       ] =
         await Promise.all([
-          getSession(sessionId),
-          getSessionPlayers(sessionId),
-          getSessionOperations(sessionId),
-          getExpenses(sessionId),
-          getSettlementTransfers(sessionId),
+          prefetchedSessionResult || getSession(sessionId, sessionAccessOptions()),
+          getSessionPlayers(sessionId, sessionAccessOptions()),
+          getSessionOperations(sessionId, sessionAccessOptions()),
+          getExpenses(sessionId, sessionAccessOptions()),
+          getSettlementTransfers(sessionId, sessionAccessOptions()),
           listSessionProjectionCommands(sessionId),
         ]);
       return {
@@ -292,6 +309,10 @@ async function refreshSessionFromServer(sessionId) {
       reapplyPendingSessionCommands(snapshot, results.pendingCommands),
     onApplied: renderSessionSlice,
   });
+}
+
+function sessionAccessOptions() {
+  return { guestPlayerId: state.authUser ? "" : state.guestPlayerId };
 }
 
 export async function reconcileReplayedSessionCommand(command, response) {
@@ -337,7 +358,8 @@ export async function openSessionResults(sessionId, { replace = false } = {}) {
 export async function loadExpenses(sessionId) {
   if (!sessionId) return;
 
-  const res = await withLoading("#expenses-wrap", () => getExpenses(sessionId));
+  const res = await withLoading("#expenses-wrap", () =>
+    getExpenses(sessionId, sessionAccessOptions()));
   if (!res.ok) {
     console.error("loadExpenses failed:", res.text);
     return;
@@ -353,7 +375,7 @@ export async function loadExpenses(sessionId) {
 async function loadSettlementTransfers(sessionId) {
   if (!sessionId) return;
 
-  const res = await getSettlementTransfers(sessionId);
+  const res = await getSettlementTransfers(sessionId, sessionAccessOptions());
   if (!res.ok) {
     console.error("loadSettlementTransfers failed:", res.text);
     return;
@@ -375,7 +397,8 @@ async function loadSettlementTransfers(sessionId) {
 export async function loadOperations(sessionId) {
   if (!sessionId) return;
 
-  const res = await withLoading("#operations-wrap", () => getSessionOperations(sessionId));
+  const res = await withLoading("#operations-wrap", () =>
+    getSessionOperations(sessionId, sessionAccessOptions()));
   if (!res.ok) {
     console.error("loadOperations failed:", res.text);
     return;
@@ -1948,7 +1971,7 @@ async function confirmReverse(operationId) {
     enabled: state.localFirstSessionWritesEnabled,
     runtimeStatus: state.localRuntimeStatus,
   })) {
-    const res = await reverseOperation({ operationId });
+    const res = await reverseOperation({ operationId, sessionId: state.activeSessionId });
     if (!res.ok) {
       showNotice(describeError(res, t("error.failedReverse")), "error");
       return;
@@ -2111,7 +2134,7 @@ async function confirmDeleteExpense(expenseId) {
   });
   if (!confirmed) return;
 
-  const res = await deleteExpense(expenseId);
+  const res = await deleteExpense(expenseId, state.activeSessionId);
   if (!res.ok) {
     showNotice(describeError(res, t("error.failedDeleteExpense")), "error");
     return;

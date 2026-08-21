@@ -27,6 +27,9 @@ func (h *SessionHandler) GetSessionOperations(w http.ResponseWriter, r *http.Req
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
+	if !h.access.requireView(w, r, entity.SessionID(sessionID)) {
+		return
+	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {

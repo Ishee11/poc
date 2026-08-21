@@ -30,7 +30,8 @@ import {
 export async function loadPlayers(sessionId) {
   if (!sessionId) return;
 
-  const res = await withLoading("#players-wrap", () => getSessionPlayers(sessionId));
+  const res = await withLoading("#players-wrap", () =>
+    getSessionPlayers(sessionId, sessionAccessOptions()));
   if (!res.ok) {
     console.error("loadPlayers failed:", res.text);
     return;
@@ -358,7 +359,10 @@ export async function loadPlayerDetail(
     state.selectedPlayerFilters = { from: "", to: "" };
   }
 
-  const res = await getPlayerStats(playerId, state.selectedPlayerFilters);
+  const res = await getPlayerStats(playerId, {
+    ...state.selectedPlayerFilters,
+    guestPlayerId: sessionAccessOptions().guestPlayerId,
+  });
   if (!res.ok) {
     console.error("loadPlayerDetail failed:", res.text);
     return;
@@ -762,6 +766,10 @@ async function openSessionFromRow(row) {
   setValue("active-session-select", sessionId);
   const { openSession } = await import("./session.js");
   await openSession(sessionId);
+}
+
+function sessionAccessOptions() {
+  return { guestPlayerId: state.authUser ? "" : state.guestPlayerId };
 }
 
 function bindStatHelp(container) {

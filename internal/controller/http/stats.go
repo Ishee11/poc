@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -45,16 +44,10 @@ func (h *StatsHandler) GetStatsSessions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	viewer, err := h.currentStatsViewer(r)
+	viewerUserID, viewerIsAdmin, err := h.access.viewer(r)
 	if err != nil {
 		writeError(w, r, err)
 		return
-	}
-	var viewerUserID *entity.AuthUserID
-	viewerIsAdmin := !h.cookie.Enabled
-	if viewer != nil {
-		viewerUserID = &viewer.UserID
-		viewerIsAdmin = viewer.Role == entity.AuthRoleAdmin
 	}
 
 	res, err := h.getStatsSessionsUC.Execute(r.Context(), usecase.GetStatsSessionsQuery{
@@ -112,27 +105,6 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-func (h *StatsHandler) currentStatsViewer(r *http.Request) (*usecase.AuthPrincipal, error) {
-	if !h.cookie.Enabled {
-		return nil, nil
-	}
-
-	cookie, err := r.Cookie(h.cookie.Name)
-	if err != nil || cookie.Value == "" {
-		return nil, nil
-	}
-
-	principal, err := h.authUC.CurrentUser(r.Context(), cookie.Value)
-	if err != nil {
-		if errors.Is(err, entity.ErrUnauthorized) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return principal, nil
-}
-
 // GetPlayerStats godoc
 // @Summary Get player stats
 // @Description Returns overall statistics for a specific player
@@ -158,11 +130,19 @@ func (h *PlayerHandler) GetPlayerStats(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusBadRequest, "player_id_required", nil)
 		return
 	}
+	viewerUserID, viewerIsAdmin, err := h.access.viewer(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
 
 	res, err := h.getPlayerStatsUC.Execute(r.Context(), usecase.GetPlayerStatsQuery{
-		PlayerID: entity.PlayerID(playerID),
-		From:     from,
-		To:       to,
+		PlayerID:      entity.PlayerID(playerID),
+		From:          from,
+		To:            to,
+		ViewerUserID:  viewerUserID,
+		ViewerIsAdmin: viewerIsAdmin,
+		GuestPlayerID: entity.PlayerID(r.URL.Query().Get("guest_player_id")),
 	})
 	if err != nil {
 		writeError(w, r, err)

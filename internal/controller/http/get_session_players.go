@@ -25,6 +25,9 @@ func (h *SessionHandler) GetSessionPlayers(w http.ResponseWriter, r *http.Reques
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
+	if !h.access.requireView(w, r, entity.SessionID(sessionID)) {
+		return
+	}
 
 	players, err := h.getSessionPlayersUC.Execute(r.Context(), usecase.GetSessionPlayersQuery{
 		SessionID: entity.SessionID(sessionID),

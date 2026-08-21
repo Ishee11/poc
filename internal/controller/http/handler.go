@@ -32,6 +32,7 @@ func NewHandler(
 	authUC *usecase.AuthService,
 	registerUserUC *usecase.RegisterUserUseCase,
 	userPlayerLinksUC *usecase.UserPlayerLinksUseCase,
+	sessionAccessUC *usecase.SessionAccessService,
 
 	// session
 	startSession *usecase.StartSessionUseCase,
@@ -68,6 +69,11 @@ func NewHandler(
 	deleteAdminSessionFinish *usecase.AdminDeleteSessionFinishUseCase,
 	adminAccountOwnership *usecase.AdminAccountOwnershipService,
 ) *Handler {
+	access := &sessionAccessAuthorizer{
+		service: sessionAccessUC,
+		authUC:  authUC,
+		cookie:  authCookie,
+	}
 
 	return &Handler{
 		Auth: &AuthHandler{
@@ -86,6 +92,7 @@ func NewHandler(
 			getSessionUC:        getSession,
 			getSessionPlayersUC: getSessionPlayers,
 			getSessionOpsUC:     getSessionOps,
+			access:              access,
 		},
 		Operation: &OperationHandler{
 			buyInUC:                   buyIn,
@@ -95,6 +102,7 @@ func NewHandler(
 			settlementTransferService: settlementTransfers,
 			authUC:                    authUC,
 			cookie:                    authCookie,
+			access:                    access,
 		},
 		Blinds: &BlindClockHandler{
 			service: blindClockUC,
@@ -106,12 +114,14 @@ func NewHandler(
 			createPlayerUC:   createPlayer,
 			getPlayersUC:     getPlayers,
 			getPlayerStatsUC: getPlayerStats,
+			access:           access,
 		},
 		Stats: &StatsHandler{
 			getStatsSessionsUC: getStatsSessions,
 			getStatsPlayersUC:  getStatsPlayers,
 			authUC:             authUC,
 			cookie:             authCookie,
+			access:             access,
 		},
 		Admin: &AdminHandler{
 			renamePlayerUC:        renameAdminPlayer,
@@ -144,6 +154,7 @@ type SessionHandler struct {
 	getSessionUC        *usecase.GetSessionUseCase
 	getSessionPlayersUC *usecase.GetSessionPlayersUseCase
 	getSessionOpsUC     *usecase.GetSessionOperationsUseCase
+	access              *sessionAccessAuthorizer
 }
 
 type OperationHandler struct {
@@ -154,6 +165,7 @@ type OperationHandler struct {
 	settlementTransferService *usecase.SettlementTransferService
 	authUC                    *usecase.AuthService
 	cookie                    AuthCookieConfig
+	access                    *sessionAccessAuthorizer
 }
 
 type BlindClockHandler struct {
@@ -168,6 +180,7 @@ type PlayerHandler struct {
 	createPlayerUC   *usecase.CreatePlayerUseCase
 	getPlayersUC     *usecase.GetPlayersUseCase
 	getPlayerStatsUC *usecase.GetPlayerStatsUseCase
+	access           *sessionAccessAuthorizer
 }
 
 type StatsHandler struct {
@@ -175,6 +188,7 @@ type StatsHandler struct {
 	getStatsPlayersUC  *usecase.GetStatsPlayersUseCase
 	authUC             *usecase.AuthService
 	cookie             AuthCookieConfig
+	access             *sessionAccessAuthorizer
 }
 
 type AdminHandler struct {
