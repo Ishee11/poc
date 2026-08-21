@@ -20,4 +20,11 @@
 
 - [x] 4.1 Add the attempt helper to the coherent shell and bump the cache generation without caching auth/API.
 - [x] 4.2 Run focused frontend/backend tests, full web/Go checks, strict OpenSpec validation, and diff checks.
-- [ ] 4.3 Deploy through dev and production, then verify button visibility, incomplete return recovery, successful callback, and production health.
+- [x] 4.3 Deploy through dev and production, then verify button visibility, incomplete return recovery, controlled callback, and production health.
+
+## 5. Service-worker navigation regression
+
+- [x] 5.1 Reproduce the installed-PWA failure as cached `/` being returned for `/auth/telegram/start`.
+- [x] 5.2 Restrict shell navigation handling to explicit UI routes and pass auth/backend navigations through.
+- [x] 5.3 Add a service-worker regression test for Telegram start navigation and bump the shell generation.
+- [ ] 5.4 Redeploy through dev and production and verify the controlled PWA reaches the real Telegram redirect.
