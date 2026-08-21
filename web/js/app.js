@@ -529,7 +529,6 @@ function initAuth() {
         state.authMode = "login";
       }
       await openAccount();
-      if (!state.authUser) document.getElementById("auth-email")?.focus();
     });
   }
 
@@ -859,6 +858,7 @@ function renderAuthPanel() {
   const confirmPassword = document.getElementById("auth-password-confirm");
   const submitButton = document.getElementById("auth-submit-btn");
   const telegramLogin = document.getElementById("auth-telegram-login");
+  const emailDivider = document.getElementById("auth-email-divider");
   const modeHint = document.getElementById("auth-mode-hint");
   const guestPlayerLabel = document.getElementById("guest-player-label");
   const accountPanel = document.getElementById("account-panel");
@@ -884,7 +884,9 @@ function renderAuthPanel() {
 	if (submitButton) {
 		submitButton.textContent = t(registering ? "auth.register" : "auth.login");
 	}
-	if (telegramLogin) telegramLogin.hidden = !telegramAuthActionAvailable() || registering;
+	const telegramAvailable = telegramAuthActionAvailable() && !registering;
+	if (telegramLogin) telegramLogin.hidden = !telegramAvailable;
+	if (emailDivider) emailDivider.hidden = !telegramAvailable;
 	renderRegistrationOwnership();
 }
 

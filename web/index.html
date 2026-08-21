@@ -945,6 +945,26 @@
                             class="auth-login-form"
                             onsubmit="return false;"
                         >
+                            <button
+                                id="auth-telegram-login"
+                                class="telegram-auth-button"
+                                type="button"
+                                data-i18n="auth.telegramLogin"
+                            >Войти через Telegram</button>
+                            <section id="telegram-bot-waiting" class="telegram-bot-waiting" hidden aria-live="polite">
+                                <strong data-i18n="telegramBot.waitingTitle">Подтвердите вход в Telegram</strong>
+                                <p data-i18n="telegramBot.waiting">Ожидаем подтверждение в Telegram…</p>
+                                <p class="telegram-verification-code"><span data-i18n="telegramBot.code">Код:</span> <strong id="telegram-bot-code"></strong></p>
+                                <div class="telegram-auth-feedback-actions">
+                                    <button type="button" class="secondary" id="telegram-bot-open" data-i18n="telegramBot.open">Открыть Telegram</button>
+                                    <button type="button" class="secondary" id="telegram-bot-cancel" data-i18n="telegramBot.cancel">Отмена</button>
+                                    <a id="telegram-bot-browser-fallback" class="secondary telegram-auth-button" href="/auth/telegram/start?mode=login" data-i18n="telegramBot.browser">Войти через браузер</a>
+                                </div>
+                                <p class="hint" id="telegram-bot-status"></p>
+                            </section>
+                            <div id="auth-email-divider" class="auth-login-divider" data-i18n="auth.orEmail">
+                                или войдите по email
+                            </div>
                             <input
                                 id="auth-email"
                                 type="email"
@@ -1023,23 +1043,6 @@
                                     Already have an account?
                                 </button>
                             </div>
-                            <button
-                                id="auth-telegram-login"
-                                class="secondary telegram-auth-button"
-                                type="button"
-                                data-i18n="auth.telegramLogin"
-                            >Войти через Telegram</button>
-                            <section id="telegram-bot-waiting" class="telegram-bot-waiting" hidden aria-live="polite">
-                                <strong data-i18n="telegramBot.waitingTitle">Подтвердите вход в Telegram</strong>
-                                <p data-i18n="telegramBot.waiting">Ожидаем подтверждение в Telegram…</p>
-                                <p class="telegram-verification-code"><span data-i18n="telegramBot.code">Код:</span> <strong id="telegram-bot-code"></strong></p>
-                                <div class="telegram-auth-feedback-actions">
-                                    <button type="button" class="secondary" id="telegram-bot-open" data-i18n="telegramBot.open">Открыть Telegram</button>
-                                    <button type="button" class="secondary" id="telegram-bot-cancel" data-i18n="telegramBot.cancel">Отмена</button>
-                                    <a id="telegram-bot-browser-fallback" class="secondary telegram-auth-button" href="/auth/telegram/start?mode=login" data-i18n="telegramBot.browser">Войти через браузер</a>
-                                </div>
-                                <p class="hint" id="telegram-bot-status"></p>
-                            </section>
                         </form>
                     </section>
                     <div

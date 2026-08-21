@@ -254,6 +254,7 @@ body.auth-ui-disabled #screen-account {
 }
 
 .telegram-bot-waiting {
+  grid-column: 1 / -1;
   margin-top: 0.75rem;
   padding: 0.875rem;
   border: 1px solid var(--border-color, #3b414d);
@@ -272,10 +273,37 @@ body.auth-ui-disabled #screen-account {
 
 #auth-telegram-login {
     grid-column: 1 / -1;
-    min-height: 38px;
-    color: #f4f1ea;
-    border-color: rgba(51, 144, 236, 0.48);
-    background: rgba(51, 144, 236, 0.16);
+    min-height: 44px;
+    color: #fff;
+    border: 1px solid rgba(91, 174, 255, 0.72);
+    background: #2787d7;
+    box-shadow: 0 8px 20px rgba(39, 135, 215, 0.24);
+}
+
+#auth-telegram-login:hover {
+    background: #3197e5;
+}
+
+.auth-login-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.auth-login-divider::before,
+.auth-login-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+.auth-login-divider[hidden] {
+    display: none;
 }
 
 .auth-register-row {
