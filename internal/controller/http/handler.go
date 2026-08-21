@@ -8,15 +8,16 @@ import (
 )
 
 type Handler struct {
-	Auth      *AuthHandler
-	Account   *AccountHandler
-	Session   *SessionHandler
-	Operation *OperationHandler
-	Blinds    *BlindClockHandler
-	Push      *PushHandler
-	Player    *PlayerHandler
-	Stats     *StatsHandler
-	Admin     *AdminHandler
+	Auth        *AuthHandler
+	Account     *AccountHandler
+	Session     *SessionHandler
+	Operation   *OperationHandler
+	Blinds      *BlindClockHandler
+	Push        *PushHandler
+	Player      *PlayerHandler
+	Stats       *StatsHandler
+	Admin       *AdminHandler
+	TelegramBot *TelegramBotHandler
 }
 
 type AuthCookieConfig struct {
@@ -32,6 +33,9 @@ func NewHandler(
 	authUC *usecase.AuthService,
 	registerUserUC *usecase.RegisterUserUseCase,
 	telegramAuthUC *usecase.TelegramAuthService,
+	telegramChallengeUC *usecase.TelegramLoginChallengeService,
+	telegramBot TelegramBotSender,
+	telegramBotWebhookSecret string,
 	userPlayerLinksUC *usecase.UserPlayerLinksUseCase,
 	sessionAccessUC *usecase.SessionAccessService,
 
@@ -78,11 +82,13 @@ func NewHandler(
 
 	return &Handler{
 		Auth: &AuthHandler{
-			authUC:         authUC,
-			registerUserUC: registerUserUC,
-			telegramAuthUC: telegramAuthUC,
-			cookie:         authCookie,
+			authUC:              authUC,
+			registerUserUC:      registerUserUC,
+			telegramAuthUC:      telegramAuthUC,
+			telegramChallengeUC: telegramChallengeUC,
+			cookie:              authCookie,
 		},
+		TelegramBot: &TelegramBotHandler{service: telegramChallengeUC, sender: telegramBot, webhookSecret: telegramBotWebhookSecret},
 		Account: &AccountHandler{
 			authUC:            authUC,
 			telegramAuthUC:    telegramAuthUC,
@@ -140,10 +146,11 @@ func NewHandler(
 }
 
 type AuthHandler struct {
-	authUC         *usecase.AuthService
-	registerUserUC *usecase.RegisterUserUseCase
-	telegramAuthUC *usecase.TelegramAuthService
-	cookie         AuthCookieConfig
+	authUC              *usecase.AuthService
+	registerUserUC      *usecase.RegisterUserUseCase
+	telegramAuthUC      *usecase.TelegramAuthService
+	telegramChallengeUC *usecase.TelegramLoginChallengeService
+	cookie              AuthCookieConfig
 }
 
 type AccountHandler struct {

@@ -253,6 +253,17 @@ body.auth-ui-disabled #screen-account {
     gap: 8px;
 }
 
+.telegram-bot-waiting {
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  border: 1px solid var(--border-color, #3b414d);
+  border-radius: 0.75rem;
+}
+
+.telegram-bot-waiting[hidden] { display: none; }
+.telegram-bot-waiting p { margin: 0.5rem 0; }
+.telegram-verification-code { font-size: 1.2rem; letter-spacing: 0.08em; }
+
 .telegram-auth-feedback-actions .telegram-auth-button,
 .telegram-auth-feedback-actions button {
     min-height: 38px;

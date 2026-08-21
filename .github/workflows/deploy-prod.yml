@@ -88,6 +88,15 @@ jobs:
             fi
             cd /app
 
+            echo "== Resolve existing Poker bot configuration =="
+            telegram_bot_token='${{ secrets.TELEGRAM_BOT_TOKEN }}'
+            test -n "$telegram_bot_token"
+            telegram_bot_username=$(curl -fsS "https://api.telegram.org/bot${telegram_bot_token}/getMe" \
+              | sed -n 's/.*"username":"\([^"]*\)".*/\1/p')
+            test -n "$telegram_bot_username"
+            telegram_bot_webhook_secret=$(printf 'poker-login-webhook:%s' "$telegram_bot_token" \
+              | sha256sum | awk '{print $1}')
+
             echo "== Write app env =="
             printf '%s\n' \
               "APP_IMAGE=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
@@ -99,6 +108,10 @@ jobs:
               "TELEGRAM_OIDC_ENABLED=${{ secrets.TELEGRAM_OIDC_ENABLED }}" \
               "TELEGRAM_OIDC_CLIENT_ID=${{ secrets.TELEGRAM_OIDC_CLIENT_ID }}" \
               "TELEGRAM_OIDC_CLIENT_SECRET=${{ secrets.TELEGRAM_OIDC_CLIENT_SECRET }}" \
+              "TELEGRAM_LOGIN_BOT_ENABLED=true" \
+              "TELEGRAM_LOGIN_BOT_USERNAME=${telegram_bot_username}" \
+              "TELEGRAM_LOGIN_BOT_TOKEN=${telegram_bot_token}" \
+              "TELEGRAM_LOGIN_BOT_WEBHOOK_SECRET=${telegram_bot_webhook_secret}" \
               "PUSH_ENABLED=${{ secrets.PUSH_ENABLED }}" \
               "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \
               "PUSH_VAPID_PUBLIC_KEY=${{ secrets.PUSH_VAPID_PUBLIC_KEY }}" \
@@ -156,6 +169,17 @@ jobs:
               docker logs poker-app --tail=100 || true
               exit 1
             fi
+
+            echo "== Register Poker login bot webhook =="
+            curl -fsS -X POST "https://api.telegram.org/bot${telegram_bot_token}/setWebhook" \
+              --data-urlencode "url=https://poker.semenovv.space/telegram/login-bot/webhook" \
+              --data-urlencode "secret_token=${telegram_bot_webhook_secret}" \
+              --data-urlencode "allowed_updates=[\"message\",\"callback_query\"]" \
+              >/dev/null
+            webhook_url=$(curl -fsS "https://api.telegram.org/bot${telegram_bot_token}/getWebhookInfo" \
+              | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')
+            test "$webhook_url" = "https://poker.semenovv.space/telegram/login-bot/webhook"
+            echo "Poker login bot webhook is configured"
 
             echo "== Docker cleanup =="
             docker image prune -af --filter "until=24h" || true

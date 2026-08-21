@@ -2,10 +2,14 @@ import {
 	buyIn,
 	cashOut,
 	clearAdminAccountPlayer,
+	cancelTelegramChallenge,
+	completeTelegramChallenge,
+	createTelegramChallenge,
 	getAccount,
 	getAccountAvailablePlayers,
 	getAdminAccounts,
 	getAuthConfig,
+	getTelegramChallengeStatus,
   getCurrentUser,
   getUnlinkedPlayers,
 	login,
@@ -42,6 +46,13 @@ import {
   clearTelegramAuthAttempt,
   consumeTelegramAuthAttempt,
 } from "./telegram-auth-flow.js";
+import {
+  clearTelegramBotChallenge,
+  loadTelegramBotChallenge,
+  saveTelegramBotChallenge,
+  telegramChallengeAction,
+  telegramAppURI,
+} from "./telegram-bot-login.js";
 import {
   applyLatestSessionDefaults,
   firstActiveSessionId,
@@ -372,6 +383,7 @@ async function loadAuthConfig() {
     state.telegramAuthAvailability = res.body.telegram_enabled === true
       ? "enabled"
       : "disabled";
+    state.telegramBotEnabled = res.body.telegram_bot_enabled === true;
   }
   return res;
 }
@@ -631,7 +643,7 @@ function initAuth() {
 }
 
 function initTelegramAuthRecovery() {
-  for (const id of ["auth-telegram-login", "account-telegram-link", "telegram-auth-retry"]) {
+  for (const id of ["account-telegram-link", "telegram-auth-retry"]) {
     const link = document.getElementById(id);
     if (!link) continue;
     link.addEventListener("click", () => {
@@ -644,6 +656,35 @@ function initTelegramAuthRecovery() {
     });
   }
 
+  document.getElementById("auth-telegram-login")?.addEventListener("click", () => {
+    if (!state.telegramBotEnabled) {
+      beginTelegramAuthAttempt({ mode: "login" });
+      window.location.assign("/auth/telegram/start?mode=login");
+      return;
+    }
+    void startTelegramBotLogin();
+  });
+
+  document.getElementById("telegram-bot-open")?.addEventListener("click", openTelegramForChallenge);
+  document.getElementById("telegram-bot-cancel")?.addEventListener("click", () => void cancelActiveTelegramChallenge());
+  document.getElementById("telegram-bot-browser-fallback")?.addEventListener("click", () => {
+    beginTelegramAuthAttempt({ mode: "login" });
+    clearActiveTelegramChallenge();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && state.telegramBotChallenge) {
+      void pollTelegramChallenge(true);
+    }
+  });
+
+  const restored = loadTelegramBotChallenge();
+  if (restored) {
+    state.telegramBotChallenge = restored;
+    renderTelegramBotWaiting();
+    void pollTelegramChallenge(true);
+  }
+
   document.getElementById("telegram-auth-dismiss")?.addEventListener("click", () => {
     state.telegramAuthFeedback = null;
     clearTelegramAuthAttempt();
@@ -651,7 +692,93 @@ function initTelegramAuthRecovery() {
   });
 }
 
+let telegramPollTimer = null;
+
+async function startTelegramBotLogin() {
+  const button = document.getElementById("auth-telegram-login");
+  if (button) button.disabled = true;
+  const res = await createTelegramChallenge();
+  if (button) button.disabled = false;
+  if (!res.ok || !res.body?.challenge) {
+    showNotice(describeError(res, t("telegramBot.failed")), "error");
+    return;
+  }
+  state.telegramBotChallenge = saveTelegramBotChallenge(res.body);
+  renderTelegramBotWaiting();
+  openTelegramForChallenge();
+  scheduleTelegramChallengePoll();
+}
+
+function openTelegramForChallenge() {
+  const challenge = state.telegramBotChallenge;
+  if (!challenge) return;
+  window.location.assign(telegramAppURI(challenge.bot_username, challenge.challenge));
+}
+
+function renderTelegramBotWaiting(statusKey = "") {
+  const panel = document.getElementById("telegram-bot-waiting");
+  const code = document.getElementById("telegram-bot-code");
+  const status = document.getElementById("telegram-bot-status");
+  if (!panel || !code || !status) return;
+  panel.hidden = !state.telegramBotChallenge;
+  code.textContent = state.telegramBotChallenge?.verification_code || "";
+  status.textContent = statusKey ? t(statusKey) : "";
+}
+
+function scheduleTelegramChallengePoll() {
+  if (telegramPollTimer) clearTimeout(telegramPollTimer);
+  if (!state.telegramBotChallenge || document.visibilityState === "hidden") return;
+  telegramPollTimer = setTimeout(() => void pollTelegramChallenge(false), 2000);
+}
+
+async function pollTelegramChallenge(immediate) {
+  const challenge = state.telegramBotChallenge;
+  if (!challenge || document.visibilityState === "hidden") return;
+  if (!immediate && Date.parse(challenge.expires_at) <= Date.now()) {
+    renderTelegramBotWaiting("telegramBot.expired");
+    return;
+  }
+  const res = await getTelegramChallengeStatus(challenge.challenge);
+  if (!res.ok) {
+    if (res.status === 404 || res.status === 409) renderTelegramBotWaiting("telegramBot.expired");
+    else scheduleTelegramChallengePoll();
+    return;
+  }
+  switch (telegramChallengeAction(res.body?.status)) {
+    case "complete": {
+      const complete = await completeTelegramChallenge(challenge.challenge);
+      if (!complete.ok) { renderTelegramBotWaiting("telegramBot.failed"); return; }
+      clearActiveTelegramChallenge();
+      state.authLoginOpen = false;
+      await loadCurrentUser();
+      showNotice(t("notice.telegramLoginSuccess"), "success");
+      break;
+    }
+    case "denied": renderTelegramBotWaiting("telegramBot.denied"); break;
+    case "expired": renderTelegramBotWaiting("telegramBot.expired"); break;
+    default: scheduleTelegramChallengePoll();
+  }
+}
+
+async function cancelActiveTelegramChallenge() {
+  const challenge = state.telegramBotChallenge;
+  if (challenge) await cancelTelegramChallenge(challenge.challenge);
+  clearActiveTelegramChallenge();
+}
+
+function clearActiveTelegramChallenge() {
+  if (telegramPollTimer) clearTimeout(telegramPollTimer);
+  telegramPollTimer = null;
+  state.telegramBotChallenge = null;
+  clearTelegramBotChallenge();
+  renderTelegramBotWaiting();
+}
+
 function telegramAuthActionAvailable() {
+  return state.telegramBotEnabled || state.telegramAuthAvailability !== "disabled";
+}
+
+function telegramOIDCActionAvailable() {
   return state.telegramAuthAvailability !== "disabled";
 }
 
@@ -993,7 +1120,7 @@ function renderAccountPanel() {
 	const telegramIdentity = Array.isArray(state.account?.identities)
 		? state.account.identities.find((identity) => identity.provider === "telegram")
 		: null;
-	if (loginMethods) loginMethods.hidden = !telegramAuthActionAvailable();
+	if (loginMethods) loginMethods.hidden = !telegramOIDCActionAvailable();
 	if (telegramStatus) {
 		const telegramName = telegramIdentity?.username
 			? `@${telegramIdentity.username}`
@@ -1002,8 +1129,8 @@ function renderAccountPanel() {
 			? t("account.telegramLinked", { name: telegramName })
 			: t("account.telegramNotLinked");
 	}
-	if (telegramLink) telegramLink.hidden = !telegramAuthActionAvailable() || Boolean(telegramIdentity);
-	if (telegramUnlink) telegramUnlink.hidden = !telegramAuthActionAvailable() || !telegramIdentity;
+	if (telegramLink) telegramLink.hidden = !telegramOIDCActionAvailable() || Boolean(telegramIdentity);
+	if (telegramUnlink) telegramUnlink.hidden = !telegramOIDCActionAvailable() || !telegramIdentity;
 
   if (state.accountLoading) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;

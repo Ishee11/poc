@@ -53,6 +53,9 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/auth/me", h.Auth.Me)
 	mux.HandleFunc("/auth/telegram/start", h.Auth.TelegramStart)
 	mux.HandleFunc("/auth/telegram/callback", h.Auth.TelegramCallback)
+	mux.HandleFunc("/auth/telegram/challenge", h.Auth.TelegramChallengeCreate)
+	mux.HandleFunc("/auth/telegram/challenge/", h.Auth.TelegramChallenge)
+	mux.HandleFunc("/telegram/login-bot/webhook", h.TelegramBot.Webhook)
 
 	// ===== ACCOUNT =====
 	mux.HandleFunc("/account", h.Account.Account)

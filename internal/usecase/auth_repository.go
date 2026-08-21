@@ -38,6 +38,17 @@ type AuthOIDCFlowRepository interface {
 	ConsumeOIDCFlow(tx Tx, stateHash string, now time.Time) (*entity.AuthOIDCFlow, error)
 }
 
+type TelegramLoginChallengeRepository interface {
+	SaveTelegramLoginChallenge(tx Tx, challenge *entity.TelegramLoginChallenge) error
+	FindTelegramLoginChallenge(tx Tx, challengeHash string, browserBindingHash string, now time.Time) (*entity.TelegramLoginChallenge, error)
+	FindTelegramLoginChallengeForBot(tx Tx, challengeHash string, now time.Time) (*entity.TelegramLoginChallenge, error)
+	ClaimTelegramLoginChallengeActor(tx Tx, challengeHash string, subject string, now time.Time) (*entity.TelegramLoginChallenge, error)
+	ApproveTelegramLoginChallenge(tx Tx, challengeHash string, subject string, username string, displayName string, now time.Time) (*entity.TelegramLoginChallenge, error)
+	DenyTelegramLoginChallenge(tx Tx, challengeHash string, subject string, now time.Time) (*entity.TelegramLoginChallenge, error)
+	LockTelegramLoginChallenge(tx Tx, challengeHash string, browserBindingHash string, now time.Time) (*entity.TelegramLoginChallenge, error)
+	ConsumeTelegramLoginChallenge(tx Tx, challengeHash string, now time.Time) error
+}
+
 type UserPlayerLinkRepository interface {
 	LinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
 	UnlinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
