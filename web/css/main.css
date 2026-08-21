@@ -223,6 +223,42 @@ body.auth-ui-disabled #screen-account {
     text-decoration: none;
 }
 
+.telegram-auth-feedback {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-color: rgba(230, 176, 74, 0.42);
+    background: rgba(230, 176, 74, 0.1);
+}
+
+.telegram-auth-feedback[hidden] {
+    display: none;
+}
+
+.telegram-auth-feedback strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.telegram-auth-feedback p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.telegram-auth-feedback-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.telegram-auth-feedback-actions .telegram-auth-button,
+.telegram-auth-feedback-actions button {
+    min-height: 38px;
+    white-space: nowrap;
+}
+
 #auth-telegram-login {
     grid-column: 1 / -1;
     min-height: 38px;
@@ -2750,6 +2786,19 @@ body.admin-mode .admin-only {
     gap: 16px;
 }
 
+body[data-screen="player"] #screen-player {
+    gap: 14px;
+}
+
+body[data-screen="player"] #screen-player > .panel {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
 .player-stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -2781,6 +2830,46 @@ body.admin-mode .admin-only {
 .player-stats-note {
     padding: 0 2px;
     font-size: 0.86rem;
+}
+
+.player-sessions-disclosure {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.player-sessions-disclosure > summary {
+    padding: 12px 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.player-sessions-disclosure[open] > summary {
+    margin-bottom: 0;
+    border-bottom: 0;
+}
+
+.player-sessions-disclosure > .disclosure-body {
+    padding: 0;
+}
+
+.player-sessions-disclosure .mobile-player-session-card {
+    padding: 12px 2px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    background: transparent;
+}
+
+.player-sessions-disclosure .mobile-player-session-card:last-child {
+    border-bottom: 0;
+}
+
+.player-sessions-disclosure .mobile-player-session-card .card-meta-item {
+    padding: 4px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
 }
 
 table {
@@ -3179,6 +3268,18 @@ pre {
 }
 
 @media (max-width: 720px) {
+    .telegram-auth-feedback {
+        flex-direction: column;
+    }
+
+    .telegram-auth-feedback-actions {
+        width: 100%;
+    }
+
+    .telegram-auth-feedback-actions > * {
+        flex: 1;
+    }
+
     body {
         font-size: 15px;
     }

@@ -38,6 +38,11 @@ import { SESSION_REPLAY_REQUEST_EVENT } from "./session-projection.js";
 import { resolveLocalFirstSessionWrites } from "./rollout.js";
 import { state } from "./state.js";
 import {
+  beginTelegramAuthAttempt,
+  clearTelegramAuthAttempt,
+  consumeTelegramAuthAttempt,
+} from "./telegram-auth-flow.js";
+import {
   applyLatestSessionDefaults,
   firstActiveSessionId,
   initSessionsFilter,
@@ -156,6 +161,7 @@ async function bootstrapApplication() {
     initPlayersOverviewFilters();
     initSessionsFilter();
     initAuth();
+    initTelegramAuthRecovery();
     initAccountPanel();
     initGuestPlayerSelect();
     initSessionActions();
@@ -309,12 +315,13 @@ async function runRemoteRefresh(reason) {
   applyUiFeatureFlags();
 
   let authResult = null;
+  let telegramReturn = null;
   if (state.authUiEnabled) {
     authResult = await loadCurrentUser();
     if (authResult?.status !== 401) reportRemoteFailure(authResult, "auth", "session_restore");
     const guestResult = await loadGuestPlayers();
     reportRemoteFailure(guestResult, "auth", "guest_players");
-    handleTelegramReturn();
+    telegramReturn = handleTelegramReturn();
   } else {
     state.authChecked = true;
     state.authUser = null;
@@ -323,8 +330,10 @@ async function runRemoteRefresh(reason) {
 
   window.pokerStartup?.setPhase("initial_api");
   let lobbyResults;
-  if (isSessionRoute()) {
-    const routePromise = openInitialRoute();
+  if (telegramReturn?.forceProfile || isSessionRoute()) {
+    const routePromise = telegramReturn?.forceProfile
+      ? openAccount({ replace: true })
+      : openInitialRoute();
     const lobbyPromise = Promise.all([loadSessions(), loadPlayersOverview()]);
     lobbyResults = await lobbyPromise;
     await routePromise;
@@ -332,6 +341,7 @@ async function runRemoteRefresh(reason) {
     lobbyResults = await Promise.all([loadSessions(), loadPlayersOverview()]);
     await openInitialRoute();
   }
+  applyTelegramReturn(telegramReturn);
 
   const failures = flattenResults(lobbyResults).filter((result) => result && result.ok === false);
   failures.forEach((result) => reportRemoteFailure(result, "initial_api", reason));
@@ -359,7 +369,9 @@ async function loadAuthConfig() {
   const res = await getAuthConfig();
   if (res.ok && typeof res.body?.enabled === "boolean") {
     state.authUiEnabled = res.body.enabled;
-    state.telegramAuthEnabled = res.body.telegram_enabled === true;
+    state.telegramAuthAvailability = res.body.telegram_enabled === true
+      ? "enabled"
+      : "disabled";
   }
   return res;
 }
@@ -368,13 +380,56 @@ function handleTelegramReturn() {
   const url = new URL(window.location.href);
   const result = url.searchParams.get("telegram");
   const error = url.searchParams.get("telegram_error");
-  if (result === "linked") showNotice(t("notice.telegramLinked"), "success");
-  if (result === "logged_in") showNotice(t("notice.telegramLoginSuccess"), "success");
-  if (error) showNotice(t("error.telegramAuthFailed"), "error");
-  if (!result && !error) return;
-  url.searchParams.delete("telegram");
-  url.searchParams.delete("telegram_error");
-  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  let feedbackKind = null;
+  let noticeKey = null;
+  let mode = state.authUser ? "link" : "login";
+  let attemptAgeMs = null;
+
+  if (result === "linked") noticeKey = "notice.telegramLinked";
+  if (result === "logged_in") noticeKey = "notice.telegramLoginSuccess";
+
+  if (result || error || state.authUser) {
+    clearTelegramAuthAttempt();
+  }
+  if (error) {
+    feedbackKind = ["cancelled", "provider_unavailable", "disabled"].includes(error)
+      ? error
+      : "failed";
+  } else if (!result && !state.authUser) {
+    const attempt = consumeTelegramAuthAttempt();
+    if (attempt) {
+      mode = attempt.mode;
+      attemptAgeMs = attempt.ageMs;
+      feedbackKind = "incomplete";
+    }
+  }
+
+  if (result || error) {
+    url.searchParams.delete("telegram");
+    url.searchParams.delete("telegram_error");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  if (feedbackKind) {
+    state.telegramAuthFeedback = { kind: feedbackKind, mode };
+    renderTelegramAuthFeedback();
+    console.warn("telegram_auth_recovery", {
+      category: feedbackKind,
+      mode,
+      online: navigator.onLine,
+      attempt_age_ms: attemptAgeMs == null ? undefined : Math.round(attemptAgeMs),
+    });
+  }
+
+  return {
+    forceProfile: Boolean(feedbackKind),
+    noticeKey,
+  };
+}
+
+function applyTelegramReturn(result) {
+  renderTelegramAuthFeedback();
+  if (result?.noticeKey) showNotice(t(result.noticeKey), "success");
 }
 
 function initializeLocalRuntime() {
@@ -575,6 +630,49 @@ function initAuth() {
 	}
 }
 
+function initTelegramAuthRecovery() {
+  for (const id of ["auth-telegram-login", "account-telegram-link", "telegram-auth-retry"]) {
+    const link = document.getElementById(id);
+    if (!link) continue;
+    link.addEventListener("click", () => {
+      const target = new URL(link.href, window.location.href);
+      const mode = target.searchParams.get("mode") === "link" ? "link" : "login";
+      beginTelegramAuthAttempt({ mode });
+      state.telegramAuthFeedback = null;
+      renderTelegramAuthFeedback();
+      console.info("telegram_auth_navigation", { mode, online: navigator.onLine });
+    });
+  }
+
+  document.getElementById("telegram-auth-dismiss")?.addEventListener("click", () => {
+    state.telegramAuthFeedback = null;
+    clearTelegramAuthAttempt();
+    renderTelegramAuthFeedback();
+  });
+}
+
+function telegramAuthActionAvailable() {
+  return state.telegramAuthAvailability !== "disabled";
+}
+
+function renderTelegramAuthFeedback() {
+  const panel = document.getElementById("telegram-auth-feedback");
+  const title = document.getElementById("telegram-auth-feedback-title");
+  const message = document.getElementById("telegram-auth-feedback-message");
+  const retry = document.getElementById("telegram-auth-retry");
+  if (!panel || !title || !message || !retry) return;
+
+  const feedback = state.telegramAuthFeedback;
+  panel.hidden = !feedback;
+  if (!feedback) return;
+
+  const copyKind = feedback.kind === "provider_unavailable" ? "provider" : feedback.kind;
+  title.textContent = t(`telegramRecovery.${copyKind}Title`);
+  message.textContent = t(`telegramRecovery.${copyKind}Message`);
+  retry.href = `/auth/telegram/start?mode=${feedback.mode === "link" ? "link" : "login"}`;
+  retry.hidden = feedback.kind === "disabled";
+}
+
 async function loadRegistrationPlayers() {
 	state.registrationPlayersLoading = true;
 	renderRegistrationOwnership();
@@ -659,7 +757,7 @@ function renderAuthPanel() {
 	if (submitButton) {
 		submitButton.textContent = t(registering ? "auth.register" : "auth.login");
 	}
-	if (telegramLogin) telegramLogin.hidden = !state.telegramAuthEnabled || registering;
+	if (telegramLogin) telegramLogin.hidden = !telegramAuthActionAvailable() || registering;
 	renderRegistrationOwnership();
 }
 
@@ -895,7 +993,7 @@ function renderAccountPanel() {
 	const telegramIdentity = Array.isArray(state.account?.identities)
 		? state.account.identities.find((identity) => identity.provider === "telegram")
 		: null;
-	if (loginMethods) loginMethods.hidden = !state.telegramAuthEnabled;
+	if (loginMethods) loginMethods.hidden = !telegramAuthActionAvailable();
 	if (telegramStatus) {
 		const telegramName = telegramIdentity?.username
 			? `@${telegramIdentity.username}`
@@ -904,8 +1002,8 @@ function renderAccountPanel() {
 			? t("account.telegramLinked", { name: telegramName })
 			: t("account.telegramNotLinked");
 	}
-	if (telegramLink) telegramLink.hidden = !state.telegramAuthEnabled || Boolean(telegramIdentity);
-	if (telegramUnlink) telegramUnlink.hidden = !state.telegramAuthEnabled || !telegramIdentity;
+	if (telegramLink) telegramLink.hidden = !telegramAuthActionAvailable() || Boolean(telegramIdentity);
+	if (telegramUnlink) telegramUnlink.hidden = !telegramAuthActionAvailable() || !telegramIdentity;
 
   if (state.accountLoading) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;
@@ -1049,6 +1147,7 @@ function renderCurrentLanguage() {
     renderAccountPanel();
     renderGuestPlayerSelect();
   }
+  renderTelegramAuthFeedback();
   renderStartChipRateLabel();
   renderSessions();
   syncSelect();

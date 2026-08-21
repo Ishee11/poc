@@ -8,12 +8,15 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"math/big"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ishee11/poc/internal/entity"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -114,5 +117,38 @@ func TestTelegramOIDCClientRejectsWrongNonce(t *testing.T) {
 	_, err = client.validateIDToken(context.Background(), signedTelegramToken(t, key, "actual", "123"), "expected")
 	if err == nil {
 		t.Fatal("expected nonce validation error")
+	}
+}
+
+func TestTelegramOIDCClientClassifiesProviderTransportFailure(t *testing.T) {
+	client := NewTelegramOIDCClient(TelegramOIDCClientConfig{
+		ClientID: "123", ClientSecret: "secret", TokenURL: "https://telegram.test/token",
+	})
+	client.client = &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return nil, context.DeadlineExceeded
+	})}
+
+	_, err := client.Exchange(context.Background(), "code", "verifier", "https://poc.test/callback", "nonce")
+	if !errors.Is(err, entity.ErrTelegramProviderUnavailable) {
+		t.Fatalf("expected provider unavailable, got %v", err)
+	}
+}
+
+func TestTelegramOIDCClientClassifiesProviderServiceFailure(t *testing.T) {
+	client := NewTelegramOIDCClient(TelegramOIDCClientConfig{
+		ClientID: "123", ClientSecret: "secret", TokenURL: "https://telegram.test/token",
+	})
+	client.client = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusServiceUnavailable,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader("unavailable")),
+			Request:    r,
+		}, nil
+	})}
+
+	_, err := client.Exchange(context.Background(), "code", "verifier", "https://poc.test/callback", "nonce")
+	if !errors.Is(err, entity.ErrTelegramProviderUnavailable) {
+		t.Fatalf("expected provider unavailable, got %v", err)
 	}
 }

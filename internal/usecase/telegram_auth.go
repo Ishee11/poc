@@ -181,6 +181,9 @@ func (s *TelegramAuthService) Complete(ctx context.Context, cmd TelegramComplete
 	}
 
 	claims, err := s.client.Exchange(ctx, cmd.Code, flow.CodeVerifier, flow.RedirectURI, flow.Nonce)
+	if errors.Is(err, entity.ErrTelegramProviderUnavailable) {
+		return nil, entity.ErrTelegramProviderUnavailable
+	}
 	if err != nil || strings.TrimSpace(claims.Subject) == "" {
 		return nil, entity.ErrOIDCTokenInvalid
 	}

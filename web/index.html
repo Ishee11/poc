@@ -9,7 +9,7 @@
         <meta name="theme-color" content="#0b1117" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="poker-local-first-session-writes" content="false" />
-        <meta name="poker-shell-version" content="v14-2026-08-21-resilient-startup" />
+        <meta name="poker-shell-version" content="v16-2026-08-21-telegram-auth-recovery" />
         <meta
             name="apple-mobile-web-app-status-bar-style"
             content="black-translucent"
@@ -900,6 +900,32 @@
 
                 <section class="screen" id="screen-account">
                     <section
+                        class="panel telegram-auth-feedback"
+                        id="telegram-auth-feedback"
+                        role="alert"
+                        aria-live="polite"
+                        hidden
+                    >
+                        <div>
+                            <strong id="telegram-auth-feedback-title"></strong>
+                            <p id="telegram-auth-feedback-message"></p>
+                        </div>
+                        <div class="telegram-auth-feedback-actions">
+                            <a
+                                id="telegram-auth-retry"
+                                class="secondary telegram-auth-button"
+                                href="/auth/telegram/start?mode=login"
+                                data-i18n="telegramRecovery.retry"
+                            >Повторить</a>
+                            <button
+                                type="button"
+                                class="secondary"
+                                id="telegram-auth-dismiss"
+                                data-i18n="telegramRecovery.dismiss"
+                            >Закрыть</button>
+                        </div>
+                    </section>
+                    <section
                         class="panel auth-menu"
                         id="auth-menu"
                         aria-label="Authentication"
@@ -1002,7 +1028,6 @@
                                 class="secondary telegram-auth-button"
                                 href="/auth/telegram/start?mode=login"
                                 data-i18n="auth.telegramLogin"
-                                hidden
                             >Войти через Telegram</a>
                         </form>
                     </section>

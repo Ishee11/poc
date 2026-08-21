@@ -85,7 +85,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v14-2026-08-21-resilient-startup";
+const SHELL_CACHE_VERSION = "v16-2026-08-21-telegram-auth-recovery";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -106,6 +106,7 @@ const REQUIRED_SHELL_ASSETS = Object.freeze([
   "/static/js/session-projection.js",
   "/static/js/state.js",
   "/static/js/sync-status.js",
+  "/static/js/telegram-auth-flow.js",
   "/static/js/utils.js",
   "/static/js/ui/blinds.js",
   "/static/js/ui/lobby.js",

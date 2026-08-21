@@ -219,6 +219,9 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrTelegramAuthDisabled):
 		return apiError{status: http.StatusNotImplemented, code: "telegram_auth_disabled"}
 
+	case errors.Is(err, entity.ErrTelegramProviderUnavailable):
+		return apiError{status: http.StatusServiceUnavailable, code: "telegram_provider_unavailable"}
+
 	case errors.Is(err, entity.ErrOIDCFlowInvalid), errors.Is(err, entity.ErrOIDCTokenInvalid):
 		return apiError{status: http.StatusUnauthorized, code: "telegram_auth_failed"}
 

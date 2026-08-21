@@ -32,3 +32,13 @@ export function sessionHistoryMessageKey(visibility) {
 export function financialVisibilityNoticeRequired(visibility) {
   return ["partial", "hidden", "unavailable"].includes(visibility?.kind);
 }
+
+export function playerSessionListCount(visibility, returnedCount) {
+  if (visibility?.kind === "partial") {
+    return { visible: visibility.visible, total: visibility.total };
+  }
+  return {
+    visible: visibility?.visible ?? countOrNull(returnedCount) ?? 0,
+    total: null,
+  };
+}
