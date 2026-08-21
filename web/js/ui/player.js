@@ -83,6 +83,7 @@ export async function loadPlayersOverview() {
   });
 
   applyPlayersOverviewFilter();
+  return [playersRes, statsRes, recentStatsRes];
 }
 
 

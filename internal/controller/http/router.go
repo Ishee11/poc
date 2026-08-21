@@ -22,10 +22,12 @@ func NewRouter(h *Handler) http.Handler {
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
 	mux.HandleFunc("/sw.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFileFS(w, r, sub, "sw.js")
 	})
 	mux.HandleFunc("/manifest.webmanifest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/manifest+json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFileFS(w, r, sub, "manifest.webmanifest")
 	})
 
@@ -35,6 +37,7 @@ func NewRouter(h *Handler) http.Handler {
 			http.NotFound(w, r)
 			return
 		}
+		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFileFS(w, r, sub, "index.html")
 	})
 

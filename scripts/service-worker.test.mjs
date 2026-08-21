@@ -15,11 +15,13 @@ let fetchImpl = async () => ({ ok: true });
 
 const cache = {
   async addAll(assets) {
-    cachedRequiredAssets.push(...assets);
+    cachedRequiredAssets.push(...assets.map((asset) => new URL(asset.url).pathname));
+    assert.ok(assets.every((asset) => asset.cache === "reload"));
   },
   async add(asset) {
-    cachedOptionalAssets.push(asset);
-    if (asset.endsWith("poker-mark.png")) throw new Error("optional asset missing");
+    cachedOptionalAssets.push(new URL(asset.url).pathname);
+    assert.equal(asset.cache, "reload");
+    if (asset.url.endsWith("poker-mark.png")) throw new Error("optional asset missing");
   },
   async put() {},
 };
@@ -107,10 +109,11 @@ function runFetch(request) {
 test("installs the versioned minimum shell without optional-asset failure", async () => {
   await runExtendable("install");
 
-  assert.equal(openedCacheName, "poker-session-control-shell-v13-2026-08-21-player-session-visibility-layout");
+  assert.equal(openedCacheName, "poker-session-control-shell-v14-2026-08-21-resilient-startup");
   assert.ok(cachedRequiredAssets.includes("/"));
   assert.ok(cachedRequiredAssets.includes("/static/css/main.css"));
   assert.ok(cachedRequiredAssets.includes("/static/js/app.js"));
+  assert.ok(cachedRequiredAssets.includes("/static/js/startup.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/account-ownership-ui.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/player-session-visibility.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/sync-status.js"));
@@ -132,8 +135,12 @@ test("activation removes obsolete caches and refreshes only safe shell clients",
   assert.deepEqual(navigatedClients, ["https://poc.test/"]);
 });
 
-test("navigation is network-first with shell fallback", async () => {
-  fetchImpl = async () => { throw new Error("offline"); };
+test("controlled navigation stays on the active coherent shell generation", async () => {
+  let networkCalls = 0;
+  fetchImpl = async () => {
+    networkCalls += 1;
+    return { source: "new-network-document" };
+  };
   const response = await runFetch({
     method: "GET",
     mode: "navigate",
@@ -141,6 +148,7 @@ test("navigation is network-first with shell fallback", async () => {
   });
 
   assert.equal(response, shellResponse);
+  assert.equal(networkCalls, 0);
 });
 
 test("static assets are cache-first while API and unsupported requests pass through", async () => {
