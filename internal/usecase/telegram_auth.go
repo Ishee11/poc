@@ -20,10 +20,12 @@ const (
 )
 
 type TelegramOIDCClaims struct {
-	Subject     string
-	Username    string
-	DisplayName string
-	PictureURL  string
+	// Subject is the canonical Telegram user ID shared with the Bot API.
+	Subject       string
+	LegacySubject string
+	Username      string
+	DisplayName   string
+	PictureURL    string
 }
 
 type TelegramOIDCClient interface {
@@ -191,13 +193,7 @@ func (s *TelegramAuthService) Complete(ctx context.Context, cmd TelegramComplete
 	result := &TelegramCompleteResult{Mode: flow.Mode}
 	err = s.txManager.RunInTx(ctx, func(tx Tx) error {
 		if flow.Mode == TelegramOIDCModeLink {
-			now := s.clock.Now()
-			identity := &entity.AuthIdentity{
-				Provider: entity.AuthProviderTelegram, Subject: claims.Subject, UserID: *flow.UserID,
-				Username: claims.Username, DisplayName: claims.DisplayName, PictureURL: claims.PictureURL,
-				CreatedAt: now, UpdatedAt: now,
-			}
-			if err := s.identities.SaveIdentity(tx, identity); err != nil {
+			if err := s.linkTelegramIdentity(tx, *flow.UserID, claims); err != nil {
 				return err
 			}
 			result.UserID = *flow.UserID
@@ -217,10 +213,31 @@ func (s *TelegramAuthService) Complete(ctx context.Context, cmd TelegramComplete
 func (s *TelegramAuthService) resolveOrCreateTelegramIdentity(tx Tx, claims TelegramOIDCClaims) (entity.AuthUserID, error) {
 	existing, err := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.Subject)
 	if err == nil {
+		if claims.LegacySubject != "" && claims.LegacySubject != claims.Subject {
+			legacy, legacyErr := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.LegacySubject)
+			if legacyErr == nil && legacy.UserID != existing.UserID {
+				return "", entity.ErrAuthIdentityLinked
+			}
+			if legacyErr != nil && !errors.Is(legacyErr, entity.ErrAuthIdentityNotFound) {
+				return "", legacyErr
+			}
+		}
 		return existing.UserID, nil
 	}
 	if !errors.Is(err, entity.ErrAuthIdentityNotFound) {
 		return "", err
+	}
+	if claims.LegacySubject != "" && claims.LegacySubject != claims.Subject {
+		legacy, legacyErr := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.LegacySubject)
+		if legacyErr == nil {
+			if err := s.replaceLegacyTelegramIdentity(tx, legacy, claims); err != nil {
+				return "", err
+			}
+			return legacy.UserID, nil
+		}
+		if !errors.Is(legacyErr, entity.ErrAuthIdentityNotFound) {
+			return "", legacyErr
+		}
 	}
 	now := s.clock.Now()
 	userID := s.userIDGen.New()
@@ -244,6 +261,44 @@ func (s *TelegramAuthService) resolveOrCreateTelegramIdentity(tx Tx, claims Tele
 		return "", err
 	}
 	return userID, nil
+}
+
+func (s *TelegramAuthService) linkTelegramIdentity(tx Tx, userID entity.AuthUserID, claims TelegramOIDCClaims) error {
+	if existing, err := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.Subject); err == nil {
+		if existing.UserID == userID {
+			return nil
+		}
+		return entity.ErrAuthIdentityLinked
+	} else if !errors.Is(err, entity.ErrAuthIdentityNotFound) {
+		return err
+	}
+	if claims.LegacySubject != "" && claims.LegacySubject != claims.Subject {
+		legacy, err := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.LegacySubject)
+		if err == nil {
+			if legacy.UserID != userID {
+				return entity.ErrAuthIdentityLinked
+			}
+			return s.replaceLegacyTelegramIdentity(tx, legacy, claims)
+		}
+		if !errors.Is(err, entity.ErrAuthIdentityNotFound) {
+			return err
+		}
+	}
+	now := s.clock.Now()
+	return s.identities.SaveIdentity(tx, &entity.AuthIdentity{
+		Provider: entity.AuthProviderTelegram, Subject: claims.Subject, UserID: userID,
+		Username: claims.Username, DisplayName: claims.DisplayName, PictureURL: claims.PictureURL,
+		CreatedAt: now, UpdatedAt: now,
+	})
+}
+
+func (s *TelegramAuthService) replaceLegacyTelegramIdentity(tx Tx, legacy *entity.AuthIdentity, claims TelegramOIDCClaims) error {
+	now := s.clock.Now()
+	return s.identities.ReplaceIdentitySubject(tx, entity.AuthProviderTelegram, legacy.Subject, &entity.AuthIdentity{
+		Provider: entity.AuthProviderTelegram, Subject: claims.Subject, UserID: legacy.UserID,
+		Username: claims.Username, DisplayName: claims.DisplayName, PictureURL: claims.PictureURL,
+		CreatedAt: legacy.CreatedAt, UpdatedAt: now,
+	})
 }
 
 func (s *TelegramAuthService) ListIdentities(ctx context.Context, userID entity.AuthUserID) ([]AuthIdentityDTO, error) {

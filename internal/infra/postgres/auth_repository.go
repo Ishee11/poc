@@ -38,6 +38,26 @@ func (r *AuthRepository) SaveIdentity(tx usecase.Tx, identity *entity.AuthIdenti
 	return err
 }
 
+func (r *AuthRepository) ReplaceIdentitySubject(tx usecase.Tx, provider entity.AuthProvider, oldSubject string, identity *entity.AuthIdentity) error {
+	tag, err := tx.Exec(context.Background(), `
+		UPDATE auth_identities
+		SET subject = $1, username = $2, display_name = $3, picture_url = $4, updated_at = $5
+		WHERE provider = $6 AND subject = $7 AND user_id = $8
+	`, identity.Subject, nullString(identity.Username), nullString(identity.DisplayName),
+		nullString(identity.PictureURL), identity.UpdatedAt, provider, oldSubject, identity.UserID)
+	if err == nil {
+		if tag.RowsAffected() == 0 {
+			return entity.ErrAuthIdentityNotFound
+		}
+		return nil
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return entity.ErrAuthIdentityLinked
+	}
+	return err
+}
+
 func (r *AuthRepository) FindIdentity(tx usecase.Tx, provider entity.AuthProvider, subject string) (*entity.AuthIdentity, error) {
 	row := tx.QueryRow(context.Background(), `
 		SELECT provider, subject, user_id, COALESCE(username, ''), COALESCE(display_name, ''),

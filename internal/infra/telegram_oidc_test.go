@@ -39,6 +39,7 @@ func signedTelegramToken(t *testing.T, key *rsa.PrivateKey, nonce string, audien
 	header := encodeJWTPart(t, map[string]any{"alg": "RS256", "kid": "test-key", "typ": "JWT"})
 	claims := encodeJWTPart(t, map[string]any{
 		"iss": "https://oauth.telegram.org", "aud": audience, "sub": "telegram-42",
+		"id":  int64(42),
 		"exp": time.Now().Add(time.Minute).Unix(), "nonce": nonce,
 		"name": "Telegram User", "preferred_username": "telegram_user",
 	})
@@ -101,7 +102,7 @@ func TestTelegramOIDCClientExchangesAndValidatesRS256IDToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if claims.Subject != "telegram-42" || claims.Username != "telegram_user" || claims.DisplayName != "Telegram User" {
+	if claims.Subject != "42" || claims.LegacySubject != "telegram-42" || claims.Username != "telegram_user" || claims.DisplayName != "Telegram User" {
 		t.Fatalf("unexpected claims: %+v", claims)
 	}
 }
@@ -117,6 +118,34 @@ func TestTelegramOIDCClientRejectsWrongNonce(t *testing.T) {
 	_, err = client.validateIDToken(context.Background(), signedTelegramToken(t, key, "actual", "123"), "expected")
 	if err == nil {
 		t.Fatal("expected nonce validation error")
+	}
+}
+
+func TestTelegramOIDCClientRejectsTokenWithoutProfileUserID(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := NewTelegramOIDCClient(TelegramOIDCClientConfig{ClientID: "123"})
+	client.keys["test-key"] = &key.PublicKey
+	client.keysAt = time.Now()
+	token := signedTelegramToken(t, key, "nonce", "123")
+	parts := strings.Split(token, ".")
+	var claims map[string]any
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil || json.Unmarshal(raw, &claims) != nil {
+		t.Fatal("decode signed test token")
+	}
+	delete(claims, "id")
+	unsigned := parts[0] + "." + encodeJWTPart(t, claims)
+	digest := sha256.Sum256([]byte(unsigned))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, digest[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.validateIDToken(context.Background(), unsigned+"."+base64.RawURLEncoding.EncodeToString(signature), "nonce")
+	if err == nil {
+		t.Fatal("expected missing Telegram profile id to be rejected")
 	}
 }
 
