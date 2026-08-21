@@ -1,0 +1,77 @@
+name: Diagnose Prod Auth
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Exact account email
+        required: true
+        type: string
+      telegram_username:
+        description: Telegram username without @
+        required: true
+        type: string
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Encode diagnostic inputs
+        env:
+          TARGET_EMAIL: ${{ inputs.email }}
+          TARGET_USERNAME: ${{ inputs.telegram_username }}
+        run: |
+          printf 'TARGET_EMAIL_B64=%s\n' "$(printf '%s' "$TARGET_EMAIL" | base64 -w0)" >> "$GITHUB_ENV"
+          printf 'TARGET_USERNAME_B64=%s\n' "$(printf '%s' "$TARGET_USERNAME" | base64 -w0)" >> "$GITHUB_ENV"
+
+      - name: Inspect production auth relationships
+        uses: appleboy/ssh-action@v1
+        env:
+          TARGET_EMAIL_B64: ${{ env.TARGET_EMAIL_B64 }}
+          TARGET_USERNAME_B64: ${{ env.TARGET_USERNAME_B64 }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: TARGET_EMAIL_B64,TARGET_USERNAME_B64
+          script: |
+            set -euo pipefail
+            target_email=$(printf '%s' "$TARGET_EMAIL_B64" | base64 -d)
+            target_username=$(printf '%s' "$TARGET_USERNAME_B64" | base64 -d)
+            case "$target_email" in
+              *@*) ;;
+              *) echo 'invalid email input'; exit 1 ;;
+            esac
+            case "$target_username" in
+              *[!A-Za-z0-9_]*) echo 'invalid Telegram username input'; exit 1 ;;
+            esac
+
+            docker exec poker-db psql -X -v ON_ERROR_STOP=1 -U poker -d poker \
+              -v target_email="$target_email" -v target_username="$target_username" <<'SQL'
+            SELECT
+              CASE
+                WHEN LOWER(u.email) = LOWER(:'target_email') THEN 'target_email_account'
+                WHEN u.email LIKE 'telegram-%@telegram.invalid' THEN 'synthetic_telegram_account'
+                ELSE 'other_account'
+              END AS account_kind,
+              CASE WHEN ai.subject ~ '^[0-9]+$' THEN 'numeric_telegram_id' ELSE 'legacy_oidc_sub' END AS identity_kind,
+              COALESCE(ai.username, '') AS telegram_username,
+              COUNT(DISTINCT up.player_id) AS player_links,
+              COALESCE(STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name), '') AS players,
+              COUNT(DISTINCT s.id) FILTER (WHERE s.revoked_at IS NULL AND s.expires_at > NOW()) AS active_sessions
+            FROM auth_identities ai
+            JOIN users u ON u.id = ai.user_id
+            LEFT JOIN user_players up ON up.user_id = u.id
+            LEFT JOIN players p ON p.id = up.player_id
+            LEFT JOIN auth_sessions s ON s.user_id = u.id
+            WHERE ai.provider = 'telegram'
+              AND (
+                LOWER(u.email) = LOWER(:'target_email')
+                OR LOWER(COALESCE(ai.username, '')) = LOWER(:'target_username')
+                OR LOWER(COALESCE(ai.username, '')) = LOWER('@' || :'target_username')
+              )
+            GROUP BY u.id, u.email, ai.subject, ai.username
+            ORDER BY account_kind, identity_kind;
+            SQL
