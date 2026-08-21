@@ -355,7 +355,6 @@ function applyUiFeatureFlags() {
 }
 
 function initAuth() {
-  const accountMenu = document.getElementById("header-account-menu");
   const accountButton = document.getElementById("header-account-btn");
   const form = document.getElementById("auth-login-form");
   const logoutButton = document.getElementById("account-logout-btn");
@@ -365,28 +364,14 @@ function initAuth() {
 
   if (accountButton) {
     accountButton.addEventListener("click", async () => {
-      if (state.authUser) {
-        await openAccount();
-        return;
+      if (!state.authUser) {
+        state.authLoginOpen = true;
+        state.authMode = "login";
       }
-      state.authLoginOpen = !state.authLoginOpen;
-      state.authMode = "login";
-      renderAuthPanel();
-      if (state.authLoginOpen) document.getElementById("auth-email")?.focus();
+      await openAccount();
+      if (!state.authUser) document.getElementById("auth-email")?.focus();
     });
   }
-
-  document.addEventListener("click", (event) => {
-    if (!state.authLoginOpen || accountMenu?.contains(event.target)) return;
-    state.authLoginOpen = false;
-    renderAuthPanel();
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !state.authLoginOpen) return;
-    state.authLoginOpen = false;
-    renderAuthPanel();
-    accountButton?.focus();
-  });
 
   if (form) {
     form.addEventListener("submit", async (event) => {
@@ -557,16 +542,17 @@ function renderAuthPanel() {
   const telegramLogin = document.getElementById("auth-telegram-login");
   const modeHint = document.getElementById("auth-mode-hint");
   const guestPlayerLabel = document.getElementById("guest-player-label");
+  const accountPanel = document.getElementById("account-panel");
 
   if (!form || !accountButton || !menu || !registerRow) return;
 
   const user = state.authUser;
   const menuOpen = !user && state.authLoginOpen;
   accountButton.classList.toggle("authenticated", Boolean(user));
-  accountButton.setAttribute("aria-expanded", String(menuOpen));
   accountButton.setAttribute("aria-label", t(user ? "account.title" : "auth.login"));
   if (accountButtonLabel) accountButtonLabel.textContent = t(user ? "account.title" : "auth.login");
   menu.hidden = !menuOpen;
+  if (accountPanel) accountPanel.hidden = !user;
   form.hidden = !menuOpen;
   registerRow.hidden = Boolean(user) || !state.authLoginOpen;
   if (guestPlayerLabel) guestPlayerLabel.hidden = Boolean(user);
@@ -650,6 +636,9 @@ async function openAccount({ replace = false } = {}) {
     return;
   }
 
+  if (!state.authUser) {
+    state.authLoginOpen = true;
+  }
   setScreen("account");
   if (replace) {
     replaceRoute(routeToAccount());
@@ -663,6 +652,7 @@ async function openAccount({ replace = false } = {}) {
     clearAccount();
     renderAccountPanel();
   }
+  renderAuthPanel();
 }
 
 function initAccountPanel() {

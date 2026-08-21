@@ -52,7 +52,14 @@ for (const removedId of [
 }
 const timerButtonIndex = html.indexOf('id="header-blinds-clock-btn"');
 const accountButtonIndex = html.indexOf('id="header-account-btn"');
+const accountScreenIndex = html.indexOf('id="screen-account"');
+const authMenuIndex = html.indexOf('id="auth-menu"');
+const accountPanelIndex = html.indexOf('id="account-panel"');
 assert.ok(timerButtonIndex >= 0 && accountButtonIndex > timerButtonIndex, "account icon must follow blind timer");
+assert.ok(
+	accountScreenIndex >= 0 && authMenuIndex > accountScreenIndex && accountPanelIndex > authMenuIndex,
+	"authentication form must be embedded in the account screen",
+);
 assert.match(app, /state\.accountOnboardingRequired[\s\S]*openAccount\(\{ replace: true \}\)/);
 assert.match(app, /header-account-btn[\s\S]*state\.authUser[\s\S]*openAccount\(\)/);
 assert.match(app, /account-logout-btn[\s\S]*logout\(\)/);
