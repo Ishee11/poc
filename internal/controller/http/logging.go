@@ -31,8 +31,8 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		attrs := []any{
 			"request_id", GetRequestID(r.Context()),
 			"method", r.Method,
-			"path", r.URL.Path,
-			"query", r.URL.RawQuery,
+			"path", metricsRouteLabel(r.URL.Path),
+			"query", safeLoggedQuery(r),
 			"status", status,
 			"duration_ms", float64(time.Since(start).Microseconds()) / 1000,
 			"bytes", observed.Bytes(),
@@ -50,6 +50,13 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			attrs...,
 		)
 	})
+}
+
+func safeLoggedQuery(r *http.Request) string {
+	if strings.HasPrefix(r.URL.Path, "/auth/telegram/") {
+		return ""
+	}
+	return r.URL.RawQuery
 }
 
 func shouldLogHTTP(status int) bool {

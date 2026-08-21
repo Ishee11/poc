@@ -109,7 +109,7 @@ function runFetch(request) {
 test("installs the versioned minimum shell without optional-asset failure", async () => {
   await runExtendable("install");
 
-  assert.equal(openedCacheName, "poker-session-control-shell-v17-2026-08-21-auth-navigation-bypass");
+  assert.equal(openedCacheName, "poker-session-control-shell-v18-2026-08-21-telegram-bot-login");
   assert.ok(cachedRequiredAssets.includes("/"));
   assert.ok(cachedRequiredAssets.includes("/static/css/main.css"));
   assert.ok(cachedRequiredAssets.includes("/static/js/app.js"));
@@ -117,6 +117,7 @@ test("installs the versioned minimum shell without optional-asset failure", asyn
   assert.ok(cachedRequiredAssets.includes("/static/js/account-ownership-ui.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/player-session-visibility.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/telegram-auth-flow.js"));
+  assert.ok(cachedRequiredAssets.includes("/static/js/telegram-bot-login.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/sync-status.js"));
   assert.ok(cachedRequiredAssets.includes("/static/js/rollout.js"));
   assert.ok(cachedRequiredAssets.includes("/static/svg/13-user-outline-white.svg"));

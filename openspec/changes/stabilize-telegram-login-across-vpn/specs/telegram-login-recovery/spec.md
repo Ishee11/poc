@@ -1,5 +1,12 @@
 ## ADDED Requirements
 
+### Requirement: Browser OIDC remains an explicit fallback
+The existing Telegram OIDC start and callback flow SHALL remain available as an explicit browser fallback when native bot-challenge login is unavailable or the user chooses it. It SHALL retain its PKCE, nonce, one-use state, provider validation, identity resolution, and session behavior.
+
+#### Scenario: User chooses browser fallback
+- **WHEN** the bot-challenge waiting UI selects Sign in through browser
+- **THEN** the client starts the existing `/auth/telegram/start?mode=login` flow and existing recovery behavior applies
+
 ### Requirement: Telegram availability distinguishes unknown from disabled
 The application SHALL keep Telegram authentication actions available while public auth configuration is loading or failed, and SHALL hide them only after a successful configuration response explicitly disables Telegram.
 

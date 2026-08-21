@@ -188,16 +188,15 @@ func (s *TelegramAuthService) Complete(ctx context.Context, cmd TelegramComplete
 		return nil, entity.ErrOIDCTokenInvalid
 	}
 
-	now := s.clock.Now()
-	identity := &entity.AuthIdentity{
-		Provider: entity.AuthProviderTelegram, Subject: claims.Subject,
-		Username: claims.Username, DisplayName: claims.DisplayName, PictureURL: claims.PictureURL,
-		CreatedAt: now, UpdatedAt: now,
-	}
 	result := &TelegramCompleteResult{Mode: flow.Mode}
 	err = s.txManager.RunInTx(ctx, func(tx Tx) error {
 		if flow.Mode == TelegramOIDCModeLink {
-			identity.UserID = *flow.UserID
+			now := s.clock.Now()
+			identity := &entity.AuthIdentity{
+				Provider: entity.AuthProviderTelegram, Subject: claims.Subject, UserID: *flow.UserID,
+				Username: claims.Username, DisplayName: claims.DisplayName, PictureURL: claims.PictureURL,
+				CreatedAt: now, UpdatedAt: now,
+			}
 			if err := s.identities.SaveIdentity(tx, identity); err != nil {
 				return err
 			}
@@ -205,41 +204,46 @@ func (s *TelegramAuthService) Complete(ctx context.Context, cmd TelegramComplete
 			return nil
 		}
 
-		existing, findErr := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.Subject)
-		if findErr == nil {
-			result.UserID = existing.UserID
-			return nil
-		}
-		if !errors.Is(findErr, entity.ErrAuthIdentityNotFound) {
-			return findErr
-		}
-
-		userID := s.userIDGen.New()
-		emailHash := sha256.Sum256([]byte(claims.Subject))
-		user, newErr := entity.NewAuthUser(
-			userID,
-			fmt.Sprintf("telegram-%x@telegram.invalid", emailHash[:12]),
-			telegramPasswordHash,
-			entity.AuthRoleUser,
-			now,
-		)
-		if newErr != nil {
-			return newErr
-		}
-		if err := s.users.Save(tx, user); err != nil {
-			return err
-		}
-		identity.UserID = userID
-		if err := s.identities.SaveIdentity(tx, identity); err != nil {
-			return err
-		}
-		result.UserID = userID
-		return nil
+		var resolveErr error
+		result.UserID, resolveErr = s.resolveOrCreateTelegramIdentity(tx, claims)
+		return resolveErr
 	})
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
+}
+
+func (s *TelegramAuthService) resolveOrCreateTelegramIdentity(tx Tx, claims TelegramOIDCClaims) (entity.AuthUserID, error) {
+	existing, err := s.identities.FindIdentity(tx, entity.AuthProviderTelegram, claims.Subject)
+	if err == nil {
+		return existing.UserID, nil
+	}
+	if !errors.Is(err, entity.ErrAuthIdentityNotFound) {
+		return "", err
+	}
+	now := s.clock.Now()
+	userID := s.userIDGen.New()
+	emailHash := sha256.Sum256([]byte(claims.Subject))
+	user, err := entity.NewAuthUser(
+		userID, fmt.Sprintf("telegram-%x@telegram.invalid", emailHash[:12]),
+		telegramPasswordHash, entity.AuthRoleUser, now,
+	)
+	if err != nil {
+		return "", err
+	}
+	if err := s.users.Save(tx, user); err != nil {
+		return "", err
+	}
+	identity := &entity.AuthIdentity{
+		Provider: entity.AuthProviderTelegram, Subject: claims.Subject, UserID: userID,
+		Username: claims.Username, DisplayName: claims.DisplayName, PictureURL: claims.PictureURL,
+		CreatedAt: now, UpdatedAt: now,
+	}
+	if err := s.identities.SaveIdentity(tx, identity); err != nil {
+		return "", err
+	}
+	return userID, nil
 }
 
 func (s *TelegramAuthService) ListIdentities(ctx context.Context, userID entity.AuthUserID) ([]AuthIdentityDTO, error) {

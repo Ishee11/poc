@@ -84,6 +84,22 @@ export function getCurrentUser() {
   return request("/auth/me");
 }
 
+export function createTelegramChallenge() {
+  return request("/auth/telegram/challenge", { method: "POST" });
+}
+
+export function getTelegramChallengeStatus(challenge) {
+  return request(`/auth/telegram/challenge/${encodeURIComponent(challenge)}/status`);
+}
+
+export function completeTelegramChallenge(challenge) {
+  return request(`/auth/telegram/challenge/${encodeURIComponent(challenge)}/complete`, { method: "POST" });
+}
+
+export function cancelTelegramChallenge(challenge) {
+  return request(`/auth/telegram/challenge/${encodeURIComponent(challenge)}/cancel`, { method: "POST" });
+}
+
 // ===== account =====
 
 export function getAccount() {

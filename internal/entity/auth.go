@@ -9,8 +9,17 @@ type AuthUserID string
 type AuthSessionID string
 type LoginAttemptID string
 type AuthProvider string
+type TelegramLoginChallengeStatus string
 
 const AuthProviderTelegram AuthProvider = "telegram"
+
+const (
+	TelegramLoginChallengePending  TelegramLoginChallengeStatus = "pending"
+	TelegramLoginChallengeApproved TelegramLoginChallengeStatus = "approved"
+	TelegramLoginChallengeDenied   TelegramLoginChallengeStatus = "denied"
+	TelegramLoginChallengeExpired  TelegramLoginChallengeStatus = "expired"
+	TelegramLoginChallengeConsumed TelegramLoginChallengeStatus = "consumed"
+)
 
 type AuthRole string
 
@@ -68,7 +77,24 @@ var (
 	ErrTelegramProviderUnavailable = errors.New("telegram provider unavailable")
 	ErrOIDCFlowInvalid             = errors.New("oidc flow invalid or expired")
 	ErrOIDCTokenInvalid            = errors.New("oidc token invalid")
+	ErrTelegramChallengeInvalid    = errors.New("telegram login challenge invalid")
+	ErrTelegramChallengeState      = errors.New("telegram login challenge state invalid")
+	ErrTelegramChallengeActor      = errors.New("telegram login challenge actor mismatch")
 )
+
+type TelegramLoginChallenge struct {
+	ChallengeHash      string
+	BrowserBindingHash string
+	VerificationCode   string
+	Status             TelegramLoginChallengeStatus
+	TelegramSubject    string
+	TelegramUsername   string
+	TelegramName       string
+	CreatedAt          time.Time
+	ExpiresAt          time.Time
+	ApprovedAt         *time.Time
+	ConsumedAt         *time.Time
+}
 
 type AuthIdentity struct {
 	Provider    AuthProvider
