@@ -319,6 +319,7 @@ for (const testFile of [
   "scripts/player-session-visibility.test.mjs",
   "scripts/session-access-ui.test.mjs",
   "scripts/telegram-auth-ui.test.mjs",
+  "scripts/telegram-auth-flow.test.mjs",
   "scripts/service-worker.test.mjs",
 ]) {
   const result = spawnSync(process.execPath, [testFile], { cwd: root, encoding: "utf8" });

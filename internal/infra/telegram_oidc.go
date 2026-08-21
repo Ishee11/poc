@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
 )
 
@@ -71,11 +72,14 @@ func (c *TelegramOIDCClient) Exchange(
 	req.SetBasicAuth(c.config.ClientID, c.config.ClientSecret)
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return usecase.TelegramOIDCClaims{}, err
+		return usecase.TelegramOIDCClaims{}, fmt.Errorf("%w: token request: %v", entity.ErrTelegramProviderUnavailable, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
+			return usecase.TelegramOIDCClaims{}, fmt.Errorf("%w: token endpoint status %d", entity.ErrTelegramProviderUnavailable, resp.StatusCode)
+		}
 		return usecase.TelegramOIDCClaims{}, fmt.Errorf("telegram token endpoint status %d", resp.StatusCode)
 	}
 	var tokenResponse struct {
@@ -196,10 +200,13 @@ func (c *TelegramOIDCClient) refreshKeys(ctx context.Context) error {
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: jwks request: %v", entity.ErrTelegramProviderUnavailable, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
+			return fmt.Errorf("%w: jwks endpoint status %d", entity.ErrTelegramProviderUnavailable, resp.StatusCode)
+		}
 		return fmt.Errorf("telegram jwks endpoint status %d", resp.StatusCode)
 	}
 	var jwks struct {

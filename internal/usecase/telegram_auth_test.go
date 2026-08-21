@@ -87,10 +87,30 @@ func (r *fakeTelegramRepo) ConsumeOIDCFlow(_ Tx, stateHash string, now time.Time
 
 type fakeTelegramOIDCClient struct {
 	claims TelegramOIDCClaims
+	err    error
 }
 
 func (c fakeTelegramOIDCClient) Exchange(context.Context, string, string, string, string) (TelegramOIDCClaims, error) {
-	return c.claims, nil
+	return c.claims, c.err
+}
+
+func TestTelegramProviderUnavailableRemainsRecoverable(t *testing.T) {
+	now := time.Date(2026, 8, 21, 3, 0, 0, 0, time.UTC)
+	users := newFakeAuthRepo()
+	repo := newFakeTelegramRepo()
+	service := newTelegramService(repo, users, now, TelegramOIDCClaims{Subject: "unused"})
+	redirect, err := service.Begin(context.Background(), TelegramBeginCommand{Mode: TelegramOIDCModeLogin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.client = fakeTelegramOIDCClient{err: entity.ErrTelegramProviderUnavailable}
+
+	_, err = service.Complete(context.Background(), TelegramCompleteCommand{
+		State: telegramState(t, redirect), Code: "code",
+	})
+	if !errors.Is(err, entity.ErrTelegramProviderUnavailable) {
+		t.Fatalf("expected provider unavailable, got %v", err)
+	}
 }
 
 func newTelegramService(repo *fakeTelegramRepo, users *fakeAuthRepo, now time.Time, claims TelegramOIDCClaims) *TelegramAuthService {

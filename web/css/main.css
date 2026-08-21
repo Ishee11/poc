@@ -223,6 +223,42 @@ body.auth-ui-disabled #screen-account {
     text-decoration: none;
 }
 
+.telegram-auth-feedback {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-color: rgba(230, 176, 74, 0.42);
+    background: rgba(230, 176, 74, 0.1);
+}
+
+.telegram-auth-feedback[hidden] {
+    display: none;
+}
+
+.telegram-auth-feedback strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.telegram-auth-feedback p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.telegram-auth-feedback-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.telegram-auth-feedback-actions .telegram-auth-button,
+.telegram-auth-feedback-actions button {
+    min-height: 38px;
+    white-space: nowrap;
+}
+
 #auth-telegram-login {
     grid-column: 1 / -1;
     min-height: 38px;
@@ -3232,6 +3268,18 @@ pre {
 }
 
 @media (max-width: 720px) {
+    .telegram-auth-feedback {
+        flex-direction: column;
+    }
+
+    .telegram-auth-feedback-actions {
+        width: 100%;
+    }
+
+    .telegram-auth-feedback-actions > * {
+        flex: 1;
+    }
+
     body {
         font-size: 15px;
     }

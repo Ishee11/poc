@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -39,26 +40,53 @@ func (h *AuthHandler) TelegramStart(w http.ResponseWriter, r *http.Request) {
 	if mode == "" {
 		mode = usecase.TelegramOIDCModeLogin
 	}
+	logMode := mode
+	if mode != usecase.TelegramOIDCModeLogin && mode != usecase.TelegramOIDCModeLink {
+		logMode = "invalid"
+	}
+	if h.telegramAuthUC == nil || !h.telegramAuthUC.Enabled() {
+		slog.WarnContext(r.Context(), "telegram_auth_start_failed",
+			"request_id", GetRequestID(r.Context()), "mode", logMode, "category", "disabled")
+		http.Redirect(w, r, telegramAuthFailureRedirect("disabled"), http.StatusFound)
+		return
+	}
 	var userID *entity.AuthUserID
 	if mode == usecase.TelegramOIDCModeLink {
 		principal, err := h.authUC.CurrentUser(r.Context(), h.sessionToken(r))
 		if err != nil {
-			writeError(w, r, err)
+			slog.WarnContext(r.Context(), "telegram_auth_start_failed",
+				"request_id", GetRequestID(r.Context()), "mode", logMode, "category", "failed")
+			http.Redirect(w, r, telegramAuthFailureRedirect("failed"), http.StatusFound)
 			return
 		}
 		userID = &principal.UserID
 	}
 	redirect, err := h.telegramAuthUC.Begin(r.Context(), usecase.TelegramBeginCommand{Mode: mode, UserID: userID})
 	if err != nil {
-		writeError(w, r, err)
+		category := telegramAuthErrorCategory(err)
+		slog.WarnContext(r.Context(), "telegram_auth_start_failed",
+			"request_id", GetRequestID(r.Context()), "mode", logMode, "category", category)
+		http.Redirect(w, r, telegramAuthFailureRedirect(category), http.StatusFound)
 		return
 	}
+	slog.InfoContext(r.Context(), "telegram_auth_started",
+		"request_id", GetRequestID(r.Context()), "mode", logMode)
 	http.Redirect(w, r, redirect, http.StatusFound)
 }
 
 func (h *AuthHandler) TelegramCallback(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	if r.URL.Query().Get("error") != "" {
+		category := "failed"
+		if r.URL.Query().Get("error") == "access_denied" {
+			category = "cancelled"
+		}
+		slog.WarnContext(r.Context(), "telegram_auth_callback_failed",
+			"request_id", GetRequestID(r.Context()), "category", category)
+		http.Redirect(w, r, telegramAuthFailureRedirect(category), http.StatusFound)
 		return
 	}
 	var currentUserID *entity.AuthUserID
@@ -69,8 +97,10 @@ func (h *AuthHandler) TelegramCallback(w http.ResponseWriter, r *http.Request) {
 		State: r.URL.Query().Get("state"), Code: r.URL.Query().Get("code"), CurrentUserID: currentUserID,
 	})
 	if err != nil {
-		slog.WarnContext(r.Context(), "telegram_auth_failed", "request_id", GetRequestID(r.Context()), "err", err)
-		http.Redirect(w, r, "/?telegram_error=failed", http.StatusFound)
+		category := telegramAuthErrorCategory(err)
+		slog.WarnContext(r.Context(), "telegram_auth_callback_failed",
+			"request_id", GetRequestID(r.Context()), "category", category)
+		http.Redirect(w, r, telegramAuthFailureRedirect(category), http.StatusFound)
 		return
 	}
 	if result.Mode == usecase.TelegramOIDCModeLink {
@@ -80,7 +110,9 @@ func (h *AuthHandler) TelegramCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	loginResult, err := h.authUC.LoginUser(r.Context(), result.UserID, r.UserAgent(), clientIP(r))
 	if err != nil {
-		http.Redirect(w, r, "/?telegram_error=failed", http.StatusFound)
+		slog.WarnContext(r.Context(), "telegram_auth_callback_failed",
+			"request_id", GetRequestID(r.Context()), "category", "failed")
+		http.Redirect(w, r, telegramAuthFailureRedirect("failed"), http.StatusFound)
 		return
 	}
 	h.setSessionCookie(w, r, loginResult.Token, loginResult.ExpiresAt)
@@ -93,6 +125,26 @@ func telegramCallbackSuccessRedirect(mode string) string {
 		return "/profile?telegram=linked"
 	}
 	return "/profile?telegram=logged_in"
+}
+
+func telegramAuthErrorCategory(err error) string {
+	switch {
+	case errors.Is(err, entity.ErrTelegramAuthDisabled):
+		return "disabled"
+	case errors.Is(err, entity.ErrTelegramProviderUnavailable):
+		return "provider_unavailable"
+	default:
+		return "failed"
+	}
+}
+
+func telegramAuthFailureRedirect(category string) string {
+	switch category {
+	case "cancelled", "provider_unavailable", "disabled":
+	default:
+		category = "failed"
+	}
+	return "/profile?telegram_error=" + category
 }
 
 // Register godoc
