@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v12-2026-08-21-player-session-visibility";
+const SHELL_CACHE_VERSION = "v13-2026-08-21-player-session-visibility-layout";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([
@@ -133,10 +133,17 @@ async function refreshSafeShellClients() {
     windowClients.map((client) => {
       const url = new URL(client.url);
       if (url.origin !== self.location.origin) return undefined;
-      if (url.pathname !== "/" && url.pathname !== "/profile") return undefined;
+      if (!isSafeShellRefreshPath(url.pathname)) return undefined;
       return client.navigate(client.url);
     }),
   );
+}
+
+function isSafeShellRefreshPath(pathname) {
+  return pathname === "/" ||
+    pathname === "/profile" ||
+    pathname === "/players/stats" ||
+    pathname.startsWith("/player/");
 }
 
 async function networkFirstNavigation(request) {

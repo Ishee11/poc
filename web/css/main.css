@@ -2742,6 +2742,17 @@ body.admin-mode .admin-only {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.player-session-count-stat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    align-items: center;
+}
+
+.player-session-count-stat .stat-context {
+    grid-column: 1 / -1;
+}
+
 .stat-context {
     margin-top: 6px;
     color: var(--muted);

@@ -496,7 +496,7 @@ export function renderPlayerDetail() {
         <button type="button" class="secondary" id="player-period-clear">${escapeHtml(t("player.allTime"))}</button>
       </div>
       <div class="stats player-stats">
-        <div class="stat">
+        <div class="stat player-session-count-stat">
           ${statLabel("player.sessions", "player.hint.sessions")}
           <div>${visibility.total === null ? "—" : formatNumber(visibility.total)}</div>
           ${renderVisibleSessionsContext(visibility)}
