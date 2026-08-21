@@ -100,6 +100,7 @@ type telegramJWTClaims struct {
 	Issuer            string          `json:"iss"`
 	Audience          json.RawMessage `json:"aud"`
 	Subject           string          `json:"sub"`
+	TelegramUserID    int64           `json:"id"`
 	ExpiresAt         int64           `json:"exp"`
 	NotBefore         int64           `json:"nbf"`
 	Nonce             string          `json:"nonce"`
@@ -145,13 +146,13 @@ func (c *TelegramOIDCClient) validateIDToken(ctx context.Context, rawToken strin
 		return usecase.TelegramOIDCClaims{}, err
 	}
 	now := time.Now().Unix()
-	if claims.Issuer != "https://oauth.telegram.org" || claims.Subject == "" ||
+	if claims.Issuer != "https://oauth.telegram.org" || claims.Subject == "" || claims.TelegramUserID <= 0 ||
 		claims.ExpiresAt <= now || (claims.NotBefore != 0 && claims.NotBefore > now+30) ||
 		claims.Nonce != nonce || !audienceContains(claims.Audience, c.config.ClientID) {
 		return usecase.TelegramOIDCClaims{}, errors.New("invalid jwt claims")
 	}
 	return usecase.TelegramOIDCClaims{
-		Subject: claims.Subject, Username: claims.PreferredUsername,
+		Subject: fmt.Sprint(claims.TelegramUserID), LegacySubject: claims.Subject, Username: claims.PreferredUsername,
 		DisplayName: claims.Name, PictureURL: claims.Picture,
 	}, nil
 }

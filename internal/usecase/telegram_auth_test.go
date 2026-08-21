@@ -42,6 +42,23 @@ func (r *fakeTelegramRepo) SaveIdentity(_ Tx, identity *entity.AuthIdentity) err
 	return nil
 }
 
+func (r *fakeTelegramRepo) ReplaceIdentitySubject(_ Tx, provider entity.AuthProvider, oldSubject string, identity *entity.AuthIdentity) error {
+	oldKey := telegramIdentityKey(provider, oldSubject)
+	old, ok := r.identities[oldKey]
+	if !ok || old.UserID != identity.UserID {
+		return entity.ErrAuthIdentityNotFound
+	}
+	newKey := telegramIdentityKey(provider, identity.Subject)
+	if current, exists := r.identities[newKey]; exists && current.UserID != identity.UserID {
+		return entity.ErrAuthIdentityLinked
+	}
+	copy := *identity
+	delete(r.identities, oldKey)
+	r.identities[newKey] = &copy
+	r.byUser[identity.UserID] = &copy
+	return nil
+}
+
 func (r *fakeTelegramRepo) FindIdentity(_ Tx, provider entity.AuthProvider, subject string) (*entity.AuthIdentity, error) {
 	identity, ok := r.identities[telegramIdentityKey(provider, subject)]
 	if !ok {
@@ -174,6 +191,81 @@ func TestTelegramIdentityLinksToExistingAccountAndLogsIntoSameAccount(t *testing
 	}
 	if len(users.users) != 1 {
 		t.Fatalf("telegram login created duplicate user: %d users", len(users.users))
+	}
+}
+
+func TestTelegramOIDCLegacySubjectMigratesToCanonicalUserID(t *testing.T) {
+	now := time.Date(2026, 8, 21, 3, 0, 0, 0, time.UTC)
+	users := newFakeAuthRepo()
+	user, err := entity.NewAuthUser("email-user", "ishee@yandex.ru", "password-hash", entity.AuthRoleUser, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := users.Save(testTx{}, user); err != nil {
+		t.Fatal(err)
+	}
+	repo := newFakeTelegramRepo()
+	if err := repo.SaveIdentity(testTx{}, &entity.AuthIdentity{
+		Provider: entity.AuthProviderTelegram, Subject: "oidc-subject", UserID: user.ID,
+		Username: "semenovv", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	service := newTelegramService(repo, users, now, TelegramOIDCClaims{
+		Subject: "42", LegacySubject: "oidc-subject", Username: "semenovv",
+	})
+	redirect, err := service.Begin(context.Background(), TelegramBeginCommand{Mode: TelegramOIDCModeLogin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := service.Complete(context.Background(), TelegramCompleteCommand{State: telegramState(t, redirect), Code: "code"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.UserID != user.ID || len(users.users) != 1 {
+		t.Fatalf("legacy identity did not preserve account: result=%+v users=%d", result, len(users.users))
+	}
+	if _, err := repo.FindIdentity(testTx{}, entity.AuthProviderTelegram, "42"); err != nil {
+		t.Fatalf("canonical identity missing: %v", err)
+	}
+	if _, err := repo.FindIdentity(testTx{}, entity.AuthProviderTelegram, "oidc-subject"); !errors.Is(err, entity.ErrAuthIdentityNotFound) {
+		t.Fatalf("legacy identity still present: %v", err)
+	}
+}
+
+func TestTelegramOIDCRejectsSplitCanonicalAndLegacyAccounts(t *testing.T) {
+	now := time.Date(2026, 8, 21, 3, 0, 0, 0, time.UTC)
+	users := newFakeAuthRepo()
+	repo := newFakeTelegramRepo()
+	for _, item := range []struct {
+		id      entity.AuthUserID
+		email   string
+		subject string
+	}{{"established", "ishee@yandex.ru", "oidc-subject"}, {"duplicate", "telegram-x@telegram.invalid", "42"}} {
+		user, err := entity.NewAuthUser(item.id, item.email, "password-hash", entity.AuthRoleUser, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := users.Save(testTx{}, user); err != nil {
+			t.Fatal(err)
+		}
+		if err := repo.SaveIdentity(testTx{}, &entity.AuthIdentity{
+			Provider: entity.AuthProviderTelegram, Subject: item.subject, UserID: item.id,
+			Username: "semenovv", CreatedAt: now, UpdatedAt: now,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	service := newTelegramService(repo, users, now, TelegramOIDCClaims{
+		Subject: "42", LegacySubject: "oidc-subject", Username: "semenovv",
+	})
+	redirect, err := service.Begin(context.Background(), TelegramBeginCommand{Mode: TelegramOIDCModeLogin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = service.Complete(context.Background(), TelegramCompleteCommand{State: telegramState(t, redirect), Code: "code"})
+	if !errors.Is(err, entity.ErrAuthIdentityLinked) {
+		t.Fatalf("expected split identity conflict, got %v", err)
 	}
 }
 

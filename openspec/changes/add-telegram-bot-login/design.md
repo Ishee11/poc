@@ -2,7 +2,7 @@
 
 ## Context
 
-Current Telegram OIDC stores a hash of OAuth state, validates PKCE and nonce, resolves `AuthProviderTelegram` by OIDC `sub`, creates a synthetic-email active account on first login, then calls the normal `AuthService.LoginUser` path to create an opaque server-side session and set the configured HttpOnly cookie. Telegram OIDC `sub` is the decimal Telegram user ID, so Bot API `message.from.id` and `callback_query.from.id` use the same identity subject.
+Current Telegram OIDC stores a hash of OAuth state, validates PKCE and nonce, resolves `AuthProviderTelegram`, creates a synthetic-email active account on first login, then calls the normal `AuthService.LoginUser` path to create an opaque server-side session and set the configured HttpOnly cookie. Telegram's signed profile `id`, not OIDC `sub`, is the decimal Telegram user ID shared with Bot API `message.from.id` and `callback_query.from.id`.
 
 There is no user-facing bot update loop to reuse, but the project already has a connected Poker bot token. This change reuses that bot, adds a webhook to the existing Poker HTTP process, and adds a minimal Bot API sender. Production derives the username through Bot API `getMe`, derives a domain-separated webhook secret from the protected bot token, and registers the production webhook during deployment.
 
@@ -77,7 +77,7 @@ Bot approve is idempotent only for the same Telegram subject; duplicate callback
 
 ## Shared Telegram account resolution
 
-Extract the existing OIDC identity lookup/create transaction logic into a shared resolver used by both OIDC and bot challenge completion. Both pass `AuthProviderTelegram` and the decimal Telegram user ID as subject. Existing identity rows therefore select the same Poker account. A missing identity creates the same synthetic-email active account and Telegram identity used today. It does not create a player; the existing mandatory account-player onboarding remains authoritative.
+Extract the existing OIDC identity lookup/create transaction logic into a shared resolver used by both OIDC and bot challenge completion. Both pass `AuthProviderTelegram` and the decimal Telegram profile/Bot API user ID as subject. OIDC also carries its signed `sub` only to migrate legacy identity rows safely. Existing identity rows therefore select the same Poker account. A missing identity creates the same synthetic-email active account and Telegram identity used today. It does not create a player; the existing mandatory account-player onboarding remains authoritative.
 
 The completion service creates the same `AuthSession` entity, random opaque token hash, TTL, `last_login_at`, user-agent/IP metadata, and response cookie used by OIDC. The challenge never authorizes other endpoints.
 

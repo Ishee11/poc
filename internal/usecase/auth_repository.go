@@ -28,6 +28,7 @@ type LoginAttemptRepository interface {
 
 type AuthIdentityRepository interface {
 	SaveIdentity(tx Tx, identity *entity.AuthIdentity) error
+	ReplaceIdentitySubject(tx Tx, provider entity.AuthProvider, oldSubject string, identity *entity.AuthIdentity) error
 	FindIdentity(tx Tx, provider entity.AuthProvider, subject string) (*entity.AuthIdentity, error)
 	ListIdentities(tx Tx, userID entity.AuthUserID) ([]entity.AuthIdentity, error)
 	DeleteIdentity(tx Tx, userID entity.AuthUserID, provider entity.AuthProvider) error
