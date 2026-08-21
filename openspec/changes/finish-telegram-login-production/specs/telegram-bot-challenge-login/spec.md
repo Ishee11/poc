@@ -7,6 +7,10 @@ The primary Telegram login SHALL be the first and visually dominant login action
 - **WHEN** an unauthenticated user opens the login screen
 - **THEN** Telegram appears above email/password and no credential field is programmatically focused, so the keyboard and password prompt do not open automatically
 
+#### Scenario: Guest session context is needed
+- **WHEN** an unauthenticated participant selects an unowned player to view that player's sessions
+- **THEN** the selector appears with session-list controls and is not presented as a login method
+
 #### Scenario: Installed Telegram is used
 - **WHEN** a user activates the primary Telegram action and challenge creation succeeds
 - **THEN** the client opens `tg://resolve` with the configured bot username and high-entropy challenge and displays the waiting panel

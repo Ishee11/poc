@@ -26,6 +26,8 @@ assert.deepEqual(requests, [
 ]);
 
 const html = readFileSync(new URL("../web/index.html", import.meta.url), "utf8");
+assert.ok(html.indexOf('id="overview-session-controls"') < html.indexOf('id="guest-player-label"'));
+assert.ok(html.indexOf('id="guest-player-label"') < html.indexOf('id="auth-menu"'));
 assert.match(html, /id="auth-telegram-login"[\s\S]*id="telegram-bot-waiting"/);
 assert.match(html, /id="auth-telegram-login"[\s\S]*id="auth-email-divider"[\s\S]*id="auth-email"/);
 assert.match(html, /id="telegram-bot-open"/);

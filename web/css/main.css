@@ -149,9 +149,22 @@ body.auth-ui-disabled #screen-account {
 .guest-player-label {
     display: grid;
     gap: 6px;
-    margin-bottom: 12px;
     color: var(--muted);
     font-size: 0.82rem;
+}
+
+.overview-session-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.overview-session-controls .guest-player-label {
+    flex: 1 0 100%;
+    grid-template-columns: minmax(0, auto) minmax(160px, 1fr);
+    align-items: center;
+    margin-bottom: 4px;
 }
 
 .auth-login-form {

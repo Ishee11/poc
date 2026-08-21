@@ -10,4 +10,5 @@ Production acceptance showed that the first identity repair did not match the ac
 - Reconcile the confirmed Telegram identity only after inspecting its actual account and player relationships.
 - Place Telegram above email/password as the primary login action.
 - Stop focusing credential fields when the login screen opens so mobile keyboards and password prompts do not appear automatically.
+- Move guest player context out of authentication and into the session-list controls where it affects visibility.
 - Advance the PWA shell cache generation for the changed login assets.

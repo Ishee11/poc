@@ -404,6 +404,14 @@
                             </span>
                         </summary>
                         <div class="overview-player-controls overview-session-controls" id="overview-session-controls">
+                            <label class="guest-player-label" id="guest-player-label">
+                                <span data-i18n="guest.player">Guest session access</span>
+                                <select id="guest-player-select">
+                                    <option value="" data-i18n="guest.noPlayer">
+                                        No player selected
+                                    </option>
+                                </select>
+                            </label>
                             <button
                                 type="button"
                                 class="overview-filter-pill is-active"
@@ -932,14 +940,6 @@
                         data-i18n-aria-label="auth.label"
                         hidden
                     >
-                        <label class="guest-player-label" id="guest-player-label">
-                            <span data-i18n="guest.player">Guest player</span>
-                            <select id="guest-player-select">
-                                <option value="" data-i18n="guest.noPlayer">
-                                    No player selected
-                                </option>
-                            </select>
-                        </label>
                         <form
                             id="auth-login-form"
                             class="auth-login-form"

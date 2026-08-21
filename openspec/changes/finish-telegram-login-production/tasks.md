@@ -9,6 +9,7 @@
 - [x] 2.1 Move Telegram above email/password and style it as the primary action.
 - [x] 2.2 Remove automatic credential focus when login opens.
 - [x] 2.3 Add localized email-divider copy and update the coherent PWA shell generation.
+- [x] 2.4 Move guest player context from login into session-list controls with explanatory copy.
 
 ## 3. Validation and rollout
 
