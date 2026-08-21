@@ -5,8 +5,10 @@ import "context"
 import "github.com/ishee11/poc/internal/entity"
 
 type GetPlayerStatsResponse struct {
-	Player   PlayerOverallStat   `json:"player"`
-	Sessions []PlayerSessionStat `json:"sessions"`
+	Player               PlayerOverallStat   `json:"player"`
+	TotalSessionsCount   int64               `json:"total_sessions_count"`
+	VisibleSessionsCount int64               `json:"visible_sessions_count"`
+	Sessions             []PlayerSessionStat `json:"sessions"`
 }
 
 type GetPlayerStatsUseCase struct {
@@ -58,6 +60,11 @@ func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlay
 		return nil, err
 	}
 
+	visibleSessionsCount, err := uc.statsRepo.CountVisiblePlayerSessions(tx, q.PlayerID, filter)
+	if err != nil {
+		return nil, err
+	}
+
 	sessions, err := uc.statsRepo.ListPlayerSessions(tx, q.PlayerID, filter)
 	if err != nil {
 		return nil, err
@@ -69,8 +76,10 @@ func (uc *GetPlayerStatsUseCase) execute(tx Tx, q GetPlayerStatsQuery) (*GetPlay
 	player.Rank = uc.playerRank(tx, q)
 
 	return &GetPlayerStatsResponse{
-		Player:   *player,
-		Sessions: sessions,
+		Player:               *player,
+		TotalSessionsCount:   player.SessionsCount,
+		VisibleSessionsCount: visibleSessionsCount,
+		Sessions:             sessions,
 	}, nil
 }
 

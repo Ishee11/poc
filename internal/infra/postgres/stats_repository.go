@@ -452,6 +452,77 @@ func (r *StatsRepository) getPlayerMoneyByCurrency(
 	return result, rows.Err()
 }
 
+func (r *StatsRepository) CountVisiblePlayerSessions(
+	tx usecase.Tx,
+	playerID entity.PlayerID,
+	filter usecase.PlayerStatsFilter,
+) (int64, error) {
+	ctx := context.Background()
+	row := tx.QueryRow(ctx, `
+		WITH effective_operations AS (
+			SELECT o.id, o.session_id, o.player_id, o.created_at
+			FROM operations o
+			LEFT JOIN operations rev
+				ON rev.reference_id = o.id
+				AND rev.type = 'reversal'
+			WHERE o.type <> 'reversal'
+			  AND rev.id IS NULL
+		)
+		SELECT COUNT(DISTINCT eo.session_id)
+		FROM effective_operations eo
+		WHERE eo.player_id = $1
+		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
+		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
+		  AND (
+			$6::boolean
+			OR
+			($4::text IS NULL AND NOT EXISTS (
+				SELECT 1
+				FROM effective_operations guest_eo
+				JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
+				WHERE guest_eo.session_id = eo.session_id
+			))
+			OR
+			($4::text IS NULL AND $5::text IS NOT NULL
+				AND NOT EXISTS (
+					SELECT 1
+					FROM user_players selected_guest_up
+					WHERE selected_guest_up.player_id = $5::text
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM effective_operations selected_guest_eo
+					WHERE selected_guest_eo.session_id = eo.session_id
+					  AND selected_guest_eo.player_id = $5::text
+				)
+			)
+			OR
+			($4::text IS NOT NULL AND (
+				NOT EXISTS (
+					SELECT 1
+					FROM effective_operations other_eo
+					JOIN user_players other_up ON other_up.player_id = other_eo.player_id
+					WHERE other_eo.session_id = eo.session_id
+					  AND other_up.user_id <> $4::text
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM effective_operations own_eo
+					JOIN user_players own_up ON own_up.player_id = own_eo.player_id
+					WHERE own_eo.session_id = eo.session_id
+					  AND own_up.user_id = $4::text
+				)
+			))
+		  )
+	`, playerID, boundTime(filter.From), boundTime(filter.To), optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (r *StatsRepository) ListPlayerSessions(
 	tx usecase.Tx,
 	playerID entity.PlayerID,

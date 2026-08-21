@@ -316,6 +316,7 @@ for (const testFile of [
   "scripts/sync-status.test.mjs",
   "scripts/rollout.test.mjs",
   "scripts/account-ownership-ui.test.mjs",
+  "scripts/player-session-visibility.test.mjs",
   "scripts/session-access-ui.test.mjs",
   "scripts/telegram-auth-ui.test.mjs",
   "scripts/service-worker.test.mjs",

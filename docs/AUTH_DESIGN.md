@@ -99,6 +99,16 @@ The same visibility filter must be applied consistently to:
 - `GET /stats/player`;
 - frontend session and player screens after their SPA shell loads.
 
+`GET /stats/player` intentionally separates aggregate and detailed visibility.
+Its `player` financial statistics and `total_sessions_count` cover every real
+session contributing to the selected player's statistics. The additive
+`visible_sessions_count` and `sessions` array apply the current viewer's normal
+session-access predicate. Hidden sessions contribute no identifiers,
+participants, dates, statuses, amounts, names, or other row-level fields; the
+only hidden-history disclosure is the aggregate count already represented by
+the existing player statistics model. The legacy `player.sessions_count` field
+remains an alias of `total_sessions_count` for compatibility.
+
 ## Route Access Matrix
 
 | Route | Access |

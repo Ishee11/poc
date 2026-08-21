@@ -424,7 +424,10 @@ func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
 		}
 	}
 	guestStats := requestJSON(t, handler, http.MethodGet, "/stats/player?player_id=owned-player", nil)
-	if guestStats.Code != http.StatusOK || !strings.Contains(guestStats.Body.String(), `"sessions":[]`) {
+	if guestStats.Code != http.StatusOK || !strings.Contains(guestStats.Body.String(), `"sessions":[]`) ||
+		!strings.Contains(guestStats.Body.String(), `"total_sessions_count":1`) ||
+		!strings.Contains(guestStats.Body.String(), `"visible_sessions_count":0`) ||
+		strings.Contains(guestStats.Body.String(), `"session_id":"private-session"`) {
 		t.Fatalf("guest player stats leaked sessions status=%d body=%s", guestStats.Code, guestStats.Body.String())
 	}
 
@@ -434,7 +437,9 @@ func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
 		t.Fatalf("owner session status=%d body=%s", ownerSession.Code, ownerSession.Body.String())
 	}
 	ownerStats := requestJSONWithCookie(t, handler, http.MethodGet, "/stats/player?player_id=owned-player", nil, ownerCookie)
-	if ownerStats.Code != http.StatusOK || !strings.Contains(ownerStats.Body.String(), `"session_id":"private-session"`) {
+	if ownerStats.Code != http.StatusOK || !strings.Contains(ownerStats.Body.String(), `"session_id":"private-session"`) ||
+		!strings.Contains(ownerStats.Body.String(), `"total_sessions_count":1`) ||
+		!strings.Contains(ownerStats.Body.String(), `"visible_sessions_count":1`) {
 		t.Fatalf("owner player stats missing session status=%d body=%s", ownerStats.Code, ownerStats.Body.String())
 	}
 }

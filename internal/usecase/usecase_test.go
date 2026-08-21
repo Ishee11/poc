@@ -37,6 +37,10 @@ func (fakeTxManager) RunInTx(_ context.Context, fn func(tx Tx) error) error {
 
 type fakeStatsRepo struct {
 	players           []PlayerStat
+	playerOverall     *PlayerOverallStat
+	playerSessions    []PlayerSessionStat
+	visibleCount      int64
+	lastPlayerFilter  *PlayerStatsFilter
 	lastSessionFilter *SessionStatsFilter
 }
 
@@ -63,12 +67,19 @@ func (r fakeStatsRepo) ListPlayers(_ Tx, _ PlayerStatsFilter) ([]PlayerStat, err
 	return r.players, nil
 }
 
-func (r fakeStatsRepo) GetPlayerOverall(_ Tx, _ entity.PlayerID, _ PlayerStatsFilter) (*PlayerOverallStat, error) {
-	return nil, nil
+func (r fakeStatsRepo) GetPlayerOverall(_ Tx, _ entity.PlayerID, filter PlayerStatsFilter) (*PlayerOverallStat, error) {
+	if r.lastPlayerFilter != nil {
+		*r.lastPlayerFilter = filter
+	}
+	return r.playerOverall, nil
 }
 
 func (r fakeStatsRepo) ListPlayerSessions(_ Tx, _ entity.PlayerID, _ PlayerStatsFilter) ([]PlayerSessionStat, error) {
-	return nil, nil
+	return r.playerSessions, nil
+}
+
+func (r fakeStatsRepo) CountVisiblePlayerSessions(_ Tx, _ entity.PlayerID, _ PlayerStatsFilter) (int64, error) {
+	return r.visibleCount, nil
 }
 
 func TestGetStatsSessionsPaginationFilter(t *testing.T) {
@@ -88,6 +99,47 @@ func TestGetStatsSessionsPaginationFilter(t *testing.T) {
 	}
 	if got.Limit != 51 || got.Offset != 100 || got.Status != entity.StatusFinished {
 		t.Fatalf("unexpected session filter: %+v", got)
+	}
+}
+
+func TestGetPlayerStatsSessionVisibilityCounts(t *testing.T) {
+	tests := []struct {
+		name        string
+		total       int64
+		visible     int64
+		returned    int
+		profitMoney int64
+	}{
+		{name: "no sessions", total: 0, visible: 0, returned: 0},
+		{name: "all visible", total: 10, visible: 10, returned: 10},
+		{name: "partially visible", total: 10, visible: 4, returned: 4},
+		{name: "none visible", total: 10, visible: 0, returned: 0},
+		{name: "profit with none visible", total: 10, visible: 0, returned: 0, profitMoney: 100000},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sessions := make([]PlayerSessionStat, tt.returned)
+			uc := NewGetPlayerStatsUseCase(fakeStatsRepo{
+				playerOverall:  &PlayerOverallStat{PlayerID: "player-1", SessionsCount: tt.total, ProfitMoney: tt.profitMoney},
+				playerSessions: sessions,
+				visibleCount:   tt.visible,
+			}, fakeTxManager{})
+
+			got, err := uc.Execute(context.Background(), GetPlayerStatsQuery{PlayerID: "player-1"})
+			if err != nil {
+				t.Fatalf("execute: %v", err)
+			}
+			if got.TotalSessionsCount != tt.total || got.VisibleSessionsCount != tt.visible {
+				t.Fatalf("unexpected counts: total=%d visible=%d", got.TotalSessionsCount, got.VisibleSessionsCount)
+			}
+			if got.Player.SessionsCount != tt.total || got.Player.ProfitMoney != tt.profitMoney {
+				t.Fatalf("overall aggregate changed: %+v", got.Player)
+			}
+			if len(got.Sessions) != tt.returned {
+				t.Fatalf("returned sessions=%d want=%d", len(got.Sessions), tt.returned)
+			}
+		})
 	}
 }
 

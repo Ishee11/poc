@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/url"
 	"os"
@@ -253,11 +254,25 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 		})
 		return sessions
 	}
+	visiblePlayerSessionCount := func(viewer *entity.AuthUserID) int64 {
+		t.Helper()
+		var count int64
+		txRun(t, pool, func(tx usecase.Tx) {
+			var err error
+			count, err = NewStatsRepository(pool).CountVisiblePlayerSessions(tx, "visible-player", usecase.PlayerStatsFilter{
+				ViewerUserID: viewer,
+			})
+			if err != nil {
+				t.Fatalf("count visible player sessions: %v", err)
+			}
+		})
+		return count
+	}
 
 	if sessions := list(nil); len(sessions) != 1 {
 		t.Fatalf("unowned session should be guest-visible, got %d", len(sessions))
 	}
-	if !canView(nil) || len(playerSessions(nil)) != 1 {
+	if !canView(nil) || len(playerSessions(nil)) != 1 || visiblePlayerSessionCount(nil) != 1 {
 		t.Fatal("unowned session should be guest-openable from player details")
 	}
 	txRun(t, pool, func(tx usecase.Tx) {
@@ -268,20 +283,69 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 	if sessions := list(nil); len(sessions) != 0 {
 		t.Fatalf("claimed session should be hidden from guests, got %d", len(sessions))
 	}
-	if canView(nil) || len(playerSessions(nil)) != 0 {
+	if canView(nil) || len(playerSessions(nil)) != 0 || visiblePlayerSessionCount(nil) != 0 {
 		t.Fatal("claimed session leaked through direct or player-detail access")
 	}
 	owner := entity.AuthUserID("owner-1")
 	if sessions := list(&owner); len(sessions) != 1 {
 		t.Fatalf("claimed session should remain owner-visible, got %d", len(sessions))
 	}
-	if !canView(&owner) || len(playerSessions(&owner)) != 1 {
+	if !canView(&owner) || len(playerSessions(&owner)) != 1 || visiblePlayerSessionCount(&owner) != 1 {
 		t.Fatal("claimed session should remain openable by its owner")
 	}
 	unrelated := entity.AuthUserID("unrelated-1")
 	if sessions := list(&unrelated); len(sessions) != 0 {
 		t.Fatalf("claimed session should be hidden from unrelated accounts, got %d", len(sessions))
 	}
+	if got := visiblePlayerSessionCount(&unrelated); got != 0 {
+		t.Fatalf("claimed player count leaked to unrelated account: %d", got)
+	}
+}
+
+func TestPlayerSessionVisibilityCountsMatchReturnedAuthorizedSet(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveTestUser(t, pool, "blocker-owner")
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		saveTestPlayer(t, tx, "target-player", "Target")
+		saveTestPlayer(t, tx, "blocker-player", "Blocker")
+		for index := 0; index < 10; index++ {
+			sessionID := entity.SessionID(fmt.Sprintf("count-session-%02d", index))
+			saveTestSession(t, tx, sessionID, entity.StatusFinished, 2)
+			saveTestOperation(t, tx, entity.OperationID(fmt.Sprintf("target-op-%02d", index)), fmt.Sprintf("target-req-%02d", index), sessionID, entity.OperationBuyIn, "target-player", 100, time.Now().Add(time.Duration(index)*time.Minute))
+			if index >= 4 {
+				saveTestOperation(t, tx, entity.OperationID(fmt.Sprintf("blocker-op-%02d", index)), fmt.Sprintf("blocker-req-%02d", index), sessionID, entity.OperationBuyIn, "blocker-player", 100, time.Now().Add(time.Duration(index)*time.Minute))
+			}
+		}
+		if err := NewUserPlayerLinkRepository().LinkPlayer(tx, "blocker-owner", "blocker-player"); err != nil {
+			t.Fatalf("link blocker player: %v", err)
+		}
+	})
+
+	txRun(t, pool, func(tx usecase.Tx) {
+		repo := NewStatsRepository(pool)
+		overall, err := repo.GetPlayerOverall(tx, "target-player", usecase.PlayerStatsFilter{})
+		if err != nil {
+			t.Fatalf("get overall: %v", err)
+		}
+		visible, err := repo.CountVisiblePlayerSessions(tx, "target-player", usecase.PlayerStatsFilter{})
+		if err != nil {
+			t.Fatalf("count visible: %v", err)
+		}
+		sessions, err := repo.ListPlayerSessions(tx, "target-player", usecase.PlayerStatsFilter{Limit: 100})
+		if err != nil {
+			t.Fatalf("list visible: %v", err)
+		}
+		if overall.SessionsCount != 10 || visible != 4 || int64(len(sessions)) != visible {
+			t.Fatalf("unexpected total/visible/returned: %d/%d/%d", overall.SessionsCount, visible, len(sessions))
+		}
+		for _, session := range sessions {
+			if session.SessionID >= "count-session-04" {
+				t.Fatalf("hidden session leaked in detail list: %+v", session)
+			}
+		}
+	})
 }
 
 func TestIdempotencyReservationRollsBackWithBusinessTransaction(t *testing.T) {

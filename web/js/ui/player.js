@@ -7,6 +7,11 @@ import {
   getSessionPlayers,
 } from "../api.js";
 import { statusLabel, t } from "../i18n.js";
+import {
+  financialVisibilityNoticeRequired,
+  playerSessionVisibility,
+  sessionHistoryMessageKey,
+} from "../player-session-visibility.js";
 import { state } from "../state.js";
 import {
   describeError,
@@ -448,6 +453,7 @@ export function renderPlayerDetail() {
 
   const player = detail.player;
   const sessions = detail.sessions || [];
+  const visibility = detail.sessionVisibility;
   const brandTitle = document.querySelector(".app-brand h1");
   const id = document.getElementById("player-screen-id");
   const linkedUser = document.getElementById("player-screen-user");
@@ -492,7 +498,8 @@ export function renderPlayerDetail() {
       <div class="stats player-stats">
         <div class="stat">
           ${statLabel("player.sessions", "player.hint.sessions")}
-          <div>${formatNumber(player.sessions_count)}</div>
+          <div>${visibility.total === null ? "—" : formatNumber(visibility.total)}</div>
+          ${renderVisibleSessionsContext(visibility)}
         </div>
         <div class="stat">
           ${statLabel("player.totalBuyIn", "player.hint.totalBuyIn")}
@@ -508,9 +515,12 @@ export function renderPlayerDetail() {
         </div>
       </div>
       ${renderCurrencyStats(player.money_by_currency || [])}
+      ${financialVisibilityNoticeRequired(visibility) ? `
+        <div class="player-stats-note">${escapeHtml(t("player.financialIncludesUnavailable"))}</div>
+      ` : ""}
       ${sessions.length ? `
       <details class="disclosure player-sessions-disclosure">
-        <summary>${escapeHtml(t("player.sessions"))} (${sessions.length})</summary>
+        <summary>${escapeHtml(t("player.sessions"))} (${formatNumber(visibility.visible ?? sessions.length)})</summary>
         <div class="disclosure-body">
           ${renderPlayerSessionCards(sessions)}
           <div class="table-wrap desktop-only">
@@ -530,7 +540,11 @@ export function renderPlayerDetail() {
             </table>
           </div>
         </div>
-      </details>` : ""}
+      </details>` : `
+        <div class="empty-inline player-history-empty">
+          ${escapeHtml(t(sessionHistoryMessageKey(visibility)))}
+        </div>
+      `}
     </div>
   `;
 
@@ -791,7 +805,18 @@ function normalizePlayerDetail(raw) {
   return {
     player: raw.player || raw.Player || null,
     sessions: raw.sessions || raw.Sessions || [],
+    sessionVisibility: playerSessionVisibility(raw),
   };
+}
+
+function renderVisibleSessionsContext(visibility) {
+  if (visibility.kind === "partial" || visibility.kind === "hidden") {
+    return `<div class="stat-context">${escapeHtml(t("player.visibleSessions", { count: formatNumber(visibility.visible) }))}</div>`;
+  }
+  if (visibility.kind === "unavailable") {
+    return `<div class="stat-context">${escapeHtml(t("player.sessionHistoryUnavailable"))}</div>`;
+  }
+  return "";
 }
 
 function renderCurrencyStats(stats) {
