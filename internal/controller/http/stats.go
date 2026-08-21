@@ -107,14 +107,14 @@ func (h *StatsHandler) GetStatsPlayers(w http.ResponseWriter, r *http.Request) {
 
 // GetPlayerStats godoc
 // @Summary Get player stats
-// @Description Returns overall statistics for a specific player
+// @Description Returns all-session aggregate statistics, explicit total and viewer-visible session counts, and only session details authorized for the current viewer
 // @Tags stats
 // @Accept json
 // @Produce json
 // @Param player_id query string true "Player ID"
 // @Param from query string false "From date (RFC3339 or YYYY-MM-DD)"
 // @Param to query string false "To date (RFC3339 or YYYY-MM-DD)"
-// @Success 200 {object} usecase.PlayerOverallStat
+// @Success 200 {object} usecase.GetPlayerStatsResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /stats/player [get]

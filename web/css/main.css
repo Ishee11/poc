@@ -2742,6 +2742,24 @@ body.admin-mode .admin-only {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.stat-context {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.player-stats-note,
+.player-history-empty {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.player-stats-note {
+    padding: 0 2px;
+    font-size: 0.86rem;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

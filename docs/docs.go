@@ -1031,7 +1031,7 @@ const docTemplate = `{
         },
         "/stats/player": {
             "get": {
-                "description": "Returns overall statistics for a specific player",
+                "description": "Returns all-session aggregate statistics, explicit total and viewer-visible session counts, and only session details authorized for the current viewer",
                 "consumes": [
                     "application/json"
                 ],
@@ -1067,7 +1067,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/usecase.PlayerOverallStat"
+                            "$ref": "#/definitions/usecase.GetPlayerStatsResponse"
                         }
                     },
                     "400": {
@@ -1599,6 +1599,26 @@ const docTemplate = `{
                 }
             }
         },
+        "usecase.GetPlayerStatsResponse": {
+            "type": "object",
+            "properties": {
+                "player": {
+                    "$ref": "#/definitions/usecase.PlayerOverallStat"
+                },
+                "sessions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/usecase.PlayerSessionStat"
+                    }
+                },
+                "total_sessions_count": {
+                    "type": "integer"
+                },
+                "visible_sessions_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "usecase.GetSessionResponse": {
             "type": "object",
             "properties": {
@@ -1795,6 +1815,47 @@ const docTemplate = `{
                 },
                 "player_id": {
                     "type": "string"
+                }
+            }
+        },
+        "usecase.PlayerSessionStat": {
+            "type": "object",
+            "properties": {
+                "big_blind": {
+                    "type": "integer"
+                },
+                "buy_in_chips": {
+                    "type": "integer"
+                },
+                "cash_out_chips": {
+                    "type": "integer"
+                },
+                "chip_rate": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "$ref": "#/definitions/entity.Currency"
+                },
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "profit_chips": {
+                    "type": "integer"
+                },
+                "profit_money": {
+                    "type": "integer"
+                },
+                "session_created_at": {
+                    "type": "string"
+                },
+                "session_finished_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.Status"
                 }
             }
         },

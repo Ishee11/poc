@@ -287,6 +287,12 @@ const translations = {
     "player.period": "Period",
     "player.selectPeriod": "Select Period",
     "player.sessions": "Sessions",
+    "player.visibleSessions": "Available to view: {count}",
+    "player.sessionsUnavailableEmpty":
+      "This player's sessions are unavailable to view. Overall statistics include the results of those games.",
+    "player.sessionHistoryUnavailable": "Session history is unavailable to view.",
+    "player.financialIncludesUnavailable":
+      "Financial results may include sessions unavailable to view.",
     "player.totalBuyIn": "Total Buy-in Chips",
     "player.totalCashOut": "Total Cash-out Chips",
     "player.totalBuyInMoney": "Total Buy-in Money",
@@ -296,7 +302,7 @@ const translations = {
     "player.roi": "ROI",
     "player.avgBuyInPerSession": "Avg Buy-in",
     "player.profitMoney": "Profit Money",
-    "player.hint.sessions": "Number of sessions in the selected period.",
+    "player.hint.sessions": "Total sessions included in statistics for the selected period.",
     "player.hint.totalBuyIn": "Total chips bought in by this player.",
     "player.hint.totalCashOut": "Total chips cashed out by this player.",
     "player.hint.totalBuyInMoney":
@@ -854,6 +860,12 @@ const translations = {
     "player.period": "Период",
     "player.selectPeriod": "Выбрать период",
     "player.sessions": "Сессии",
+    "player.visibleSessions": "Доступно для просмотра: {count}",
+    "player.sessionsUnavailableEmpty":
+      "Сессии этого игрока недоступны для просмотра. Общая статистика учитывает результаты этих игр.",
+    "player.sessionHistoryUnavailable": "История сессий недоступна для просмотра.",
+    "player.financialIncludesUnavailable":
+      "Финансовый результат может включать сессии, недоступные для просмотра.",
     "player.totalBuyIn": "Всего внесено фишками",
     "player.totalCashOut": "Всего выведено фишками",
     "player.totalBuyInMoney": "Всего внесено деньгами",
@@ -863,7 +875,7 @@ const translations = {
     "player.roi": "ROI",
     "player.avgBuyInPerSession": "Средний бай-ин",
     "player.profitMoney": "Профит деньгами",
-    "player.hint.sessions": "Количество сессий в выбранном периоде.",
+    "player.hint.sessions": "Общее количество сессий, учтённых в статистике за выбранный период.",
     "player.hint.totalBuyIn": "Сколько фишек игрок внес суммарно.",
     "player.hint.totalCashOut": "Сколько фишек игрок вывел суммарно.",
     "player.hint.totalBuyInMoney":

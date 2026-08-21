@@ -143,6 +143,7 @@ type StatsRepository interface {
 	ListSessions(tx Tx, filter SessionStatsFilter) ([]SessionStat, error)
 	ListPlayers(tx Tx, filter PlayerStatsFilter) ([]PlayerStat, error)
 	GetPlayerOverall(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) (*PlayerOverallStat, error)
+	CountVisiblePlayerSessions(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) (int64, error)
 	ListPlayerSessions(tx Tx, playerID entity.PlayerID, filter PlayerStatsFilter) ([]PlayerSessionStat, error)
 }
 
