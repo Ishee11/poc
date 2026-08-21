@@ -3,7 +3,8 @@
 Status: active.
 
 Email login, account management, and open self-registration are enabled by
-default. Registration does not use invite codes.
+default. Registration does not use invite codes. Telegram OIDC is an optional
+second login method and is disabled until its server-side credentials are set.
 
 This document defines the auth boundary for Poker Session Control.
 
@@ -13,11 +14,10 @@ This document defines the auth boundary for Poker Session Control.
 - Keep the current same-origin web UI simple.
 - Separate system users from poker players.
 - Make debug/admin operations server-protected, not only UI-hidden.
-- Keep the design compatible with a future OAuth/OIDC migration.
+- Allow one account to use email/password and Telegram without duplicating its player.
 
 ## Non-Goals
 
-- No external auth provider in the first implementation.
 - No JWT stored in browser storage.
 - No password reset email flow yet.
 - No MFA in the first implementation.
@@ -26,6 +26,18 @@ This document defines the auth boundary for Poker Session Control.
 ## Identity Model
 
 Auth users are system accounts. They are not poker players.
+
+Login methods are stored separately in `auth_identities`. A Telegram subject is
+globally unique, and an account may have at most one Telegram identity. Linking
+from the personal account keeps the existing `user_id` and therefore the same
+owned poker player. Telegram-only signup creates a normal unowned account and
+then uses the existing player onboarding flow.
+
+Telegram uses the OIDC Authorization Code flow with PKCE. The callback consumes
+a short-lived single-use state, validates the nonce, verifies the RS256 ID token
+against Telegram JWKS, and checks issuer, audience, and expiry. Configure the bot
+for RS256 in BotFather and register both the site origin and exact callback URL.
+The client secret must exist only in environment/GitHub Secrets, never in Git.
 
 Poker players remain business entities in the `players` table.
 
@@ -102,7 +114,11 @@ The same visibility filter must be applied consistently to:
 | `POST /auth/login` | Public |
 | `POST /auth/logout` | Authenticated |
 | `GET /auth/me` | Public; returns anonymous state when no session exists |
+| `GET /auth/telegram/start?mode=login` | Public when Telegram OIDC is enabled |
+| `GET /auth/telegram/start?mode=link` | Authenticated; binds the flow to the current account |
+| `GET /auth/telegram/callback` | Public OIDC callback; validates a single-use flow |
 | `GET /account` | Authenticated user, `admin` |
+| `DELETE /account/identities/telegram` | Authenticated; forbidden for a Telegram-only account |
 | `PUT /account/player` | Authenticated unlinked account; one-time existing/new claim |
 | `POST /account/players` | Transitional one-time existing-player claim alias |
 | `DELETE /account/players` | Disabled; returns `405 method_not_allowed` |
@@ -270,6 +286,9 @@ AUTH_LOGIN_RATE_LIMIT=5/min
 AUTH_SEED_ADMIN_EMAIL=
 AUTH_SEED_ADMIN_PASSWORD=
 APP_ORIGIN=
+TELEGRAM_OIDC_ENABLED=false
+TELEGRAM_OIDC_CLIENT_ID=
+TELEGRAM_OIDC_CLIENT_SECRET=
 ```
 
 Development override:
@@ -287,10 +306,13 @@ Production example:
 AUTH_COOKIE_SECURE=true
 AUTH_SESSION_TTL=12h
 AUTH_IDLE_TTL=2h
-APP_ORIGIN=http://193.238.134.58:8080
+APP_ORIGIN=https://poker.semenovv.space
+TELEGRAM_OIDC_ENABLED=true
 ```
 
-If HTTPS is added, `APP_ORIGIN` must be changed to the HTTPS origin.
+Production callback: `https://poker.semenovv.space/auth/telegram/callback`.
+Development callback: `https://dev.semenovv.space/auth/telegram/callback`.
+Both exact callbacks and both origins must be included in BotFather Allowed URLs.
 
 ## Rollout Plan
 

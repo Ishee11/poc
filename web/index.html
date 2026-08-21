@@ -307,6 +307,13 @@
                                             Already have an account?
                                         </button>
                                     </div>
+                                    <a
+                                        id="auth-telegram-login"
+                                        class="secondary telegram-auth-button"
+                                        href="/auth/telegram/start?mode=login"
+                                        data-i18n="auth.telegramLogin"
+                                        hidden
+                                    >Войти через Telegram</a>
                                 </form>
                             </section>
                         </div>
@@ -1002,6 +1009,27 @@
                         <p id="account-admin-guidance" class="hint" data-i18n="account.adminGuidance" hidden>
                             Only an administrator can correct player ownership.
                         </p>
+                        <section id="account-login-methods" class="account-login-methods" hidden>
+                            <div>
+                                <strong data-i18n="account.loginMethods">Способы входа</strong>
+                                <p id="account-telegram-status" class="hint"></p>
+                            </div>
+                            <div class="actions">
+                                <a
+                                    id="account-telegram-link"
+                                    class="secondary telegram-auth-button"
+                                    href="/auth/telegram/start?mode=link"
+                                    data-i18n="account.telegramLink"
+                                >Привязать Telegram</a>
+                                <button
+                                    type="button"
+                                    id="account-telegram-unlink"
+                                    class="secondary"
+                                    data-i18n="account.telegramUnlink"
+                                    hidden
+                                >Отвязать Telegram</button>
+                            </div>
+                        </section>
                         <section id="admin-account-ownership" class="admin-ownership-panel" hidden>
                             <h3 data-i18n="adminOwnership.title">Account ownership administration</h3>
                             <form id="admin-account-search-form" class="admin-account-search" onsubmit="return false;">

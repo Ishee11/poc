@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
 )
 
@@ -25,7 +26,66 @@ func (h *AuthHandler) Config(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, AuthConfigResponse{
 		Enabled:          h.cookie.Enabled,
 		OpenRegistration: true,
+		TelegramEnabled:  h.telegramAuthUC != nil && h.telegramAuthUC.Enabled(),
 	})
+}
+
+func (h *AuthHandler) TelegramStart(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	mode := r.URL.Query().Get("mode")
+	if mode == "" {
+		mode = usecase.TelegramOIDCModeLogin
+	}
+	var userID *entity.AuthUserID
+	if mode == usecase.TelegramOIDCModeLink {
+		principal, err := h.authUC.CurrentUser(r.Context(), h.sessionToken(r))
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		userID = &principal.UserID
+	}
+	redirect, err := h.telegramAuthUC.Begin(r.Context(), usecase.TelegramBeginCommand{Mode: mode, UserID: userID})
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, redirect, http.StatusFound)
+}
+
+func (h *AuthHandler) TelegramCallback(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	var currentUserID *entity.AuthUserID
+	if principal, err := h.authUC.CurrentUser(r.Context(), h.sessionToken(r)); err == nil {
+		currentUserID = &principal.UserID
+	}
+	result, err := h.telegramAuthUC.Complete(r.Context(), usecase.TelegramCompleteCommand{
+		State: r.URL.Query().Get("state"), Code: r.URL.Query().Get("code"), CurrentUserID: currentUserID,
+	})
+	if err != nil {
+		slog.WarnContext(r.Context(), "telegram_auth_failed", "request_id", GetRequestID(r.Context()), "err", err)
+		http.Redirect(w, r, "/?telegram_error=failed", http.StatusFound)
+		return
+	}
+	if result.Mode == usecase.TelegramOIDCModeLink {
+		slog.InfoContext(r.Context(), "telegram_identity_linked", "request_id", GetRequestID(r.Context()), "user_id", result.UserID)
+		http.Redirect(w, r, "/account?telegram=linked", http.StatusFound)
+		return
+	}
+	loginResult, err := h.authUC.LoginUser(r.Context(), result.UserID, r.UserAgent(), clientIP(r))
+	if err != nil {
+		http.Redirect(w, r, "/?telegram_error=failed", http.StatusFound)
+		return
+	}
+	h.setSessionCookie(w, r, loginResult.Token, loginResult.ExpiresAt)
+	slog.InfoContext(r.Context(), "telegram_login_success", "request_id", GetRequestID(r.Context()), "user_id", result.UserID)
+	http.Redirect(w, r, "/account?telegram=logged_in", http.StatusFound)
 }
 
 // Register godoc

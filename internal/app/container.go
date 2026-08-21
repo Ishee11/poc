@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	httpcontroller "github.com/ishee11/poc/internal/controller/http"
@@ -204,6 +205,8 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	)
 
 	passwordHasher := infra.Argon2IDPasswordHasher{}
+	tokenGenerator := infra.SecureTokenGenerator{}
+	tokenHasher := infra.SHA256TokenHasher{}
 	authUC := usecase.NewAuthService(
 		authRepo,
 		authRepo,
@@ -211,8 +214,8 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		txManager,
 		authSessionIDGen,
 		loginAttemptIDGen,
-		infra.SecureTokenGenerator{},
-		infra.SHA256TokenHasher{},
+		tokenGenerator,
+		tokenHasher,
 		passwordHasher,
 		usecase.SystemClock{},
 		usecase.AuthPolicy{
@@ -220,6 +223,20 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 			IdleTTL:           cfg.Auth.IdleTTL,
 			RateLimitWindow:   usecase.DefaultAuthPolicy().RateLimitWindow,
 			MaxFailedAttempts: usecase.DefaultAuthPolicy().MaxFailedAttempts,
+		},
+	)
+	telegramOIDCClient := infra.NewTelegramOIDCClient(infra.TelegramOIDCClientConfig{
+		ClientID:     cfg.Auth.TelegramClientID,
+		ClientSecret: cfg.Auth.TelegramClientSecret,
+	})
+	telegramAuthUC := usecase.NewTelegramAuthService(
+		authRepo, authRepo, authRepo, txManager,
+		infra.UUIDAuthUserIDGenerator{}, tokenGenerator, tokenHasher, telegramOIDCClient,
+		usecase.SystemClock{},
+		usecase.TelegramAuthConfig{
+			Enabled:     cfg.Auth.TelegramEnabled,
+			ClientID:    cfg.Auth.TelegramClientID,
+			RedirectURI: strings.TrimRight(cfg.Auth.AppOrigin, "/") + "/auth/telegram/callback",
 		},
 	)
 	registerUserUC := usecase.NewRegisterUserUseCase(
@@ -279,6 +296,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		},
 		authUC,
 		registerUserUC,
+		telegramAuthUC,
 		userPlayerLinksUC,
 		sessionAccessUC,
 

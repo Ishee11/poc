@@ -204,6 +204,24 @@ func mapError(err error) apiError {
 	case errors.Is(err, entity.ErrAuthRateLimited):
 		return apiError{status: http.StatusTooManyRequests, code: "rate_limited"}
 
+	case errors.Is(err, entity.ErrAuthIdentityLinked):
+		return apiError{status: http.StatusConflict, code: "telegram_already_linked"}
+
+	case errors.Is(err, entity.ErrAuthProviderLinked):
+		return apiError{status: http.StatusConflict, code: "telegram_account_already_linked"}
+
+	case errors.Is(err, entity.ErrAuthIdentityNotFound):
+		return apiError{status: http.StatusNotFound, code: "telegram_not_linked"}
+
+	case errors.Is(err, entity.ErrLastAuthMethod):
+		return apiError{status: http.StatusConflict, code: "last_auth_method"}
+
+	case errors.Is(err, entity.ErrTelegramAuthDisabled):
+		return apiError{status: http.StatusNotImplemented, code: "telegram_auth_disabled"}
+
+	case errors.Is(err, entity.ErrOIDCFlowInvalid), errors.Is(err, entity.ErrOIDCTokenInvalid):
+		return apiError{status: http.StatusUnauthorized, code: "telegram_auth_failed"}
+
 	case errors.Is(err, usecase.ErrInvalidExpense):
 		return apiError{status: http.StatusBadRequest, code: "invalid_expense"}
 

@@ -107,6 +107,7 @@ type RegisterRequest struct {
 type AuthConfigResponse struct {
 	Enabled          bool `json:"enabled"`
 	OpenRegistration bool `json:"open_registration"`
+	TelegramEnabled  bool `json:"telegram_enabled"`
 }
 
 type AuthUserResponse struct {
@@ -125,10 +126,11 @@ type MeResponse struct {
 }
 
 type AccountResponse struct {
-	User               AuthUserResponse `json:"user"`
-	Player             *PlayerDTO       `json:"player"`
-	OnboardingRequired bool             `json:"onboarding_required"`
-	Players            []PlayerDTO      `json:"players"`
+	User               AuthUserResponse          `json:"user"`
+	Player             *PlayerDTO                `json:"player"`
+	OnboardingRequired bool                      `json:"onboarding_required"`
+	Players            []PlayerDTO               `json:"players"`
+	Identities         []usecase.AuthIdentityDTO `json:"identities"`
 }
 
 type PlayerDTO struct {

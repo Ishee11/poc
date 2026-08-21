@@ -199,6 +199,29 @@ body.auth-ui-disabled #screen-account {
     grid-column: 1 / -1;
 }
 
+.telegram-auth-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.055);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+#auth-telegram-login {
+    grid-column: 1 / -1;
+    min-height: 38px;
+    color: #f4f1ea;
+    border-color: rgba(51, 144, 236, 0.48);
+    background: rgba(51, 144, 236, 0.16);
+}
+
 .auth-register-row {
     grid-column: 1 / -1;
     display: flex;
@@ -220,6 +243,19 @@ body.auth-ui-disabled #screen-account {
     margin-top: 8px;
     padding-top: 14px;
     border-top: 1px solid var(--line);
+}
+
+.account-login-methods {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+}
+
+.account-login-methods p {
+    margin: 4px 0 0;
 }
 
 .account-header {

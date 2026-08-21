@@ -71,7 +71,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_sessions, login_attempts, user_players, users, sessions, players
+		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_oidc_flows, auth_identities, auth_sessions, login_attempts, user_players, users, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {

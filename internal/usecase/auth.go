@@ -282,6 +282,40 @@ func (s *AuthService) CurrentUser(ctx context.Context, rawToken string) (*AuthPr
 	return principal, nil
 }
 
+func (s *AuthService) LoginUser(ctx context.Context, userID entity.AuthUserID, userAgent string, ip string) (*LoginResult, error) {
+	var result *LoginResult
+	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
+		now := s.clock.Now()
+		user, err := s.userRepo.FindUserByID(tx, userID)
+		if err != nil {
+			return err
+		}
+		if user.Status != entity.AuthUserStatusActive {
+			return entity.ErrUnauthorized
+		}
+		token, err := s.tokenGen.NewToken()
+		if err != nil {
+			return err
+		}
+		session := entity.NewAuthSession(
+			s.sessionIDGen.New(), user.ID, s.tokenHasher.HashToken(token), userAgent, ip,
+			now, now.Add(s.policy.SessionTTL),
+		)
+		if err := s.sessionRepo.SaveSession(tx, session); err != nil {
+			return err
+		}
+		if err := s.userRepo.UpdateLastLoginAt(tx, user.ID, now); err != nil {
+			return err
+		}
+		result = &LoginResult{
+			Token: token, ExpiresAt: session.ExpiresAt,
+			User: AuthPrincipal{UserID: user.ID, Email: user.Email, Role: user.Role, SessionID: session.ID},
+		}
+		return nil
+	})
+	return result, err
+}
+
 func (s *AuthService) Logout(ctx context.Context, rawToken string) error {
 	if rawToken == "" {
 		return nil

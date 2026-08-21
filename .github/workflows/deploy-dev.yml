@@ -98,6 +98,9 @@ jobs:
               "AUTH_SEED_USER_EMAIL=${{ secrets.AUTH_SEED_USER_EMAIL }}" \
               "AUTH_SEED_USER_PASSWORD=${{ secrets.AUTH_SEED_USER_PASSWORD }}" \
               "APP_ORIGIN=https://dev.semenovv.space" \
+              "TELEGRAM_OIDC_ENABLED=${{ secrets.TELEGRAM_OIDC_ENABLED }}" \
+              "TELEGRAM_OIDC_CLIENT_ID=${{ secrets.TELEGRAM_OIDC_CLIENT_ID }}" \
+              "TELEGRAM_OIDC_CLIENT_SECRET=${{ secrets.TELEGRAM_OIDC_CLIENT_SECRET }}" \
               "PUSH_ENABLED=false" \
               "KAFKA_ENABLED=false" \
               "PUSH_SUBJECT=${{ secrets.PUSH_SUBJECT }}" \

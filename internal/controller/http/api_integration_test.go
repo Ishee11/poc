@@ -71,7 +71,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_sessions, login_attempts, user_players, users, sessions, players
+		TRUNCATE TABLE idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_oidc_flows, auth_identities, auth_sessions, login_attempts, user_players, users, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
@@ -137,6 +137,49 @@ func loginCookie(t *testing.T, handler http.Handler, email string, password stri
 		t.Fatal("login did not return a cookie")
 	}
 	return cookies[0]
+}
+
+func TestAPIIntegration_AccountListsAndUnlinksTelegramIdentity(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	saveLoginUser(t, pool, "email-user", "email-user@example.com", "user", "email-password")
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO auth_identities (provider, subject, user_id, username, display_name)
+		VALUES ('telegram', 'telegram-42', 'email-user', 'player42', 'Player 42')
+	`); err != nil {
+		t.Fatalf("insert telegram identity: %v", err)
+	}
+	handler := ownershipTestHandler(pool)
+	cookie := loginCookie(t, handler, "email-user@example.com", "email-password")
+
+	account := requestJSONWithCookie(t, handler, http.MethodGet, "/account", nil, cookie)
+	if account.Code != http.StatusOK || !strings.Contains(account.Body.String(), `"provider":"telegram"`) ||
+		!strings.Contains(account.Body.String(), `"username":"player42"`) {
+		t.Fatalf("account identity status=%d body=%s", account.Code, account.Body.String())
+	}
+
+	unlinked := requestJSONWithCookie(t, handler, http.MethodDelete, "/account/identities/telegram", nil, cookie)
+	if unlinked.Code != http.StatusNoContent {
+		t.Fatalf("unlink status=%d body=%s", unlinked.Code, unlinked.Body.String())
+	}
+	var identities int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM auth_identities WHERE user_id = 'email-user'`).Scan(&identities); err != nil {
+		t.Fatal(err)
+	}
+	if identities != 0 {
+		t.Fatalf("telegram identity was not removed: %d", identities)
+	}
+
+	if _, err := pool.Exec(context.Background(), `
+		UPDATE users SET password_hash = '!telegram' WHERE id = 'email-user';
+		INSERT INTO auth_identities (provider, subject, user_id) VALUES ('telegram', 'telegram-42', 'email-user')
+	`); err != nil {
+		t.Fatalf("prepare last method check: %v", err)
+	}
+	blocked := requestJSONWithCookie(t, handler, http.MethodDelete, "/account/identities/telegram", nil, cookie)
+	if blocked.Code != http.StatusConflict || !strings.Contains(blocked.Body.String(), "last_auth_method") {
+		t.Fatalf("last method status=%d body=%s", blocked.Code, blocked.Body.String())
+	}
 }
 
 func TestAPIIntegration_RegistrationEstablishesSingularOwnership(t *testing.T) {
@@ -618,7 +661,7 @@ func TestAPIIntegration_ReverseOperation(t *testing.T) {
 		t.Fatalf("expected one operation with id, got %+v", ops)
 	}
 
-	reverse := requestJSON(t, handler, http.MethodPost, "/operations/reverse", map[string]any{
+	reverse := requestJSON(t, handler, http.MethodPost, "/operations/reverse?session_id="+sessionResp.SessionID, map[string]any{
 		"request_id":          "req-reverse-1",
 		"target_operation_id": ops[0].ID,
 	})
@@ -651,7 +694,7 @@ func TestAPIIntegration_ReverseOperation(t *testing.T) {
 		t.Fatalf("expected total chips 0 after reversal, got %d", session.TotalChips)
 	}
 
-	reverseAgain := requestJSON(t, handler, http.MethodPost, "/operations/reverse", map[string]any{
+	reverseAgain := requestJSON(t, handler, http.MethodPost, "/operations/reverse?session_id="+sessionResp.SessionID, map[string]any{
 		"request_id":          "req-reverse-2",
 		"target_operation_id": ops[0].ID,
 	})

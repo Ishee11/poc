@@ -8,6 +8,9 @@ import (
 type AuthUserID string
 type AuthSessionID string
 type LoginAttemptID string
+type AuthProvider string
+
+const AuthProviderTelegram AuthProvider = "telegram"
 
 type AuthRole string
 
@@ -57,7 +60,36 @@ var (
 	ErrAccountAlreadyLinked   = errors.New("account already linked")
 	ErrUserPlayerNotLinked    = errors.New("user player not linked")
 	ErrInvalidPlayerSelection = errors.New("invalid player selection")
+	ErrAuthIdentityNotFound   = errors.New("auth identity not found")
+	ErrAuthIdentityLinked     = errors.New("auth identity already linked")
+	ErrAuthProviderLinked     = errors.New("auth provider already linked to account")
+	ErrLastAuthMethod         = errors.New("cannot remove last auth method")
+	ErrTelegramAuthDisabled   = errors.New("telegram auth disabled")
+	ErrOIDCFlowInvalid        = errors.New("oidc flow invalid or expired")
+	ErrOIDCTokenInvalid       = errors.New("oidc token invalid")
 )
+
+type AuthIdentity struct {
+	Provider    AuthProvider
+	Subject     string
+	UserID      AuthUserID
+	Username    string
+	DisplayName string
+	PictureURL  string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type AuthOIDCFlow struct {
+	StateHash    string
+	Mode         string
+	UserID       *AuthUserID
+	CodeVerifier string
+	Nonce        string
+	RedirectURI  string
+	CreatedAt    time.Time
+	ExpiresAt    time.Time
+}
 
 type AuthUser struct {
 	ID           AuthUserID

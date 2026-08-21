@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/ishee11/poc/internal/entity"
 	"github.com/ishee11/poc/internal/usecase"
@@ -15,6 +16,103 @@ type AuthRepository struct{}
 
 func NewAuthRepository() *AuthRepository {
 	return &AuthRepository{}
+}
+
+func (r *AuthRepository) SaveIdentity(tx usecase.Tx, identity *entity.AuthIdentity) error {
+	_, err := tx.Exec(context.Background(), `
+		INSERT INTO auth_identities (
+			provider, subject, user_id, username, display_name, picture_url, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, identity.Provider, identity.Subject, identity.UserID, nullString(identity.Username),
+		nullString(identity.DisplayName), nullString(identity.PictureURL), identity.CreatedAt, identity.UpdatedAt)
+	if err == nil {
+		return nil
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if pgErr.ConstraintName == "auth_identities_provider_user_id_key" {
+			return entity.ErrAuthProviderLinked
+		}
+		return entity.ErrAuthIdentityLinked
+	}
+	return err
+}
+
+func (r *AuthRepository) FindIdentity(tx usecase.Tx, provider entity.AuthProvider, subject string) (*entity.AuthIdentity, error) {
+	row := tx.QueryRow(context.Background(), `
+		SELECT provider, subject, user_id, COALESCE(username, ''), COALESCE(display_name, ''),
+			COALESCE(picture_url, ''), created_at, updated_at
+		FROM auth_identities WHERE provider = $1 AND subject = $2
+	`, provider, subject)
+	var identity entity.AuthIdentity
+	if err := row.Scan(&identity.Provider, &identity.Subject, &identity.UserID, &identity.Username,
+		&identity.DisplayName, &identity.PictureURL, &identity.CreatedAt, &identity.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, entity.ErrAuthIdentityNotFound
+		}
+		return nil, err
+	}
+	return &identity, nil
+}
+
+func (r *AuthRepository) ListIdentities(tx usecase.Tx, userID entity.AuthUserID) ([]entity.AuthIdentity, error) {
+	rows, err := tx.Query(context.Background(), `
+		SELECT provider, subject, user_id, COALESCE(username, ''), COALESCE(display_name, ''),
+			COALESCE(picture_url, ''), created_at, updated_at
+		FROM auth_identities WHERE user_id = $1 ORDER BY provider
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	identities := make([]entity.AuthIdentity, 0)
+	for rows.Next() {
+		var identity entity.AuthIdentity
+		if err := rows.Scan(&identity.Provider, &identity.Subject, &identity.UserID, &identity.Username,
+			&identity.DisplayName, &identity.PictureURL, &identity.CreatedAt, &identity.UpdatedAt); err != nil {
+			return nil, err
+		}
+		identities = append(identities, identity)
+	}
+	return identities, rows.Err()
+}
+
+func (r *AuthRepository) DeleteIdentity(tx usecase.Tx, userID entity.AuthUserID, provider entity.AuthProvider) error {
+	tag, err := tx.Exec(context.Background(), `DELETE FROM auth_identities WHERE user_id = $1 AND provider = $2`, userID, provider)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return entity.ErrAuthIdentityNotFound
+	}
+	return nil
+}
+
+func (r *AuthRepository) SaveOIDCFlow(tx usecase.Tx, flow *entity.AuthOIDCFlow) error {
+	_, err := tx.Exec(context.Background(), `
+		INSERT INTO auth_oidc_flows (
+			state_hash, mode, user_id, code_verifier, nonce, redirect_uri, created_at, expires_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, flow.StateHash, flow.Mode, flow.UserID, flow.CodeVerifier, flow.Nonce, flow.RedirectURI,
+		flow.CreatedAt, flow.ExpiresAt)
+	return err
+}
+
+func (r *AuthRepository) ConsumeOIDCFlow(tx usecase.Tx, stateHash string, now time.Time) (*entity.AuthOIDCFlow, error) {
+	row := tx.QueryRow(context.Background(), `
+		DELETE FROM auth_oidc_flows
+		WHERE state_hash = $1 AND expires_at > $2
+		RETURNING state_hash, mode, user_id, code_verifier, nonce, redirect_uri, created_at, expires_at
+	`, stateHash, now)
+	var flow entity.AuthOIDCFlow
+	if err := row.Scan(&flow.StateHash, &flow.Mode, &flow.UserID, &flow.CodeVerifier, &flow.Nonce,
+		&flow.RedirectURI, &flow.CreatedAt, &flow.ExpiresAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, entity.ErrOIDCFlowInvalid
+		}
+		return nil, err
+	}
+	return &flow, nil
 }
 
 func (r *AuthRepository) Save(tx usecase.Tx, user *entity.AuthUser) error {
