@@ -35,6 +35,11 @@ func (h *AccountHandler) Account(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
+	identities, err := h.telegramAuthUC.ListIdentities(r.Context(), principal.UserID)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
 
 	playerList := playerResponses(players)
 	var player *PlayerDTO
@@ -46,7 +51,27 @@ func (h *AccountHandler) Account(w http.ResponseWriter, r *http.Request) {
 		Player:             player,
 		OnboardingRequired: player == nil,
 		Players:            playerList,
+		Identities:         identities,
 	})
+}
+
+func (h *AccountHandler) TelegramIdentity(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.Header().Set("Allow", http.MethodDelete)
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	principal, err := h.currentPrincipal(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.telegramAuthUC.Unlink(r.Context(), principal.UserID); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	slog.InfoContext(r.Context(), "telegram_identity_unlinked", "request_id", GetRequestID(r.Context()), "user_id", principal.UserID)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // Player godoc

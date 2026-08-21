@@ -31,6 +31,7 @@ func NewHandler(
 	authCookie AuthCookieConfig,
 	authUC *usecase.AuthService,
 	registerUserUC *usecase.RegisterUserUseCase,
+	telegramAuthUC *usecase.TelegramAuthService,
 	userPlayerLinksUC *usecase.UserPlayerLinksUseCase,
 	sessionAccessUC *usecase.SessionAccessService,
 
@@ -79,10 +80,12 @@ func NewHandler(
 		Auth: &AuthHandler{
 			authUC:         authUC,
 			registerUserUC: registerUserUC,
+			telegramAuthUC: telegramAuthUC,
 			cookie:         authCookie,
 		},
 		Account: &AccountHandler{
 			authUC:            authUC,
+			telegramAuthUC:    telegramAuthUC,
 			userPlayerLinksUC: userPlayerLinksUC,
 			cookie:            authCookie,
 		},
@@ -139,11 +142,13 @@ func NewHandler(
 type AuthHandler struct {
 	authUC         *usecase.AuthService
 	registerUserUC *usecase.RegisterUserUseCase
+	telegramAuthUC *usecase.TelegramAuthService
 	cookie         AuthCookieConfig
 }
 
 type AccountHandler struct {
 	authUC            *usecase.AuthService
+	telegramAuthUC    *usecase.TelegramAuthService
 	userPlayerLinksUC *usecase.UserPlayerLinksUseCase
 	cookie            AuthCookieConfig
 }

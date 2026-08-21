@@ -90,6 +90,10 @@ export function getAccount() {
   return request("/account");
 }
 
+export function unlinkTelegram() {
+  return request("/account/identities/telegram", { method: "DELETE" });
+}
+
 export function getAccountAvailablePlayers({ limit, offset } = {}) {
   const params = new URLSearchParams();
   if (Number.isFinite(limit)) params.set("limit", String(limit));

@@ -12,6 +12,7 @@ import {
 	logout,
 	register,
 	replaceAdminAccountPlayer,
+  unlinkTelegram,
   reverseOperation,
 	startSession,
 	selectAccountPlayer,
@@ -158,6 +159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (state.authUiEnabled) {
     await loadCurrentUser();
     await loadGuestPlayers();
+    handleTelegramReturn();
   } else {
     state.authChecked = true;
     state.authUser = null;
@@ -266,7 +268,21 @@ async function loadAuthConfig() {
   const res = await getAuthConfig();
   if (res.ok && typeof res.body?.enabled === "boolean") {
     state.authUiEnabled = res.body.enabled;
+    state.telegramAuthEnabled = res.body.telegram_enabled === true;
   }
+}
+
+function handleTelegramReturn() {
+  const url = new URL(window.location.href);
+  const result = url.searchParams.get("telegram");
+  const error = url.searchParams.get("telegram_error");
+  if (result === "linked") showNotice(t("notice.telegramLinked"), "success");
+  if (result === "logged_in") showNotice(t("notice.telegramLoginSuccess"), "success");
+  if (error) showNotice(t("error.telegramAuthFailed"), "error");
+  if (!result && !error) return;
+  url.searchParams.delete("telegram");
+  url.searchParams.delete("telegram_error");
+  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function initializeLocalRuntime() {
@@ -538,6 +554,7 @@ function renderAuthPanel() {
   const loginModeButton = document.getElementById("auth-login-mode-btn");
   const confirmPassword = document.getElementById("auth-password-confirm");
   const submitButton = document.getElementById("auth-submit-btn");
+  const telegramLogin = document.getElementById("auth-telegram-login");
   const modeHint = document.getElementById("auth-mode-hint");
   const guestPlayerLabel = document.getElementById("guest-player-label");
 
@@ -562,6 +579,7 @@ function renderAuthPanel() {
 	if (submitButton) {
 		submitButton.textContent = t(registering ? "auth.register" : "auth.login");
 	}
+	if (telegramLogin) telegramLogin.hidden = !state.telegramAuthEnabled || registering;
 	renderRegistrationOwnership();
 }
 
@@ -656,6 +674,7 @@ function initAccountPanel() {
 	const adminAccount = document.getElementById("admin-account-select");
 	const adminReplace = document.getElementById("admin-account-replace");
 	const adminClear = document.getElementById("admin-account-clear");
+	const telegramUnlink = document.getElementById("account-telegram-unlink");
 
   if (form) {
     form.addEventListener("submit", async (event) => {
@@ -692,6 +711,16 @@ function initAccountPanel() {
 	adminAccount?.addEventListener("change", renderAdminOwnershipPanel);
 	adminReplace?.addEventListener("click", replaceAdminOwnership);
 	adminClear?.addEventListener("click", clearAdminOwnership);
+	telegramUnlink?.addEventListener("click", async () => {
+		if (!window.confirm(t("account.telegramUnlinkConfirm"))) return;
+		const res = await unlinkTelegram();
+		if (!res.ok) {
+			showNotice(describeError(res, t("error.telegramUnlinkFailed")), "error");
+			return;
+		}
+		showNotice(t("notice.telegramUnlinked"), "success");
+		await loadAccount();
+	});
 }
 
 async function loadAccount() {
@@ -756,6 +785,10 @@ function renderAccountPanel() {
 	const guidance = document.getElementById("account-admin-guidance");
 	const adminPanel = document.getElementById("admin-account-ownership");
 	const footerActions = document.getElementById("account-footer-actions");
+	const loginMethods = document.getElementById("account-login-methods");
+	const telegramStatus = document.getElementById("account-telegram-status");
+	const telegramLink = document.getElementById("account-telegram-link");
+	const telegramUnlink = document.getElementById("account-telegram-unlink");
 	if (!panel || !linked || !select || !form || !mode || !existingField || !newField) return;
 
   if (!state.authUiEnabled) {
@@ -770,9 +803,24 @@ function renderAccountPanel() {
 		form.hidden = true;
 		if (adminPanel) adminPanel.hidden = true;
 		if (footerActions) footerActions.hidden = true;
+		if (loginMethods) loginMethods.hidden = true;
 		return;
 	}
 	if (footerActions) footerActions.hidden = false;
+	const telegramIdentity = Array.isArray(state.account?.identities)
+		? state.account.identities.find((identity) => identity.provider === "telegram")
+		: null;
+	if (loginMethods) loginMethods.hidden = !state.telegramAuthEnabled;
+	if (telegramStatus) {
+		const telegramName = telegramIdentity?.username
+			? `@${telegramIdentity.username}`
+			: telegramIdentity?.display_name || "Telegram";
+		telegramStatus.textContent = telegramIdentity
+			? t("account.telegramLinked", { name: telegramName })
+			: t("account.telegramNotLinked");
+	}
+	if (telegramLink) telegramLink.hidden = !state.telegramAuthEnabled || Boolean(telegramIdentity);
+	if (telegramUnlink) telegramUnlink.hidden = !state.telegramAuthEnabled || !telegramIdentity;
 
   if (state.accountLoading) {
     linked.innerHTML = `<div class="empty-inline">${escapeHtml(t("account.loading"))}</div>`;

@@ -107,7 +107,7 @@ function runFetch(request) {
 test("installs the versioned minimum shell without optional-asset failure", async () => {
   await runExtendable("install");
 
-  assert.equal(openedCacheName, "poker-session-control-shell-v8-2026-08-21-session-access-guard");
+  assert.equal(openedCacheName, "poker-session-control-shell-v9-2026-08-21-telegram-identity");
   assert.ok(cachedRequiredAssets.includes("/"));
   assert.ok(cachedRequiredAssets.includes("/static/css/main.css"));
   assert.ok(cachedRequiredAssets.includes("/static/js/app.js"));

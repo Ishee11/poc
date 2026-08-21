@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
 });
 
 const SHELL_CACHE_PREFIX = "poker-session-control-shell-";
-const SHELL_CACHE_VERSION = "v8-2026-08-21-session-access-guard";
+const SHELL_CACHE_VERSION = "v9-2026-08-21-telegram-identity";
 const SHELL_CACHE_NAME = `${SHELL_CACHE_PREFIX}${SHELL_CACHE_VERSION}`;
 
 const REQUIRED_SHELL_ASSETS = Object.freeze([

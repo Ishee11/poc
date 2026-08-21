@@ -48,12 +48,15 @@ func NewRouter(h *Handler) http.Handler {
 	mux.HandleFunc("/auth/login", h.Auth.Login)
 	mux.HandleFunc("/auth/logout", h.Auth.Logout)
 	mux.HandleFunc("/auth/me", h.Auth.Me)
+	mux.HandleFunc("/auth/telegram/start", h.Auth.TelegramStart)
+	mux.HandleFunc("/auth/telegram/callback", h.Auth.TelegramCallback)
 
 	// ===== ACCOUNT =====
 	mux.HandleFunc("/account", h.Account.Account)
 	mux.HandleFunc("/account/player", h.Account.Player)
 	mux.HandleFunc("/account/players", h.Account.Players)
 	mux.HandleFunc("/account/players/available", h.Account.AvailablePlayers)
+	mux.HandleFunc("/account/identities/telegram", h.Account.TelegramIdentity)
 
 	// ===== SWAGGER =====
 	mux.HandleFunc("/swagger/", httpSwagger.Handler())

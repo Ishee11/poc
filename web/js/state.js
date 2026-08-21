@@ -1,5 +1,6 @@
 export const state = {
   authUiEnabled: true,
+  telegramAuthEnabled: false,
   adminMode: false,
   authUser: null,
   authChecked: false,

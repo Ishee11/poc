@@ -26,6 +26,18 @@ type LoginAttemptRepository interface {
 	CountFailedLoginAttempts(tx Tx, email string, ip string, since time.Time) (int, error)
 }
 
+type AuthIdentityRepository interface {
+	SaveIdentity(tx Tx, identity *entity.AuthIdentity) error
+	FindIdentity(tx Tx, provider entity.AuthProvider, subject string) (*entity.AuthIdentity, error)
+	ListIdentities(tx Tx, userID entity.AuthUserID) ([]entity.AuthIdentity, error)
+	DeleteIdentity(tx Tx, userID entity.AuthUserID, provider entity.AuthProvider) error
+}
+
+type AuthOIDCFlowRepository interface {
+	SaveOIDCFlow(tx Tx, flow *entity.AuthOIDCFlow) error
+	ConsumeOIDCFlow(tx Tx, stateHash string, now time.Time) (*entity.AuthOIDCFlow, error)
+}
+
 type UserPlayerLinkRepository interface {
 	LinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
 	UnlinkPlayer(tx Tx, userID entity.AuthUserID, playerID entity.PlayerID) error
