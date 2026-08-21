@@ -66,6 +66,8 @@ func metricsRouteLabel(path string) string {
 		return "/session/:id"
 	case strings.HasPrefix(path, "/player/"):
 		return "/player/:id"
+	case strings.HasPrefix(path, "/auth/telegram/challenge/"):
+		return "/auth/telegram/challenge/:token/:action"
 	default:
 		return path
 	}

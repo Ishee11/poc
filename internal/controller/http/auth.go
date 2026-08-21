@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ishee11/poc/internal/entity"
@@ -25,10 +27,151 @@ func (h *AuthHandler) Config(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, AuthConfigResponse{
-		Enabled:          h.cookie.Enabled,
-		OpenRegistration: true,
-		TelegramEnabled:  h.telegramAuthUC != nil && h.telegramAuthUC.Enabled(),
+		Enabled:            h.cookie.Enabled,
+		OpenRegistration:   true,
+		TelegramEnabled:    h.telegramAuthUC != nil && h.telegramAuthUC.Enabled(),
+		TelegramBotEnabled: h.telegramChallengeUC != nil && h.telegramChallengeUC.Enabled(),
+		TelegramBotUsername: func() string {
+			if h.telegramChallengeUC == nil {
+				return ""
+			}
+			return h.telegramChallengeUC.BotUsername()
+		}(),
 	})
+}
+
+type telegramChallengeResponse struct {
+	Challenge        string `json:"challenge"`
+	VerificationCode string `json:"verification_code"`
+	BotUsername      string `json:"bot_username"`
+	ExpiresAt        string `json:"expires_at"`
+}
+
+type telegramChallengeStatusResponse struct {
+	Status           entity.TelegramLoginChallengeStatus `json:"status"`
+	VerificationCode string                              `json:"verification_code"`
+	ExpiresAt        string                              `json:"expires_at"`
+}
+
+func (h *AuthHandler) TelegramChallengeCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+		return
+	}
+	if h.telegramChallengeUC == nil {
+		writeErr(w, r, http.StatusNotImplemented, "telegram_auth_disabled", nil)
+		return
+	}
+	if !sameOriginRequest(r) {
+		writeErr(w, r, http.StatusForbidden, "forbidden_origin", nil)
+		return
+	}
+	result, err := h.telegramChallengeUC.Create(r.Context(), clientIP(r))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	h.setTelegramBindingCookie(w, result.BrowserBinding, result.ExpiresAt)
+	writeJSON(w, http.StatusCreated, telegramChallengeResponse{Challenge: result.Challenge,
+		VerificationCode: result.VerificationCode, BotUsername: result.BotUsername,
+		ExpiresAt: result.ExpiresAt.Format(time.RFC3339)})
+}
+
+func (h *AuthHandler) TelegramChallenge(w http.ResponseWriter, r *http.Request) {
+	if h.telegramChallengeUC == nil {
+		writeErr(w, r, http.StatusNotImplemented, "telegram_auth_disabled", nil)
+		return
+	}
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/auth/telegram/challenge/"), "/")
+	if len(parts) != 2 || parts[0] == "" {
+		writeErr(w, r, http.StatusNotFound, "telegram_challenge_invalid", nil)
+		return
+	}
+	raw, action, binding := parts[0], parts[1], h.telegramBindingToken(r)
+	if action != "status" && !sameOriginRequest(r) {
+		writeErr(w, r, http.StatusForbidden, "forbidden_origin", nil)
+		return
+	}
+	switch action {
+	case "status":
+		if r.Method != http.MethodGet {
+			writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+			return
+		}
+		result, err := h.telegramChallengeUC.Status(r.Context(), raw, binding, clientIP(r))
+		if err != nil {
+			writeTelegramChallengeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, telegramChallengeStatusResponse{Status: result.Status,
+			VerificationCode: result.VerificationCode, ExpiresAt: result.ExpiresAt.Format(time.RFC3339)})
+	case "complete":
+		if r.Method != http.MethodPost {
+			writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+			return
+		}
+		result, err := h.telegramChallengeUC.Complete(r.Context(), raw, binding, r.UserAgent(), clientIP(r))
+		if err != nil {
+			writeTelegramChallengeError(w, r, err)
+			return
+		}
+		h.setSessionCookie(w, r, result.Token, result.ExpiresAt)
+		h.clearTelegramBindingCookie(w)
+		writeJSON(w, http.StatusOK, LoginResponse{User: authUserResponse(result.User), ExpiresAt: result.ExpiresAt.Format(time.RFC3339)})
+	case "cancel":
+		if r.Method != http.MethodPost {
+			writeErr(w, r, http.StatusMethodNotAllowed, "method_not_allowed", nil)
+			return
+		}
+		if err := h.telegramChallengeUC.Cancel(r.Context(), raw, binding, clientIP(r)); err != nil {
+			writeTelegramChallengeError(w, r, err)
+			return
+		}
+		h.clearTelegramBindingCookie(w)
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		writeErr(w, r, http.StatusNotFound, "telegram_challenge_invalid", nil)
+	}
+}
+
+func sameOriginRequest(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return false
+	}
+	u, err := url.Parse(origin)
+	return err == nil && u.Host == r.Host && (u.Scheme == "https" || u.Scheme == "http")
+}
+
+func writeTelegramChallengeError(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, entity.ErrAuthRateLimited) {
+		writeErr(w, r, http.StatusTooManyRequests, "rate_limited", nil)
+		return
+	}
+	if errors.Is(err, entity.ErrTelegramChallengeState) {
+		writeErr(w, r, http.StatusConflict, "telegram_challenge_unavailable", nil)
+		return
+	}
+	writeErr(w, r, http.StatusNotFound, "telegram_challenge_invalid", nil)
+}
+
+func (h *AuthHandler) telegramBindingToken(r *http.Request) string {
+	cookie, err := r.Cookie("tg_login_binding")
+	if err != nil {
+		return ""
+	}
+	return cookie.Value
+}
+
+func (h *AuthHandler) setTelegramBindingCookie(w http.ResponseWriter, token string, expires time.Time) {
+	http.SetCookie(w, &http.Cookie{Name: "tg_login_binding", Value: token, Path: "/auth/telegram/challenge/",
+		HttpOnly: true, Secure: h.cookie.Secure, SameSite: http.SameSiteStrictMode,
+		MaxAge: max(1, int(time.Until(expires).Seconds()))})
+}
+
+func (h *AuthHandler) clearTelegramBindingCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{Name: "tg_login_binding", Path: "/auth/telegram/challenge/",
+		HttpOnly: true, Secure: h.cookie.Secure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 }
 
 func (h *AuthHandler) TelegramStart(w http.ResponseWriter, r *http.Request) {

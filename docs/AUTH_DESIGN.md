@@ -299,6 +299,10 @@ APP_ORIGIN=
 TELEGRAM_OIDC_ENABLED=false
 TELEGRAM_OIDC_CLIENT_ID=
 TELEGRAM_OIDC_CLIENT_SECRET=
+TELEGRAM_LOGIN_BOT_ENABLED=false
+TELEGRAM_LOGIN_BOT_USERNAME=
+TELEGRAM_LOGIN_BOT_TOKEN=
+TELEGRAM_LOGIN_BOT_WEBHOOK_SECRET=
 ```
 
 Development override:
@@ -323,6 +327,31 @@ TELEGRAM_OIDC_ENABLED=true
 Production callback: `https://poker.semenovv.space/auth/telegram/callback`.
 Development callback: `https://dev.semenovv.space/auth/telegram/callback`.
 Both exact callbacks and both origins must be included in BotFather Allowed URLs.
+
+### Telegram app login bot
+
+The primary Telegram login creates a four-minute PostgreSQL challenge and opens
+`tg://resolve?domain=<TELEGRAM_LOGIN_BOT_USERNAME>&start=<challenge>`. The browser
+does not request Telegram HTTP infrastructure. Poker stores only SHA-256 hashes
+of the challenge and the independent browser-binding token; the latter is held
+in a short-lived HttpOnly, Secure, SameSite=Strict cookie. Approval alone does
+not authenticate the browser: the bound complete endpoint atomically creates
+the normal opaque auth session and consumes the challenge.
+
+The Poker backend receives updates through
+`POST /telegram/login-bot/webhook`. Register that HTTPS URL with Bot API
+`setWebhook` and set `secret_token` to the exact
+`TELEGRAM_LOGIN_BOT_WEBHOOK_SECRET`; never put the bot token or webhook secret
+in frontend configuration. The username is the only bot setting exposed by
+`GET /auth/config`. Production reuses the existing `TELEGRAM_BOT_TOKEN`, resolves
+its username with `getMe`, derives a domain-separated webhook secret, and
+registers the production webhook during deployment. Dev must not register the
+same bot because a Telegram bot supports one active webhook.
+
+Bot API `user.id` and Telegram OIDC `sub` are the same decimal Telegram user ID
+and resolve through the single `auth_identities(provider='telegram', subject)`
+model. A first login preserves current behavior: create an active synthetic-email
+account, then require the existing player-ownership onboarding.
 
 ## Rollout Plan
 

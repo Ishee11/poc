@@ -239,6 +239,13 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 			RedirectURI: strings.TrimRight(cfg.Auth.AppOrigin, "/") + "/auth/telegram/callback",
 		},
 	)
+	telegramChallengeUC := usecase.NewTelegramLoginChallengeService(
+		authRepo, txManager, telegramAuthUC, authUC, tokenGenerator, tokenHasher,
+		usecase.SystemClock{}, usecase.TelegramChallengeConfig{
+			Enabled: cfg.Auth.TelegramBotEnabled, BotUsername: cfg.Auth.TelegramBotUsername,
+		},
+	)
+	telegramBotClient := infra.NewTelegramBotClient(cfg.Auth.TelegramBotToken)
 	registerUserUC := usecase.NewRegisterUserUseCase(
 		authRepo,
 		txManager,
@@ -297,6 +304,9 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		authUC,
 		registerUserUC,
 		telegramAuthUC,
+		telegramChallengeUC,
+		telegramBotClient,
+		cfg.Auth.TelegramBotWebhookSecret,
 		userPlayerLinksUC,
 		sessionAccessUC,
 

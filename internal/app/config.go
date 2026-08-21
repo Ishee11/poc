@@ -24,21 +24,25 @@ type TracingConfig struct {
 }
 
 type AuthConfig struct {
-	Enabled              bool
-	CookieName           string
-	CookieSecure         bool
-	CookieSameSite       string
-	SessionTTL           time.Duration
-	IdleTTL              time.Duration
-	LoginRateLimit       string
-	SeedAdminEmail       string
-	SeedAdminPass        string
-	SeedUserEmail        string
-	SeedUserPass         string
-	AppOrigin            string
-	TelegramEnabled      bool
-	TelegramClientID     string
-	TelegramClientSecret string
+	Enabled                  bool
+	CookieName               string
+	CookieSecure             bool
+	CookieSameSite           string
+	SessionTTL               time.Duration
+	IdleTTL                  time.Duration
+	LoginRateLimit           string
+	SeedAdminEmail           string
+	SeedAdminPass            string
+	SeedUserEmail            string
+	SeedUserPass             string
+	AppOrigin                string
+	TelegramEnabled          bool
+	TelegramClientID         string
+	TelegramClientSecret     string
+	TelegramBotEnabled       bool
+	TelegramBotUsername      string
+	TelegramBotToken         string
+	TelegramBotWebhookSecret string
 }
 
 type PushConfig struct {
@@ -81,21 +85,25 @@ func Load() (*Config, error) {
 			OTLPInsecure: getBoolEnv("OTEL_EXPORTER_OTLP_INSECURE", true),
 		},
 		Auth: AuthConfig{
-			Enabled:              getBoolEnv("AUTH_ENABLED", true),
-			CookieName:           getEnv("AUTH_COOKIE_NAME", "sid"),
-			CookieSecure:         getBoolEnv("AUTH_COOKIE_SECURE", true),
-			CookieSameSite:       getEnv("AUTH_COOKIE_SAMESITE", "Lax"),
-			SessionTTL:           sessionTTL,
-			IdleTTL:              idleTTL,
-			LoginRateLimit:       getEnv("AUTH_LOGIN_RATE_LIMIT", "5/min"),
-			SeedAdminEmail:       os.Getenv("AUTH_SEED_ADMIN_EMAIL"),
-			SeedAdminPass:        os.Getenv("AUTH_SEED_ADMIN_PASSWORD"),
-			SeedUserEmail:        os.Getenv("AUTH_SEED_USER_EMAIL"),
-			SeedUserPass:         os.Getenv("AUTH_SEED_USER_PASSWORD"),
-			AppOrigin:            appOrigin,
-			TelegramEnabled:      getBoolEnv("TELEGRAM_OIDC_ENABLED", false),
-			TelegramClientID:     strings.TrimSpace(os.Getenv("TELEGRAM_OIDC_CLIENT_ID")),
-			TelegramClientSecret: strings.TrimSpace(os.Getenv("TELEGRAM_OIDC_CLIENT_SECRET")),
+			Enabled:                  getBoolEnv("AUTH_ENABLED", true),
+			CookieName:               getEnv("AUTH_COOKIE_NAME", "sid"),
+			CookieSecure:             getBoolEnv("AUTH_COOKIE_SECURE", true),
+			CookieSameSite:           getEnv("AUTH_COOKIE_SAMESITE", "Lax"),
+			SessionTTL:               sessionTTL,
+			IdleTTL:                  idleTTL,
+			LoginRateLimit:           getEnv("AUTH_LOGIN_RATE_LIMIT", "5/min"),
+			SeedAdminEmail:           os.Getenv("AUTH_SEED_ADMIN_EMAIL"),
+			SeedAdminPass:            os.Getenv("AUTH_SEED_ADMIN_PASSWORD"),
+			SeedUserEmail:            os.Getenv("AUTH_SEED_USER_EMAIL"),
+			SeedUserPass:             os.Getenv("AUTH_SEED_USER_PASSWORD"),
+			AppOrigin:                appOrigin,
+			TelegramEnabled:          getBoolEnv("TELEGRAM_OIDC_ENABLED", false),
+			TelegramClientID:         strings.TrimSpace(os.Getenv("TELEGRAM_OIDC_CLIENT_ID")),
+			TelegramClientSecret:     strings.TrimSpace(os.Getenv("TELEGRAM_OIDC_CLIENT_SECRET")),
+			TelegramBotEnabled:       getBoolEnv("TELEGRAM_LOGIN_BOT_ENABLED", false),
+			TelegramBotUsername:      strings.TrimPrefix(strings.TrimSpace(os.Getenv("TELEGRAM_LOGIN_BOT_USERNAME")), "@"),
+			TelegramBotToken:         strings.TrimSpace(os.Getenv("TELEGRAM_LOGIN_BOT_TOKEN")),
+			TelegramBotWebhookSecret: strings.TrimSpace(os.Getenv("TELEGRAM_LOGIN_BOT_WEBHOOK_SECRET")),
 		},
 		Push: PushConfig{
 			Enabled:      getBoolEnv("PUSH_ENABLED", false),
@@ -123,6 +131,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.Auth.TelegramEnabled && (cfg.Auth.TelegramClientID == "" || cfg.Auth.TelegramClientSecret == "" || cfg.Auth.AppOrigin == "") {
 		return nil, fmt.Errorf("TELEGRAM_OIDC_CLIENT_ID, TELEGRAM_OIDC_CLIENT_SECRET, and APP_ORIGIN are required when TELEGRAM_OIDC_ENABLED=true")
+	}
+	if cfg.Auth.TelegramBotEnabled && (cfg.Auth.TelegramBotUsername == "" || cfg.Auth.TelegramBotToken == "" || cfg.Auth.TelegramBotWebhookSecret == "") {
+		return nil, fmt.Errorf("TELEGRAM_LOGIN_BOT_USERNAME, TELEGRAM_LOGIN_BOT_TOKEN, and TELEGRAM_LOGIN_BOT_WEBHOOK_SECRET are required when TELEGRAM_LOGIN_BOT_ENABLED=true")
 	}
 
 	return cfg, nil

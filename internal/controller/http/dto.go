@@ -108,6 +108,8 @@ type AuthConfigResponse struct {
 	Enabled          bool `json:"enabled"`
 	OpenRegistration bool `json:"open_registration"`
 	TelegramEnabled  bool `json:"telegram_enabled"`
+	TelegramBotEnabled bool `json:"telegram_bot_enabled"`
+	TelegramBotUsername string `json:"telegram_bot_username,omitempty"`
 }
 
 type AuthUserResponse struct {
