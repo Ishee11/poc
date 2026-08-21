@@ -1,0 +1,2 @@
+-- The repair intentionally has no automatic rollback: recreating a duplicate
+-- authentication account and its revoked sessions would be unsafe.

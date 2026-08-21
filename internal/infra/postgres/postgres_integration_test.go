@@ -143,6 +143,58 @@ func TestTelegramIdentityRepairPreservesEstablishedAccount(t *testing.T) {
 	}
 }
 
+func TestNumericTelegramIdentityRepairUsesBotIdentityAndPreservesPlayer(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	ctx := context.Background()
+	_, err := pool.Exec(ctx, `
+		INSERT INTO users (id, email, password_hash, role, status) VALUES
+			('established-user', 'ishee@yandex.ru', 'hash', 'user', 'active'),
+			('duplicate-user', 'telegram-canonical@telegram.invalid', '!telegram', 'user', 'active');
+		INSERT INTO players (id, name) VALUES ('stepa-player', 'Стёпа');
+		INSERT INTO user_players (user_id, player_id) VALUES ('established-user', 'stepa-player');
+		INSERT INTO auth_identities (provider, subject, user_id, username) VALUES
+			('telegram', '1000000000000000001', 'established-user', 'seemenovv'),
+			('telegram', '424242', 'duplicate-user', 'seemenovv');
+		INSERT INTO auth_sessions (id, user_id, token_hash, created_at, last_seen_at, expires_at)
+		VALUES ('duplicate-session', 'duplicate-user', 'duplicate-token', NOW(), NOW(), NOW() + INTERVAL '1 hour');
+	`)
+	if err != nil {
+		t.Fatalf("prepare numeric Telegram split: %v", err)
+	}
+	migration, err := fs.ReadFile(MigrationsFS, "migrations/000022_repair_seemenovv_numeric_telegram_split.up.sql")
+	if err != nil {
+		t.Fatalf("read numeric repair migration: %v", err)
+	}
+	if _, err := pool.Exec(ctx, string(migration)); err != nil {
+		t.Fatalf("apply numeric repair migration: %v", err)
+	}
+	if _, err := pool.Exec(ctx, string(migration)); err != nil {
+		t.Fatalf("numeric repair migration is not idempotent: %v", err)
+	}
+
+	var ownerID string
+	if err := pool.QueryRow(ctx, `SELECT user_id FROM auth_identities WHERE provider = 'telegram' AND subject = '424242'`).Scan(&ownerID); err != nil {
+		t.Fatalf("find canonical Bot API identity: %v", err)
+	}
+	var legacyIdentities, duplicateUsers, duplicateSessions, ownership int
+	if err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM auth_identities WHERE provider = 'telegram' AND subject = '1000000000000000001'`).Scan(&legacyIdentities); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM users WHERE id = 'duplicate-user'`).Scan(&duplicateUsers); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM auth_sessions WHERE id = 'duplicate-session'`).Scan(&duplicateSessions); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM user_players WHERE user_id = 'established-user' AND player_id = 'stepa-player'`).Scan(&ownership); err != nil {
+		t.Fatal(err)
+	}
+	if ownerID != "established-user" || legacyIdentities != 0 || duplicateUsers != 0 || duplicateSessions != 0 || ownership != 1 {
+		t.Fatalf("unexpected numeric repair: owner=%q legacy=%d duplicate_users=%d duplicate_sessions=%d ownership=%d", ownerID, legacyIdentities, duplicateUsers, duplicateSessions, ownership)
+	}
+}
+
 func TestOwnershipMigrationFailsWithoutRewritingMultiPlayerAccount(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)

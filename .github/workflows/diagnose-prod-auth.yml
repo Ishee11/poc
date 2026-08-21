@@ -48,7 +48,7 @@ jobs:
               *[!A-Za-z0-9_]*) echo 'invalid Telegram username input'; exit 1 ;;
             esac
 
-            docker exec poker-db psql -X -v ON_ERROR_STOP=1 -U poker -d poker \
+            docker exec -i poker-db psql -X -v ON_ERROR_STOP=1 -U poker -d poker \
               -v target_email="$target_email" -v target_username="$target_username" <<'SQL'
             SELECT
               CASE
