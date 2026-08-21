@@ -1316,7 +1316,6 @@ export function initSessionActions() {
         );
       } else if (action === "authenticate") {
         document.getElementById("header-account-btn")?.click();
-        document.getElementById("auth-email")?.focus();
       }
       return;
     }

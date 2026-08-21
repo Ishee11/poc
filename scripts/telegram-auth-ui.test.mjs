@@ -26,7 +26,10 @@ assert.deepEqual(requests, [
 ]);
 
 const html = readFileSync(new URL("../web/index.html", import.meta.url), "utf8");
+assert.ok(html.indexOf('id="overview-session-controls"') < html.indexOf('id="guest-player-label"'));
+assert.ok(html.indexOf('id="guest-player-label"') < html.indexOf('id="auth-menu"'));
 assert.match(html, /id="auth-telegram-login"[\s\S]*id="telegram-bot-waiting"/);
+assert.match(html, /id="auth-telegram-login"[\s\S]*id="auth-email-divider"[\s\S]*id="auth-email"/);
 assert.match(html, /id="telegram-bot-open"/);
 assert.match(html, /id="telegram-bot-browser-fallback"[\s\S]*\/auth\/telegram\/start\?mode=login/);
 assert.match(html, /id="account-telegram-link"[\s\S]*\/auth\/telegram\/start\?mode=link/);
@@ -52,5 +55,9 @@ assert.match(app, /await loadCurrentUser\(\)/);
 assert.match(app, /telegramBot\.denied/);
 assert.match(app, /telegramBot\.expired/);
 assert.match(app, /cancelActiveTelegramChallenge\(\)/);
+assert.doesNotMatch(app, /openAccount\(\);\s*if \(!state\.authUser\).*auth-email.*focus/);
+
+const sessionUI = readFileSync(new URL("../web/js/ui/session.js", import.meta.url), "utf8");
+assert.doesNotMatch(sessionUI, /syncAction[\s\S]*authenticate[\s\S]{0,180}auth-email.*focus/);
 
 console.log("telegram auth UI tests passed");
