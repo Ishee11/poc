@@ -58,8 +58,8 @@ type AuthPolicy struct {
 
 func DefaultAuthPolicy() AuthPolicy {
 	return AuthPolicy{
-		SessionTTL:        12 * time.Hour,
-		IdleTTL:           2 * time.Hour,
+		SessionTTL:        30 * 24 * time.Hour,
+		IdleTTL:           30 * 24 * time.Hour,
 		RateLimitWindow:   time.Minute,
 		MaxFailedAttempts: 5,
 	}

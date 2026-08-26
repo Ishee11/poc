@@ -65,12 +65,12 @@ type KafkaConfig struct {
 
 func Load() (*Config, error) {
 	appOrigin := os.Getenv("APP_ORIGIN")
-	sessionTTL, err := getDurationEnv("AUTH_SESSION_TTL", 12*time.Hour)
+	sessionTTL, err := getDurationEnv("AUTH_SESSION_TTL", 30*24*time.Hour)
 	if err != nil {
 		return nil, err
 	}
 
-	idleTTL, err := getDurationEnv("AUTH_IDLE_TTL", 2*time.Hour)
+	idleTTL, err := getDurationEnv("AUTH_IDLE_TTL", 30*24*time.Hour)
 	if err != nil {
 		return nil, err
 	}
