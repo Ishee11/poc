@@ -367,8 +367,8 @@ func containerConfig(configs ...*Config) *Config {
 			CookieName:     "sid",
 			CookieSecure:   true,
 			CookieSameSite: "Lax",
-			SessionTTL:     12 * time.Hour,
-			IdleTTL:        2 * time.Hour,
+			SessionTTL:     30 * 24 * time.Hour,
+			IdleTTL:        30 * 24 * time.Hour,
 		},
 	}
 }
