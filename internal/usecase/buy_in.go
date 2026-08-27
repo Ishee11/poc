@@ -12,6 +12,7 @@ type BuyInUseCase struct {
 	txManager       TxManager
 	idempotencyRepo IdempotencyRepository
 	outboxWriter    OutboxWriter
+	participants    SessionParticipantWriter
 }
 
 func NewBuyInUseCase(
@@ -20,6 +21,7 @@ func NewBuyInUseCase(
 	txManager TxManager,
 	idempotencyRepo IdempotencyRepository,
 	outboxWriter OutboxWriter,
+	participants SessionParticipantWriter,
 ) *BuyInUseCase {
 	return &BuyInUseCase{
 		helper:          helper,
@@ -27,6 +29,7 @@ func NewBuyInUseCase(
 		txManager:       txManager,
 		idempotencyRepo: idempotencyRepo,
 		outboxWriter:    outboxWriter,
+		participants:    participants,
 	}
 }
 
@@ -88,6 +91,9 @@ func (uc *BuyInUseCase) execute(tx Tx, cmd command.BuyInCommand) (*entity.Operat
 
 	// 5. сохраняем
 	if err := uc.helper.opWriter.Save(tx, op); err != nil {
+		return nil, err
+	}
+	if err := uc.participants.Add(tx, cmd.SessionID, cmd.PlayerID); err != nil {
 		return nil, err
 	}
 

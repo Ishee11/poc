@@ -25,11 +25,6 @@ for (const url of requests) {
   assert.equal(parsed.searchParams.get("guest_player_id"), "guest-1", url);
 }
 
-globalThis.localStorage = {
-  getItem(key) {
-    return key === "poker-guest-player-id" ? "guest-write" : "";
-  },
-};
 requests.length = 0;
 await api.finishSession({ sessionId: "session-1" });
 await api.buyIn({ sessionId: "session-1", playerId: "player-1", chips: 10 });
@@ -41,12 +36,18 @@ await api.deleteExpense("expense-1", "session-1");
 await api.saveSettlementTransfers("session-1", []);
 assert.equal(requests.length, 8);
 for (const url of requests) {
-  assert.equal(new URL(url).searchParams.get("guest_player_id"), "guest-write", url);
+  assert.equal(new URL(url).searchParams.get("guest_player_id"), null, url);
 }
 
 const sessionUI = readFileSync(new URL("../web/js/ui/session.js", import.meta.url), "utf8");
 assert.match(sessionUI, /const accessResult = await getSession\(sessionId, sessionAccessOptions\(\)\)/);
 assert.match(sessionUI, /ERROR_KINDS\.AUTHORIZATION|!accessResult\.ok/);
 assert.match(sessionUI, /if \(!accessResult\.ok\) \{[\s\S]*hydrateCachedSession/);
+assert.match(sessionUI, /state\.authUser && state\.session\?\.canMutate/);
+assert.match(sessionUI, /isSessionMutationControl\(button\) && !canMutateCurrentSession\(\)/);
+
+const appUI = readFileSync(new URL("../web/js/app.js", import.meta.url), "utf8");
+assert.match(appUI, /button\.disabled = loginRequired/);
+assert.match(appUI, /lobby\.startAuthRequired/);
 
 console.log("session access UI tests passed");

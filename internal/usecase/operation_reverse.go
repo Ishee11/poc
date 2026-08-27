@@ -60,7 +60,7 @@ func (uc *ReverseOperationUseCase) Execute(ctx context.Context, cmd command.Reve
 			}
 			duplicate = true
 			op, err = uc.opReader.GetByRequestID(tx, cmd.RequestID)
-			if err != nil || op == nil || op.Type() != entity.OperationReversal || op.ReferenceID() == nil || *op.ReferenceID() != cmd.TargetOperationID {
+			if err != nil || op == nil || op.SessionID() != cmd.SessionID || op.Type() != entity.OperationReversal || op.ReferenceID() == nil || *op.ReferenceID() != cmd.TargetOperationID {
 				return entity.ErrIdempotencyPayloadMismatch
 			}
 		} else {
@@ -72,7 +72,7 @@ func (uc *ReverseOperationUseCase) Execute(ctx context.Context, cmd command.Reve
 				return err
 			}
 			op, err = uc.opReader.GetByRequestID(tx, cmd.RequestID)
-			if err != nil || op == nil || op.Type() != entity.OperationReversal || op.ReferenceID() == nil || *op.ReferenceID() != cmd.TargetOperationID {
+			if err != nil || op == nil || op.SessionID() != cmd.SessionID || op.Type() != entity.OperationReversal || op.ReferenceID() == nil || *op.ReferenceID() != cmd.TargetOperationID {
 				return entity.ErrIdempotencyPayloadMismatch
 			}
 		}
@@ -93,6 +93,9 @@ func (uc *ReverseOperationUseCase) execute(tx Tx, cmd command.ReverseOperationCo
 	// 1. target operation
 	if target == nil {
 		return nil, entity.ErrOperationNotFound
+	}
+	if cmd.SessionID == "" || target.SessionID() != cmd.SessionID {
+		return nil, entity.ErrForbidden
 	}
 
 	if target.Type() == entity.OperationReversal {

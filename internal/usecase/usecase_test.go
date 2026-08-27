@@ -45,8 +45,33 @@ type fakeStatsRepo struct {
 }
 
 type fakeSessionAccessRepo struct {
-	allowed    bool
-	lastFilter *SessionAccessFilter
+	allowed          bool
+	mutationAllowed  bool
+	lastFilter       *SessionAccessFilter
+	lastMutationUser *entity.AuthUserID
+}
+
+func (r fakeSessionAccessRepo) CanMutateSession(_ Tx, _ entity.SessionID, viewer entity.AuthUserID, _ bool) (bool, error) {
+	if r.lastMutationUser != nil {
+		*r.lastMutationUser = viewer
+	}
+	return r.mutationAllowed, nil
+}
+
+type fakeSessionParticipantWriter struct {
+	members map[entity.SessionID]map[entity.PlayerID]bool
+}
+
+func newFakeSessionParticipantWriter() *fakeSessionParticipantWriter {
+	return &fakeSessionParticipantWriter{members: make(map[entity.SessionID]map[entity.PlayerID]bool)}
+}
+
+func (r *fakeSessionParticipantWriter) Add(_ Tx, sessionID entity.SessionID, playerID entity.PlayerID) error {
+	if r.members[sessionID] == nil {
+		r.members[sessionID] = make(map[entity.PlayerID]bool)
+	}
+	r.members[sessionID][playerID] = true
+	return nil
 }
 
 func (r fakeSessionAccessRepo) CanViewSession(_ Tx, _ entity.SessionID, filter SessionAccessFilter) (bool, error) {
@@ -167,6 +192,30 @@ func TestSessionAccessRequiresVisibleSession(t *testing.T) {
 	denied := NewSessionAccessService(fakeSessionAccessRepo{}, fakeTxManager{})
 	if err := denied.RequireView(context.Background(), SessionAccessQuery{SessionID: "session-2"}); !errors.Is(err, entity.ErrForbidden) {
 		t.Fatalf("expected forbidden session, got %v", err)
+	}
+}
+
+func TestSessionAccessRequiresAuthenticatedParticipantForMutation(t *testing.T) {
+	viewer := entity.AuthUserID("viewer-1")
+	var gotViewer entity.AuthUserID
+	service := NewSessionAccessService(fakeSessionAccessRepo{
+		mutationAllowed:  true,
+		lastMutationUser: &gotViewer,
+	}, fakeTxManager{})
+	if err := service.RequireMutation(context.Background(), SessionAccessQuery{
+		SessionID: "session-1", ViewerUserID: &viewer,
+	}); err != nil {
+		t.Fatalf("require participant mutation: %v", err)
+	}
+	if gotViewer != viewer {
+		t.Fatalf("mutation viewer=%q want=%q", gotViewer, viewer)
+	}
+	if err := service.RequireMutation(context.Background(), SessionAccessQuery{SessionID: "session-1"}); !errors.Is(err, entity.ErrUnauthorized) {
+		t.Fatalf("anonymous mutation error=%v want unauthorized", err)
+	}
+	denied := NewSessionAccessService(fakeSessionAccessRepo{}, fakeTxManager{})
+	if err := denied.RequireMutation(context.Background(), SessionAccessQuery{SessionID: "session-1", ViewerUserID: &viewer}); !errors.Is(err, entity.ErrForbidden) {
+		t.Fatalf("unrelated mutation error=%v want forbidden", err)
 	}
 }
 
@@ -509,14 +558,19 @@ func TestIdempotent(t *testing.T) {
 
 func TestStartSessionUseCase(t *testing.T) {
 	store := newFakeStore()
+	links := newFakeUserPlayerLinkRepo()
+	links.links["p1"] = "user-1"
+	participants := newFakeSessionParticipantWriter()
 	uc := NewStartSessionUseCase(
 		fakeSessionRepo{store: store},
 		fakeSessionRepo{store: store},
+		participants,
+		links,
 		fakeTxManager{},
 		sequenceSessionIDGen{next: "s1"},
 	)
 
-	id, err := uc.Execute(context.Background(), command.StartSessionCommand{ChipRate: 2, BigBlind: 2, Currency: entity.CurrencyRUB})
+	id, err := uc.Execute(context.Background(), command.StartSessionCommand{UserID: "user-1", ChipRate: 2, BigBlind: 2, Currency: entity.CurrencyRUB})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -526,11 +580,14 @@ func TestStartSessionUseCase(t *testing.T) {
 	if store.sessions[id].ChipRate().Value() != 2 {
 		t.Fatalf("session was not saved with chip rate")
 	}
+	if !participants.members[id]["p1"] {
+		t.Fatal("starter player was not enrolled")
+	}
 
-	if _, err := uc.Execute(context.Background(), command.StartSessionCommand{ChipRate: 0, BigBlind: 2, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
+	if _, err := uc.Execute(context.Background(), command.StartSessionCommand{UserID: "user-1", ChipRate: 0, BigBlind: 2, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
 		t.Fatalf("expected invalid chips, got %v", err)
 	}
-	if _, err := uc.Execute(context.Background(), command.StartSessionCommand{ChipRate: 2, BigBlind: 0, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
+	if _, err := uc.Execute(context.Background(), command.StartSessionCommand{UserID: "user-1", ChipRate: 2, BigBlind: 0, Currency: entity.CurrencyRUB}); !errors.Is(err, valueobject.ErrInvalidChips) {
 		t.Fatalf("expected invalid chips, got %v", err)
 	}
 }
@@ -569,7 +626,8 @@ func TestBuyInUseCase(t *testing.T) {
 
 	helper := newHelperForStore(store, &sequenceOperationIDGen{next: "op1"}, sequencePlayerIDGen{})
 	outbox := &fakeOutboxRepo{}
-	uc := NewBuyInUseCase(helper, fakeSessionRepo{store: store}, fakeTxManager{}, newFakeIdempotencyRepo(), outbox)
+	participants := newFakeSessionParticipantWriter()
+	uc := NewBuyInUseCase(helper, fakeSessionRepo{store: store}, fakeTxManager{}, newFakeIdempotencyRepo(), outbox, participants)
 
 	ack, err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
 	if err != nil {
@@ -580,6 +638,9 @@ func TestBuyInUseCase(t *testing.T) {
 	}
 	if ack.OperationID != "op1" || ack.RequestID != "req1" || ack.IdempotentReplay {
 		t.Fatalf("unexpected acknowledgement: %+v", ack)
+	}
+	if !participants.members["s1"]["p1"] {
+		t.Fatal("buy-in player was not enrolled")
 	}
 	duplicate, err := uc.Execute(context.Background(), command.BuyInCommand{RequestID: "req1", SessionID: "s1", PlayerID: "p1", Chips: 100})
 	if err != nil || duplicate.OperationID != ack.OperationID || !duplicate.IdempotentReplay {
@@ -723,19 +784,22 @@ func TestReverseOperationUseCase(t *testing.T) {
 			fakeSessionRepo{store: store},
 			outbox,
 		)
+		if _, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "cross-session", SessionID: "s2", TargetOperationID: "op1"}); !errors.Is(err, entity.ErrForbidden) {
+			t.Fatalf("cross-session reverse error=%v want forbidden", err)
+		}
 
-		ack, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"})
+		ack, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", SessionID: "s1", TargetOperationID: "op1"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if ack.OperationID != "op2" || ack.TargetOperationID == nil || *ack.TargetOperationID != "op1" || ack.ReversedOperation == nil || ack.ReversedOperation.Type != entity.OperationBuyIn {
 			t.Fatalf("unexpected reverse acknowledgement: %+v", ack)
 		}
-		duplicate, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "op1"})
+		duplicate, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", SessionID: "s1", TargetOperationID: "op1"})
 		if err != nil || duplicate.OperationID != ack.OperationID || !duplicate.IdempotentReplay {
 			t.Fatalf("duplicate reverse did not return original acknowledgement: ack=%+v err=%v", duplicate, err)
 		}
-		_, err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", TargetOperationID: "missing-target"})
+		_, err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req2", SessionID: "s1", TargetOperationID: "missing-target"})
 		if !errors.Is(err, entity.ErrIdempotencyPayloadMismatch) {
 			t.Fatalf("expected reverse payload mismatch, got %v", err)
 		}
@@ -746,7 +810,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 			t.Fatalf("reverse operation did not save operation.reversed event")
 		}
 
-		_, err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op1"})
+		_, err = uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", SessionID: "s1", TargetOperationID: "op1"})
 		if !errors.Is(err, entity.ErrOperationAlreadyReversed) {
 			t.Fatalf("expected operation already reversed, got %v", err)
 		}
@@ -780,7 +844,7 @@ func TestReverseOperationUseCase(t *testing.T) {
 			outbox,
 		)
 
-		if _, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", TargetOperationID: "op2"}); err != nil {
+		if _, err := uc.Execute(context.Background(), command.ReverseOperationCommand{RequestID: "req3", SessionID: "s1", TargetOperationID: "op2"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if store.sessions["s1"].TotalBuyIn() != 100 {

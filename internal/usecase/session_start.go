@@ -12,6 +12,8 @@ import (
 type StartSessionUseCase struct {
 	sessionReader SessionReader
 	sessionWriter SessionWriter
+	participants  SessionParticipantWriter
+	userPlayers   UserPlayerLinkRepository
 	txManager     TxManager
 	idGenerator   SessionIDGenerator
 }
@@ -19,12 +21,16 @@ type StartSessionUseCase struct {
 func NewStartSessionUseCase(
 	sessionReader SessionReader,
 	sessionWriter SessionWriter,
+	participants SessionParticipantWriter,
+	userPlayers UserPlayerLinkRepository,
 	txManager TxManager,
 	idGenerator SessionIDGenerator,
 ) *StartSessionUseCase {
 	return &StartSessionUseCase{
 		sessionReader: sessionReader,
 		sessionWriter: sessionWriter,
+		participants:  participants,
+		userPlayers:   userPlayers,
 		txManager:     txManager,
 		idGenerator:   idGenerator,
 	}
@@ -50,6 +56,14 @@ func (uc *StartSessionUseCase) Execute(ctx context.Context, cmd command.StartSes
 }
 
 func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) (entity.SessionID, error) {
+	var starterPlayerID entity.PlayerID
+	if cmd.UserID != "" {
+		player, err := uc.userPlayers.FindUserPlayer(tx, cmd.UserID)
+		if err != nil {
+			return "", err
+		}
+		starterPlayerID = player.ID
+	}
 
 	rate, err := valueobject.NewChipRate(cmd.ChipRate)
 	if err != nil {
@@ -68,6 +82,11 @@ func (uc *StartSessionUseCase) execute(tx Tx, cmd command.StartSessionCommand) (
 
 	if err := uc.sessionWriter.Save(tx, session); err != nil {
 		return "", err
+	}
+	if starterPlayerID != "" {
+		if err := uc.participants.Add(tx, id, starterPlayerID); err != nil {
+			return "", err
+		}
 	}
 
 	return id, nil

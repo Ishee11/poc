@@ -49,7 +49,7 @@ func (h *OperationHandler) SaveSettlementTransfers(w http.ResponseWriter, r *htt
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
-	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+	if !h.access.requireMutation(w, r, entity.SessionID(req.SessionID)) {
 		return
 	}
 

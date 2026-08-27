@@ -71,7 +71,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_oidc_flows, auth_identities, auth_sessions, login_attempts, user_players, users, sessions, players
+		TRUNCATE TABLE idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, session_participants, auth_oidc_flows, auth_identities, auth_sessions, login_attempts, user_players, users, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
@@ -381,12 +381,19 @@ func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
 	pool := testPool(t)
 	cleanDB(t, pool)
 	saveLoginUser(t, pool, "owner-1", "owner@example.com", "user", "owner-password")
+	saveLoginUser(t, pool, "unrelated-1", "unrelated@example.com", "user", "unrelated-password")
 	if _, err := pool.Exec(context.Background(), `
-		INSERT INTO players (id, name) VALUES ('owned-player', 'Owned');
-		INSERT INTO sessions (id, chip_rate, big_blind, currency, status) VALUES ('private-session', 2, 2, 'RUB', 'active');
+		INSERT INTO players (id, name) VALUES ('owned-player', 'Owned'), ('unrelated-player', 'Unrelated');
+		INSERT INTO sessions (id, chip_rate, big_blind, currency, status) VALUES
+			('private-session', 2, 2, 'RUB', 'active'),
+			('other-session', 2, 2, 'RUB', 'active');
 		INSERT INTO operations (id, request_id, session_id, player_id, type, chips)
-		VALUES ('private-operation', 'private-request', 'private-session', 'owned-player', 'buy_in', 100);
-		INSERT INTO user_players (user_id, player_id) VALUES ('owner-1', 'owned-player')
+		VALUES
+			('private-operation', 'private-request', 'private-session', 'owned-player', 'buy_in', 100),
+			('other-operation', 'other-request', 'other-session', 'unrelated-player', 'buy_in', 100);
+		INSERT INTO session_participants (session_id, player_id) VALUES ('private-session', 'owned-player');
+		INSERT INTO session_expenses (id, session_id, title, amount) VALUES ('other-expense', 'other-session', 'Other', 10);
+		INSERT INTO user_players (user_id, player_id) VALUES ('owner-1', 'owned-player'), ('unrelated-1', 'unrelated-player')
 	`); err != nil {
 		t.Fatalf("prepare private session: %v", err)
 	}
@@ -402,6 +409,10 @@ func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
 		guest := requestJSON(t, handler, http.MethodGet, path, nil)
 		if guest.Code != http.StatusForbidden {
 			t.Fatalf("guest read %s status=%d body=%s", path, guest.Code, guest.Body.String())
+		}
+		selectedGuest := requestJSON(t, handler, http.MethodGet, path+map[bool]string{true: "&", false: "?"}[strings.Contains(path, "?")]+"guest_player_id=owned-player", nil)
+		if selectedGuest.Code != http.StatusOK {
+			t.Fatalf("selected guest read %s status=%d body=%s", path, selectedGuest.Code, selectedGuest.Body.String())
 		}
 	}
 	for _, test := range []struct {
@@ -419,7 +430,7 @@ func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
 		{http.MethodPut, "/settlement-transfers", map[string]any{"session_id": "private-session", "transfers": []any{}}},
 	} {
 		guest := requestJSON(t, handler, test.method, test.path, test.body)
-		if guest.Code != http.StatusForbidden {
+		if guest.Code != http.StatusUnauthorized {
 			t.Fatalf("guest write %s status=%d body=%s", test.path, guest.Code, guest.Body.String())
 		}
 	}
@@ -441,6 +452,79 @@ func TestAPIIntegration_SessionReadsRespectAccountVisibility(t *testing.T) {
 		!strings.Contains(ownerStats.Body.String(), `"total_sessions_count":1`) ||
 		!strings.Contains(ownerStats.Body.String(), `"visible_sessions_count":1`) {
 		t.Fatalf("owner player stats missing session status=%d body=%s", ownerStats.Code, ownerStats.Body.String())
+	}
+	crossReverse := requestJSONWithCookie(t, handler, http.MethodPost, "/operations/reverse?session_id=private-session", map[string]any{
+		"request_id": "cross-reverse", "target_operation_id": "other-operation",
+	}, ownerCookie)
+	if crossReverse.Code != http.StatusForbidden {
+		t.Fatalf("cross-session reverse status=%d body=%s", crossReverse.Code, crossReverse.Body.String())
+	}
+	crossDelete := requestJSONWithCookie(t, handler, http.MethodDelete, "/expenses?expense_id=other-expense&session_id=private-session", nil, ownerCookie)
+	if crossDelete.Code != http.StatusForbidden {
+		t.Fatalf("cross-session expense delete status=%d body=%s", crossDelete.Code, crossDelete.Body.String())
+	}
+	var otherExpenseCount int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM session_expenses WHERE id = 'other-expense'`).Scan(&otherExpenseCount); err != nil || otherExpenseCount != 1 {
+		t.Fatalf("other expense count=%d err=%v", otherExpenseCount, err)
+	}
+	unrelatedCookie := loginCookie(t, handler, "unrelated@example.com", "unrelated-password")
+	unrelatedWrite := requestJSONWithCookie(t, handler, http.MethodPost, "/operations/buy-in", map[string]any{
+		"request_id": "unrelated-buy-in", "session_id": "private-session", "player_id": "unrelated-player", "chips": 10,
+	}, unrelatedCookie)
+	if unrelatedWrite.Code != http.StatusForbidden {
+		t.Fatalf("unrelated write status=%d body=%s", unrelatedWrite.Code, unrelatedWrite.Body.String())
+	}
+
+	if _, err := pool.Exec(context.Background(), `UPDATE sessions SET status = 'finished', finished_at = NOW() WHERE id = 'private-session'`); err != nil {
+		t.Fatalf("finish prepared session: %v", err)
+	}
+	publicFinished := requestJSON(t, handler, http.MethodGet, "/sessions?session_id=private-session", nil)
+	if publicFinished.Code != http.StatusOK {
+		t.Fatalf("public finished session status=%d body=%s", publicFinished.Code, publicFinished.Body.String())
+	}
+}
+
+func TestAPIIntegration_AuthenticationProtectsSessionStartAndPlayerCreation(t *testing.T) {
+	pool := testPool(t)
+	cleanDB(t, pool)
+	handler := ownershipTestHandler(pool)
+
+	start := requestJSON(t, handler, http.MethodPost, "/sessions/start", map[string]any{"chip_rate": 2, "big_blind": 2, "currency": "RUB"})
+	if start.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous start status=%d body=%s", start.Code, start.Body.String())
+	}
+	create := requestJSON(t, handler, http.MethodPost, "/players", map[string]any{"request_id": "guest-player", "name": "Guest"})
+	if create.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous player creation status=%d body=%s", create.Code, create.Body.String())
+	}
+	blinds := requestJSON(t, handler, http.MethodPost, "/blinds-clock/start", nil)
+	if blinds.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous blind mutation status=%d body=%s", blinds.Code, blinds.Body.String())
+	}
+
+	saveLoginUser(t, pool, "starter-1", "starter@example.com", "user", "starter-password")
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO players (id, name) VALUES ('starter-player', 'Starter');
+		INSERT INTO user_players (user_id, player_id) VALUES ('starter-1', 'starter-player')
+	`); err != nil {
+		t.Fatalf("prepare starter ownership: %v", err)
+	}
+	starterCookie := loginCookie(t, handler, "starter@example.com", "starter-password")
+	authorizedStart := requestJSONWithCookie(t, handler, http.MethodPost, "/sessions/start", map[string]any{"chip_rate": 2, "big_blind": 2, "currency": "RUB"}, starterCookie)
+	if authorizedStart.Code != http.StatusOK {
+		t.Fatalf("authorized start status=%d body=%s", authorizedStart.Code, authorizedStart.Body.String())
+	}
+	var started struct {
+		SessionID string `json:"session_id"`
+	}
+	decodeJSON(t, authorizedStart, &started)
+	var participants int
+	if err := pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM session_participants WHERE session_id = $1 AND player_id = 'starter-player'`, started.SessionID).Scan(&participants); err != nil || participants != 1 {
+		t.Fatalf("starter participant count=%d err=%v", participants, err)
+	}
+	detail := requestJSONWithCookie(t, handler, http.MethodGet, "/sessions?session_id="+started.SessionID, nil, starterCookie)
+	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), `"can_mutate":true`) {
+		t.Fatalf("starter detail status=%d body=%s", detail.Code, detail.Body.String())
 	}
 }
 

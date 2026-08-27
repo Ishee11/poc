@@ -61,45 +61,27 @@ func (r *StatsRepository) ListSessions(
 		  AND ($2::timestamp IS NULL OR s.created_at < $2::timestamp)
 		  AND ($7::text IS NULL OR s.status = $7::text)
 		  AND (
+			s.status = 'finished'
+			OR
 			$6::boolean
 			OR
-			($4::text IS NULL AND NOT EXISTS (
-				SELECT 1
-				FROM effective_operations guest_eo
-				JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
-				WHERE guest_eo.session_id = s.id
-			))
-			OR
 			($4::text IS NULL AND $5::text IS NOT NULL
-				AND NOT EXISTS (
-					SELECT 1
-					FROM user_players selected_guest_up
-					WHERE selected_guest_up.player_id = $5::text
-				)
 				AND EXISTS (
 					SELECT 1
-					FROM effective_operations selected_guest_eo
-					WHERE selected_guest_eo.session_id = s.id
-					  AND selected_guest_eo.player_id = $5::text
+					FROM session_participants selected_guest
+					WHERE selected_guest.session_id = s.id
+					  AND selected_guest.player_id = $5::text
 				)
 			)
 			OR
-			($4::text IS NOT NULL AND (
-				NOT EXISTS (
+			($4::text IS NOT NULL AND EXISTS (
 					SELECT 1
-					FROM effective_operations other_eo
-					JOIN user_players other_up ON other_up.player_id = other_eo.player_id
-					WHERE other_eo.session_id = s.id
-					  AND other_up.user_id <> $4::text
-				)
-				OR EXISTS (
-					SELECT 1
-					FROM effective_operations own_eo
-					JOIN user_players own_up ON own_up.player_id = own_eo.player_id
-					WHERE own_eo.session_id = s.id
+					FROM session_participants own_participant
+					JOIN user_players own_up ON own_up.player_id = own_participant.player_id
+					WHERE own_participant.session_id = s.id
 					  AND own_up.user_id = $4::text
 				)
-			))
+			)
 		  )
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY s.created_at DESC
@@ -162,49 +144,61 @@ func (r *StatsRepository) CanViewSession(
 			FROM sessions s
 			WHERE s.id = $1
 			  AND (
+				s.status = 'finished'
+				OR
 				$4::boolean
 				OR
-				($2::text IS NULL AND NOT EXISTS (
-					SELECT 1
-					FROM effective_operations guest_eo
-					JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
-					WHERE guest_eo.session_id = s.id
-				))
-				OR
 				($2::text IS NULL AND $3::text IS NOT NULL
-					AND NOT EXISTS (
-						SELECT 1
-						FROM user_players selected_guest_up
-						WHERE selected_guest_up.player_id = $3::text
-					)
 					AND EXISTS (
 						SELECT 1
-						FROM effective_operations selected_guest_eo
-						WHERE selected_guest_eo.session_id = s.id
-						  AND selected_guest_eo.player_id = $3::text
+						FROM session_participants selected_guest
+						WHERE selected_guest.session_id = s.id
+						  AND selected_guest.player_id = $3::text
 					)
 				)
 				OR
-				($2::text IS NOT NULL AND (
-					NOT EXISTS (
+				($2::text IS NOT NULL AND EXISTS (
 						SELECT 1
-						FROM effective_operations other_eo
-						JOIN user_players other_up ON other_up.player_id = other_eo.player_id
-						WHERE other_eo.session_id = s.id
-						  AND other_up.user_id <> $2::text
-					)
-					OR EXISTS (
-						SELECT 1
-						FROM effective_operations own_eo
-						JOIN user_players own_up ON own_up.player_id = own_eo.player_id
-						WHERE own_eo.session_id = s.id
+						FROM session_participants own_participant
+						JOIN user_players own_up ON own_up.player_id = own_participant.player_id
+						WHERE own_participant.session_id = s.id
 						  AND own_up.user_id = $2::text
 					)
-				))
+				)
 			  )
 		)
 	`, sessionID, optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
 
+	var allowed bool
+	if err := row.Scan(&allowed); err != nil {
+		return false, err
+	}
+	return allowed, nil
+}
+
+func (r *StatsRepository) CanMutateSession(
+	tx usecase.Tx,
+	sessionID entity.SessionID,
+	viewerUserID entity.AuthUserID,
+	viewerIsAdmin bool,
+) (bool, error) {
+	row := tx.QueryRow(context.Background(), `
+		SELECT EXISTS (
+			SELECT 1
+			FROM sessions s
+			WHERE s.id = $1
+			  AND (
+				$3::boolean
+				OR EXISTS (
+					SELECT 1
+					FROM session_participants sp
+					JOIN user_players up ON up.player_id = sp.player_id
+					WHERE sp.session_id = s.id
+					  AND up.user_id = $2
+				)
+			  )
+		)
+	`, sessionID, viewerUserID, viewerIsAdmin)
 	var allowed bool
 	if err := row.Scan(&allowed); err != nil {
 		return false, err
@@ -470,49 +464,32 @@ func (r *StatsRepository) CountVisiblePlayerSessions(
 		)
 		SELECT COUNT(DISTINCT eo.session_id)
 		FROM effective_operations eo
+		JOIN sessions s ON s.id = eo.session_id
 		WHERE eo.player_id = $1
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
 		  AND (
+			s.status = 'finished'
+			OR
 			$6::boolean
 			OR
-			($4::text IS NULL AND NOT EXISTS (
-				SELECT 1
-				FROM effective_operations guest_eo
-				JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
-				WHERE guest_eo.session_id = eo.session_id
-			))
-			OR
 			($4::text IS NULL AND $5::text IS NOT NULL
-				AND NOT EXISTS (
-					SELECT 1
-					FROM user_players selected_guest_up
-					WHERE selected_guest_up.player_id = $5::text
-				)
 				AND EXISTS (
 					SELECT 1
-					FROM effective_operations selected_guest_eo
-					WHERE selected_guest_eo.session_id = eo.session_id
-					  AND selected_guest_eo.player_id = $5::text
+					FROM session_participants selected_guest
+					WHERE selected_guest.session_id = eo.session_id
+					  AND selected_guest.player_id = $5::text
 				)
 			)
 			OR
-			($4::text IS NOT NULL AND (
-				NOT EXISTS (
+			($4::text IS NOT NULL AND EXISTS (
 					SELECT 1
-					FROM effective_operations other_eo
-					JOIN user_players other_up ON other_up.player_id = other_eo.player_id
-					WHERE other_eo.session_id = eo.session_id
-					  AND other_up.user_id <> $4::text
-				)
-				OR EXISTS (
-					SELECT 1
-					FROM effective_operations own_eo
-					JOIN user_players own_up ON own_up.player_id = own_eo.player_id
-					WHERE own_eo.session_id = eo.session_id
+					FROM session_participants own_participant
+					JOIN user_players own_up ON own_up.player_id = own_participant.player_id
+					WHERE own_participant.session_id = eo.session_id
 					  AND own_up.user_id = $4::text
 				)
-			))
+			)
 		  )
 	`, playerID, boundTime(filter.From), boundTime(filter.To), optionalAuthUserID(filter.ViewerUserID), optionalPlayerID(filter.GuestPlayerID), filter.ViewerIsAdmin)
 
@@ -557,45 +534,27 @@ func (r *StatsRepository) ListPlayerSessions(
 		  AND ($2::timestamp IS NULL OR eo.created_at >= $2::timestamp)
 		  AND ($3::timestamp IS NULL OR eo.created_at < $3::timestamp)
 		  AND (
+			s.status = 'finished'
+			OR
 			$7::boolean
 			OR
-			($5::text IS NULL AND NOT EXISTS (
-				SELECT 1
-				FROM effective_operations guest_eo
-				JOIN user_players guest_up ON guest_up.player_id = guest_eo.player_id
-				WHERE guest_eo.session_id = s.id
-			))
-			OR
 			($5::text IS NULL AND $6::text IS NOT NULL
-				AND NOT EXISTS (
-					SELECT 1
-					FROM user_players selected_guest_up
-					WHERE selected_guest_up.player_id = $6::text
-				)
 				AND EXISTS (
 					SELECT 1
-					FROM effective_operations selected_guest_eo
-					WHERE selected_guest_eo.session_id = s.id
-					  AND selected_guest_eo.player_id = $6::text
+					FROM session_participants selected_guest
+					WHERE selected_guest.session_id = s.id
+					  AND selected_guest.player_id = $6::text
 				)
 			)
 			OR
-			($5::text IS NOT NULL AND (
-				NOT EXISTS (
+			($5::text IS NOT NULL AND EXISTS (
 					SELECT 1
-					FROM effective_operations other_eo
-					JOIN user_players other_up ON other_up.player_id = other_eo.player_id
-					WHERE other_eo.session_id = s.id
-					  AND other_up.user_id <> $5::text
-				)
-				OR EXISTS (
-					SELECT 1
-					FROM effective_operations own_eo
-					JOIN user_players own_up ON own_up.player_id = own_eo.player_id
-					WHERE own_eo.session_id = s.id
+					FROM session_participants own_participant
+					JOIN user_players own_up ON own_up.player_id = own_participant.player_id
+					WHERE own_participant.session_id = s.id
 					  AND own_up.user_id = $5::text
 				)
-			))
+			)
 		  )
 		GROUP BY s.id, s.status, s.chip_rate, s.big_blind, s.currency, s.created_at, s.finished_at
 		ORDER BY MAX(eo.created_at) DESC, s.created_at DESC

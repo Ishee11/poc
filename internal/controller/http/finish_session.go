@@ -17,6 +17,8 @@ import (
 // @Param request body FinishSessionRequest true "Finish session request"
 // @Success 200
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
@@ -43,7 +45,7 @@ func (h *SessionHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
-	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+	if !h.access.requireMutation(w, r, entity.SessionID(req.SessionID)) {
 		return
 	}
 

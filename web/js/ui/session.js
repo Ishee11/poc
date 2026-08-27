@@ -440,6 +440,7 @@ export function renderSession() {
   const finishActions = document.getElementById("session-finish-actions");
   const brandTitle = document.querySelector(".app-brand h1");
   const isActive = session.status === "active";
+	const canMutate = canMutateCurrentSession();
   const onTable = Number(session.totalChips) || 0;
 
   if (titleDate) {
@@ -498,15 +499,19 @@ export function renderSession() {
     card.setAttribute("role", state.adminMode ? "button" : "presentation");
     card.setAttribute("title", state.adminMode ? t("admin.editSessionConfig") : "");
   });
-  if (finishButton) finishButton.disabled = !isActive;
-  if (finishActions) finishActions.hidden = !isActive;
+  if (finishButton) finishButton.disabled = !isActive || !canMutate;
+  if (finishActions) finishActions.hidden = !isActive || !canMutate;
   if (finishHint) {
     finishHint.hidden = true;
     finishHint.textContent = "";
   }
-  if (playerActions) playerActions.hidden = !isActive;
-  if (playerActionsHint) playerActionsHint.hidden = !isActive;
-  if (playerActionSwitch) playerActionSwitch.hidden = !isActive;
+  if (playerActions) playerActions.hidden = !isActive || !canMutate;
+  if (playerActionsHint) playerActionsHint.hidden = !isActive || !canMutate;
+  if (playerActionSwitch) playerActionSwitch.hidden = !isActive || !canMutate;
+	for (const id of ["session-read-only-hint", "results-read-only-hint"]) {
+		const hint = document.getElementById(id);
+		if (hint) hint.hidden = canMutate;
+	}
   if (moneyPanel) moneyPanel.hidden = session.status !== "finished";
   if (adminDeletePanel) adminDeletePanel.hidden = !state.adminMode;
   if (resultsButton) resultsButton.hidden = !state.session;
@@ -589,6 +594,7 @@ export function renderOperations() {
       const syncStatus = operation.sync_status || "confirmed";
       const isPending = syncStatus === "pending";
       const reversible =
+		canMutateCurrentSession() &&
         state.session?.status === "active" &&
         operation.type !== "reversal" &&
         !reversedTargets.has(operation.id);
@@ -683,10 +689,10 @@ export function renderExpenseForm() {
   const isActiveOrFinished = state.session?.status === "active" || state.session?.status === "finished";
   if (panel) panel.hidden = !isActiveOrFinished;
   const expensesClosed = Boolean(state.session?.expensesClosed);
-  const canEditExpenses = !expensesClosed || state.adminMode;
+  const canEditExpenses = canMutateCurrentSession() && (!expensesClosed || state.adminMode);
   if (form) form.hidden = !canEditExpenses || !state.expenseFormOpen;
   if (openFormButton) openFormButton.hidden = !canEditExpenses || state.expenseFormOpen;
-  if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed;
+  if (closeButton) closeButton.hidden = !isActiveOrFinished || expensesClosed || !canMutateCurrentSession();
   if (lockedHint) lockedHint.hidden = canEditExpenses || !expensesClosed;
   if (status) {
     status.textContent = expensesClosed ? t("expenses.closed") : "";
@@ -959,7 +965,7 @@ export function renderExpenses() {
     return;
   }
 
-  const canEditExpenses = !state.session?.expensesClosed || state.adminMode;
+  const canEditExpenses = canMutateCurrentSession() && (!state.session?.expensesClosed || state.adminMode);
   wrap.innerHTML = state.expenses
     .map((expense) => {
       const participants = (expense.participants || []).map(findPlayerName).join(", ");
@@ -1004,7 +1010,8 @@ export function renderSettlement() {
   const draft = currentSettlementDraft();
   const manualTransfers = draft?.transfers || [];
   const hasAdjustments = manualTransfers.length > 0;
-  const isEditing = state.settlementEditing;
+	const canMutate = canMutateCurrentSession();
+  const isEditing = canMutate && state.settlementEditing;
   const adjustedBalances = hasAdjustments ? balancesAfterSettlementTransfers(balances, manualTransfers) : balances;
   const remainingTransfers = hasAdjustments ? settlementTransfers(adjustedBalances) : autoTransfers;
   const balanceRows = Array.from(balances.entries())
@@ -1051,7 +1058,7 @@ export function renderSettlement() {
             : ""
         }
         ${transferRows || `<div class="empty-inline">${escapeHtml(t("settlement.noTransfers"))}</div>`}
-        <div class="actions settlement-actions">
+        <div class="actions settlement-actions" ${canMutate ? "" : "hidden"}>
           ${
             isEditing
               ? `
@@ -1081,6 +1088,7 @@ function renderResultsSummary() {
 }
 
 async function persistSettlementDraft() {
+	if (!canMutateCurrentSession()) return;
   const sessionId = state.activeSessionId;
   if (!sessionId) return;
 
@@ -1320,6 +1328,11 @@ export function initSessionActions() {
       return;
     }
 
+		if (isSessionMutationControl(button) && !canMutateCurrentSession()) {
+			showNotice(t("session.readOnly"), "info");
+			return;
+		}
+
     const rebuyPlayerId = button.getAttribute("data-session-rebuy-player");
     if (rebuyPlayerId) {
       await withBusyButton(button, () => confirmPlayerRebuy(rebuyPlayerId));
@@ -1450,6 +1463,35 @@ export function initSessionActions() {
       updateExpenseParticipantShares();
     }
   });
+}
+
+function canMutateCurrentSession() {
+	if (!state.authUiEnabled) return true;
+	return Boolean(state.authUser && state.session?.canMutate);
+}
+
+function isSessionMutationControl(button) {
+	if (
+		button.hasAttribute("data-session-rebuy-player") ||
+		button.hasAttribute("data-session-cash-out-player") ||
+		button.hasAttribute("data-reverse-operation") ||
+		button.hasAttribute("data-delete-expense") ||
+		button.hasAttribute("data-delete-settlement-transfer")
+	) return true;
+	return new Set([
+		"session-add-player-btn",
+		"finish-session-btn",
+		"open-expense-form-btn",
+		"add-expense-btn",
+		"close-expenses-btn",
+		"expense-select-all-btn",
+		"expense-clear-all-btn",
+		"expense-split-even-btn",
+		"settlement-edit-btn",
+		"settlement-done-btn",
+		"settlement-reset-auto-btn",
+		"settlement-add-transfer-btn",
+	]).has(button.id);
 }
 
 

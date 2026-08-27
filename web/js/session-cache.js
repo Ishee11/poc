@@ -25,6 +25,7 @@ export function normalizeSession(raw, sessionId) {
     totalBuyIn: raw.total_buy_in ?? raw.totalBuyIn,
     totalCashOut: raw.total_cash_out ?? raw.totalCashOut,
     totalChips: raw.total_chips ?? raw.totalChips,
+		canMutate: raw.can_mutate === true || raw.canMutate === true,
   };
 }
 

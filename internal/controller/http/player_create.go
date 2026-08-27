@@ -16,10 +16,14 @@ import (
 // @Param request body CreatePlayerRequest true "Create player request"
 // @Success 200 {object} CreatePlayerResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /players [post]
 func (h *PlayerHandler) CreatePlayer(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	if _, ok := h.access.requireAuthenticated(w, r); !ok {
+		return
+	}
 
 	var req CreatePlayerRequest
 

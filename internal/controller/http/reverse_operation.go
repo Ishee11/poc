@@ -17,6 +17,8 @@ import (
 // @Param request body ReverseOperationRequest true "Reverse request"
 // @Success 200 {object} OperationAcknowledgement
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /operations/reverse [post]
@@ -46,12 +48,13 @@ func (h *OperationHandler) ReverseOperation(w http.ResponseWriter, r *http.Reque
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
-	if !h.access.requireView(w, r, sessionID) {
+	if !h.access.requireMutation(w, r, sessionID) {
 		return
 	}
 
 	ack, err := h.reverseOperationUC.Execute(r.Context(), command.ReverseOperationCommand{
 		RequestID:         req.RequestID,
+		SessionID:         sessionID,
 		TargetOperationID: entity.OperationID(req.TargetOperationID),
 	})
 

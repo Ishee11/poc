@@ -38,6 +38,7 @@ type CreateSessionExpenseInput struct {
 }
 
 type DeleteSessionExpenseInput struct {
+	SessionID               entity.SessionID
 	ExpenseID               string
 	AllowClosedModification bool
 }
@@ -125,6 +126,9 @@ func (s *SessionExpenseService) Delete(ctx context.Context, input DeleteSessionE
 		}
 		if expense == nil {
 			return nil
+		}
+		if input.SessionID == "" || expense.SessionID != input.SessionID {
+			return entity.ErrForbidden
 		}
 
 		session, err := s.sessionReader.FindByID(tx, expense.SessionID)

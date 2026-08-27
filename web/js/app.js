@@ -211,6 +211,10 @@ async function bootstrapApplication() {
     if (startForm && startToggle) {
       const handleStartSession = async (event) => {
         event.preventDefault();
+				if (state.authUiEnabled && !state.authUser) {
+					showNotice(t("error.unauthorized"), "error");
+					return;
+				}
 
         if (navigator.onLine === false) {
           showNotice(t("error.onlineRequired"), "error");
@@ -888,6 +892,17 @@ function renderAuthPanel() {
 	if (telegramLogin) telegramLogin.hidden = !telegramAvailable;
 	if (emailDivider) emailDivider.hidden = !telegramAvailable;
 	renderRegistrationOwnership();
+	renderStartSessionAccess();
+}
+
+function renderStartSessionAccess() {
+	const button = document.getElementById("start-session-toggle");
+	const hint = button?.querySelector("small");
+	if (!button || !hint) return;
+	const loginRequired = state.authUiEnabled && !state.authUser;
+	button.disabled = loginRequired;
+	button.setAttribute("aria-disabled", loginRequired ? "true" : "false");
+	hint.textContent = t(loginRequired ? "lobby.startAuthRequired" : "lobby.startHint");
 }
 
 function initGuestPlayerSelect() {

@@ -34,6 +34,26 @@ func (a *sessionAccessAuthorizer) viewer(r *http.Request) (*entity.AuthUserID, b
 	return &principal.UserID, principal.Role == entity.AuthRoleAdmin, nil
 }
 
+func (a *sessionAccessAuthorizer) principal(r *http.Request) (*usecase.AuthPrincipal, error) {
+	if !a.cookie.Enabled {
+		return nil, nil
+	}
+	cookie, err := r.Cookie(a.cookie.Name)
+	if err != nil || cookie.Value == "" {
+		return nil, entity.ErrUnauthorized
+	}
+	return a.authUC.CurrentUser(r.Context(), cookie.Value)
+}
+
+func (a *sessionAccessAuthorizer) requireAuthenticated(w http.ResponseWriter, r *http.Request) (*usecase.AuthPrincipal, bool) {
+	principal, err := a.principal(r)
+	if err != nil {
+		writeError(w, r, err)
+		return nil, false
+	}
+	return principal, true
+}
+
 func (a *sessionAccessAuthorizer) requireView(w http.ResponseWriter, r *http.Request, sessionID entity.SessionID) bool {
 	viewerUserID, viewerIsAdmin, err := a.viewer(r)
 	if err != nil {
@@ -51,4 +71,44 @@ func (a *sessionAccessAuthorizer) requireView(w http.ResponseWriter, r *http.Req
 		return false
 	}
 	return true
+}
+
+func (a *sessionAccessAuthorizer) requireMutation(w http.ResponseWriter, r *http.Request, sessionID entity.SessionID) bool {
+	if !a.cookie.Enabled {
+		return true
+	}
+	principal, ok := a.requireAuthenticated(w, r)
+	if !ok {
+		return false
+	}
+	viewerUserID := principal.UserID
+	err := a.service.RequireMutation(r.Context(), usecase.SessionAccessQuery{
+		SessionID:     sessionID,
+		ViewerUserID:  &viewerUserID,
+		ViewerIsAdmin: principal.Role == entity.AuthRoleAdmin,
+	})
+	if err != nil {
+		writeError(w, r, err)
+		return false
+	}
+	return true
+}
+
+func (a *sessionAccessAuthorizer) canMutate(r *http.Request, sessionID entity.SessionID) (bool, error) {
+	if !a.cookie.Enabled {
+		return true, nil
+	}
+	principal, err := a.principal(r)
+	if err != nil {
+		if errors.Is(err, entity.ErrUnauthorized) {
+			return false, nil
+		}
+		return false, err
+	}
+	viewerUserID := principal.UserID
+	return a.service.CanMutate(r.Context(), usecase.SessionAccessQuery{
+		SessionID:     sessionID,
+		ViewerUserID:  &viewerUserID,
+		ViewerIsAdmin: principal.Role == entity.AuthRoleAdmin,
+	})
 }

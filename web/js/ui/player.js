@@ -390,7 +390,7 @@ export function renderPlayers() {
   const wrap = document.getElementById("players-wrap");
   if (!wrap) return;
 
-  const canUseSessionActions = state.session?.status === "active";
+  const canUseSessionActions = state.session?.status === "active" && canMutateCurrentSession();
   const sessionActionMode = state.sessionPlayerActionMode || "rebuy";
 
   if (!state.players.length) {
@@ -438,6 +438,11 @@ export function renderPlayers() {
     .join("");
 
   bindOpenPlayerButtons(wrap);
+}
+
+function canMutateCurrentSession() {
+	if (!state.authUiEnabled) return true;
+	return Boolean(state.authUser && state.session?.canMutate);
 }
 
 export function renderPlayerDetail() {

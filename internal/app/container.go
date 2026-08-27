@@ -35,6 +35,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	adminRepo := postgres.NewAdminRepository()
 	authRepo := postgres.NewAuthRepository()
 	userPlayerLinkRepo := postgres.NewUserPlayerLinkRepository()
+	sessionParticipantRepo := postgres.NewSessionParticipantRepository()
 	blindClockRepo := postgres.NewBlindClockRepository()
 	pushRepo := postgres.NewBlindClockPushRepository(db.Pool)
 
@@ -74,6 +75,8 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 	startSessionUC := usecase.NewStartSessionUseCase(
 		sessionRepo,
 		sessionRepo,
+		sessionParticipantRepo,
+		userPlayerLinkRepo,
 		txManager,
 		sessionIDGen,
 	)
@@ -84,6 +87,7 @@ func NewContainer(db *DB, configs ...*Config) *Container {
 		txManager,
 		idempotencyRepo,
 		outboxRepo,
+		sessionParticipantRepo,
 	)
 
 	cashOutUC := usecase.NewCashOutUseCase(
