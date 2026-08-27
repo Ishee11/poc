@@ -645,6 +645,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -693,6 +705,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -749,6 +773,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -801,6 +837,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -832,7 +874,7 @@ const docTemplate = `{
         },
         "/sessions": {
             "get": {
-                "description": "Get session by ID",
+                "description": "Get session by ID. Finished sessions are public; active sessions require participant or selected guest-player context. can_mutate is scoped to the current authenticated viewer.",
                 "consumes": [
                     "application/json"
                 ],
@@ -861,6 +903,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -904,6 +952,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -1010,6 +1070,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -1139,7 +1205,7 @@ const docTemplate = `{
         },
         "/stats/sessions": {
             "get": {
-                "description": "Returns statistics for sessions (aggregated)",
+                "description": "Returns public finished sessions and active sessions visible to the authenticated participant or selected guest player.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1203,6 +1269,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "entity.AuthProvider": {
+            "type": "string",
+            "enum": [
+                "telegram"
+            ],
+            "x-enum-varnames": [
+                "AuthProviderTelegram"
+            ]
+        },
         "entity.AuthRole": {
             "type": "string",
             "enum": [
@@ -1263,6 +1338,12 @@ const docTemplate = `{
         "http.AccountResponse": {
             "type": "object",
             "properties": {
+                "identities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/usecase.AuthIdentityDTO"
+                    }
+                },
                 "onboarding_required": {
                     "type": "boolean"
                 },
@@ -1295,6 +1376,15 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "open_registration": {
+                    "type": "boolean"
+                },
+                "telegram_bot_enabled": {
+                    "type": "boolean"
+                },
+                "telegram_bot_username": {
+                    "type": "string"
+                },
+                "telegram_enabled": {
                     "type": "boolean"
                 }
             }
@@ -1599,6 +1689,23 @@ const docTemplate = `{
                 }
             }
         },
+        "usecase.AuthIdentityDTO": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "picture_url": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/entity.AuthProvider"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "usecase.GetPlayerStatsResponse": {
             "type": "object",
             "properties": {
@@ -1624,6 +1731,9 @@ const docTemplate = `{
             "properties": {
                 "big_blind": {
                     "type": "integer"
+                },
+                "can_mutate": {
+                    "type": "boolean"
                 },
                 "chip_rate": {
                     "type": "integer"

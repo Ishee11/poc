@@ -17,11 +17,16 @@ import (
 // @Param request body StartSessionRequest true "start session request"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /sessions/start [post]
 func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	principal, ok := h.access.requireAuthenticated(w, r)
+	if !ok {
+		return
+	}
 
 	var req StartSessionRequest
 
@@ -30,11 +35,15 @@ func (h *SessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.startSessionUC.Execute(r.Context(), command.StartSessionCommand{
+	cmd := command.StartSessionCommand{
 		ChipRate: req.ChipRate,
 		BigBlind: req.BigBlind,
 		Currency: entity.Currency(req.Currency),
-	})
+	}
+	if principal != nil {
+		cmd.UserID = principal.UserID
+	}
+	id, err := h.startSessionUC.Execute(r.Context(), cmd)
 
 	if err != nil {
 		writeError(w, r, err)

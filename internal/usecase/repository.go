@@ -79,6 +79,10 @@ type SessionWriter interface {
 	Save(tx Tx, session *entity.Session) error
 }
 
+type SessionParticipantWriter interface {
+	Add(tx Tx, sessionID entity.SessionID, playerID entity.PlayerID) error
+}
+
 type ProjectionRepository interface {
 	GetSessionAggregates(tx Tx, sessionID entity.SessionID) (SessionAggregates, error)
 
@@ -149,6 +153,7 @@ type StatsRepository interface {
 
 type SessionAccessRepository interface {
 	CanViewSession(tx Tx, sessionID entity.SessionID, filter SessionAccessFilter) (bool, error)
+	CanMutateSession(tx Tx, sessionID entity.SessionID, viewerUserID entity.AuthUserID, viewerIsAdmin bool) (bool, error)
 }
 
 type AdminRepository interface {

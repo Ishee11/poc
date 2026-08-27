@@ -48,6 +48,9 @@ func (h *BlindClockHandler) NextLevel(w http.ResponseWriter, r *http.Request) {
 
 func (h *BlindClockHandler) UpdateLevels(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	if _, ok := h.access.requireAuthenticated(w, r); !ok {
+		return
+	}
 
 	var req UpdateBlindClockLevelsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -78,6 +81,9 @@ func (h *BlindClockHandler) writeMutation(
 	r *http.Request,
 	fn func(context.Context) (*usecase.BlindClockResponse, error),
 ) {
+	if _, ok := h.access.requireAuthenticated(w, r); !ok {
+		return
+	}
 	resp, err := fn(r.Context())
 	if err != nil {
 		writeError(w, r, err)

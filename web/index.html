@@ -9,7 +9,7 @@
         <meta name="theme-color" content="#0b1117" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="poker-local-first-session-writes" content="false" />
-        <meta name="poker-shell-version" content="v17-2026-08-21-auth-navigation-bypass" />
+        <meta name="poker-shell-version" content="v20-2026-08-27-session-participant-access" />
         <meta
             name="apple-mobile-web-app-status-bar-style"
             content="black-translucent"
@@ -1288,6 +1288,9 @@
                             class="finish-hint"
                             hidden
                         ></div>
+						<div id="session-read-only-hint" class="session-read-only-hint" hidden data-i18n="session.readOnly">
+							Только просмотр. Войдите как участник, чтобы вносить изменения.
+						</div>
 
                         <div
                             class="stats top-gap"
@@ -1421,6 +1424,9 @@ class="results-close-bill-btn"
                 </section>
 
                 <section class="screen" id="screen-results">
+					<div id="results-read-only-hint" class="session-read-only-hint" hidden data-i18n="session.readOnly">
+						Только просмотр. Войдите как участник, чтобы вносить изменения.
+					</div>
                     <div class="panel" id="session-settlement-panel">
                         <h3 data-i18n="settlement.title">Итоговые переводы</h3>
                         <div id="settlement-wrap"></div>

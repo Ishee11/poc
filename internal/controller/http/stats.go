@@ -11,7 +11,7 @@ import (
 
 // GetStatsSessions godoc
 // @Summary Get sessions stats
-// @Description Returns statistics for sessions (aggregated)
+// @Description Returns public finished sessions and active sessions visible to the authenticated participant or selected guest player.
 // @Tags stats
 // @Accept json
 // @Produce json

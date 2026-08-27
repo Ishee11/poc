@@ -38,3 +38,34 @@ func (s *SessionAccessService) RequireView(ctx context.Context, query SessionAcc
 	}
 	return nil
 }
+
+func (s *SessionAccessService) RequireMutation(ctx context.Context, query SessionAccessQuery) error {
+	if query.SessionID == "" {
+		return entity.ErrSessionNotFound
+	}
+	if query.ViewerUserID == nil {
+		return entity.ErrUnauthorized
+	}
+
+	allowed, err := s.CanMutate(ctx, query)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return entity.ErrForbidden
+	}
+	return nil
+}
+
+func (s *SessionAccessService) CanMutate(ctx context.Context, query SessionAccessQuery) (bool, error) {
+	if query.SessionID == "" || query.ViewerUserID == nil {
+		return false, nil
+	}
+	allowed := false
+	err := s.txManager.RunInTx(ctx, func(tx Tx) error {
+		var err error
+		allowed, err = s.repo.CanMutateSession(tx, query.SessionID, *query.ViewerUserID, query.ViewerIsAdmin)
+		return err
+	})
+	return allowed, err
+}

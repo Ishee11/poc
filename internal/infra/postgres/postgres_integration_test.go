@@ -72,7 +72,7 @@ func ensureSafeTestDSN(t *testing.T, dsn string) {
 func cleanDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
-		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, auth_oidc_flows, auth_identities, auth_sessions, login_attempts, user_players, users, sessions, players
+		TRUNCATE TABLE audit_events, outbox_events, idempotency_keys, operations, settlement_transfers, session_expense_payments, session_expense_participants, session_expenses, session_participants, auth_oidc_flows, auth_identities, auth_sessions, login_attempts, user_players, users, sessions, players
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
@@ -314,8 +314,11 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 	saveTestUser(t, pool, "unrelated-1")
 	txRun(t, pool, func(tx usecase.Tx) {
 		saveTestPlayer(t, tx, "visible-player", "Alice")
-		saveTestSession(t, tx, "visible-session", entity.StatusFinished, 2)
+		saveTestSession(t, tx, "visible-session", entity.StatusActive, 2)
 		saveTestOperation(t, tx, "visible-op", "visible-request", "visible-session", entity.OperationBuyIn, "visible-player", 100, time.Now())
+		if err := NewSessionParticipantRepository().Add(tx, "visible-session", "visible-player"); err != nil {
+			t.Fatalf("add visible participant: %v", err)
+		}
 	})
 
 	list := func(viewer *entity.AuthUserID) []usecase.SessionStat {
@@ -373,23 +376,28 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 		return count
 	}
 
-	if sessions := list(nil); len(sessions) != 1 {
-		t.Fatalf("unowned session should be guest-visible, got %d", len(sessions))
+	if sessions := list(nil); len(sessions) != 0 {
+		t.Fatalf("active session should require guest player context, got %d", len(sessions))
 	}
-	if !canView(nil) || len(playerSessions(nil)) != 1 || visiblePlayerSessionCount(nil) != 1 {
-		t.Fatal("unowned session should be guest-openable from player details")
+	if canView(nil) || len(playerSessions(nil)) != 0 || visiblePlayerSessionCount(nil) != 0 {
+		t.Fatal("active session leaked without guest player context")
 	}
+	guestFilter := usecase.SessionStatsFilter{Limit: 20, GuestPlayerID: "visible-player"}
+	txRun(t, pool, func(tx usecase.Tx) {
+		sessions, err := NewStatsRepository(pool).ListSessions(tx, guestFilter)
+		if err != nil || len(sessions) != 1 {
+			t.Fatalf("selected participant guest sessions=%d err=%v", len(sessions), err)
+		}
+		allowed, err := NewStatsRepository(pool).CanViewSession(tx, "visible-session", usecase.SessionAccessFilter{GuestPlayerID: "visible-player"})
+		if err != nil || !allowed {
+			t.Fatalf("selected participant guest allowed=%v err=%v", allowed, err)
+		}
+	})
 	txRun(t, pool, func(tx usecase.Tx) {
 		if err := NewUserPlayerLinkRepository().LinkPlayer(tx, "owner-1", "visible-player"); err != nil {
 			t.Fatalf("claim visible player: %v", err)
 		}
 	})
-	if sessions := list(nil); len(sessions) != 0 {
-		t.Fatalf("claimed session should be hidden from guests, got %d", len(sessions))
-	}
-	if canView(nil) || len(playerSessions(nil)) != 0 || visiblePlayerSessionCount(nil) != 0 {
-		t.Fatal("claimed session leaked through direct or player-detail access")
-	}
 	owner := entity.AuthUserID("owner-1")
 	if sessions := list(&owner); len(sessions) != 1 {
 		t.Fatalf("claimed session should remain owner-visible, got %d", len(sessions))
@@ -402,7 +410,18 @@ func TestOwnershipControlsSessionVisibility(t *testing.T) {
 		t.Fatalf("claimed session should be hidden from unrelated accounts, got %d", len(sessions))
 	}
 	if got := visiblePlayerSessionCount(&unrelated); got != 0 {
-		t.Fatalf("claimed player count leaked to unrelated account: %d", got)
+		t.Fatalf("active player count leaked to unrelated account: %d", got)
+	}
+	txRun(t, pool, func(tx usecase.Tx) {
+		if _, err := tx.Exec(context.Background(), `UPDATE sessions SET status = 'finished', finished_at = NOW() WHERE id = 'visible-session'`); err != nil {
+			t.Fatalf("finish session: %v", err)
+		}
+	})
+	if sessions := list(nil); len(sessions) != 1 || !canView(nil) || len(playerSessions(nil)) != 1 || visiblePlayerSessionCount(nil) != 1 {
+		t.Fatal("finished session should be public to every viewer")
+	}
+	if sessions := list(&unrelated); len(sessions) != 1 || visiblePlayerSessionCount(&unrelated) != 1 {
+		t.Fatal("finished session should be public to unrelated account")
 	}
 }
 
@@ -441,13 +460,8 @@ func TestPlayerSessionVisibilityCountsMatchReturnedAuthorizedSet(t *testing.T) {
 		if err != nil {
 			t.Fatalf("list visible: %v", err)
 		}
-		if overall.SessionsCount != 10 || visible != 4 || int64(len(sessions)) != visible {
+		if overall.SessionsCount != 10 || visible != 10 || int64(len(sessions)) != visible {
 			t.Fatalf("unexpected total/visible/returned: %d/%d/%d", overall.SessionsCount, visible, len(sessions))
-		}
-		for _, session := range sessions {
-			if session.SessionID >= "count-session-04" {
-				t.Fatalf("hidden session leaked in detail list: %+v", session)
-			}
 		}
 	})
 }

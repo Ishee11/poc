@@ -1,4 +1,10 @@
 definitions:
+  entity.AuthProvider:
+    enum:
+    - telegram
+    type: string
+    x-enum-varnames:
+    - AuthProviderTelegram
   entity.AuthRole:
     enum:
     - admin
@@ -43,6 +49,10 @@ definitions:
     - StatusFinished
   http.AccountResponse:
     properties:
+      identities:
+        items:
+          $ref: '#/definitions/usecase.AuthIdentityDTO'
+        type: array
       onboarding_required:
         type: boolean
       player:
@@ -64,6 +74,12 @@ definitions:
       enabled:
         type: boolean
       open_registration:
+        type: boolean
+      telegram_bot_enabled:
+        type: boolean
+      telegram_bot_username:
+        type: string
+      telegram_enabled:
         type: boolean
     type: object
   http.AuthUserResponse:
@@ -264,6 +280,17 @@ definitions:
       total:
         type: integer
     type: object
+  usecase.AuthIdentityDTO:
+    properties:
+      display_name:
+        type: string
+      picture_url:
+        type: string
+      provider:
+        $ref: '#/definitions/entity.AuthProvider'
+      username:
+        type: string
+    type: object
   usecase.GetPlayerStatsResponse:
     properties:
       player:
@@ -281,6 +308,8 @@ definitions:
     properties:
       big_blind:
         type: integer
+      can_mutate:
+        type: boolean
       chip_rate:
         type: integer
       created_at:
@@ -905,6 +934,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -937,6 +974,14 @@ paths:
             $ref: '#/definitions/http.OperationAcknowledgement'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/http.ErrorResponse'
         "404":
@@ -973,6 +1018,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -1007,6 +1060,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
         "409":
           description: Conflict
           schema:
@@ -1031,7 +1088,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get session by ID
+      description: Get session by ID. Finished sessions are public; active sessions
+        require participant or selected guest-player context. can_mutate is scoped
+        to the current authenticated viewer.
       parameters:
       - description: Session ID
         in: query
@@ -1047,6 +1106,10 @@ paths:
             $ref: '#/definitions/usecase.GetSessionResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/http.ErrorResponse'
         "404":
@@ -1075,6 +1138,14 @@ paths:
           description: OK
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/http.ErrorResponse'
         "404":
@@ -1145,6 +1216,10 @@ paths:
             type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/http.ErrorResponse'
         "409":
@@ -1234,7 +1309,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns statistics for sessions (aggregated)
+      description: Returns public finished sessions and active sessions visible to
+        the authenticated participant or selected guest player.
       parameters:
       - description: Limit (default 20)
         in: query

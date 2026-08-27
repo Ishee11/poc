@@ -115,6 +115,7 @@ func NewHandler(
 		},
 		Blinds: &BlindClockHandler{
 			service: blindClockUC,
+			access:  access,
 		},
 		Push: &PushHandler{
 			service: pushUC,
@@ -182,6 +183,7 @@ type OperationHandler struct {
 
 type BlindClockHandler struct {
 	service *usecase.BlindClockService
+	access  *sessionAccessAuthorizer
 }
 
 type PushHandler struct {

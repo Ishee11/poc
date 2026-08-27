@@ -19,6 +19,7 @@ type GetSessionResponse struct {
 	TotalBuyIn     int64            `json:"total_buy_in"`
 	TotalCashOut   int64            `json:"total_cash_out"`
 	TotalChips     int64            `json:"total_chips"`
+	CanMutate      bool             `json:"can_mutate"`
 }
 
 type GetSessionUseCase struct {

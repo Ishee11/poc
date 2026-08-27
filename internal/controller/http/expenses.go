@@ -45,7 +45,7 @@ func (h *OperationHandler) CreateExpense(w http.ResponseWriter, r *http.Request)
 		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
-	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+	if !h.access.requireMutation(w, r, entity.SessionID(req.SessionID)) {
 		return
 	}
 
@@ -89,11 +89,12 @@ func (h *OperationHandler) DeleteExpense(w http.ResponseWriter, r *http.Request)
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
-	if !h.access.requireView(w, r, sessionID) {
+	if !h.access.requireMutation(w, r, sessionID) {
 		return
 	}
 
 	if err := h.expenseService.Delete(r.Context(), usecase.DeleteSessionExpenseInput{
+		SessionID:               sessionID,
 		ExpenseID:               expenseID,
 		AllowClosedModification: h.isAdmin(r),
 	}); err != nil {
@@ -120,7 +121,7 @@ func (h *OperationHandler) CloseExpenses(w http.ResponseWriter, r *http.Request)
 		writeErr(w, r, http.StatusBadRequest, "session_id_required", nil)
 		return
 	}
-	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+	if !h.access.requireMutation(w, r, entity.SessionID(req.SessionID)) {
 		return
 	}
 

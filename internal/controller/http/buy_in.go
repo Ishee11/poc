@@ -18,6 +18,8 @@ import (
 // @Param request body BuyInRequest true "Buy-in request"
 // @Success 200 {object} OperationAcknowledgement
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /operations/buy-in [post]
@@ -28,7 +30,7 @@ func (h *OperationHandler) BuyIn(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, http.StatusBadRequest, "bad_request", nil)
 		return
 	}
-	if !h.access.requireView(w, r, entity.SessionID(req.SessionID)) {
+	if !h.access.requireMutation(w, r, entity.SessionID(req.SessionID)) {
 		return
 	}
 

@@ -55,6 +55,7 @@ function serverResults(sessionId = "session-1", overrides = {}) {
         total_buy_in: 2000,
         total_cash_out: 0,
         total_chips: 2000,
+        can_mutate: true,
       },
     },
     playersResult: { ok: true, body: [{ player_id: "player-1", profit_money: 0 }] },
@@ -104,6 +105,7 @@ test("hydrates cached session before a delayed refresh completes", async () => {
   assert.equal((await refresh).status, "fresh");
   assert.deepEqual(rendered, ["cache", "server"]);
   assert.equal(state.sessionDataSource, "server");
+  assert.equal(state.session.canMutate, true);
 });
 
 test("failed required refresh preserves cached players and operations", async () => {
